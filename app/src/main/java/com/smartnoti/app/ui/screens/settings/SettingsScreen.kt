@@ -1,6 +1,7 @@
 package com.smartnoti.app.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +17,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.domain.usecase.SuppressedAppInsight
+import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
@@ -31,10 +35,19 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
+    val suppressionInsightsBuilder = remember { SuppressionInsightsBuilder() }
     val settings by repository.observeSettings().collectAsState(
         initial = com.smartnoti.app.data.settings.SmartNotiSettings()
     )
     val capturedApps by notificationRepository.observeCapturedApps().collectAsState(initial = emptyList())
+    val notifications by notificationRepository.observeAll().collectAsState(initial = emptyList())
+    val suppressionInsights = remember(capturedApps, notifications, settings.suppressedSourceApps) {
+        suppressionInsightsBuilder.build(
+            capturedApps = capturedApps,
+            notifications = notifications,
+            suppressedPackages = settings.suppressedSourceApps,
+        )
+    }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     LazyColumn(
@@ -110,6 +123,12 @@ fun SettingsScreen(contentPadding: PaddingValues) {
             SectionLabel(
                 title = "소스 알림 처리",
                 subtitle = "Digest·조용히 결정 시 원본 알림을 숨길지 선택할 수 있어요.",
+            )
+        }
+        item {
+            SuppressionInsightsCard(
+                suppressEnabled = settings.suppressSourceForDigestAndSilent,
+                summary = suppressionInsights,
             )
         }
         item {
@@ -219,4 +238,57 @@ fun SettingsScreen(contentPadding: PaddingValues) {
             }
         }
     }
+}
+
+@Composable
+private fun SuppressionInsightsCard(
+    suppressEnabled: Boolean,
+    summary: com.smartnoti.app.domain.usecase.SuppressionInsightsSummary,
+) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "원본 알림 숨김 인사이트",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        val headline = when {
+            !suppressEnabled -> "아직 원본 알림 숨기기가 꺼져 있어요"
+            summary.selectedAppCount == 0 -> "숨기기 대상 앱을 아직 고르지 않았어요"
+            else -> "선택한 ${summary.selectedAppCount}개 앱에서 ${summary.selectedFilteredCount}개 알림을 SmartNoti가 대신 정리했어요"
+        }
+        Text(
+            text = headline,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        val detail = when {
+            !suppressEnabled -> "기능을 켜고 앱을 선택하면 Settings에서 실제 숨김 효과를 바로 확인할 수 있어요."
+            summary.selectedAppCount == 0 -> "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 요약이 여기에 표시돼요."
+            summary.topSelectedAppName != null -> "선택한 앱 알림 중 ${summary.selectedFilteredSharePercent}%가 정리됐고, ${summary.topSelectedAppName}에서 ${summary.topSelectedAppFilteredCount}건이 가장 많이 정리됐어요."
+            else -> "선택한 앱의 숨김 효과를 계속 집계하고 있어요."
+        }
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (summary.appInsights.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                summary.appInsights.take(3).forEach { appInsight ->
+                    SuppressedAppInsightRow(appInsight)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuppressedAppInsightRow(appInsight: SuppressedAppInsight) {
+    val prefix = if (appInsight.isSuppressed) "선택됨" else "관찰 중"
+    Text(
+        text = "$prefix · ${appInsight.appName} · ${appInsight.filteredCount}건 정리 · ${appInsight.filteredSharePercent}% · ${appInsight.lastSeenLabel}",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
