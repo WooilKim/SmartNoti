@@ -21,7 +21,10 @@ class HomeNotificationInsightsBuilder {
             .eachCount()
             .maxByOrNull { (_, count) -> count }
 
-        val topReasonTag = filteredNotifications
+        val reasonSourceNotifications = filteredNotifications.filter { notification ->
+            notification.appName == topFilteredApp?.key
+        }
+        val reasonCounts = reasonSourceNotifications
             .asSequence()
             .flatMap { notification ->
                 notification.reasonTags.asSequence()
@@ -30,21 +33,39 @@ class HomeNotificationInsightsBuilder {
             .filter { tag -> tag.isNotEmpty() && tag !in nonExplanatoryReasonTags }
             .groupingBy { it }
             .eachCount()
-            .maxByOrNull { (_, count) -> count }
-            ?.key
+            .entries
+            .sortedByDescending { it.value }
+
+        val filteredSharePercent = ((filteredNotifications.size * 100.0) / notifications.size)
+            .toInt()
 
         return HomeNotificationInsightsSummary(
             filteredCount = filteredNotifications.size,
+            filteredSharePercent = filteredSharePercent,
             topFilteredAppName = topFilteredApp?.key,
             topFilteredAppCount = topFilteredApp?.value ?: 0,
-            topReasonTag = topReasonTag,
+            topReasonTag = reasonCounts.firstOrNull()?.key,
+            topReasons = reasonCounts.take(MAX_REASON_INSIGHTS).map { entry ->
+                HomeReasonInsight(tag = entry.key, count = entry.value)
+            },
         )
+    }
+
+    private companion object {
+        const val MAX_REASON_INSIGHTS = 3
     }
 }
 
 data class HomeNotificationInsightsSummary(
     val filteredCount: Int,
+    val filteredSharePercent: Int = 0,
     val topFilteredAppName: String? = null,
     val topFilteredAppCount: Int = 0,
     val topReasonTag: String? = null,
+    val topReasons: List<HomeReasonInsight> = emptyList(),
+)
+
+data class HomeReasonInsight(
+    val tag: String,
+    val count: Int,
 )

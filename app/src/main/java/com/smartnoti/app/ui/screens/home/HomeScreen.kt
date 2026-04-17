@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
+import com.smartnoti.app.domain.usecase.HomeReasonInsight
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
@@ -112,9 +113,11 @@ fun HomeScreen(
             item {
                 InsightCard(
                     filteredCount = insights.filteredCount,
+                    filteredSharePercent = insights.filteredSharePercent,
                     topFilteredAppName = insights.topFilteredAppName,
                     topFilteredAppCount = insights.topFilteredAppCount,
                     topReasonTag = insights.topReasonTag,
+                    topReasons = insights.topReasons,
                 )
             }
         }
@@ -144,9 +147,11 @@ fun HomeScreen(
 @Composable
 private fun InsightCard(
     filteredCount: Int,
+    filteredSharePercent: Int,
     topFilteredAppName: String?,
     topFilteredAppCount: Int,
     topReasonTag: String?,
+    topReasons: List<HomeReasonInsight>,
 ) {
     val primaryLine = buildString {
         append("지금까지 ")
@@ -166,6 +171,9 @@ private fun InsightCard(
         else -> {
             "정리된 알림 패턴을 계속 학습하고 있어요"
         }
+    }
+    val reasonRankingLine = topReasons.joinToString(" · ") { reason ->
+        "${reason.tag} ${reason.count}건"
     }
 
     Card(
@@ -188,10 +196,22 @@ private fun InsightCard(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
+                text = "전체 알림 중 ${filteredSharePercent}%를 대신 정리했어요",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
                 text = detailLine,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (reasonRankingLine.isNotBlank()) {
+                Text(
+                    text = "주요 이유: $reasonRankingLine",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
