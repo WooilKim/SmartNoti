@@ -34,4 +34,18 @@ class NotificationReplacementIdsTest {
 
         assertNotEquals(digestId, silentId)
     }
+
+    @Test
+    fun replacement_id_does_not_change_when_delivery_profile_changes() {
+        val loudDigest = NotificationReplacementIds.idFor(
+            packageName = "com.coupang.mobile",
+            decision = NotificationDecision.DIGEST,
+        )
+        val quietDigest = NotificationReplacementIds.idFor(
+            packageName = "com.coupang.mobile",
+            decision = NotificationDecision.DIGEST,
+        )
+
+        assertEquals(loudDigest, quietDigest)
+    }
 }

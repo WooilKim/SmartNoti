@@ -6,6 +6,8 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.toDecision
+import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
 import com.smartnoti.app.domain.model.withContext
 import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
 import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
@@ -115,21 +117,27 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             )
             repository.save(notification, sbn.postTime, contentSignature)
 
-            val decision = when (notification.status) {
-                com.smartnoti.app.domain.model.NotificationStatusUi.PRIORITY -> com.smartnoti.app.domain.model.NotificationDecision.PRIORITY
-                com.smartnoti.app.domain.model.NotificationStatusUi.DIGEST -> com.smartnoti.app.domain.model.NotificationDecision.DIGEST
-                com.smartnoti.app.domain.model.NotificationStatusUi.SILENT -> com.smartnoti.app.domain.model.NotificationDecision.SILENT
-            }
-            if (((isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications) || NotificationSuppressionPolicy.shouldSuppressSourceNotification(
-                    suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                    suppressedApps = settings.suppressedSourceApps,
-                    packageName = sbn.packageName,
-                    decision = decision,
-                )
-            ) {
+            val decision = notification.status.toDecision()
+            val deliveryProfile = notification.toDeliveryProfileOrDefault()
+            val shouldHidePersistentSourceNotification =
+                (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
+            val shouldSuppressSourceNotification = NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                suppressedApps = settings.suppressedSourceApps,
+                packageName = sbn.packageName,
+                decision = decision,
+            )
+            val sourceRouting = SourceNotificationRoutingPolicy.route(
+                decision = decision,
+                hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
+                suppressSourceNotification = shouldSuppressSourceNotification,
+            )
+            if (sourceRouting.cancelSourceNotification) {
                 withContext(Dispatchers.Main) {
                     cancelNotification(sbn.key)
                 }
+            }
+            if (sourceRouting.notifyReplacementNotification) {
                 notifier.notifySuppressedNotification(
                     decision = decision,
                     packageName = sbn.packageName,
@@ -138,6 +146,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                     body = notification.body,
                     notificationId = notification.id,
                     reasonTags = notification.reasonTags,
+                    deliveryProfile = deliveryProfile,
                 )
             }
         }

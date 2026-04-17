@@ -7,6 +7,7 @@ import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.model.toUiStatus
 
 class NotificationCaptureProcessor(
     private val classifier: NotificationClassifier,
@@ -110,11 +111,5 @@ class NotificationCaptureProcessor(
         }
 
         return tags.toList()
-    }
-
-    private fun NotificationDecision.toUiStatus(): NotificationStatusUi = when (this) {
-        NotificationDecision.PRIORITY -> NotificationStatusUi.PRIORITY
-        NotificationDecision.DIGEST -> NotificationStatusUi.DIGEST
-        NotificationDecision.SILENT -> NotificationStatusUi.SILENT
     }
 }

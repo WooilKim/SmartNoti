@@ -6,11 +6,14 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.smartnoti.app.MainActivity
+import com.smartnoti.app.domain.model.DeliveryProfile
 import com.smartnoti.app.domain.model.NotificationDecision
+import com.smartnoti.app.domain.model.sanitizedForDecision
 import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
 import com.smartnoti.app.onboarding.OnboardingPermissions
 
@@ -28,13 +31,15 @@ class SmartNotiNotifier(
         body: String,
         notificationId: String,
         reasonTags: List<String>,
+        deliveryProfile: DeliveryProfile = DeliveryProfile.defaultsFor(decision),
     ) {
+        if (decision == NotificationDecision.PRIORITY) return
         ensureChannels()
-        val channelId = when (decision) {
-            NotificationDecision.DIGEST -> DIGEST_CHANNEL_ID
-            NotificationDecision.SILENT -> SILENT_CHANNEL_ID
-            NotificationDecision.PRIORITY -> return
-        }
+        val sanitizedProfile = deliveryProfile.sanitizedForDecision(decision)
+        val channelSpec = ReplacementNotificationChannelRegistry.resolve(
+            decision = decision,
+            deliveryProfile = sanitizedProfile,
+        )
         val label = when (decision) {
             NotificationDecision.DIGEST -> "Digest"
             NotificationDecision.SILENT -> "Silent"
@@ -56,23 +61,17 @@ class SmartNotiNotifier(
             requestCode = replacementNotificationId,
         )
         val keepAction = keepActionFor(decision)
-        val notificationBuilder = NotificationCompat.Builder(context, channelId)
+        val notificationBuilder = NotificationCompat.Builder(context, channelSpec.id)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(contentTitle)
             .setContentText(contentText)
             .setSubText("$appName • $label")
             .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
-            .setPriority(
-                when (decision) {
-                    NotificationDecision.DIGEST -> NotificationCompat.PRIORITY_LOW
-                    NotificationDecision.SILENT -> NotificationCompat.PRIORITY_MIN
-                    NotificationDecision.PRIORITY -> NotificationCompat.PRIORITY_DEFAULT
-                }
-            )
+            .setPriority(channelSpec.compatPriority)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
-            .setSilent(true)
+            .setVisibility(channelSpec.notificationVisibility)
             .setContentIntent(contentIntent)
             .addAction(
                 android.R.drawable.ic_input_add,
@@ -83,6 +82,10 @@ class SmartNotiNotifier(
                     action = RuleAction.ALWAYS_PRIORITY,
                 ),
             )
+
+        if (channelSpec.silentBuilder) {
+            notificationBuilder.setSilent(true)
+        }
 
         if (keepAction != null) {
             notificationBuilder.addAction(
@@ -118,28 +121,32 @@ class SmartNotiNotifier(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        val digestChannel = NotificationChannel(
-            DIGEST_CHANNEL_ID,
-            "SmartNoti Digest",
-            NotificationManager.IMPORTANCE_LOW,
-        ).apply {
-            description = "Suppressed digest notifications surfaced by SmartNoti"
-            setSound(null, null)
-            enableVibration(false)
-            setShowBadge(false)
+        val audioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        ReplacementNotificationChannelRegistry.all().forEach { spec ->
+            val channel = NotificationChannel(
+                spec.id,
+                spec.name,
+                spec.importance,
+            ).apply {
+                description = spec.description
+                lockscreenVisibility = spec.notificationVisibility
+                enableVibration(spec.vibrationEnabled)
+                if (spec.vibrationEnabled) {
+                    vibrationPattern = spec.vibrationPattern.toLongArray()
+                }
+                setShowBadge(false)
+                if (spec.soundEnabled) {
+                    setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, audioAttributes)
+                } else {
+                    setSound(null, null)
+                }
+            }
+            manager.createNotificationChannel(channel)
         }
-        val silentChannel = NotificationChannel(
-            SILENT_CHANNEL_ID,
-            "SmartNoti Silent",
-            NotificationManager.IMPORTANCE_MIN,
-        ).apply {
-            description = "Suppressed silent notifications surfaced by SmartNoti"
-            setSound(null, null)
-            enableVibration(false)
-            setShowBadge(false)
-        }
-        manager.createNotificationChannel(digestChannel)
-        manager.createNotificationChannel(silentChannel)
     }
 
     private fun createContentIntent(
@@ -195,8 +202,6 @@ class SmartNotiNotifier(
     }
 
     companion object {
-        const val DIGEST_CHANNEL_ID = "smartnoti_digest"
-        const val SILENT_CHANNEL_ID = "smartnoti_silent"
         const val ACTION_PROMOTE_TO_PRIORITY = "com.smartnoti.app.action.PROMOTE_TO_PRIORITY"
         const val ACTION_KEEP_DIGEST = "com.smartnoti.app.action.KEEP_DIGEST"
         const val ACTION_KEEP_SILENT = "com.smartnoti.app.action.KEEP_SILENT"

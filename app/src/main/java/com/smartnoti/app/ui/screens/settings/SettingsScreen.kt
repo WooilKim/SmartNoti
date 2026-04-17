@@ -19,6 +19,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.LockScreenVisibilityMode
+import com.smartnoti.app.domain.model.VibrationMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -156,6 +159,29 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+        item {
+            SectionLabel(
+                title = "알림 전달 방식",
+                subtitle = "Priority/Digest/Silent 대체 알림의 주목도를 안전한 범위 안에서 조절해요.",
+            )
+        }
+        item {
+            DeliveryProfileSettingsCard(
+                settings = settings,
+                onPriorityAlertLevelChange = { value -> scope.launch { repository.setPriorityAlertLevel(value) } },
+                onPriorityVibrationChange = { value -> scope.launch { repository.setPriorityVibrationMode(value) } },
+                onPriorityHeadsUpChange = { enabled -> scope.launch { repository.setPriorityHeadsUpEnabled(enabled) } },
+                onPriorityLockScreenChange = { value -> scope.launch { repository.setPriorityLockScreenVisibility(value) } },
+                onDigestAlertLevelChange = { value -> scope.launch { repository.setDigestAlertLevel(value) } },
+                onDigestVibrationChange = { value -> scope.launch { repository.setDigestVibrationMode(value) } },
+                onDigestHeadsUpChange = { enabled -> scope.launch { repository.setDigestHeadsUpEnabled(enabled) } },
+                onDigestLockScreenChange = { value -> scope.launch { repository.setDigestLockScreenVisibility(value) } },
+                onSilentAlertLevelChange = { value -> scope.launch { repository.setSilentAlertLevel(value) } },
+                onSilentVibrationChange = { value -> scope.launch { repository.setSilentVibrationMode(value) } },
+                onSilentHeadsUpChange = { enabled -> scope.launch { repository.setSilentHeadsUpEnabled(enabled) } },
+                onSilentLockScreenChange = { value -> scope.launch { repository.setSilentLockScreenVisibility(value) } },
+            )
         }
         item {
             SectionLabel(
@@ -361,6 +387,223 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun DeliveryProfileSettingsCard(
+    settings: com.smartnoti.app.data.settings.SmartNotiSettings,
+    onPriorityAlertLevelChange: (String) -> Unit,
+    onPriorityVibrationChange: (String) -> Unit,
+    onPriorityHeadsUpChange: (Boolean) -> Unit,
+    onPriorityLockScreenChange: (String) -> Unit,
+    onDigestAlertLevelChange: (String) -> Unit,
+    onDigestVibrationChange: (String) -> Unit,
+    onDigestHeadsUpChange: (Boolean) -> Unit,
+    onDigestLockScreenChange: (String) -> Unit,
+    onSilentAlertLevelChange: (String) -> Unit,
+    onSilentVibrationChange: (String) -> Unit,
+    onSilentHeadsUpChange: (Boolean) -> Unit,
+    onSilentLockScreenChange: (String) -> Unit,
+) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "대체 알림 전달 방식",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "설정한 값은 SmartNoti가 원본 알림을 대신 보여줄 때만 적용돼요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        DeliveryProfileEditorSection(
+            title = "Priority",
+            subtitle = "중요 알림은 필요할 때 강하게 알리되, 조용한 시간이나 반복 상황에서는 자동으로 낮아질 수 있어요.",
+            selectedAlertLevel = settings.priorityAlertLevel,
+            allowedAlertLevels = listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET),
+            onAlertLevelChange = onPriorityAlertLevelChange,
+            selectedVibrationMode = settings.priorityVibrationMode,
+            allowedVibrationModes = listOf(VibrationMode.STRONG, VibrationMode.LIGHT, VibrationMode.OFF),
+            onVibrationModeChange = onPriorityVibrationChange,
+            headsUpEnabled = settings.priorityHeadsUpEnabled,
+            headsUpEnabledAllowed = true,
+            headsUpDescription = "Heads-up 표시",
+            onHeadsUpChange = onPriorityHeadsUpChange,
+            selectedLockScreenVisibility = settings.priorityLockScreenVisibility,
+            allowedLockScreenModes = listOf(
+                LockScreenVisibilityMode.PUBLIC,
+                LockScreenVisibilityMode.PRIVATE,
+                LockScreenVisibilityMode.SECRET,
+            ),
+            onLockScreenVisibilityChange = onPriorityLockScreenChange,
+        )
+        DeliveryProfileEditorSection(
+            title = "Digest",
+            subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud/강한 진동/heads-up은 허용하지 않아요.",
+            selectedAlertLevel = settings.digestAlertLevel,
+            allowedAlertLevels = listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE),
+            onAlertLevelChange = onDigestAlertLevelChange,
+            selectedVibrationMode = settings.digestVibrationMode,
+            allowedVibrationModes = listOf(VibrationMode.LIGHT, VibrationMode.OFF),
+            onVibrationModeChange = onDigestVibrationChange,
+            headsUpEnabled = false,
+            headsUpEnabledAllowed = false,
+            headsUpDescription = "Digest는 heads-up을 사용하지 않음",
+            onHeadsUpChange = onDigestHeadsUpChange,
+            selectedLockScreenVisibility = settings.digestLockScreenVisibility,
+            allowedLockScreenModes = listOf(
+                LockScreenVisibilityMode.PRIVATE,
+                LockScreenVisibilityMode.SECRET,
+            ),
+            onLockScreenVisibilityChange = onDigestLockScreenChange,
+        )
+        DeliveryProfileEditorSection(
+            title = "Silent",
+            subtitle = "Silent는 항상 비침습적으로 유지돼요. 소리·진동·heads-up은 사용할 수 없어요.",
+            selectedAlertLevel = settings.silentAlertLevel,
+            allowedAlertLevels = listOf(AlertLevel.NONE, AlertLevel.QUIET),
+            onAlertLevelChange = onSilentAlertLevelChange,
+            selectedVibrationMode = settings.silentVibrationMode,
+            allowedVibrationModes = listOf(VibrationMode.OFF),
+            onVibrationModeChange = onSilentVibrationChange,
+            headsUpEnabled = false,
+            headsUpEnabledAllowed = false,
+            headsUpDescription = "Silent는 heads-up을 사용하지 않음",
+            onHeadsUpChange = onSilentHeadsUpChange,
+            selectedLockScreenVisibility = settings.silentLockScreenVisibility,
+            allowedLockScreenModes = listOf(
+                LockScreenVisibilityMode.PRIVATE,
+                LockScreenVisibilityMode.SECRET,
+            ),
+            onLockScreenVisibilityChange = onSilentLockScreenChange,
+        )
+    }
+}
+
+@Composable
+private fun DeliveryProfileEditorSection(
+    title: String,
+    subtitle: String,
+    selectedAlertLevel: String,
+    allowedAlertLevels: List<AlertLevel>,
+    onAlertLevelChange: (String) -> Unit,
+    selectedVibrationMode: String,
+    allowedVibrationModes: List<VibrationMode>,
+    onVibrationModeChange: (String) -> Unit,
+    headsUpEnabled: Boolean,
+    headsUpEnabledAllowed: Boolean,
+    headsUpDescription: String,
+    onHeadsUpChange: (Boolean) -> Unit,
+    selectedLockScreenVisibility: String,
+    allowedLockScreenModes: List<LockScreenVisibilityMode>,
+    onLockScreenVisibilityChange: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        DeliveryProfileOptionChips(
+            label = "알림 강도",
+            selected = selectedAlertLevel,
+            options = allowedAlertLevels.map { it.name to it.toKoreanLabel() },
+            onSelected = onAlertLevelChange,
+        )
+        DeliveryProfileOptionChips(
+            label = "진동",
+            selected = selectedVibrationMode,
+            options = allowedVibrationModes.map { it.name to it.toKoreanLabel() },
+            onSelected = onVibrationModeChange,
+        )
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = headsUpDescription,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (!headsUpEnabledAllowed) {
+                    Text(
+                        text = "안전한 전달을 위해 고정됨",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Switch(
+                checked = headsUpEnabled,
+                enabled = headsUpEnabledAllowed,
+                onCheckedChange = onHeadsUpChange,
+            )
+        }
+        DeliveryProfileOptionChips(
+            label = "잠금 화면 공개 범위",
+            selected = selectedLockScreenVisibility,
+            options = allowedLockScreenModes.map { it.name to it.toKoreanLabel() },
+            onSelected = onLockScreenVisibilityChange,
+        )
+    }
+}
+
+@Composable
+private fun DeliveryProfileOptionChips(
+    label: String,
+    selected: String,
+    options: List<Pair<String, String>>,
+    onSelected: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            options.forEach { option ->
+                FilterChip(
+                    selected = option.first == selected,
+                    onClick = { onSelected(option.first) },
+                    label = { Text(option.second) },
+                )
+            }
+        }
+    }
+}
+
+private fun AlertLevel.toKoreanLabel(): String = when (this) {
+    AlertLevel.LOUD -> "강함"
+    AlertLevel.SOFT -> "보통"
+    AlertLevel.QUIET -> "조용함"
+    AlertLevel.NONE -> "없음"
+}
+
+private fun VibrationMode.toKoreanLabel(): String = when (this) {
+    VibrationMode.STRONG -> "강하게"
+    VibrationMode.LIGHT -> "가볍게"
+    VibrationMode.OFF -> "끔"
+}
+
+private fun LockScreenVisibilityMode.toKoreanLabel(): String = when (this) {
+    LockScreenVisibilityMode.PUBLIC -> "전체 공개"
+    LockScreenVisibilityMode.PRIVATE -> "내용 숨김"
+    LockScreenVisibilityMode.SECRET -> "숨김"
 }
 
 @Composable
