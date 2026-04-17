@@ -13,13 +13,27 @@ sealed class Routes(val route: String) {
     data object Detail : Routes("detail/{notificationId}") {
         fun create(notificationId: String): String = "detail/${encodeRouteParam(notificationId)}"
     }
-    data object Insight : Routes("insight/{filterType}/{filterValue}") {
-        fun createForApp(appName: String): String = "insight/app/${encodeRouteParam(appName)}"
-        fun createForReason(reasonTag: String): String = "insight/reason/${encodeRouteParam(reasonTag)}"
+    data object Insight : Routes("insight/{filterType}/{filterValue}?range={range}") {
+        fun createForApp(appName: String, range: String? = null): String {
+            return buildInsightRoute(filterType = "app", filterValue = appName, range = range)
+        }
+
+        fun createForReason(reasonTag: String, range: String? = null): String {
+            return buildInsightRoute(filterType = "reason", filterValue = reasonTag, range = range)
+        }
     }
 }
 
 private fun encodeRouteParam(value: String): String {
     return URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
         .replace("+", "%20")
+}
+
+private fun buildInsightRoute(filterType: String, filterValue: String, range: String?): String {
+    val base = "insight/$filterType/${encodeRouteParam(filterValue)}"
+    return if (range.isNullOrBlank()) {
+        base
+    } else {
+        "$base?range=${encodeRouteParam(range)}"
+    }
 }

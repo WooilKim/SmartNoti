@@ -176,13 +176,20 @@ fun AppNavHost(
                 arguments = listOf(
                     navArgument("filterType") { type = NavType.StringType },
                     navArgument("filterValue") { type = NavType.StringType },
+                    navArgument("range") {
+                        type = NavType.StringType
+                        defaultValue = "recent_24_hours"
+                        nullable = false
+                    },
                 )
             ) { backStackEntry ->
                 InsightDrillDownScreen(
                     contentPadding = paddingValues,
                     filterType = backStackEntry.arguments?.getString("filterType").orEmpty(),
                     filterValue = backStackEntry.arguments?.getString("filterValue").orEmpty(),
+                    initialRange = backStackEntry.arguments?.getString("range").orEmpty(),
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    onInsightClick = { navController.navigate(it) },
                 )
             }
         }

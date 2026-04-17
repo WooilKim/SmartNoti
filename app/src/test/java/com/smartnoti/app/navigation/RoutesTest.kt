@@ -20,4 +20,12 @@ class RoutesTest {
             Routes.Insight.createForReason("쇼핑 앱"),
         )
     }
+
+    @Test
+    fun insight_create_for_reason_with_range_encodes_argument_and_query() {
+        assertEquals(
+            "insight/reason/%EC%87%BC%ED%95%91%20%EC%95%B1?range=recent_3_hours",
+            Routes.Insight.createForReason("쇼핑 앱", "recent_3_hours"),
+        )
+    }
 }

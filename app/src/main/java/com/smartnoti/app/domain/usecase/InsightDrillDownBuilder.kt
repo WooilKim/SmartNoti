@@ -53,10 +53,17 @@ data class InsightDrillDownResult(
 enum class InsightDrillDownRange(
     val label: String,
     val windowMillis: Long?,
+    val routeValue: String,
 ) {
-    RECENT_3_HOURS(label = "최근 3시간", windowMillis = 3 * 60 * 60 * 1000L),
-    RECENT_24_HOURS(label = "최근 24시간", windowMillis = 24 * 60 * 60 * 1000L),
-    ALL(label = "전체", windowMillis = null),
+    RECENT_3_HOURS(label = "최근 3시간", windowMillis = 3 * 60 * 60 * 1000L, routeValue = "recent_3_hours"),
+    RECENT_24_HOURS(label = "최근 24시간", windowMillis = 24 * 60 * 60 * 1000L, routeValue = "recent_24_hours"),
+    ALL(label = "전체", windowMillis = null, routeValue = "all");
+
+    companion object {
+        fun fromRouteValue(routeValue: String?): InsightDrillDownRange {
+            return entries.firstOrNull { it.routeValue == routeValue } ?: RECENT_24_HOURS
+        }
+    }
 }
 
 private fun InsightDrillDownRange.includes(notificationId: String, nowMillis: Long): Boolean {

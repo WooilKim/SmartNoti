@@ -1,6 +1,7 @@
 package com.smartnoti.app.ui.screens.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +36,7 @@ import com.smartnoti.app.domain.usecase.InsightDrillDownRange
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownItem
 import com.smartnoti.app.domain.usecase.InsightDrillDownSummaryBuilder
+import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -49,7 +52,9 @@ fun InsightDrillDownScreen(
     contentPadding: PaddingValues,
     filterType: String,
     filterValue: String,
+    initialRange: String,
     onNotificationClick: (String) -> Unit,
+    onInsightClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -57,13 +62,17 @@ fun InsightDrillDownScreen(
     val summaryBuilder = remember { InsightDrillDownSummaryBuilder() }
     val reasonBreakdownBuilder = remember { InsightDrillDownReasonBreakdownChartModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
-    var selectedRange by remember { mutableStateOf(InsightDrillDownRange.RECENT_24_HOURS) }
+    var selectedRange by rememberSaveable(initialRange) {
+        mutableStateOf(InsightDrillDownRange.fromRouteValue(initialRange))
+    }
     val filter = remember(filterType, filterValue) {
         when (filterType) {
             "app" -> InsightDrillDownFilter.App(appName = filterValue)
             else -> InsightDrillDownFilter.Reason(reasonTag = filterValue)
         }
     }
+    val isReasonRoot = filter is InsightDrillDownFilter.Reason
+    val currentRangeRouteValue = selectedRange.routeValue
     val result = remember(notifications, filter, selectedRange) {
         drillDownBuilder.build(
             notifications = notifications,
@@ -161,7 +170,12 @@ fun InsightDrillDownScreen(
                     )
                 }
                 if (reasonBreakdownItems.isNotEmpty()) {
-                    InsightReasonBreakdownChart(items = reasonBreakdownItems)
+                    InsightReasonBreakdownChart(
+                        items = reasonBreakdownItems,
+                        isReasonRoot = isReasonRoot,
+                        currentRangeRouteValue = currentRangeRouteValue,
+                        onInsightClick = onInsightClick,
+                    )
                 }
             }
         }
@@ -205,10 +219,30 @@ private fun SummaryPill(
 }
 
 @Composable
-private fun InsightReasonBreakdownChart(items: List<InsightDrillDownReasonBreakdownItem>) {
+private fun InsightReasonBreakdownChart(
+    items: List<InsightDrillDownReasonBreakdownItem>,
+    isReasonRoot: Boolean,
+    currentRangeRouteValue: String,
+    onInsightClick: (String) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { item ->
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            val isClickable = !isReasonRoot || item.isTopReason.not()
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = if (isClickable) {
+                    Modifier.clickable {
+                        onInsightClick(
+                            Routes.Insight.createForReason(
+                                reasonTag = item.tag,
+                                range = currentRangeRouteValue,
+                            )
+                        )
+                    }
+                } else {
+                    Modifier
+                },
+            ) {
                 Text(
                     text = "${item.tag} · ${item.count}건",
                     style = MaterialTheme.typography.labelSmall,
