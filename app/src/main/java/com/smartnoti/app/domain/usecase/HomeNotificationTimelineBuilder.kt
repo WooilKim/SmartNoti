@@ -11,6 +11,20 @@ class HomeNotificationTimelineBuilder {
         windowMillis: Long = DEFAULT_WINDOW_MILLIS,
         bucketSizeMillis: Long = DEFAULT_BUCKET_SIZE_MILLIS,
     ): HomeNotificationTimeline {
+        return build(
+            notifications = notifications,
+            range = HomeTimelineRange.custom(windowMillis, bucketSizeMillis),
+            nowMillis = nowMillis,
+        )
+    }
+
+    fun build(
+        notifications: List<NotificationUiModel>,
+        range: HomeTimelineRange,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): HomeNotificationTimeline {
+        val windowMillis = range.windowMillis
+        val bucketSizeMillis = range.bucketSizeMillis
         val windowStart = nowMillis - windowMillis
         val bucketCount = max(1, (windowMillis / bucketSizeMillis).toInt())
         val buckets = MutableList(bucketCount) { index ->
@@ -23,7 +37,10 @@ class HomeNotificationTimelineBuilder {
         }
 
         notifications.forEach { notification ->
-            val postedAtMillis = notification.id.substringAfterLast(':').toLongOrNull() ?: return@forEach
+            val postedAtMillis = notification.id
+                .substringAfterLast(':')
+                .replace("_", "")
+                .toLongOrNull() ?: return@forEach
             if (postedAtMillis < windowStart || postedAtMillis > nowMillis) return@forEach
 
             val bucketIndex = ((postedAtMillis - windowStart) / bucketSizeMillis)
@@ -40,7 +57,11 @@ class HomeNotificationTimelineBuilder {
             bucket.filteredCount > 0 || bucket.priorityCount > 0
         }
         if (nonEmptyBuckets.isEmpty()) {
-            return HomeNotificationTimeline(totalFilteredCount = 0, buckets = emptyList())
+            return HomeNotificationTimeline(
+                range = range,
+                totalFilteredCount = 0,
+                buckets = emptyList(),
+            )
         }
 
         val peakFilteredCount = nonEmptyBuckets.maxOf(HomeTimelineBucket::filteredCount)
@@ -49,6 +70,7 @@ class HomeNotificationTimelineBuilder {
         }
 
         return HomeNotificationTimeline(
+            range = range,
             totalFilteredCount = normalizedBuckets.sumOf(HomeTimelineBucket::filteredCount),
             buckets = normalizedBuckets,
         )
@@ -70,6 +92,7 @@ class HomeNotificationTimelineBuilder {
 }
 
 data class HomeNotificationTimeline(
+    val range: HomeTimelineRange,
     val totalFilteredCount: Int,
     val buckets: List<HomeTimelineBucket>,
 )
@@ -80,3 +103,30 @@ data class HomeTimelineBucket(
     val priorityCount: Int,
     val isPeakFilteredBucket: Boolean,
 )
+
+data class HomeTimelineRange(
+    val label: String,
+    val windowMillis: Long,
+    val bucketSizeMillis: Long,
+) {
+    companion object {
+        val RECENT_3_HOURS = HomeTimelineRange(
+            label = "최근 3시간",
+            windowMillis = 3 * 60 * 60 * 1000L,
+            bucketSizeMillis = 60 * 60 * 1000L,
+        )
+        val RECENT_24_HOURS = HomeTimelineRange(
+            label = "최근 24시간",
+            windowMillis = 24 * 60 * 60 * 1000L,
+            bucketSizeMillis = 6 * 60 * 60 * 1000L,
+        )
+
+        fun custom(windowMillis: Long, bucketSizeMillis: Long): HomeTimelineRange {
+            return HomeTimelineRange(
+                label = "사용자 정의",
+                windowMillis = windowMillis,
+                bucketSizeMillis = bucketSizeMillis,
+            )
+        }
+    }
+}

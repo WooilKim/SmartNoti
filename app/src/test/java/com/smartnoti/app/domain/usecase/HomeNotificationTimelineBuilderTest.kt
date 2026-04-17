@@ -63,6 +63,31 @@ class HomeNotificationTimelineBuilderTest {
         assertTrue(timeline.buckets.isEmpty())
     }
 
+    @Test
+    fun recent_24_hours_range_includes_older_notifications_than_recent_3_hours() {
+        val notifications = listOf(
+            notification(id = "a:1000", status = NotificationStatusUi.DIGEST),
+            notification(id = "b:7_200_000", status = NotificationStatusUi.SILENT),
+            notification(id = "c:82_800_000", status = NotificationStatusUi.DIGEST),
+        )
+
+        val recent3Hours = builder.build(
+            notifications = notifications,
+            range = HomeTimelineRange.RECENT_3_HOURS,
+            nowMillis = 86_400_000,
+        )
+        val recent24Hours = builder.build(
+            notifications = notifications,
+            range = HomeTimelineRange.RECENT_24_HOURS,
+            nowMillis = 86_400_000,
+        )
+
+        assertEquals(1, recent3Hours.totalFilteredCount)
+        assertEquals(3, recent24Hours.totalFilteredCount)
+        assertEquals("최근 3시간", recent3Hours.range.label)
+        assertEquals("최근 24시간", recent24Hours.range.label)
+    }
+
     private fun notification(
         id: String,
         status: NotificationStatusUi,

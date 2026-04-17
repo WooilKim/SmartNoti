@@ -14,12 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +34,7 @@ import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
 import com.smartnoti.app.domain.usecase.HomeNotificationTimeline
 import com.smartnoti.app.domain.usecase.HomeNotificationTimelineBuilder
 import com.smartnoti.app.domain.usecase.HomeReasonInsight
+import com.smartnoti.app.domain.usecase.HomeTimelineRange
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
@@ -54,12 +58,18 @@ fun HomeScreen(
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
+    var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
     val recent by repository.observeAll().collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
     val insights = remember(recent) { insightsBuilder.build(recent) }
-    val timeline = remember(recent) { timelineBuilder.build(recent) }
+    val timeline = remember(recent, selectedTimelineRange) {
+        timelineBuilder.build(
+            notifications = recent,
+            range = selectedTimelineRange,
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
@@ -126,10 +136,12 @@ fun HomeScreen(
                 )
             }
         }
-        if (timeline.buckets.isNotEmpty()) {
-            item {
-                TimelineCard(timeline = timeline)
-            }
+        item {
+            TimelineCard(
+                timeline = timeline,
+                selectedRange = selectedTimelineRange,
+                onRangeSelected = { range -> selectedTimelineRange = range },
+            )
         }
         item {
             Text(
@@ -227,7 +239,11 @@ private fun InsightCard(
 }
 
 @Composable
-private fun TimelineCard(timeline: HomeNotificationTimeline) {
+private fun TimelineCard(
+    timeline: HomeNotificationTimeline,
+    selectedRange: HomeTimelineRange,
+    onRangeSelected: (HomeTimelineRange) -> Unit,
+) {
     SmartTimelineCardContainer {
         Text(
             text = "최근 흐름",
@@ -235,22 +251,57 @@ private fun TimelineCard(timeline: HomeNotificationTimeline) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
         )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TimelineRangeChip(
+                range = HomeTimelineRange.RECENT_3_HOURS,
+                selectedRange = selectedRange,
+                onRangeSelected = onRangeSelected,
+            )
+            TimelineRangeChip(
+                range = HomeTimelineRange.RECENT_24_HOURS,
+                selectedRange = selectedRange,
+                onRangeSelected = onRangeSelected,
+            )
+        }
         Text(
-            text = "최근 구간에서 ${timeline.totalFilteredCount}개의 알림이 정리됐어요",
+            text = "${timeline.range.label} 기준 ${timeline.totalFilteredCount}개의 알림이 정리됐어요",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            timeline.buckets.forEach { bucket ->
-                val prefix = if (bucket.isPeakFilteredBucket) "피크" else "흐름"
-                Text(
-                    text = "$prefix · ${bucket.label} · 정리 ${bucket.filteredCount}건 · 즉시 ${bucket.priorityCount}건",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        if (timeline.buckets.isEmpty()) {
+            Text(
+                text = "선택한 구간에는 아직 정리된 흐름이 없어요",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                timeline.buckets.forEach { bucket ->
+                    val prefix = if (bucket.isPeakFilteredBucket) "피크" else "흐름"
+                    Text(
+                        text = "$prefix · ${bucket.label} · 정리 ${bucket.filteredCount}건 · 즉시 ${bucket.priorityCount}건",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun TimelineRangeChip(
+    range: HomeTimelineRange,
+    selectedRange: HomeTimelineRange,
+    onRangeSelected: (HomeTimelineRange) -> Unit,
+) {
+    FilterChip(
+        selected = range == selectedRange,
+        onClick = { onRangeSelected(range) },
+        label = {
+            Text(range.label)
+        },
+    )
 }
 
 @Composable
