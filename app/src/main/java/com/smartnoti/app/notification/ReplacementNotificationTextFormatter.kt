@@ -10,8 +10,8 @@ internal object ReplacementNotificationTextFormatter {
         reasonTags: List<String>,
     ): String {
         val handlingSummary = when (decision) {
-            NotificationDecision.DIGEST -> "원본 알림은 숨기고 Digest에 모아뒀어요"
-            NotificationDecision.SILENT -> "원본 알림은 숨기고 조용히 보관했어요"
+            NotificationDecision.DIGEST -> "원본 알림 숨김을 시도하고 Digest에 모아뒀어요"
+            NotificationDecision.SILENT -> "원본 알림 숨김을 시도하고 조용히 보관했어요"
             NotificationDecision.PRIORITY -> "원본 알림을 바로 확인할 수 있게 유지했어요"
         }
         val highlightedReasons = highlightReasons(reasonTags)

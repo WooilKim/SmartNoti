@@ -27,7 +27,7 @@ class SettingsSuppressionInsightSummaryBuilderTest {
             ),
         )
 
-        assertEquals("선택 앱 2개 · 11건 정리 · 55% · 쿠팡 8건", summary)
+        assertEquals("선택 앱 2개 · 숨김 시도 11건 · 55% · 쿠팡 8건", summary)
     }
 
     @Test
@@ -42,7 +42,28 @@ class SettingsSuppressionInsightSummaryBuilderTest {
             ),
         )
 
-        assertEquals("꺼짐 · 앱을 선택하면 숨김 효과를 요약해줘요", summary)
+        assertEquals("꺼짐 · 원본 알림 숨김 시도 없음", summary)
+    }
+
+    @Test
+    fun builds_enabled_summary_as_hide_attempt_not_guaranteed_hide() {
+        val summary = builder.build(
+            suppressEnabled = true,
+            insights = SuppressionInsightsSummary(
+                selectedAppCount = 2,
+                selectedCapturedCount = 20,
+                selectedFilteredCount = 11,
+                selectedFilteredSharePercent = 55,
+                topSelectedAppName = "쿠팡",
+                topSelectedAppFilteredCount = 8,
+                appInsights = listOf(
+                    appInsight("쿠팡", filteredCount = 8, share = 57, suppressed = true),
+                    appInsight("토스", filteredCount = 3, share = 42, suppressed = true),
+                ),
+            ),
+        )
+
+        assertEquals("선택 앱 2개 · 숨김 시도 11건 · 55% · 쿠팡 8건", summary)
     }
 
     @Test

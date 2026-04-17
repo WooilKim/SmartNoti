@@ -8,7 +8,7 @@ class SettingsSuppressionInsightSummaryBuilder {
         insights: SuppressionInsightsSummary,
     ): String {
         if (!suppressEnabled) {
-            return "꺼짐 · 앱을 선택하면 숨김 효과를 요약해줘요"
+            return "꺼짐 · 원본 알림 숨김 시도 없음"
         }
         if (insights.selectedAppCount == 0) {
             return "숨길 앱을 아직 고르지 않았어요"
@@ -18,6 +18,6 @@ class SettingsSuppressionInsightSummaryBuilder {
             "$appName ${insights.topSelectedAppFilteredCount}건"
         } ?: "상위 앱 없음"
 
-        return "선택 앱 ${insights.selectedAppCount}개 · ${insights.selectedFilteredCount}건 정리 · ${insights.selectedFilteredSharePercent}% · $topAppSummary"
+        return "선택 앱 ${insights.selectedAppCount}개 · 숨김 시도 ${insights.selectedFilteredCount}건 · ${insights.selectedFilteredSharePercent}% · $topAppSummary"
     }
 }

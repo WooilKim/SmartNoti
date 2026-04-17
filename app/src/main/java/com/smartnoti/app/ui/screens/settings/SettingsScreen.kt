@@ -566,7 +566,7 @@ private fun SuppressionSourceSettingsCard(
             checked = settings.suppressSourceForDigestAndSilent,
             onCheckedChange = onSuppressSourceChange,
             subtitle = if (settings.suppressSourceForDigestAndSilent) {
-                "선택한 앱만 조용히 숨기고 SmartNoti 대체 알림으로 남겨요."
+                "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요. 기기/앱에 따라 원본이 남을 수 있어요."
             } else {
                 "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
             },
@@ -805,12 +805,12 @@ private fun SuppressionInsightsCard(
         )
         Text(
             text = when {
-                !suppressEnabled -> "기능을 켜고 앱을 선택하면 Settings에서 실제 숨김 효과를 바로 확인할 수 있어요."
-                summary.selectedAppCount == 0 -> "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 요약이 여기에 표시돼요."
+                !suppressEnabled -> "기능을 켜고 앱을 선택하면 원본 알림 숨김 시도 상태를 여기서 확인할 수 있어요."
+                summary.selectedAppCount == 0 -> "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 원본 숨김 시도 요약이 여기에 표시돼요."
                 summary.topSelectedAppName != null -> {
-                    "선택한 앱 알림 중 ${summary.selectedFilteredSharePercent}%가 정리됐고, ${summary.topSelectedAppName}에서 ${summary.topSelectedAppFilteredCount}건이 가장 많이 정리됐어요."
+                    "선택한 앱 알림 중 ${summary.selectedFilteredSharePercent}%에 대해 원본 숨김을 시도했고, ${summary.topSelectedAppName}에서 ${summary.topSelectedAppFilteredCount}건이 가장 많았어요. 기기/앱에 따라 원본은 계속 남아있을 수 있어요."
                 }
-                else -> "선택한 앱의 숨김 효과를 계속 집계하고 있어요."
+                else -> "선택한 앱의 원본 숨김 시도 상태를 계속 집계하고 있어요."
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

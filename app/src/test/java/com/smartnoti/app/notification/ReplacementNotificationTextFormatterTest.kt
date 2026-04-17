@@ -7,13 +7,13 @@ import org.junit.Test
 class ReplacementNotificationTextFormatterTest {
 
     @Test
-    fun digest_explanation_mentions_digest_handling_and_top_reasons() {
+    fun digest_explanation_mentions_hide_attempt_and_top_reasons() {
         val text = ReplacementNotificationTextFormatter.explanationText(
             decision = NotificationDecision.DIGEST,
             reasonTags = listOf("쇼핑 앱", "반복 알림", "조용한 시간"),
         )
 
-        assertEquals("원본 알림은 숨기고 Digest에 모아뒀어요 · 쇼핑 앱 · 반복 알림", text)
+        assertEquals("원본 알림 숨김을 시도하고 Digest에 모아뒀어요 · 쇼핑 앱 · 반복 알림", text)
     }
 
     @Test
@@ -23,7 +23,7 @@ class ReplacementNotificationTextFormatterTest {
             reasonTags = listOf("발신자 있음", "사용자 규칙", "중요 키워드"),
         )
 
-        assertEquals("원본 알림은 숨기고 조용히 보관했어요 · 사용자 규칙 · 중요 키워드", text)
+        assertEquals("원본 알림 숨김을 시도하고 조용히 보관했어요 · 사용자 규칙 · 중요 키워드", text)
     }
 
     @Test
@@ -42,6 +42,16 @@ class ReplacementNotificationTextFormatterTest {
             reasonTags = listOf("발신자 있음", " "),
         )
 
-        assertEquals("원본 알림은 숨기고 Digest에 모아뒀어요", text)
+        assertEquals("원본 알림 숨김을 시도하고 Digest에 모아뒀어요", text)
+    }
+
+    @Test
+    fun priority_explanation_does_not_claim_hiding() {
+        val text = ReplacementNotificationTextFormatter.explanationText(
+            decision = NotificationDecision.PRIORITY,
+            reasonTags = listOf("중요 키워드"),
+        )
+
+        assertEquals("원본 알림을 바로 확인할 수 있게 유지했어요 · 중요 키워드", text)
     }
 }
