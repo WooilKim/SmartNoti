@@ -49,11 +49,36 @@ class NotificationEntityMapperTest {
             reasonTags = "",
             score = null,
             isBundled = false,
+            contentSignature = "제목 본문",
         )
 
         val model = entity.toUiModel()
 
         assertEquals(emptyList<String>(), model.reasonTags)
         assertEquals(NotificationStatusUi.SILENT, model.status)
+    }
+
+    @Test
+    fun content_signature_round_trip_is_preserved() {
+        val model = NotificationUiModel(
+            id = "com.news.app:1700000100",
+            appName = "뉴스",
+            packageName = "com.news.app",
+            sender = null,
+            title = "속보",
+            body = "중요 뉴스가 도착했어요",
+            receivedAtLabel = "방금",
+            status = NotificationStatusUi.DIGEST,
+            reasonTags = listOf("반복 알림"),
+            score = 10,
+            isBundled = true,
+        )
+
+        val entity = model.toEntity(
+            postedAtMillis = 1_700_000_100_000,
+            contentSignature = "속보 중요 뉴스가 도착했어요",
+        )
+
+        assertEquals("속보 중요 뉴스가 도착했어요", entity.contentSignature)
     }
 }

@@ -1,6 +1,7 @@
 package com.smartnoti.app.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,7 +11,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -20,15 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeNotificationRepository
 import com.smartnoti.app.data.local.NotificationRepository
-import com.smartnoti.app.notification.SmartNotiNotificationStore
+import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -38,25 +32,18 @@ fun HomeScreen(
     onDigestClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val repo by remember { androidx.compose.runtime.mutableStateOf(FakeNotificationRepository()) }
+    val previewRepo = remember { FakeNotificationRepository() }
     val repository = remember(context) { NotificationRepository.getInstance(context) }
-    val captured by SmartNotiNotificationStore.capturedNotifications.collectAsState()
-
-    DisposableEffect(repository) {
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        scope.launch {
-            repository.observeAll().collect { notifications ->
-                SmartNotiNotificationStore.setNotifications(notifications)
-            }
-        }
-        onDispose { scope.cancel() }
-    }
+    val captured by repository.observeAll().collectAsState(initial = emptyList())
 
     val recent = remember(captured) {
-        if (captured.isNotEmpty()) captured + repo.getRecentNotifications().filterNot { fake ->
+        if (captured.isNotEmpty()) captured + previewRepo.getRecentNotifications().filterNot { fake ->
             captured.any { it.id == fake.id }
-        } else repo.getRecentNotifications()
+        } else previewRepo.getRecentNotifications()
     }
+    val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
+    val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
+    val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
 
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
@@ -69,14 +56,21 @@ fun HomeScreen(
         }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
-                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("오늘 알림 34개 중 중요한 7개만 먼저 보여드렸어요", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("즉시 전달 7 · Digest 19 · 조용히 정리 8", style = MaterialTheme.typography.bodyMedium)
+                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "오늘 알림 ${recent.size}개 중 중요한 ${priorityCount}개를 먼저 보여드렸어요",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "즉시 전달 $priorityCount · Digest $digestCount · 조용히 정리 $silentCount",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         }
         item {
-            androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickActionCard(title = "중요 알림", subtitle = "지금 봐야 할 알림 보기", onClick = onPriorityClick)
                 QuickActionCard(title = "정리함", subtitle = "묶인 알림 확인", onClick = onDigestClick)
             }

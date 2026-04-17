@@ -6,6 +6,7 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.withContext
+import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.collect
 class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val duplicatePolicy = DuplicateNotificationPolicy()
 
     private val processor by lazy {
         NotificationCaptureProcessor(
@@ -59,6 +61,12 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         val settingsRepository = SettingsRepository.getInstance(applicationContext)
 
         serviceScope.launch {
+            val contentSignature = duplicatePolicy.contentSignature(title = title, body = body)
+            val duplicateCount = repository.countRecentDuplicates(
+                packageName = sbn.packageName,
+                contentSignature = contentSignature,
+                sinceMillis = duplicatePolicy.windowStart(sbn.postTime),
+            ) + 1
             val captureInput = CapturedNotificationInput(
                 packageName = sbn.packageName,
                 appName = appName,
@@ -68,10 +76,10 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 postedAtMillis = sbn.postTime,
                 quietHours = false,
                 duplicateCountInWindow = 0,
-            ).withContext(settingsRepository.currentNotificationContext())
+            ).withContext(settingsRepository.currentNotificationContext(duplicateCount))
 
             val notification = processor.process(captureInput)
-            repository.save(notification, sbn.postTime)
+            repository.save(notification, sbn.postTime, contentSignature)
         }
     }
 

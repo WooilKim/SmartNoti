@@ -13,4 +13,11 @@ interface NotificationDao {
 
     @Query("SELECT * FROM notifications ORDER BY postedAtMillis DESC")
     fun observeAll(): Flow<List<NotificationEntity>>
+
+    @Query("SELECT COUNT(*) FROM notifications WHERE packageName = :packageName AND contentSignature = :contentSignature AND postedAtMillis >= :sinceMillis")
+    suspend fun countRecentDuplicates(
+        packageName: String,
+        contentSignature: String,
+        sinceMillis: Long,
+    ): Int
 }

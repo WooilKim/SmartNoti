@@ -3,7 +3,10 @@ package com.smartnoti.app.data.local
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 
-fun NotificationUiModel.toEntity(postedAtMillis: Long): NotificationEntity = NotificationEntity(
+fun NotificationUiModel.toEntity(
+    postedAtMillis: Long,
+    contentSignature: String = listOf(title, body).joinToString(" ").trim(),
+): NotificationEntity = NotificationEntity(
     id = id,
     appName = appName,
     packageName = packageName,
@@ -15,6 +18,7 @@ fun NotificationUiModel.toEntity(postedAtMillis: Long): NotificationEntity = Not
     reasonTags = reasonTags.joinToString("|"),
     score = score,
     isBundled = isBundled,
+    contentSignature = contentSignature,
 )
 
 fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(

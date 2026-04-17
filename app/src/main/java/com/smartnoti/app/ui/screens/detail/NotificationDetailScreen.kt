@@ -8,11 +8,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeNotificationRepository
+import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.ui.components.ReasonChipRow
 import com.smartnoti.app.ui.components.StatusBadge
 
@@ -21,8 +25,13 @@ fun NotificationDetailScreen(
     contentPadding: PaddingValues,
     notificationId: String,
 ) {
-    val repo = remember { FakeNotificationRepository() }
-    val notification = remember(notificationId) { repo.getNotificationById(notificationId) }
+    val context = LocalContext.current
+    val previewRepo = remember { FakeNotificationRepository() }
+    val repository = remember(context) { NotificationRepository.getInstance(context) }
+    val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
+    val notification = remember(liveNotification, notificationId) {
+        liveNotification ?: previewRepo.getNotificationById(notificationId)
+    }
 
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
