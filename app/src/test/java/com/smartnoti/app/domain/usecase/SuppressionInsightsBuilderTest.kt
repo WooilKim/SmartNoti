@@ -83,6 +83,28 @@ class SuppressionInsightsBuilderTest {
         assertEquals(0, summary.topSelectedAppFilteredCount)
     }
 
+    @Test
+    fun excludes_unsuppressed_apps_from_selected_breakdown_inputs() {
+        val summary = builder.build(
+            capturedApps = listOf(
+                capturedApp(packageName = "com.coupang.mobile", appName = "쿠팡", notificationCount = 5),
+                capturedApp(packageName = "com.news.app", appName = "뉴스", notificationCount = 5),
+            ),
+            notifications = listOf(
+                notification(id = "1", packageName = "com.coupang.mobile", appName = "쿠팡", status = NotificationStatusUi.DIGEST),
+                notification(id = "2", packageName = "com.news.app", appName = "뉴스", status = NotificationStatusUi.DIGEST),
+                notification(id = "3", packageName = "com.news.app", appName = "뉴스", status = NotificationStatusUi.SILENT),
+            ),
+            suppressedPackages = setOf("com.coupang.mobile"),
+        )
+
+        assertEquals(1, summary.selectedAppCount)
+        assertEquals("쿠팡", summary.topSelectedAppName)
+        assertEquals(1, summary.topSelectedAppFilteredCount)
+        assertTrue(summary.appInsights.first { it.packageName == "com.coupang.mobile" }.isSuppressed)
+        assertFalse(summary.appInsights.first { it.packageName == "com.news.app" }.isSuppressed)
+    }
+
     private fun capturedApp(
         packageName: String,
         appName: String,

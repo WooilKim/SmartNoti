@@ -1,10 +1,14 @@
 package com.smartnoti.app.ui.screens.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.FilterChip
@@ -22,10 +26,15 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.usecase.SuppressedAppInsight
+import com.smartnoti.app.domain.usecase.SuppressionBreakdownChartModelBuilder
+import com.smartnoti.app.domain.usecase.SuppressionBreakdownItem
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.theme.DigestOnContainer
+import com.smartnoti.app.ui.theme.GreenAccent
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,6 +45,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     val repository = remember(context) { SettingsRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
     val suppressionInsightsBuilder = remember { SuppressionInsightsBuilder() }
+    val suppressionBreakdownBuilder = remember { SuppressionBreakdownChartModelBuilder() }
     val settings by repository.observeSettings().collectAsState(
         initial = com.smartnoti.app.data.settings.SmartNotiSettings()
     )
@@ -47,6 +57,9 @@ fun SettingsScreen(contentPadding: PaddingValues) {
             notifications = notifications,
             suppressedPackages = settings.suppressedSourceApps,
         )
+    }
+    val suppressionBreakdownItems = remember(suppressionInsights) {
+        suppressionBreakdownBuilder.build(suppressionInsights.appInsights).items
     }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
@@ -129,6 +142,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
             SuppressionInsightsCard(
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 summary = suppressionInsights,
+                breakdownItems = suppressionBreakdownItems,
             )
         }
         item {
@@ -244,6 +258,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
 private fun SuppressionInsightsCard(
     suppressEnabled: Boolean,
     summary: com.smartnoti.app.domain.usecase.SuppressionInsightsSummary,
+    breakdownItems: List<SuppressionBreakdownItem>,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -273,10 +288,47 @@ private fun SuppressionInsightsCard(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (breakdownItems.isNotEmpty()) {
+            SuppressionBreakdownChart(items = breakdownItems)
+        }
         if (summary.appInsights.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 summary.appInsights.take(3).forEach { appInsight ->
                     SuppressedAppInsightRow(appInsight)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuppressionBreakdownChart(items: List<SuppressionBreakdownItem>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEach { item ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "${item.appName} · ${item.filteredCount}건",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(999.dp),
+                        ),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(item.shareFraction.coerceIn(0f, 1f))
+                            .background(
+                                color = if (item.isTopApp) GreenAccent else DigestOnContainer,
+                                shape = RoundedCornerShape(999.dp),
+                            ),
+                    )
                 }
             }
         }
