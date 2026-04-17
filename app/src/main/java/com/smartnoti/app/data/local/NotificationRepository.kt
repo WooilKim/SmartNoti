@@ -6,6 +6,7 @@ import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class NotificationRepository private constructor(
@@ -41,6 +42,14 @@ class NotificationRepository private constructor(
 
     suspend fun save(notification: NotificationUiModel, postedAtMillis: Long, contentSignature: String) {
         dao.upsert(notification.toEntity(postedAtMillis, contentSignature))
+    }
+
+    suspend fun updateNotification(notification: NotificationUiModel, contentSignature: String? = null) {
+        val postedAtMillis = notification.id.substringAfterLast(':').toLongOrNull() ?: System.currentTimeMillis()
+        val signature = contentSignature
+            ?: dao.observeAll().first().firstOrNull { it.id == notification.id }?.contentSignature
+            ?: listOf(notification.title, notification.body).joinToString(" ").trim()
+        dao.upsert(notification.toEntity(postedAtMillis, signature))
     }
 
     companion object {

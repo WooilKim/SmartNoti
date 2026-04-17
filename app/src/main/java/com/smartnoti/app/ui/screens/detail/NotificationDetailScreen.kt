@@ -1,9 +1,12 @@
 package com.smartnoti.app.ui.screens.detail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,8 +20,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeNotificationRepository
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.domain.model.RuleActionUi
+import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.ui.components.ReasonChipRow
 import com.smartnoti.app.ui.components.StatusBadge
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun NotificationDetailScreen(
@@ -28,6 +37,9 @@ fun NotificationDetailScreen(
     val context = LocalContext.current
     val previewRepo = remember { FakeNotificationRepository() }
     val repository = remember(context) { NotificationRepository.getInstance(context) }
+    val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
+    val feedbackPolicy = remember { NotificationFeedbackPolicy() }
+    val scope = remember { CoroutineScope(Dispatchers.IO) }
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = remember(liveNotification, notificationId) {
         liveNotification ?: previewRepo.getNotificationById(notificationId)
@@ -56,6 +68,43 @@ fun NotificationDetailScreen(
                 androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("왜 이렇게 처리됐나요?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     ReasonChipRow(notification.reasonTags)
+                }
+            }
+        }
+        item {
+            Card {
+                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("이 알림 학습시키기", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("한 번 누르면 상태를 바꾸고 같은 유형의 규칙도 함께 저장해요", style = MaterialTheme.typography.bodyMedium)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            scope.launch {
+                                val updated = feedbackPolicy.applyAction(notification, RuleActionUi.ALWAYS_PRIORITY)
+                                repository.updateNotification(updated)
+                                rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.ALWAYS_PRIORITY))
+                            }
+                        }) {
+                            Text("중요로 고정")
+                        }
+                        Button(onClick = {
+                            scope.launch {
+                                val updated = feedbackPolicy.applyAction(notification, RuleActionUi.DIGEST)
+                                repository.updateNotification(updated)
+                                rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.DIGEST))
+                            }
+                        }) {
+                            Text("Digest로 보내기")
+                        }
+                    }
+                    Button(onClick = {
+                        scope.launch {
+                            val updated = feedbackPolicy.applyAction(notification, RuleActionUi.SILENT)
+                            repository.updateNotification(updated)
+                            rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.SILENT))
+                        }
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Text("조용히 처리")
+                    }
                 }
             }
         }

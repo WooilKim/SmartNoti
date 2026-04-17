@@ -54,6 +54,7 @@ object PreviewData {
             type = RuleTypeUi.PERSON,
             action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
+            matchValue = "엄마",
         ),
         RuleUiModel(
             id = "r2",
@@ -62,6 +63,7 @@ object PreviewData {
             type = RuleTypeUi.APP,
             action = RuleActionUi.DIGEST,
             enabled = true,
+            matchValue = "com.coupang.mobile",
         ),
         RuleUiModel(
             id = "r3",
@@ -70,6 +72,7 @@ object PreviewData {
             type = RuleTypeUi.KEYWORD,
             action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
+            matchValue = "인증번호",
         ),
     )
 }

@@ -7,6 +7,7 @@ data class RuleUiModel(
     val type: RuleTypeUi,
     val action: RuleActionUi,
     val enabled: Boolean,
+    val matchValue: String = "",
 )
 
 enum class RuleTypeUi {

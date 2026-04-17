@@ -1,0 +1,94 @@
+package com.smartnoti.app.data.rules
+
+import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.smartnoti.app.domain.model.RuleActionUi
+import com.smartnoti.app.domain.model.RuleTypeUi
+import com.smartnoti.app.domain.model.RuleUiModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+
+private val Context.rulesDataStore by preferencesDataStore(name = "smartnoti_rules")
+
+class RulesRepository private constructor(
+    private val context: Context,
+) {
+    fun observeRules(): Flow<List<RuleUiModel>> {
+        return context.rulesDataStore.data.map { prefs ->
+            RuleStorageCodec.decode(prefs[RULES] ?: "").ifEmpty { defaultRules() }
+        }
+    }
+
+    suspend fun currentRules(): List<RuleUiModel> = observeRules().first()
+
+    suspend fun setRuleEnabled(ruleId: String, enabled: Boolean) {
+        val updated = currentRules().map { rule ->
+            if (rule.id == ruleId) rule.copy(enabled = enabled) else rule
+        }
+        persist(updated)
+    }
+
+    suspend fun upsertRule(rule: RuleUiModel) {
+        val existing = currentRules().toMutableList()
+        val index = existing.indexOfFirst {
+            it.id == rule.id || (it.type == rule.type && it.matchValue == rule.matchValue)
+        }
+        if (index >= 0) {
+            existing[index] = rule.copy(id = existing[index].id)
+        } else {
+            existing += rule
+        }
+        persist(existing)
+    }
+
+    private suspend fun persist(rules: List<RuleUiModel>) {
+        context.rulesDataStore.edit { prefs ->
+            prefs[RULES] = RuleStorageCodec.encode(rules)
+        }
+    }
+
+    companion object {
+        private val RULES = stringPreferencesKey("rules_payload")
+
+        @Volatile private var instance: RulesRepository? = null
+
+        fun getInstance(context: Context): RulesRepository {
+            return instance ?: synchronized(this) {
+                instance ?: RulesRepository(context.applicationContext).also { instance = it }
+            }
+        }
+
+        private fun defaultRules(): List<RuleUiModel> = listOf(
+            RuleUiModel(
+                id = "default-person-mom",
+                title = "엄마",
+                subtitle = "항상 바로 보기",
+                type = RuleTypeUi.PERSON,
+                action = RuleActionUi.ALWAYS_PRIORITY,
+                enabled = true,
+                matchValue = "엄마",
+            ),
+            RuleUiModel(
+                id = "default-app-coupang",
+                title = "쿠팡",
+                subtitle = "Digest로 묶기",
+                type = RuleTypeUi.APP,
+                action = RuleActionUi.DIGEST,
+                enabled = true,
+                matchValue = "com.coupang.mobile",
+            ),
+            RuleUiModel(
+                id = "default-keyword-otp",
+                title = "인증번호",
+                subtitle = "즉시 전달",
+                type = RuleTypeUi.KEYWORD,
+                action = RuleActionUi.ALWAYS_PRIORITY,
+                enabled = true,
+                matchValue = "인증번호",
+            ),
+        )
+    }
+}

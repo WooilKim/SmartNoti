@@ -3,6 +3,7 @@ package com.smartnoti.app.notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.withContext
@@ -58,9 +59,11 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         }
 
         val repository = NotificationRepository.getInstance(applicationContext)
+        val rulesRepository = RulesRepository.getInstance(applicationContext)
         val settingsRepository = SettingsRepository.getInstance(applicationContext)
 
         serviceScope.launch {
+            val rules = rulesRepository.currentRules()
             val contentSignature = duplicatePolicy.contentSignature(title = title, body = body)
             val duplicateCount = repository.countRecentDuplicates(
                 packageName = sbn.packageName,
@@ -78,7 +81,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 duplicateCountInWindow = 0,
             ).withContext(settingsRepository.currentNotificationContext(duplicateCount))
 
-            val notification = processor.process(captureInput)
+            val notification = processor.process(captureInput, rules)
             repository.save(notification, sbn.postTime, contentSignature)
         }
     }

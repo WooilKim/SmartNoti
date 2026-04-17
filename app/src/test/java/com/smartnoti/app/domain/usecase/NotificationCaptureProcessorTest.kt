@@ -2,6 +2,9 @@ package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.RuleActionUi
+import com.smartnoti.app.domain.model.RuleTypeUi
+import com.smartnoti.app.domain.model.RuleUiModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -15,6 +18,37 @@ class NotificationCaptureProcessorTest {
             shoppingPackages = setOf("com.coupang.mobile")
         )
     )
+
+    @Test
+    fun matched_user_rule_becomes_priority_with_rule_reason_tag() {
+        val result = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.kakao.talk",
+                appName = "카카오톡",
+                sender = "고객",
+                title = "고객",
+                body = "긴급 회의 일정 확인",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 0
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r1",
+                    title = "고객",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.PERSON,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "고객",
+                )
+            )
+        )
+
+        assertEquals(NotificationStatusUi.PRIORITY, result.status)
+        assertTrue(result.reasonTags.contains("사용자 규칙"))
+        assertTrue(result.reasonTags.contains("고객"))
+    }
 
     @Test
     fun vip_sender_becomes_priority_notification_with_reason_tag() {
