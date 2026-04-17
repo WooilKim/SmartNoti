@@ -34,6 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.usecase.InsightDrillDownBuilder
+import com.smartnoti.app.domain.usecase.InsightContextBadgeModelBuilder
+import com.smartnoti.app.domain.usecase.InsightContextBadgeTone
 import com.smartnoti.app.domain.usecase.InsightDrillDownCopyBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownFilter
 import com.smartnoti.app.domain.usecase.InsightDrillDownRange
@@ -43,6 +45,7 @@ import com.smartnoti.app.domain.usecase.InsightDrillDownReasonNavigationModelBui
 import com.smartnoti.app.domain.usecase.InsightDrillDownSource
 import com.smartnoti.app.domain.usecase.InsightDrillDownSummaryBuilder
 import com.smartnoti.app.navigation.Routes
+import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -68,6 +71,7 @@ fun InsightDrillDownScreen(
     val drillDownBuilder = remember { InsightDrillDownBuilder() }
     val summaryBuilder = remember { InsightDrillDownSummaryBuilder() }
     val copyBuilder = remember { InsightDrillDownCopyBuilder() }
+    val contextBadgeBuilder = remember { InsightContextBadgeModelBuilder() }
     val reasonBreakdownBuilder = remember { InsightDrillDownReasonBreakdownChartModelBuilder() }
     val reasonNavigationBuilder = remember { InsightDrillDownReasonNavigationModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
@@ -100,6 +104,9 @@ fun InsightDrillDownScreen(
             range = selectedRange,
             summary = summary,
         )
+    }
+    val contextBadge = remember(drillDownSource) {
+        contextBadgeBuilder.build(drillDownSource)
     }
     val reasonBreakdownItems = remember(summary) {
         reasonBreakdownBuilder.build(summary.topReasons).items
@@ -150,6 +157,17 @@ fun InsightDrillDownScreen(
         }
         item {
             SmartSurfaceCard {
+                ContextBadge(
+                    label = contextBadge.label,
+                    containerColor = when (contextBadge.tone) {
+                        InsightContextBadgeTone.GENERAL -> DigestContainer
+                        InsightContextBadgeTone.SUPPRESSION -> SilentContainer
+                    },
+                    contentColor = when (contextBadge.tone) {
+                        InsightContextBadgeTone.GENERAL -> DigestOnContainer
+                        InsightContextBadgeTone.SUPPRESSION -> SilentOnContainer
+                    },
+                )
                 Text(
                     text = copy.overview ?: "${selectedRange.label} 기준 정리 알림 ${result.notifications.size}건을 시간순으로 보여줘요.",
                     textAlign = TextAlign.Start,

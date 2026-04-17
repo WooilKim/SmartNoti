@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.ui.theme.DigestContainer
@@ -23,12 +24,26 @@ fun StatusBadge(status: NotificationStatusUi) {
         NotificationStatusUi.DIGEST -> Triple("Digest", DigestContainer, DigestOnContainer)
         NotificationStatusUi.SILENT -> Triple("조용히 정리", SilentContainer, SilentOnContainer)
     }
+    ContextBadge(
+        label = label,
+        containerColor = bgColor,
+        contentColor = fgColor,
+    )
+}
+
+@Composable
+fun ContextBadge(
+    label: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color,
+    contentColor: Color,
+) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
-        color = fgColor,
-        modifier = Modifier
-            .background(color = bgColor, shape = RoundedCornerShape(999.dp))
+        color = contentColor,
+        modifier = modifier
+            .background(color = containerColor, shape = RoundedCornerShape(999.dp))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }

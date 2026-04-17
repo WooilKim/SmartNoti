@@ -32,11 +32,14 @@ import com.smartnoti.app.domain.usecase.SuppressionBreakdownItem
 import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
 import com.smartnoti.app.navigation.Routes
+import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
 import com.smartnoti.app.ui.theme.DigestOnContainer
 import com.smartnoti.app.ui.theme.GreenAccent
+import com.smartnoti.app.ui.theme.SilentContainer
+import com.smartnoti.app.ui.theme.SilentOnContainer
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -280,6 +283,11 @@ private fun SuppressionInsightsCard(
     onInsightClick: (String) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        ContextBadge(
+            label = "숨김 인사이트",
+            containerColor = SilentContainer,
+            contentColor = SilentOnContainer,
+        )
         Text(
             text = "원본 알림 숨김 인사이트",
             style = MaterialTheme.typography.titleMedium,

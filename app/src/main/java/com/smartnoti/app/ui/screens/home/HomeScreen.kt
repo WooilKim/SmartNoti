@@ -44,6 +44,7 @@ import com.smartnoti.app.domain.usecase.HomeTimelineBar
 import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeTimelineRange
 import com.smartnoti.app.navigation.Routes
+import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
@@ -229,6 +230,11 @@ private fun InsightCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            ContextBadge(
+                label = "일반 인사이트",
+                containerColor = DigestContainer,
+                contentColor = DigestOnContainer,
+            )
             Text(
                 text = "SmartNoti 인사이트",
                 style = MaterialTheme.typography.labelLarge,
