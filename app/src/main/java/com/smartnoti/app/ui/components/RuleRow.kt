@@ -1,11 +1,13 @@
 package com.smartnoti.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -13,6 +15,7 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,8 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.ui.theme.BorderSubtle
 
 @Composable
 fun RuleRow(
@@ -38,14 +43,14 @@ fun RuleRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+        border = BorderStroke(1.dp, BorderSubtle),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -54,10 +59,22 @@ fun RuleRow(
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(rule.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    Text(rule.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        rule.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        rule.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        RuleMetaChip(typeLabel(rule.type))
+                        RuleMetaChip(actionLabel(rule.action))
+                    }
                     if (rule.matchValue.isNotBlank()) {
                         Text(
                             rule.matchValue.toDisplayMatchValue(rule.type),
@@ -75,32 +92,33 @@ fun RuleRow(
                     ),
                 )
             }
+            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.9f))
             Row(
                 horizontalArrangement = Arrangement.End,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                IconButton(onClick = onMoveUpClick) {
+                CompactIconButton(onClick = onMoveUpClick) {
                     Icon(
                         Icons.Outlined.KeyboardArrowUp,
                         contentDescription = "위로",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onMoveDownClick) {
+                CompactIconButton(onClick = onMoveDownClick) {
                     Icon(
                         Icons.Outlined.KeyboardArrowDown,
                         contentDescription = "아래로",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onEditClick) {
+                CompactIconButton(onClick = onEditClick) {
                     Icon(
                         Icons.Outlined.Edit,
                         contentDescription = "수정",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onDeleteClick) {
+                CompactIconButton(onClick = onDeleteClick) {
                     Icon(
                         Icons.Outlined.Delete,
                         contentDescription = "삭제",
@@ -110,6 +128,49 @@ fun RuleRow(
             }
         }
     }
+}
+
+@Composable
+private fun RuleMetaChip(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(999.dp),
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
+private fun CompactIconButton(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier,
+    ) {
+        content()
+    }
+}
+
+private fun typeLabel(type: RuleTypeUi): String = when (type) {
+    RuleTypeUi.PERSON -> "사람"
+    RuleTypeUi.APP -> "앱"
+    RuleTypeUi.KEYWORD -> "키워드"
+    RuleTypeUi.SCHEDULE -> "시간"
+    RuleTypeUi.REPEAT_BUNDLE -> "반복"
+}
+
+private fun actionLabel(action: RuleActionUi): String = when (action) {
+    RuleActionUi.ALWAYS_PRIORITY -> "즉시 전달"
+    RuleActionUi.DIGEST -> "Digest"
+    RuleActionUi.SILENT -> "조용히"
+    RuleActionUi.CONTEXTUAL -> "상황별"
 }
 
 private fun String.toDisplayMatchValue(type: RuleTypeUi): String = when (type) {

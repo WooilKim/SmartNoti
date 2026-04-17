@@ -1,5 +1,7 @@
 package com.smartnoti.app.navigation
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -16,7 +18,6 @@ import com.smartnoti.app.ui.screens.onboarding.OnboardingScreen
 import com.smartnoti.app.ui.screens.priority.PriorityScreen
 import com.smartnoti.app.ui.screens.rules.RulesScreen
 import com.smartnoti.app.ui.screens.settings.SettingsScreen
-import androidx.compose.material3.Scaffold
 
 @Composable
 fun AppNavHost(modifier: Modifier = Modifier) {
@@ -26,6 +27,7 @@ fun AppNavHost(modifier: Modifier = Modifier) {
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
                 AppBottomBar(

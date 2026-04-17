@@ -19,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.DigestGroupUiModel
+import com.smartnoti.app.ui.theme.BorderSubtle
+import com.smartnoti.app.ui.theme.DigestContainer
+import com.smartnoti.app.ui.theme.DigestOnContainer
 
 @Composable
 fun DigestGroupCard(
@@ -27,10 +30,13 @@ fun DigestGroupCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)),
+        border = BorderStroke(1.dp, BorderSubtle),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -38,28 +44,32 @@ fun DigestGroupCard(
             ) {
                 Text(
                     model.appName,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Box(
                     modifier = Modifier
                         .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            DigestContainer,
                             RoundedCornerShape(999.dp),
                         )
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
                         "${model.count}건",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = DigestOnContainer,
                     )
                 }
             }
             Text(
                 model.summary,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SectionLabel(
+                title = "최근 묶음 미리보기",
+                subtitle = "탭하면 원본 알림 상세를 확인할 수 있어요",
             )
             model.items.take(3).forEach { item ->
                 NotificationCard(model = item, onClick = onNotificationClick)

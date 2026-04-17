@@ -10,10 +10,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeRuleRepository
 import com.smartnoti.app.data.rules.RuleMoveDirection
@@ -32,6 +33,9 @@ import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import com.smartnoti.app.ui.components.RuleRow
+import com.smartnoti.app.ui.components.ScreenHeader
+import com.smartnoti.app.ui.components.SectionLabel
+import com.smartnoti.app.ui.components.SmartSurfaceCard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,24 +89,37 @@ fun RulesScreen(contentPadding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("내 규칙", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        }
-        item {
-            Text(
-                "사용자 피드백으로 만든 규칙과 기본 규칙을 함께 관리할 수 있어요",
-                style = MaterialTheme.typography.bodyMedium,
+            ScreenHeader(
+                eyebrow = "Rules",
+                title = "내 규칙",
+                subtitle = "중요 연락, 앱, 키워드, 시간대를 운영 규칙처럼 정리해 알림 흐름을 직접 제어할 수 있어요.",
             )
         }
         item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("직접 규칙 추가", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("사람 / 앱 / 키워드 규칙을 직접 만들어 알림 흐름을 제어할 수 있어요", style = MaterialTheme.typography.bodyMedium)
-                    Button(onClick = { startCreate() }) {
-                        Text("새 규칙 추가")
-                    }
+            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "직접 규칙 추가",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "사람 / 앱 / 키워드 규칙을 직접 만들어 알림 흐름을 제어할 수 있어요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = { startCreate() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                ) {
+                    Text("새 규칙 추가")
                 }
             }
+        }
+        item {
+            SectionLabel(
+                title = "활성 규칙 ${rules.size}개",
+                subtitle = "우선순위 변경, 수정, 삭제는 각 규칙 카드에서 바로 처리할 수 있어요.",
+            )
         }
         items(rules, key = { it.id }) { rule ->
             RuleRow(
@@ -127,9 +144,18 @@ fun RulesScreen(contentPadding: PaddingValues) {
     if (showEditor) {
         AlertDialog(
             onDismissRequest = { showEditor = false },
-            title = { Text(if (editingRule == null) "새 규칙 추가" else "규칙 수정") },
+            title = {
+                Text(
+                    if (editingRule == null) "새 규칙 추가" else "규칙 수정",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    SectionLabel(
+                        title = "기본 정보",
+                        subtitle = "나중에 빠르게 구분할 수 있도록 짧고 명확하게 입력하세요.",
+                    )
                     OutlinedTextField(
                         value = draftTitle,
                         onValueChange = { draftTitle = it },
@@ -137,16 +163,21 @@ fun RulesScreen(contentPadding: PaddingValues) {
                         modifier = Modifier.fillMaxWidth(),
                     )
                     if (draftType == RuleTypeUi.SCHEDULE) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             OutlinedTextField(
                                 value = scheduleStartHour,
                                 onValueChange = { scheduleStartHour = it.filter(Char::isDigit).take(2) },
                                 label = { Text("시작") },
+                                modifier = Modifier.weight(1f),
                             )
                             OutlinedTextField(
                                 value = scheduleEndHour,
                                 onValueChange = { scheduleEndHour = it.filter(Char::isDigit).take(2) },
                                 label = { Text("종료") },
+                                modifier = Modifier.weight(1f),
                             )
                         }
                     } else {
@@ -162,7 +193,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-                    Text("규칙 타입", style = MaterialTheme.typography.labelLarge)
+                    SectionLabel(title = "규칙 타입")
                     EnumSelectorRow(
                         options = listOf(RuleTypeUi.PERSON, RuleTypeUi.APP, RuleTypeUi.KEYWORD, RuleTypeUi.SCHEDULE),
                         selected = draftType,
@@ -176,7 +207,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
                             }
                         },
                     )
-                    Text("처리 방식", style = MaterialTheme.typography.labelLarge)
+                    SectionLabel(title = "처리 방식")
                     EnumSelectorRow(
                         options = listOf(RuleActionUi.ALWAYS_PRIORITY, RuleActionUi.DIGEST, RuleActionUi.SILENT),
                         selected = draftAction,
@@ -210,7 +241,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
                 }
             },
             dismissButton = {
-                Button(onClick = { showEditor = false }) {
+                TextButton(onClick = { showEditor = false }) {
                     Text("닫기")
                 }
             }
@@ -225,11 +256,16 @@ private fun <T> EnumSelectorRow(
     label: (T) -> String,
     onSelect: (T) -> Unit,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         options.forEach { option ->
-            Button(onClick = { onSelect(option) }) {
-                Text(if (option == selected) "✓ ${label(option)}" else label(option))
-            }
+            FilterChip(
+                selected = option == selected,
+                onClick = { onSelect(option) },
+                label = { Text(label(option)) },
+            )
         }
     }
 }
