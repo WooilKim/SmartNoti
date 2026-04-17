@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
+import com.smartnoti.app.domain.usecase.HomeNotificationTimeline
+import com.smartnoti.app.domain.usecase.HomeNotificationTimelineBuilder
 import com.smartnoti.app.domain.usecase.HomeReasonInsight
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
@@ -50,11 +53,13 @@ fun HomeScreen(
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
+    val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
     val recent by repository.observeAll().collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
     val insights = remember(recent) { insightsBuilder.build(recent) }
+    val timeline = remember(recent) { timelineBuilder.build(recent) }
 
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
@@ -119,6 +124,11 @@ fun HomeScreen(
                     topReasonTag = insights.topReasonTag,
                     topReasons = insights.topReasons,
                 )
+            }
+        }
+        if (timeline.buckets.isNotEmpty()) {
+            item {
+                TimelineCard(timeline = timeline)
             }
         }
         item {
@@ -213,6 +223,47 @@ private fun InsightCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun TimelineCard(timeline: HomeNotificationTimeline) {
+    SmartTimelineCardContainer {
+        Text(
+            text = "최근 흐름",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "최근 구간에서 ${timeline.totalFilteredCount}개의 알림이 정리됐어요",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            timeline.buckets.forEach { bucket ->
+                val prefix = if (bucket.isPeakFilteredBucket) "피크" else "흐름"
+                Text(
+                    text = "$prefix · ${bucket.label} · 정리 ${bucket.filteredCount}건 · 즉시 ${bucket.priorityCount}건",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SmartTimelineCardContainer(content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            content = content,
+        )
     }
 }
 
