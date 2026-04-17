@@ -11,23 +11,39 @@ import kotlinx.coroutines.flow.map
 import java.text.DateFormat
 import java.util.Date
 
-class NotificationRepository private constructor(
+class NotificationRepository(
     private val dao: NotificationDao,
 ) {
     fun observeAll(): Flow<List<NotificationUiModel>> = dao.observeAll().map { entities ->
         entities.map { it.toUiModel() }
     }
 
+    fun observeAllFiltered(hidePersistentNotifications: Boolean): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
+        notifications.filterPersistent(hidePersistentNotifications)
+    }
+
     fun observePriority(): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
-        notifications.filter { it.status == NotificationStatusUi.PRIORITY }
+        notifications.toPriorityNotifications(hidePersistentNotifications = false)
+    }
+
+    fun observePriorityFiltered(hidePersistentNotifications: Boolean): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
+        notifications.toPriorityNotifications(hidePersistentNotifications = hidePersistentNotifications)
     }
 
     fun observeDigest(): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
-        notifications.filter { it.status == NotificationStatusUi.DIGEST }
+        notifications.toDigestNotifications(hidePersistentNotifications = false)
     }
 
-    fun observeDigestGroups(): Flow<List<DigestGroupUiModel>> = observeDigest().map { notifications ->
-        notifications.toDigestGroups()
+    fun observeDigestFiltered(hidePersistentNotifications: Boolean): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
+        notifications.toDigestNotifications(hidePersistentNotifications = hidePersistentNotifications)
+    }
+
+    fun observeDigestGroups(): Flow<List<DigestGroupUiModel>> = observeAll().map { notifications ->
+        notifications.toDigestGroups(hidePersistentNotifications = false)
+    }
+
+    fun observeDigestGroupsFiltered(hidePersistentNotifications: Boolean): Flow<List<DigestGroupUiModel>> = observeAll().map { notifications ->
+        notifications.toDigestGroups(hidePersistentNotifications = hidePersistentNotifications)
     }
 
     fun observeNotification(notificationId: String): Flow<NotificationUiModel?> = observeAll().map { notifications ->
@@ -37,6 +53,20 @@ class NotificationRepository private constructor(
     fun observeCapturedApps(): Flow<List<CapturedAppSelectionItem>> = dao.observeCapturedApps().map { apps ->
         apps.toCapturedAppSelectionItems()
     }
+
+    fun observeCapturedAppsFiltered(hidePersistentNotifications: Boolean): Flow<List<CapturedAppSelectionItem>> = dao.observeCapturedApps()
+        .map { apps -> apps.toCapturedAppSelectionItems() }
+        .map { capturedApps ->
+            if (!hidePersistentNotifications) {
+                capturedApps
+            } else {
+                val visibleNotifications = observeAll().first()
+                capturedApps.toCapturedAppSelectionItems(
+                    notifications = visibleNotifications,
+                    hidePersistentNotifications = true,
+                )
+            }
+        }
 
     suspend fun countRecentDuplicates(
         packageName: String,
@@ -91,8 +121,52 @@ fun List<CapturedAppOption>.toCapturedAppSelectionItems(
     }
 }
 
-fun List<NotificationUiModel>.toDigestGroups(): List<DigestGroupUiModel> {
-    return filter { it.status == NotificationStatusUi.DIGEST }
+fun List<CapturedAppSelectionItem>.toCapturedAppSelectionItems(
+    notifications: List<NotificationUiModel>,
+    hidePersistentNotifications: Boolean,
+): List<CapturedAppSelectionItem> {
+    if (!hidePersistentNotifications) return this
+
+    val visibleCountByPackage = notifications.filterPersistent(hidePersistentNotifications = true)
+        .groupingBy(NotificationUiModel::packageName)
+        .eachCount()
+
+    return mapNotNull { app ->
+        val visibleCount = visibleCountByPackage[app.packageName] ?: 0
+        if (visibleCount == 0) {
+            null
+        } else {
+            app.copy(notificationCount = visibleCount.toLong())
+        }
+    }
+}
+
+fun List<NotificationUiModel>.filterPersistent(hidePersistentNotifications: Boolean): List<NotificationUiModel> {
+    return if (hidePersistentNotifications) {
+        filterNot(NotificationUiModel::isPersistent)
+    } else {
+        this
+    }
+}
+
+fun List<NotificationUiModel>.toPriorityNotifications(
+    hidePersistentNotifications: Boolean,
+): List<NotificationUiModel> {
+    return filterPersistent(hidePersistentNotifications)
+        .filter { it.status == NotificationStatusUi.PRIORITY }
+}
+
+fun List<NotificationUiModel>.toDigestNotifications(
+    hidePersistentNotifications: Boolean,
+): List<NotificationUiModel> {
+    return filterPersistent(hidePersistentNotifications)
+        .filter { it.status == NotificationStatusUi.DIGEST }
+}
+
+fun List<NotificationUiModel>.toDigestGroups(
+    hidePersistentNotifications: Boolean = false,
+): List<DigestGroupUiModel> {
+    return toDigestNotifications(hidePersistentNotifications)
         .groupBy { it.packageName }
         .values
         .map { grouped ->

@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
-import com.smartnoti.app.domain.usecase.PersistentNotificationFilterBuilder
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -31,15 +30,11 @@ fun PriorityScreen(
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
-    val persistentFilterBuilder = remember { PersistentNotificationFilterBuilder() }
-    val notificationsRaw by repository.observePriority().collectAsState(initial = emptyList())
     val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
-    val notifications = remember(notificationsRaw, settings.hidePersistentNotifications) {
-        persistentFilterBuilder.filter(
-            notifications = notificationsRaw,
-            hidePersistentNotifications = settings.hidePersistentNotifications,
-        )
+    val notificationsFlow = remember(repository, settings.hidePersistentNotifications) {
+        repository.observePriorityFiltered(settings.hidePersistentNotifications)
     }
+    val notifications by notificationsFlow.collectAsState(initial = emptyList())
 
     if (notifications.isEmpty()) {
         LazyColumn(

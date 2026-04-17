@@ -75,16 +75,12 @@ fun HomeScreen(
     val reasonBreakdownBuilder = remember { HomeReasonBreakdownChartModelBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
     val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
-    val persistentFilterBuilder = remember { com.smartnoti.app.domain.usecase.PersistentNotificationFilterBuilder() }
     var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
-    val recentRaw by repository.observeAll().collectAsState(initial = emptyList())
     val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
-    val recent = remember(recentRaw, settings.hidePersistentNotifications) {
-        persistentFilterBuilder.filter(
-            notifications = recentRaw,
-            hidePersistentNotifications = settings.hidePersistentNotifications,
-        )
+    val recentFlow = remember(repository, settings.hidePersistentNotifications) {
+        repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
+    val recent by recentFlow.collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }

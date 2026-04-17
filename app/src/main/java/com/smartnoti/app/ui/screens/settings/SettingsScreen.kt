@@ -62,22 +62,14 @@ fun SettingsScreen(
     val settings by repository.observeSettings().collectAsState(
         initial = com.smartnoti.app.data.settings.SmartNotiSettings()
     )
-    val capturedApps by notificationRepository.observeCapturedApps().collectAsState(initial = emptyList())
-    val notifications by notificationRepository.observeAll().collectAsState(initial = emptyList())
-    val persistentFilterBuilder = remember { com.smartnoti.app.domain.usecase.PersistentNotificationFilterBuilder() }
-    val filteredNotifications = remember(notifications, settings.hidePersistentNotifications) {
-        persistentFilterBuilder.filter(
-            notifications = notifications,
-            hidePersistentNotifications = settings.hidePersistentNotifications,
-        )
+    val filteredCapturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
+        notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
     }
-    val filteredCapturedApps = remember(capturedApps, notifications, settings.hidePersistentNotifications) {
-        persistentFilterBuilder.filterCapturedApps(
-            capturedApps = capturedApps,
-            notifications = notifications,
-            hidePersistentNotifications = settings.hidePersistentNotifications,
-        )
+    val filteredCapturedApps by filteredCapturedAppsFlow.collectAsState(initial = emptyList())
+    val filteredNotificationsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
+        notificationRepository.observeAllFiltered(settings.hidePersistentNotifications)
     }
+    val filteredNotifications by filteredNotificationsFlow.collectAsState(initial = emptyList())
     val suppressionInsights = remember(filteredCapturedApps, filteredNotifications, settings.suppressedSourceApps) {
         suppressionInsightsBuilder.build(
             capturedApps = filteredCapturedApps,

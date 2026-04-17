@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.local.filterPersistent
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.usecase.InsightDrillDownBuilder
 import com.smartnoti.app.domain.usecase.InsightContextBadgeModelBuilder
@@ -90,12 +91,14 @@ fun InsightDrillDownScreen(
     val drillDownSource = remember(source) { InsightDrillDownSource.fromRouteValue(source) }
     val currentReasonTag = (filter as? InsightDrillDownFilter.Reason)?.reasonTag
     val currentRangeRouteValue = selectedRange.routeValue
-    val result = remember(notifications, filter, selectedRange, settings.hidePersistentNotifications) {
+    val visibleNotifications = remember(notifications, settings.hidePersistentNotifications) {
+        notifications.filterPersistent(settings.hidePersistentNotifications)
+    }
+    val result = remember(visibleNotifications, filter, selectedRange) {
         drillDownBuilder.build(
-            notifications = notifications,
+            notifications = visibleNotifications,
             filter = filter,
             range = selectedRange,
-            hidePersistentNotifications = settings.hidePersistentNotifications,
         )
     }
     val summary = remember(result) {
