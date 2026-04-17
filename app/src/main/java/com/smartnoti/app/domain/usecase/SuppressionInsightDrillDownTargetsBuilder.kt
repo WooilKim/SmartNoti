@@ -8,9 +8,14 @@ class SuppressionInsightDrillDownTargetsBuilder {
         breakdownItems: List<SuppressionBreakdownItem>,
     ): SuppressionInsightDrillDownTargets {
         return SuppressionInsightDrillDownTargets(
-            topAppRoute = summary.topSelectedAppName?.let(Routes.Insight::createForApp),
+            topAppRoute = summary.topSelectedAppName?.let { appName ->
+                Routes.Insight.createForApp(appName, source = InsightDrillDownSource.SUPPRESSION.routeValue)
+            },
             breakdownRoutesByAppName = breakdownItems.associate { item ->
-                item.appName to Routes.Insight.createForApp(item.appName)
+                item.appName to Routes.Insight.createForApp(
+                    appName = item.appName,
+                    source = InsightDrillDownSource.SUPPRESSION.routeValue,
+                )
             },
         )
     }

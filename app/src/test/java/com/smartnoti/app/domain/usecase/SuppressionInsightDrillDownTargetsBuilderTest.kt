@@ -35,9 +35,9 @@ class SuppressionInsightDrillDownTargetsBuilderTest {
             ),
         )
 
-        assertEquals("insight/app/%EC%BF%A0%ED%8C%A1", targets.topAppRoute)
-        assertEquals("insight/app/%EC%BF%A0%ED%8C%A1", targets.breakdownRoutesByAppName["쿠팡"])
-        assertEquals("insight/app/%EB%89%B4%EC%8A%A4", targets.breakdownRoutesByAppName["뉴스"])
+        assertEquals("insight/app/%EC%BF%A0%ED%8C%A1?source=suppression", targets.topAppRoute)
+        assertEquals("insight/app/%EC%BF%A0%ED%8C%A1?source=suppression", targets.breakdownRoutesByAppName["쿠팡"])
+        assertEquals("insight/app/%EB%89%B4%EC%8A%A4?source=suppression", targets.breakdownRoutesByAppName["뉴스"])
     }
 
     @Test

@@ -21,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.domain.usecase.InsightDrillDownSource
 import com.smartnoti.app.ui.components.AppBottomBar
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -181,6 +182,11 @@ fun AppNavHost(
                         defaultValue = "recent_24_hours"
                         nullable = false
                     },
+                    navArgument("source") {
+                        type = NavType.StringType
+                        defaultValue = InsightDrillDownSource.GENERAL.routeValue
+                        nullable = false
+                    },
                 )
             ) { backStackEntry ->
                 InsightDrillDownScreen(
@@ -188,6 +194,7 @@ fun AppNavHost(
                     filterType = backStackEntry.arguments?.getString("filterType").orEmpty(),
                     filterValue = backStackEntry.arguments?.getString("filterValue").orEmpty(),
                     initialRange = backStackEntry.arguments?.getString("range").orEmpty(),
+                    source = backStackEntry.arguments?.getString("source").orEmpty(),
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onInsightClick = { navController.navigate(it) },
                 )

@@ -34,11 +34,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.usecase.InsightDrillDownBuilder
+import com.smartnoti.app.domain.usecase.InsightDrillDownCopyBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownFilter
 import com.smartnoti.app.domain.usecase.InsightDrillDownRange
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonNavigationItem
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonNavigationModelBuilder
+import com.smartnoti.app.domain.usecase.InsightDrillDownSource
 import com.smartnoti.app.domain.usecase.InsightDrillDownSummaryBuilder
 import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.ui.components.EmptyState
@@ -57,6 +59,7 @@ fun InsightDrillDownScreen(
     filterType: String,
     filterValue: String,
     initialRange: String,
+    source: String,
     onNotificationClick: (String) -> Unit,
     onInsightClick: (String) -> Unit,
 ) {
@@ -64,6 +67,7 @@ fun InsightDrillDownScreen(
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val drillDownBuilder = remember { InsightDrillDownBuilder() }
     val summaryBuilder = remember { InsightDrillDownSummaryBuilder() }
+    val copyBuilder = remember { InsightDrillDownCopyBuilder() }
     val reasonBreakdownBuilder = remember { InsightDrillDownReasonBreakdownChartModelBuilder() }
     val reasonNavigationBuilder = remember { InsightDrillDownReasonNavigationModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
@@ -76,6 +80,7 @@ fun InsightDrillDownScreen(
             else -> InsightDrillDownFilter.Reason(reasonTag = filterValue)
         }
     }
+    val drillDownSource = remember(source) { InsightDrillDownSource.fromRouteValue(source) }
     val currentReasonTag = (filter as? InsightDrillDownFilter.Reason)?.reasonTag
     val currentRangeRouteValue = selectedRange.routeValue
     val result = remember(notifications, filter, selectedRange) {
@@ -87,6 +92,14 @@ fun InsightDrillDownScreen(
     }
     val summary = remember(result) {
         summaryBuilder.build(result.notifications)
+    }
+    val copy = remember(filter, drillDownSource, selectedRange, summary) {
+        copyBuilder.build(
+            filter = filter,
+            source = drillDownSource,
+            range = selectedRange,
+            summary = summary,
+        )
     }
     val reasonBreakdownItems = remember(summary) {
         reasonBreakdownBuilder.build(summary.topReasons).items
@@ -109,8 +122,8 @@ fun InsightDrillDownScreen(
             item {
                 ScreenHeader(
                     eyebrow = "Insight",
-                    title = result.title,
-                    subtitle = result.subtitle,
+                    title = copy.title,
+                    subtitle = copy.subtitle ?: result.subtitle,
                 )
             }
             item {
@@ -131,14 +144,14 @@ fun InsightDrillDownScreen(
         item {
             ScreenHeader(
                 eyebrow = "Insight",
-                title = result.title,
-                subtitle = result.subtitle,
+                title = copy.title,
+                subtitle = copy.subtitle ?: result.subtitle,
             )
         }
         item {
             SmartSurfaceCard {
                 Text(
-                    text = "${selectedRange.label} 기준 정리 알림 ${result.notifications.size}건을 시간순으로 보여줘요.",
+                    text = copy.overview ?: "${selectedRange.label} 기준 정리 알림 ${result.notifications.size}건을 시간순으로 보여줘요.",
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -173,9 +186,9 @@ fun InsightDrillDownScreen(
                         contentColor = SilentOnContainer,
                     )
                 }
-                if (summary.topReasonTag != null) {
+                if (copy.topReasonText != null) {
                     Text(
-                        text = "가장 많이 보인 이유는 '${summary.topReasonTag}'예요.",
+                        text = copy.topReasonText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -184,6 +197,7 @@ fun InsightDrillDownScreen(
                     InsightReasonBreakdownChart(
                         items = reasonNavigationItems,
                         currentRangeRouteValue = currentRangeRouteValue,
+                        drillDownSource = drillDownSource,
                         onInsightClick = onInsightClick,
                     )
                 }
@@ -232,6 +246,7 @@ private fun SummaryPill(
 private fun InsightReasonBreakdownChart(
     items: List<InsightDrillDownReasonNavigationItem>,
     currentRangeRouteValue: String,
+    drillDownSource: InsightDrillDownSource,
     onInsightClick: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -244,6 +259,9 @@ private fun InsightReasonBreakdownChart(
                             Routes.Insight.createForReason(
                                 reasonTag = item.tag,
                                 range = currentRangeRouteValue,
+                                source = drillDownSource.routeValue.takeIf {
+                                    drillDownSource != InsightDrillDownSource.GENERAL
+                                },
                             )
                         )
                     }

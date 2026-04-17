@@ -28,4 +28,20 @@ class RoutesTest {
             Routes.Insight.createForReason("쇼핑 앱", "recent_3_hours"),
         )
     }
+
+    @Test
+    fun insight_create_for_app_with_source_appends_source_query() {
+        assertEquals(
+            "insight/app/%EC%BF%A0%ED%8C%A1?source=suppression",
+            Routes.Insight.createForApp("쿠팡", source = "suppression"),
+        )
+    }
+
+    @Test
+    fun insight_create_for_app_with_range_and_source_appends_both_queries() {
+        assertEquals(
+            "insight/app/%EC%BF%A0%ED%8C%A1?range=recent_24_hours&source=suppression",
+            Routes.Insight.createForApp("쿠팡", range = "recent_24_hours", source = "suppression"),
+        )
+    }
 }
