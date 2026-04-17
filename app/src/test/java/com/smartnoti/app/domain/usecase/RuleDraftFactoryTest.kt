@@ -39,4 +39,17 @@ class RuleDraftFactoryTest {
         assertEquals("com.coupang.mobile", draft.matchValue)
         assertEquals("app:com.coupang.mobile", draft.id)
     }
+
+    @Test
+    fun keyword_rule_normalizes_multiple_keywords_into_canonical_list() {
+        val draft = factory.create(
+            title = "업무 긴급 키워드",
+            matchValue = "  배포, 장애 , 배포 ,, 긴급 ",
+            type = RuleTypeUi.KEYWORD,
+            action = RuleActionUi.ALWAYS_PRIORITY,
+        )
+
+        assertEquals("배포,장애,긴급", draft.matchValue)
+        assertEquals("keyword:배포,장애,긴급", draft.id)
+    }
 }

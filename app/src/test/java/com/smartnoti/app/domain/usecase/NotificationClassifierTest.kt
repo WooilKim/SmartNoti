@@ -41,6 +41,30 @@ class NotificationClassifierTest {
     }
 
     @Test
+    fun keyword_rule_matches_any_keyword_in_comma_separated_list() {
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.chat.app",
+                title = "오늘 운영 현황",
+                body = "새로운 장애 접수가 도착했어요"
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-keywords",
+                    title = "운영 키워드",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.KEYWORD,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "배포,장애,긴급",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.PRIORITY, result)
+    }
+
+    @Test
     fun disabled_user_rule_is_ignored() {
         val result = classifier.classify(
             input = ClassificationInput(

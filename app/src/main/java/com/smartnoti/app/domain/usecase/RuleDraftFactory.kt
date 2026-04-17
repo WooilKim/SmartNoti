@@ -14,7 +14,7 @@ class RuleDraftFactory {
         existingId: String? = null,
     ): RuleUiModel {
         val normalizedTitle = title.trim()
-        val normalizedMatchValue = matchValue.trim()
+        val normalizedMatchValue = normalizeMatchValue(type, matchValue)
         return RuleUiModel(
             id = existingId ?: "${type.name.lowercase()}:$normalizedMatchValue",
             title = normalizedTitle,
@@ -24,6 +24,19 @@ class RuleDraftFactory {
             enabled = enabled,
             matchValue = normalizedMatchValue,
         )
+    }
+
+    private fun normalizeMatchValue(type: RuleTypeUi, raw: String): String {
+        val trimmed = raw.trim()
+        return when (type) {
+            RuleTypeUi.KEYWORD -> trimmed
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .joinToString(",")
+            else -> trimmed
+        }
     }
 
     private fun RuleActionUi.toSubtitle(): String = when (this) {

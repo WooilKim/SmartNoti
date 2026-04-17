@@ -48,7 +48,11 @@ class NotificationClassifier(
             rule.enabled && when (rule.type) {
                 RuleTypeUi.PERSON -> !input.sender.isNullOrBlank() && input.sender.equals(rule.matchValue, ignoreCase = true)
                 RuleTypeUi.APP -> input.packageName.equals(rule.matchValue, ignoreCase = true)
-                RuleTypeUi.KEYWORD -> content.contains(rule.matchValue, ignoreCase = true)
+                RuleTypeUi.KEYWORD -> rule.matchValue
+                    .split(',')
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .any { keyword -> content.contains(keyword, ignoreCase = true) }
                 else -> false
             }
         }

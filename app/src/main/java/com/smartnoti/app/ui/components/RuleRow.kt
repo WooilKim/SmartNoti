@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 
 @Composable
@@ -38,7 +39,7 @@ fun RuleRow(
                     Text(rule.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Text(rule.subtitle, style = MaterialTheme.typography.bodySmall)
                     if (rule.matchValue.isNotBlank()) {
-                        Text(rule.matchValue, style = MaterialTheme.typography.labelSmall)
+                        Text(rule.matchValue.toDisplayMatchValue(rule.type), style = MaterialTheme.typography.labelSmall)
                     }
                 }
                 Switch(checked = rule.enabled, onCheckedChange = onCheckedChange)
@@ -53,4 +54,9 @@ fun RuleRow(
             }
         }
     }
+}
+
+private fun String.toDisplayMatchValue(type: RuleTypeUi): String = when (type) {
+    RuleTypeUi.KEYWORD -> split(',').joinToString(", ") { it.trim() }
+    else -> this
 }

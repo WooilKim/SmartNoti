@@ -124,6 +124,11 @@ fun RulesScreen(contentPadding: PaddingValues) {
                         value = draftMatchValue,
                         onValueChange = { draftMatchValue = it },
                         label = { Text(matchLabelFor(draftType)) },
+                        supportingText = {
+                            if (draftType == RuleTypeUi.KEYWORD) {
+                                Text("쉼표로 여러 키워드를 입력할 수 있어요. 예: 배포,장애,긴급")
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text("규칙 타입", style = MaterialTheme.typography.labelLarge)
