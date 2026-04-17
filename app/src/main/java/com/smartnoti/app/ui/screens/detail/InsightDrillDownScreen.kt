@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.usecase.InsightDrillDownBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownFilter
+import com.smartnoti.app.domain.usecase.InsightDrillDownRange
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownItem
 import com.smartnoti.app.domain.usecase.InsightDrillDownSummaryBuilder
@@ -53,14 +57,19 @@ fun InsightDrillDownScreen(
     val summaryBuilder = remember { InsightDrillDownSummaryBuilder() }
     val reasonBreakdownBuilder = remember { InsightDrillDownReasonBreakdownChartModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
+    var selectedRange by remember { mutableStateOf(InsightDrillDownRange.RECENT_24_HOURS) }
     val filter = remember(filterType, filterValue) {
         when (filterType) {
             "app" -> InsightDrillDownFilter.App(appName = filterValue)
             else -> InsightDrillDownFilter.Reason(reasonTag = filterValue)
         }
     }
-    val result = remember(notifications, filter) {
-        drillDownBuilder.build(notifications = notifications, filter = filter)
+    val result = remember(notifications, filter, selectedRange) {
+        drillDownBuilder.build(
+            notifications = notifications,
+            filter = filter,
+            range = selectedRange,
+        )
     }
     val summary = remember(result) {
         summaryBuilder.build(result.notifications)
@@ -109,10 +118,27 @@ fun InsightDrillDownScreen(
         item {
             SmartSurfaceCard {
                 Text(
-                    text = "선택한 인사이트에 연결된 정리 알림 ${result.notifications.size}건을 시간순으로 보여줘요.",
+                    text = "${selectedRange.label} 기준 정리 알림 ${result.notifications.size}건을 시간순으로 보여줘요.",
                     textAlign = TextAlign.Start,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    InsightRangeChip(
+                        range = InsightDrillDownRange.RECENT_3_HOURS,
+                        selectedRange = selectedRange,
+                        onRangeSelected = { selectedRange = it },
+                    )
+                    InsightRangeChip(
+                        range = InsightDrillDownRange.RECENT_24_HOURS,
+                        selectedRange = selectedRange,
+                        onRangeSelected = { selectedRange = it },
+                    )
+                    InsightRangeChip(
+                        range = InsightDrillDownRange.ALL,
+                        selectedRange = selectedRange,
+                        onRangeSelected = { selectedRange = it },
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SummaryPill(
                         label = "Digest",
@@ -143,6 +169,19 @@ fun InsightDrillDownScreen(
             NotificationCard(model = notification, onClick = onNotificationClick)
         }
     }
+}
+
+@Composable
+private fun InsightRangeChip(
+    range: InsightDrillDownRange,
+    selectedRange: InsightDrillDownRange,
+    onRangeSelected: (InsightDrillDownRange) -> Unit,
+) {
+    FilterChip(
+        selected = range == selectedRange,
+        onClick = { onRangeSelected(range) },
+        label = { Text(range.label) },
+    )
 }
 
 @Composable

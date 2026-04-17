@@ -7,6 +7,8 @@ class InsightDrillDownBuilder {
     fun build(
         notifications: List<NotificationUiModel>,
         filter: InsightDrillDownFilter,
+        range: InsightDrillDownRange = InsightDrillDownRange.ALL,
+        nowMillis: Long = System.currentTimeMillis(),
     ): InsightDrillDownResult {
         val filteredNotifications = notifications.filter { notification ->
             notification.status == NotificationStatusUi.DIGEST ||
@@ -16,6 +18,8 @@ class InsightDrillDownBuilder {
                 is InsightDrillDownFilter.App -> notification.appName == filter.appName
                 is InsightDrillDownFilter.Reason -> filter.reasonTag in notification.reasonTags
             }
+        }.filter { notification ->
+            range.includes(notification.id, nowMillis)
         }.sortedByDescending(NotificationUiModel::id)
 
         val title = when (filter) {
@@ -45,3 +49,19 @@ data class InsightDrillDownResult(
     val subtitle: String,
     val notifications: List<NotificationUiModel>,
 )
+
+enum class InsightDrillDownRange(
+    val label: String,
+    val windowMillis: Long?,
+) {
+    RECENT_3_HOURS(label = "최근 3시간", windowMillis = 3 * 60 * 60 * 1000L),
+    RECENT_24_HOURS(label = "최근 24시간", windowMillis = 24 * 60 * 60 * 1000L),
+    ALL(label = "전체", windowMillis = null),
+}
+
+private fun InsightDrillDownRange.includes(notificationId: String, nowMillis: Long): Boolean {
+    val windowMillis = windowMillis ?: return true
+    val postedAtMillis = notificationId.substringAfterLast(':').replace("_", "").toLongOrNull() ?: return false
+    val windowStart = nowMillis - windowMillis
+    return postedAtMillis in windowStart..nowMillis
+}
