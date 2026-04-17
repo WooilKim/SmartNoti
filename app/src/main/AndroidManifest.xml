@@ -18,6 +18,10 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".notification.SmartNotiNotificationActionReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

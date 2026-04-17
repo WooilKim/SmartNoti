@@ -41,6 +41,16 @@ class SmartNotiNotifier(
         }
         val contentTitle = title.ifBlank { "$appName 알림" }
         val contentText = body.ifBlank { "$appName 알림이 SmartNoti에서 정리되었어요." }
+        val replacementNotificationId = NotificationReplacementIds.idFor(
+            packageName = packageName,
+            decision = decision,
+        )
+        val parentRoute = ReplacementNotificationEntryRoutes.forDecision(decision)
+        val contentIntent = createContentIntent(
+            notificationId = notificationId,
+            parentRoute = parentRoute,
+            requestCode = replacementNotificationId,
+        )
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(contentTitle)
@@ -58,15 +68,19 @@ class SmartNotiNotifier(
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
-            .setContentIntent(
-                createContentIntent(
+            .setContentIntent(contentIntent)
+            .addAction(
+                android.R.drawable.ic_input_add,
+                ACTION_LABEL_PROMOTE_TO_PRIORITY,
+                createPromoteToPriorityIntent(
                     notificationId = notificationId,
-                    parentRoute = ReplacementNotificationEntryRoutes.forDecision(decision),
-                    requestCode = NotificationReplacementIds.idFor(
-                        packageName = packageName,
-                        decision = decision,
-                    ),
-                )
+                    replacementNotificationId = replacementNotificationId,
+                ),
+            )
+            .addAction(
+                android.R.drawable.ic_menu_view,
+                ACTION_LABEL_OPEN,
+                contentIntent,
             )
             .build()
 
@@ -75,7 +89,7 @@ class SmartNotiNotifier(
         }
 
         notificationManager.notify(
-            NotificationReplacementIds.idFor(packageName = packageName, decision = decision),
+            replacementNotificationId,
             notification,
         )
     }
@@ -126,11 +140,40 @@ class SmartNotiNotifier(
         )
     }
 
+    private fun createPromoteToPriorityIntent(
+        notificationId: String,
+        replacementNotificationId: Int,
+    ): PendingIntent {
+        val intent = Intent(context, SmartNotiNotificationActionReceiver::class.java).apply {
+            action = ACTION_PROMOTE_TO_PRIORITY
+            putExtra(EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(EXTRA_REPLACEMENT_NOTIFICATION_ID, replacementNotificationId)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            promoteRequestCode(notificationId),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    private fun promoteRequestCode(notificationId: String): Int {
+        return promoteRequestCodeForTest(notificationId)
+    }
+
     companion object {
         const val DIGEST_CHANNEL_ID = "smartnoti_digest"
         const val SILENT_CHANNEL_ID = "smartnoti_silent"
+        const val ACTION_PROMOTE_TO_PRIORITY = "com.smartnoti.app.action.PROMOTE_TO_PRIORITY"
+        const val ACTION_LABEL_OPEN = "열기"
+        const val ACTION_LABEL_PROMOTE_TO_PRIORITY = "중요로 고정"
         const val EXTRA_NOTIFICATION_ID = "com.smartnoti.app.extra.NOTIFICATION_ID"
         const val EXTRA_PARENT_ROUTE = "com.smartnoti.app.extra.PARENT_ROUTE"
+        const val EXTRA_REPLACEMENT_NOTIFICATION_ID = "com.smartnoti.app.extra.REPLACEMENT_NOTIFICATION_ID"
+
+        internal fun promoteRequestCodeForTest(notificationId: String): Int {
+            return (notificationId.hashCode() * 31) + ACTION_PROMOTE_TO_PRIORITY.hashCode()
+        }
     }
 }
 
