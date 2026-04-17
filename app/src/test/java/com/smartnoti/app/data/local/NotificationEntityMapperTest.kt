@@ -1,7 +1,10 @@
 package com.smartnoti.app.data.local
 
+import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.VibrationMode
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -22,6 +25,11 @@ class NotificationEntityMapperTest {
             score = 95,
             isBundled = false,
             isPersistent = false,
+            deliveryChannelKey = "smartnoti_priority",
+            alertLevel = AlertLevel.LOUD,
+            vibrationMode = VibrationMode.STRONG,
+            headsUpEnabled = true,
+            lockScreenVisibility = LockScreenVisibilityMode.PRIVATE,
         )
 
         val entity = model.toEntity(postedAtMillis = 1_700_000_000_000)
@@ -29,11 +37,18 @@ class NotificationEntityMapperTest {
 
         assertEquals(model.id, entity.id)
         assertEquals("중요한 사람|발신자 있음", entity.reasonTags)
+        assertEquals("smartnoti_priority", entity.deliveryChannelKey)
+        assertEquals("LOUD", entity.alertLevel)
         assertEquals(model.id, roundTrip.id)
         assertEquals(model.appName, roundTrip.appName)
         assertEquals(model.sender, roundTrip.sender)
         assertEquals(model.status, roundTrip.status)
         assertEquals(model.reasonTags, roundTrip.reasonTags)
+        assertEquals(model.deliveryChannelKey, roundTrip.deliveryChannelKey)
+        assertEquals(model.alertLevel, roundTrip.alertLevel)
+        assertEquals(model.vibrationMode, roundTrip.vibrationMode)
+        assertEquals(model.headsUpEnabled, roundTrip.headsUpEnabled)
+        assertEquals(model.lockScreenVisibility, roundTrip.lockScreenVisibility)
     }
 
     @Test
@@ -52,12 +67,49 @@ class NotificationEntityMapperTest {
             isBundled = false,
             isPersistent = false,
             contentSignature = "제목 본문",
+            deliveryChannelKey = "smartnoti_silent",
+            alertLevel = "NONE",
+            vibrationMode = "OFF",
+            headsUpEnabled = false,
+            lockScreenVisibility = "SECRET",
         )
 
         val model = entity.toUiModel()
 
         assertEquals(emptyList<String>(), model.reasonTags)
         assertEquals(NotificationStatusUi.SILENT, model.status)
+        assertEquals("smartnoti_silent", model.deliveryChannelKey)
+        assertEquals(AlertLevel.NONE, model.alertLevel)
+    }
+
+    @Test
+    fun legacy_delivery_metadata_values_are_mapped_to_new_enums() {
+        val entity = NotificationEntity(
+            id = "id-legacy",
+            appName = "앱",
+            packageName = "com.example.app",
+            sender = null,
+            title = "제목",
+            body = "본문",
+            postedAtMillis = 1_700_000_000_000,
+            status = NotificationStatusUi.DIGEST.name,
+            reasonTags = "",
+            score = null,
+            isBundled = false,
+            isPersistent = false,
+            contentSignature = "제목 본문",
+            deliveryChannelKey = "smartnoti_digest",
+            alertLevel = "HIGH",
+            vibrationMode = "DEFAULT",
+            headsUpEnabled = true,
+            lockScreenVisibility = "PRIVATE",
+        )
+
+        val model = entity.toUiModel()
+
+        assertEquals(AlertLevel.LOUD, model.alertLevel)
+        assertEquals(VibrationMode.STRONG, model.vibrationMode)
+        assertEquals(LockScreenVisibilityMode.PRIVATE, model.lockScreenVisibility)
     }
 
     @Test
@@ -75,6 +127,11 @@ class NotificationEntityMapperTest {
             score = 10,
             isBundled = true,
             isPersistent = false,
+            deliveryChannelKey = "smartnoti_digest",
+            alertLevel = AlertLevel.SOFT,
+            vibrationMode = VibrationMode.LIGHT,
+            headsUpEnabled = false,
+            lockScreenVisibility = LockScreenVisibilityMode.PRIVATE,
         )
 
         val entity = model.toEntity(

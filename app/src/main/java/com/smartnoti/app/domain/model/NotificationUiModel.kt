@@ -13,6 +13,11 @@ data class NotificationUiModel(
     val score: Int? = null,
     val isBundled: Boolean = false,
     val isPersistent: Boolean = false,
+    val deliveryChannelKey: String = DeliveryProfile.CHANNEL_SILENT,
+    val alertLevel: AlertLevel = AlertLevel.NONE,
+    val vibrationMode: VibrationMode = VibrationMode.OFF,
+    val headsUpEnabled: Boolean = false,
+    val lockScreenVisibility: LockScreenVisibilityMode = LockScreenVisibilityMode.SECRET,
 )
 
 enum class NotificationStatusUi {

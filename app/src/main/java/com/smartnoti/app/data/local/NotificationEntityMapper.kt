@@ -1,7 +1,10 @@
 package com.smartnoti.app.data.local
 
+import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.VibrationMode
 
 fun NotificationUiModel.toEntity(
     postedAtMillis: Long,
@@ -20,6 +23,11 @@ fun NotificationUiModel.toEntity(
     isBundled = isBundled,
     isPersistent = isPersistent,
     contentSignature = contentSignature,
+    deliveryChannelKey = deliveryChannelKey,
+    alertLevel = alertLevel.name,
+    vibrationMode = vibrationMode.name,
+    headsUpEnabled = headsUpEnabled,
+    lockScreenVisibility = lockScreenVisibility.name,
 )
 
 fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
@@ -35,4 +43,29 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     score = score,
     isBundled = isBundled,
     isPersistent = isPersistent,
+    deliveryChannelKey = deliveryChannelKey,
+    alertLevel = alertLevel.toAlertLevel(),
+    vibrationMode = vibrationMode.toVibrationMode(),
+    headsUpEnabled = headsUpEnabled,
+    lockScreenVisibility = lockScreenVisibility.toLockScreenVisibility(),
 )
+
+private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {
+    "LOUD", "HIGH" -> AlertLevel.LOUD
+    "SOFT", "LOW" -> AlertLevel.SOFT
+    "QUIET" -> AlertLevel.QUIET
+    "NONE", "MINIMAL" -> AlertLevel.NONE
+    else -> AlertLevel.NONE
+}
+
+private fun String.toVibrationMode(): VibrationMode = when (trim().uppercase()) {
+    "STRONG", "DEFAULT" -> VibrationMode.STRONG
+    "LIGHT" -> VibrationMode.LIGHT
+    "OFF" -> VibrationMode.OFF
+    else -> VibrationMode.OFF
+}
+
+private fun String.toLockScreenVisibility(): LockScreenVisibilityMode {
+    return runCatching { enumValueOf<LockScreenVisibilityMode>(trim().uppercase()) }
+        .getOrDefault(LockScreenVisibilityMode.SECRET)
+}

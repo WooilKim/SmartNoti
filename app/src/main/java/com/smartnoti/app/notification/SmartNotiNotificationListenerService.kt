@@ -7,6 +7,7 @@ import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.withContext
+import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
 import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
@@ -33,7 +34,8 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 vipSenders = setOf("엄마", "팀장"),
                 priorityKeywords = setOf("인증번호", "OTP", "결제"),
                 shoppingPackages = setOf("com.coupang.mobile"),
-            )
+            ),
+            deliveryProfilePolicy = DeliveryProfilePolicy(),
         )
     }
 
@@ -106,7 +108,11 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 isPersistent = isPersistent && !shouldBypassPersistentHiding,
             ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
-            val notification = processor.process(captureInput, rules)
+            val notification = processor.process(
+                input = captureInput,
+                rules = rules,
+                settings = settings,
+            )
             repository.save(notification, sbn.postTime, contentSignature)
 
             val decision = when (notification.status) {

@@ -1,6 +1,8 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.NotificationContext
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
@@ -8,10 +10,12 @@ import com.smartnoti.app.domain.model.RuleUiModel
 
 class NotificationCaptureProcessor(
     private val classifier: NotificationClassifier,
+    private val deliveryProfilePolicy: DeliveryProfilePolicy,
 ) {
     fun process(
         input: CapturedNotificationInput,
         rules: List<RuleUiModel> = emptyList(),
+        settings: SmartNotiSettings,
     ): NotificationUiModel {
         val decision = classifier.classify(
             com.smartnoti.app.domain.model.ClassificationInput(
@@ -24,6 +28,17 @@ class NotificationCaptureProcessor(
                 hourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
             ),
             rules = rules,
+        )
+        val deliveryProfile = deliveryProfilePolicy.resolve(
+            decision = decision,
+            settings = settings,
+            context = NotificationContext(
+                quietHoursEnabled = input.quietHours,
+                quietHoursPolicy = com.smartnoti.app.domain.usecase.QuietHoursPolicy(startHour = 0, endHour = 0),
+                currentHourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+                duplicateCountInWindow = input.duplicateCountInWindow,
+            ),
+            isPersistent = input.isPersistent,
         )
 
         return NotificationUiModel(
@@ -38,6 +53,11 @@ class NotificationCaptureProcessor(
             reasonTags = buildReasonTags(input, decision, rules),
             score = null,
             isPersistent = input.isPersistent,
+            deliveryChannelKey = deliveryProfile.channelKey,
+            alertLevel = deliveryProfile.alertLevel,
+            vibrationMode = deliveryProfile.vibrationMode,
+            headsUpEnabled = deliveryProfile.headsUpEnabled,
+            lockScreenVisibility = deliveryProfile.lockScreenVisibilityMode,
         )
     }
 

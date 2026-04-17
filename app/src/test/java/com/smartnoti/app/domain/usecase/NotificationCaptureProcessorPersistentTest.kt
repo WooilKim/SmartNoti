@@ -1,6 +1,9 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.data.settings.SmartNotiSettings
+import com.smartnoti.app.domain.model.AlertLevel
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,7 +15,8 @@ class NotificationCaptureProcessorPersistentTest {
             vipSenders = emptySet(),
             priorityKeywords = emptySet(),
             shoppingPackages = emptySet(),
-        )
+        ),
+        deliveryProfilePolicy = DeliveryProfilePolicy(),
     )
 
     @Test
@@ -30,13 +34,14 @@ class NotificationCaptureProcessorPersistentTest {
                 isPersistent = true,
             ),
             rules = emptyList(),
+            settings = SmartNotiSettings(),
         )
 
         assertTrue("지속 알림" in notification.reasonTags)
     }
 
     @Test
-    fun marks_persistent_field_on_notification_ui_model() {
+    fun marks_persistent_field_on_notification_ui_model_and_uses_safe_delivery_metadata() {
         val notification = processor.process(
             input = CapturedNotificationInput(
                 packageName = "com.android.camera",
@@ -50,9 +55,13 @@ class NotificationCaptureProcessorPersistentTest {
                 isPersistent = true,
             ),
             rules = emptyList(),
+            settings = SmartNotiSettings(),
         )
 
         assertTrue(notification.isPersistent)
+        assertEquals("smartnoti_silent", notification.deliveryChannelKey)
+        assertEquals(AlertLevel.NONE, notification.alertLevel)
+        assertFalse(notification.headsUpEnabled)
     }
 
     @Test
@@ -70,6 +79,7 @@ class NotificationCaptureProcessorPersistentTest {
                 isPersistent = false,
             ),
             rules = emptyList(),
+            settings = SmartNotiSettings(),
         )
 
         assertFalse("지속 알림" in notification.reasonTags)

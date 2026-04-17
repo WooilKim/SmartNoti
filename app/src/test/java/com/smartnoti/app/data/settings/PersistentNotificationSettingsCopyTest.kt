@@ -1,5 +1,6 @@
 package com.smartnoti.app.data.settings
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,5 +19,23 @@ class PersistentNotificationSettingsCopyTest {
         )
 
         assertFalse(settings.protectCriticalPersistentNotifications)
+    }
+
+    @Test
+    fun delivery_profile_defaults_are_exposed_in_settings_model() {
+        val settings = SmartNotiSettings()
+
+        assertEquals("LOUD", settings.priorityAlertLevel)
+        assertEquals("STRONG", settings.priorityVibrationMode)
+        assertEquals(true, settings.priorityHeadsUpEnabled)
+        assertEquals("PRIVATE", settings.priorityLockScreenVisibility)
+        assertEquals("SOFT", settings.digestAlertLevel)
+        assertEquals("LIGHT", settings.digestVibrationMode)
+        assertEquals(false, settings.digestHeadsUpEnabled)
+        assertEquals("PRIVATE", settings.digestLockScreenVisibility)
+        assertEquals("NONE", settings.silentAlertLevel)
+        assertEquals("OFF", settings.silentVibrationMode)
+        assertEquals(false, settings.silentHeadsUpEnabled)
+        assertEquals("SECRET", settings.silentLockScreenVisibility)
     }
 }

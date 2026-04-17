@@ -18,4 +18,9 @@ data class NotificationEntity(
     val isBundled: Boolean,
     val isPersistent: Boolean,
     val contentSignature: String,
+    val deliveryChannelKey: String = "smartnoti_silent",
+    val alertLevel: String = "NONE",
+    val vibrationMode: String = "OFF",
+    val headsUpEnabled: Boolean = false,
+    val lockScreenVisibility: String = "SECRET",
 )
