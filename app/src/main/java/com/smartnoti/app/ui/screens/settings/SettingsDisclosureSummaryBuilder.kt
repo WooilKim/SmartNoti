@@ -17,6 +17,14 @@ class SettingsDisclosureSummaryBuilder {
         return listOf(alertLabel, vibrationLabel, headsUpLabel, lockScreenLabel).joinToString(" · ")
     }
 
+    fun buildAllDeliveryProfilesSummary(settings: SmartNotiSettings): String {
+        return listOf(
+            "Priority ${buildDeliveryProfileSummary(settings.priorityAlertLevel, settings.priorityVibrationMode, settings.priorityHeadsUpEnabled, settings.priorityLockScreenVisibility)}",
+            "Digest ${buildDeliveryProfileSummary(settings.digestAlertLevel, settings.digestVibrationMode, settings.digestHeadsUpEnabled, settings.digestLockScreenVisibility)}",
+            "Silent ${buildDeliveryProfileSummary(settings.silentAlertLevel, settings.silentVibrationMode, settings.silentHeadsUpEnabled, settings.silentLockScreenVisibility)}",
+        ).joinToString(" / ")
+    }
+
     fun buildSuppressionAdvancedSummary(settings: SmartNotiSettings): String {
         return listOf(
             "목록 숨김 ${settings.hidePersistentNotifications.toOnOffKorean()}",

@@ -319,7 +319,7 @@ private fun DeliveryProfileSettingsCard(
             subtitle = if (expanded) {
                 "설정한 값은 SmartNoti가 원본 알림을 대신 보여줄 때만 적용돼요."
             } else {
-                "Priority · ${summaryBuilder.buildDeliveryProfileSummary(settings.priorityAlertLevel, settings.priorityVibrationMode, settings.priorityHeadsUpEnabled, settings.priorityLockScreenVisibility)}"
+                summaryBuilder.buildAllDeliveryProfilesSummary(settings)
             },
             expanded = expanded,
             onExpandedChange = onExpandedChange,

@@ -22,6 +22,31 @@ class SettingsDisclosureSummaryBuilderTest {
     }
 
     @Test
+    fun all_delivery_profiles_summary_includes_priority_digest_and_silent_context() {
+        val summary = builder.buildAllDeliveryProfilesSummary(
+            settings = SmartNotiSettings(
+                priorityAlertLevel = "LOUD",
+                priorityVibrationMode = "STRONG",
+                priorityHeadsUpEnabled = true,
+                priorityLockScreenVisibility = "PRIVATE",
+                digestAlertLevel = "SOFT",
+                digestVibrationMode = "LIGHT",
+                digestHeadsUpEnabled = false,
+                digestLockScreenVisibility = "PRIVATE",
+                silentAlertLevel = "NONE",
+                silentVibrationMode = "OFF",
+                silentHeadsUpEnabled = false,
+                silentLockScreenVisibility = "SECRET",
+            )
+        )
+
+        assertEquals(
+            "Priority 강함 · 강하게 · Heads-up 켜짐 · 내용 숨김 / Digest 보통 · 가볍게 · Heads-up 꺼짐 · 내용 숨김 / Silent 없음 · 끔 · Heads-up 꺼짐 · 숨김",
+            summary,
+        )
+    }
+
+    @Test
     fun suppression_advanced_summary_reflects_toggle_states() {
         val summary = builder.buildSuppressionAdvancedSummary(
             SmartNotiSettings(
