@@ -8,6 +8,8 @@ import com.smartnoti.app.domain.model.NotificationUiModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.text.DateFormat
+import java.util.Date
 
 class NotificationRepository private constructor(
     private val dao: NotificationDao,
@@ -30,6 +32,10 @@ class NotificationRepository private constructor(
 
     fun observeNotification(notificationId: String): Flow<NotificationUiModel?> = observeAll().map { notifications ->
         notifications.firstOrNull { it.id == notificationId }
+    }
+
+    fun observeCapturedApps(): Flow<List<CapturedAppSelectionItem>> = dao.observeCapturedApps().map { apps ->
+        apps.toCapturedAppSelectionItems()
     }
 
     suspend fun countRecentDuplicates(
@@ -69,6 +75,19 @@ class NotificationRepository private constructor(
             ).fallbackToDestructiveMigration().build()
             return NotificationRepository(db.notificationDao())
         }
+    }
+}
+
+fun List<CapturedAppOption>.toCapturedAppSelectionItems(
+    formatter: DateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT),
+): List<CapturedAppSelectionItem> {
+    return map { option ->
+        CapturedAppSelectionItem(
+            packageName = option.packageName,
+            appName = option.appName,
+            notificationCount = option.notificationCount,
+            lastSeenLabel = formatter.format(Date(option.lastPostedAtMillis)),
+        )
     }
 }
 

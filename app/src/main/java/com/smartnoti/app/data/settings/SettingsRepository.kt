@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.smartnoti.app.domain.model.NotificationContext
 import com.smartnoti.app.domain.usecase.QuietHoursPolicy
@@ -25,6 +26,7 @@ class SettingsRepository private constructor(
                 quietHoursEndHour = prefs[QUIET_HOURS_END_HOUR] ?: 7,
                 digestHours = listOf(12, 18, 21),
                 suppressSourceForDigestAndSilent = prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: false,
+                suppressedSourceApps = prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet(),
             )
         }
     }
@@ -55,6 +57,25 @@ class SettingsRepository private constructor(
         }
     }
 
+    suspend fun setSuppressedSourceApps(packageNames: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[SUPPRESSED_SOURCE_APPS] = packageNames
+        }
+    }
+
+    suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            val updated = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet()).toMutableSet().apply {
+                if (enabled) {
+                    add(packageName)
+                } else {
+                    remove(packageName)
+                }
+            }
+            prefs[SUPPRESSED_SOURCE_APPS] = updated
+        }
+    }
+
     fun observeOnboardingCompleted(): Flow<Boolean> {
         return context.dataStore.data.map { prefs ->
             prefs[ONBOARDING_COMPLETED] ?: false
@@ -76,6 +97,7 @@ class SettingsRepository private constructor(
         private val QUIET_HOURS_START_HOUR = intPreferencesKey("quiet_hours_start_hour")
         private val QUIET_HOURS_END_HOUR = intPreferencesKey("quiet_hours_end_hour")
         private val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT = booleanPreferencesKey("suppress_source_for_digest_and_silent")
+        private val SUPPRESSED_SOURCE_APPS = stringSetPreferencesKey("suppressed_source_apps")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
 
         @Volatile private var instance: SettingsRepository? = null

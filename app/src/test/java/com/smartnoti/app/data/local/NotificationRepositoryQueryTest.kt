@@ -2,9 +2,28 @@ package com.smartnoti.app.data.local
 
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NotificationRepositoryQueryTest {
+
+    @Test
+    fun captured_app_selection_items_preserve_count_and_labels() {
+        val apps = listOf(
+            CapturedAppOption(
+                packageName = "com.coupang.mobile",
+                appName = "쿠팡",
+                lastPostedAtMillis = 1_700_000_000_000,
+                notificationCount = 2,
+            )
+        ).toCapturedAppSelectionItems()
+
+        assertEquals(1, apps.size)
+        assertEquals("com.coupang.mobile", apps.first().packageName)
+        assertEquals("쿠팡", apps.first().appName)
+        assertEquals(2, apps.first().notificationCount)
+        assertTrue(apps.first().lastSeenLabel.isNotBlank())
+    }
 
     @Test
     fun digest_groups_are_built_from_digest_notifications() {

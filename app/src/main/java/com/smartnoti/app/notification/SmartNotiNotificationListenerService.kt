@@ -23,6 +23,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val duplicatePolicy = DuplicateNotificationPolicy()
+    private val notifier by lazy { SmartNotiNotifier(applicationContext) }
 
     private val processor by lazy {
         NotificationCaptureProcessor(
@@ -36,6 +37,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        notifier.ensureChannels()
         val repository = NotificationRepository.getInstance(applicationContext)
         serviceScope.launch {
             repository.observeAll().collect { notifications ->
@@ -94,12 +96,21 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             }
             if (NotificationSuppressionPolicy.shouldSuppressSourceNotification(
                     suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                    suppressedApps = settings.suppressedSourceApps,
+                    packageName = sbn.packageName,
                     decision = decision,
                 )
             ) {
                 withContext(Dispatchers.Main) {
                     cancelNotification(sbn.key)
                 }
+                notifier.notifySuppressedNotification(
+                    decision = decision,
+                    packageName = sbn.packageName,
+                    appName = appName,
+                    title = notification.title,
+                    body = notification.body,
+                )
             }
         }
     }

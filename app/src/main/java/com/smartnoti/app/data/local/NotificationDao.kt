@@ -14,6 +14,16 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications ORDER BY postedAtMillis DESC")
     fun observeAll(): Flow<List<NotificationEntity>>
 
+    @Query(
+        """
+        SELECT packageName, appName, MAX(postedAtMillis) AS lastPostedAtMillis, COUNT(*) AS notificationCount
+        FROM notifications
+        GROUP BY packageName, appName
+        ORDER BY lastPostedAtMillis DESC
+        """
+    )
+    fun observeCapturedApps(): Flow<List<CapturedAppOption>>
+
     @Query("SELECT COUNT(*) FROM notifications WHERE packageName = :packageName AND contentSignature = :contentSignature AND postedAtMillis >= :sinceMillis")
     suspend fun countRecentDuplicates(
         packageName: String,

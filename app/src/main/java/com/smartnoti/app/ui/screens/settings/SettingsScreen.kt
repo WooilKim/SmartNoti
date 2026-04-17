@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -16,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
@@ -28,9 +30,11 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
+    val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
     val settings by repository.observeSettings().collectAsState(
         initial = com.smartnoti.app.data.settings.SmartNotiSettings()
     )
+    val capturedApps by notificationRepository.observeCapturedApps().collectAsState(initial = emptyList())
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     LazyColumn(
@@ -116,7 +120,7 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    "켜면 중요하지 않은 알림은 SmartNoti에만 남기고, 기기 알림창의 원본 알림은 바로 감춰요.",
+                    "켜면 선택한 앱의 중요하지 않은 알림은 SmartNoti에만 남기고, 기기 알림창의 원본 알림은 바로 감춰요.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -137,6 +141,40 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                             }
                         }
                     )
+                }
+                Text(
+                    if (settings.suppressSourceForDigestAndSilent) {
+                        "선택한 앱만 조용히 숨기고 SmartNoti 대체 알림으로 남겨요."
+                    } else {
+                        "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (capturedApps.isEmpty()) {
+                    Text(
+                        "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    capturedApps.forEach { app ->
+                        FilterChip(
+                            selected = app.packageName in settings.suppressedSourceApps,
+                            enabled = settings.suppressSourceForDigestAndSilent,
+                            onClick = {
+                                if (settings.suppressSourceForDigestAndSilent) {
+                                    val enabled = app.packageName !in settings.suppressedSourceApps
+                                    scope.launch {
+                                        repository.toggleSuppressedSourceApp(app.packageName, enabled)
+                                    }
+                                }
+                            },
+                            label = {
+                                Text("${app.appName} · ${app.notificationCount}건 · ${app.lastSeenLabel}")
+                            },
+                        )
+                    }
                 }
             }
         }
