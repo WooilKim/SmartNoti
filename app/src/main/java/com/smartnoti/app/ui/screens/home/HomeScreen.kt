@@ -36,6 +36,8 @@ import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
 import com.smartnoti.app.domain.usecase.HomeNotificationTimeline
 import com.smartnoti.app.domain.usecase.HomeNotificationTimelineBuilder
+import com.smartnoti.app.domain.usecase.HomeReasonBreakdownChartModelBuilder
+import com.smartnoti.app.domain.usecase.HomeReasonBreakdownItem
 import com.smartnoti.app.domain.usecase.HomeReasonInsight
 import com.smartnoti.app.domain.usecase.HomeTimelineBar
 import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
@@ -62,6 +64,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
+    val reasonBreakdownBuilder = remember { HomeReasonBreakdownChartModelBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
     val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
     var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
@@ -70,6 +73,9 @@ fun HomeScreen(
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
     val insights = remember(recent) { insightsBuilder.build(recent) }
+    val reasonBreakdownItems = remember(insights) {
+        reasonBreakdownBuilder.build(insights.topReasons).items
+    }
     val timeline = remember(recent, selectedTimelineRange) {
         timelineBuilder.build(
             notifications = recent,
@@ -142,6 +148,7 @@ fun HomeScreen(
                     topFilteredAppCount = insights.topFilteredAppCount,
                     topReasonTag = insights.topReasonTag,
                     topReasons = insights.topReasons,
+                    reasonBreakdownItems = reasonBreakdownItems,
                 )
             }
         }
@@ -184,6 +191,7 @@ private fun InsightCard(
     topFilteredAppCount: Int,
     topReasonTag: String?,
     topReasons: List<HomeReasonInsight>,
+    reasonBreakdownItems: List<HomeReasonBreakdownItem>,
 ) {
     val primaryLine = buildString {
         append("지금까지 ")
@@ -243,6 +251,43 @@ private fun InsightCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            if (reasonBreakdownItems.isNotEmpty()) {
+                ReasonBreakdownChart(items = reasonBreakdownItems)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReasonBreakdownChart(items: List<HomeReasonBreakdownItem>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items.forEach { item ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "${item.tag} · ${item.count}건",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(999.dp),
+                        ),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(item.shareFraction.coerceIn(0f, 1f))
+                            .background(
+                                color = if (item.isTopReason) GreenAccent else DigestOnContainer,
+                                shape = RoundedCornerShape(999.dp),
+                            ),
+                    )
+                }
             }
         }
     }
