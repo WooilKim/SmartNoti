@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.RuleActionUi
+import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ReasonChipRow
@@ -41,9 +42,13 @@ fun NotificationDetailScreen(
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val feedbackPolicy = remember { NotificationFeedbackPolicy() }
+    val deliveryProfileSummaryBuilder = remember { NotificationDetailDeliveryProfileSummaryBuilder() }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
+    val deliveryProfileSummary = remember(notification) {
+        notification?.let(deliveryProfileSummaryBuilder::build)
+    }
 
     if (notification == null) {
         LazyColumn(
@@ -116,6 +121,54 @@ fun NotificationDetailScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     ReasonChipRow(notification.reasonTags)
+                }
+            }
+        }
+        if (deliveryProfileSummary != null) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            "어떻게 전달되나요?",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            deliveryProfileSummary.overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "전달 모드 · ${deliveryProfileSummary.deliveryModeLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "소리 · ${deliveryProfileSummary.alertLevelLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "진동 · ${deliveryProfileSummary.vibrationLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "Heads-up · ${deliveryProfileSummary.headsUpLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "잠금화면 · ${deliveryProfileSummary.lockScreenVisibilityLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
         }
