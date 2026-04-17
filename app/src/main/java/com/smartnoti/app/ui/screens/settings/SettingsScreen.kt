@@ -98,6 +98,7 @@ fun SettingsScreen(
     }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
     val summaryBuilder = remember { SettingsDisclosureSummaryBuilder() }
+    val suppressionSummaryBuilder = remember { SettingsSuppressionInsightSummaryBuilder() }
     var deliveryProfilesExpanded by rememberSaveable { mutableStateOf(false) }
     var suppressionAdvancedExpanded by rememberSaveable { mutableStateOf(false) }
     var suppressedAppsExpanded by rememberSaveable { mutableStateOf(false) }
@@ -195,6 +196,7 @@ fun SettingsScreen(
             SuppressionInsightsCard(
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 summary = suppressionInsights,
+                summaryBuilder = suppressionSummaryBuilder,
                 breakdownItems = suppressionBreakdownItems,
                 topAppRoute = suppressionDrillDownTargets.topAppRoute,
                 breakdownRoutesByAppName = suppressionDrillDownTargets.breakdownRoutesByAppName,
@@ -742,6 +744,7 @@ private fun NotificationAccessCard() {
 private fun SuppressionInsightsCard(
     suppressEnabled: Boolean,
     summary: SuppressionInsightsSummary,
+    summaryBuilder: SettingsSuppressionInsightSummaryBuilder,
     breakdownItems: List<SuppressionBreakdownItem>,
     topAppRoute: String?,
     breakdownRoutesByAppName: Map<String, String>,
@@ -760,11 +763,10 @@ private fun SuppressionInsightsCard(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = when {
-                !suppressEnabled -> "아직 원본 알림 숨기기가 꺼져 있어요"
-                summary.selectedAppCount == 0 -> "숨기기 대상 앱을 아직 고르지 않았어요"
-                else -> "선택한 ${summary.selectedAppCount}개 앱에서 ${summary.selectedFilteredCount}개 알림을 SmartNoti가 대신 정리했어요"
-            },
+            text = summaryBuilder.build(
+                suppressEnabled = suppressEnabled,
+                insights = summary,
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
