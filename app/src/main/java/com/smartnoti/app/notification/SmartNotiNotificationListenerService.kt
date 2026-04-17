@@ -14,8 +14,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 
 class SmartNotiNotificationListenerService : NotificationListenerService() {
 
@@ -64,6 +66,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
         serviceScope.launch {
             val rules = rulesRepository.currentRules()
+            val settings = settingsRepository.observeSettings().first()
             val contentSignature = duplicatePolicy.contentSignature(title = title, body = body)
             val duplicateCount = repository.countRecentDuplicates(
                 packageName = sbn.packageName,
@@ -83,6 +86,21 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
             val notification = processor.process(captureInput, rules)
             repository.save(notification, sbn.postTime, contentSignature)
+
+            val decision = when (notification.status) {
+                com.smartnoti.app.domain.model.NotificationStatusUi.PRIORITY -> com.smartnoti.app.domain.model.NotificationDecision.PRIORITY
+                com.smartnoti.app.domain.model.NotificationStatusUi.DIGEST -> com.smartnoti.app.domain.model.NotificationDecision.DIGEST
+                com.smartnoti.app.domain.model.NotificationStatusUi.SILENT -> com.smartnoti.app.domain.model.NotificationDecision.SILENT
+            }
+            if (NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                    suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                    decision = decision,
+                )
+            ) {
+                withContext(Dispatchers.Main) {
+                    cancelNotification(sbn.key)
+                }
+            }
         }
     }
 

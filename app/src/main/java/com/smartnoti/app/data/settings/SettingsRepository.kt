@@ -24,6 +24,7 @@ class SettingsRepository private constructor(
                 quietHoursStartHour = prefs[QUIET_HOURS_START_HOUR] ?: 23,
                 quietHoursEndHour = prefs[QUIET_HOURS_END_HOUR] ?: 7,
                 digestHours = listOf(12, 18, 21),
+                suppressSourceForDigestAndSilent = prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: false,
             )
         }
     }
@@ -48,6 +49,12 @@ class SettingsRepository private constructor(
         }
     }
 
+    suspend fun setSuppressSourceForDigestAndSilent(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = enabled
+        }
+    }
+
     fun observeOnboardingCompleted(): Flow<Boolean> {
         return context.dataStore.data.map { prefs ->
             prefs[ONBOARDING_COMPLETED] ?: false
@@ -68,6 +75,7 @@ class SettingsRepository private constructor(
         private val QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")
         private val QUIET_HOURS_START_HOUR = intPreferencesKey("quiet_hours_start_hour")
         private val QUIET_HOURS_END_HOUR = intPreferencesKey("quiet_hours_end_hour")
+        private val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT = booleanPreferencesKey("suppress_source_for_digest_and_silent")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
 
         @Volatile private var instance: SettingsRepository? = null

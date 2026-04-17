@@ -104,6 +104,44 @@ fun SettingsScreen(contentPadding: PaddingValues) {
         }
         item {
             SectionLabel(
+                title = "소스 알림 처리",
+                subtitle = "Digest·조용히 결정 시 원본 알림을 숨길지 선택할 수 있어요.",
+            )
+        }
+        item {
+            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "Digest/조용히 결정 시 원본 알림 숨기기",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    "켜면 중요하지 않은 알림은 SmartNoti에만 남기고, 기기 알림창의 원본 알림은 바로 감춰요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "원본 알림 숨기기",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Switch(
+                        checked = settings.suppressSourceForDigestAndSilent,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                repository.setSuppressSourceForDigestAndSilent(enabled)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+        item {
+            SectionLabel(
                 title = "Digest 시간",
                 subtitle = "덜 중요한 알림을 묶어 보여줄 정리 시점을 확인해요.",
             )
