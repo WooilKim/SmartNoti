@@ -1,12 +1,18 @@
 package com.smartnoti.app.domain.usecase
 
 class InsightDrillDownReasonNavigationModelBuilder {
+    private val affordanceBuilder = InsightBreakdownRowAffordanceBuilder()
+
     fun build(
         items: List<InsightDrillDownReasonBreakdownItem>,
         currentReasonTag: String?,
     ): List<InsightDrillDownReasonNavigationItem> {
         return items.map { item ->
             val isCurrentReason = currentReasonTag == item.tag
+            val affordance = affordanceBuilder.build(
+                isClickable = !isCurrentReason,
+                isCurrent = isCurrentReason,
+            )
             InsightDrillDownReasonNavigationItem(
                 tag = item.tag,
                 count = item.count,
@@ -14,11 +20,8 @@ class InsightDrillDownReasonNavigationModelBuilder {
                 isTopReason = item.isTopReason,
                 isCurrentReason = isCurrentReason,
                 isClickable = !isCurrentReason,
-                hintLabel = if (isCurrentReason) {
-                    "현재 보고 있는 이유"
-                } else {
-                    "탭해서 이 이유만 다시 보기"
-                },
+                hintLabel = affordance.hintLabel,
+                showChevron = affordance.showChevron,
             )
         }
     }
@@ -32,4 +35,5 @@ data class InsightDrillDownReasonNavigationItem(
     val isCurrentReason: Boolean,
     val isClickable: Boolean,
     val hintLabel: String,
+    val showChevron: Boolean,
 )

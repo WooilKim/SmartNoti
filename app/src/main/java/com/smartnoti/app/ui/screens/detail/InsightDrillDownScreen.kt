@@ -314,7 +314,7 @@ private fun InsightReasonBreakdownChart(
                             },
                         )
                     }
-                    if (item.isClickable) {
+                    if (item.showChevron) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,

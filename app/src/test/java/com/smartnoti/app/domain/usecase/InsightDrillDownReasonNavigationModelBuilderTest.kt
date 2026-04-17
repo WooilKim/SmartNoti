@@ -25,7 +25,8 @@ class InsightDrillDownReasonNavigationModelBuilderTest {
 
         assertEquals(1, models.size)
         assertTrue(models[0].isClickable)
-        assertEquals("탭해서 이 이유만 다시 보기", models[0].hintLabel)
+        assertTrue(models[0].showChevron)
+        assertEquals("탭해서 자세히 보기", models[0].hintLabel)
     }
 
     @Test
@@ -49,8 +50,10 @@ class InsightDrillDownReasonNavigationModelBuilderTest {
         )
 
         assertFalse(models[0].isClickable)
-        assertEquals("현재 보고 있는 이유", models[0].hintLabel)
+        assertFalse(models[0].showChevron)
+        assertEquals("현재 보고 있는 항목", models[0].hintLabel)
         assertTrue(models[1].isClickable)
-        assertEquals("탭해서 이 이유만 다시 보기", models[1].hintLabel)
+        assertTrue(models[1].showChevron)
+        assertEquals("탭해서 자세히 보기", models[1].hintLabel)
     }
 }
