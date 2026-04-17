@@ -9,6 +9,7 @@ data class CapturedNotificationInput(
     val postedAtMillis: Long,
     val quietHours: Boolean,
     val duplicateCountInWindow: Int,
+    val isPersistent: Boolean = false,
 )
 
 fun CapturedNotificationInput.withContext(context: NotificationContext): CapturedNotificationInput {

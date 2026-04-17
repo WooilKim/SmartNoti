@@ -64,10 +64,24 @@ fun SettingsScreen(
     )
     val capturedApps by notificationRepository.observeCapturedApps().collectAsState(initial = emptyList())
     val notifications by notificationRepository.observeAll().collectAsState(initial = emptyList())
-    val suppressionInsights = remember(capturedApps, notifications, settings.suppressedSourceApps) {
-        suppressionInsightsBuilder.build(
-            capturedApps = capturedApps,
+    val persistentFilterBuilder = remember { com.smartnoti.app.domain.usecase.PersistentNotificationFilterBuilder() }
+    val filteredNotifications = remember(notifications, settings.hidePersistentNotifications) {
+        persistentFilterBuilder.filter(
             notifications = notifications,
+            hidePersistentNotifications = settings.hidePersistentNotifications,
+        )
+    }
+    val filteredCapturedApps = remember(capturedApps, settings.hidePersistentNotifications) {
+        if (settings.hidePersistentNotifications) {
+            capturedApps.filterNot { app -> app.appName.contains("시스템") }
+        } else {
+            capturedApps
+        }
+    }
+    val suppressionInsights = remember(filteredCapturedApps, filteredNotifications, settings.suppressedSourceApps) {
+        suppressionInsightsBuilder.build(
+            capturedApps = filteredCapturedApps,
+            notifications = filteredNotifications,
             suppressedPackages = settings.suppressedSourceApps,
         )
     }
@@ -206,14 +220,68 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (capturedApps.isEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "지속 알림은 SmartNoti 목록에서 숨기기",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Switch(
+                        checked = settings.hidePersistentNotifications,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                repository.setHidePersistentNotifications(enabled)
+                            }
+                        }
+                    )
+                }
+                Text(
+                    if (settings.hidePersistentNotifications) {
+                        "충전 중·정리 중 같은 고정 알림은 목록/인사이트 집계에서 제외해요."
+                    } else {
+                        "지속 알림도 일반 알림처럼 집계와 목록에 포함해요."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "지속 알림은 시스템 알림센터에서도 숨기기",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Switch(
+                        checked = settings.hidePersistentSourceNotifications,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                repository.setHidePersistentSourceNotifications(enabled)
+                            }
+                        }
+                    )
+                }
+                Text(
+                    if (settings.hidePersistentSourceNotifications) {
+                        "고정 시스템 알림이 올라오면 SmartNoti가 바로 감춰요. 중요한 시스템 알림까지 숨길 수 있어 주의가 필요해요."
+                    } else {
+                        "고정 시스템 알림은 기기 알림센터에 그대로 남겨둬요."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (filteredCapturedApps.isEmpty()) {
                     Text(
                         "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    capturedApps.forEach { app ->
+                    filteredCapturedApps.forEach { app ->
                         FilterChip(
                             selected = app.packageName in settings.suppressedSourceApps,
                             enabled = settings.suppressSourceForDigestAndSilent,

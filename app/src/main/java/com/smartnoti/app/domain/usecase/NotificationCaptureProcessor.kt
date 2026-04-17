@@ -31,12 +31,13 @@ class NotificationCaptureProcessor(
             appName = input.appName,
             packageName = input.packageName,
             sender = input.sender,
-            title = input.title.ifBlank { input.appName },
+            title = input.title,
             body = input.body,
             receivedAtLabel = "방금",
             status = decision.toUiStatus(),
             reasonTags = buildReasonTags(input, decision, rules),
             score = null,
+            isPersistent = input.isPersistent,
         )
     }
 
@@ -72,6 +73,9 @@ class NotificationCaptureProcessor(
         }
         if (input.duplicateCountInWindow >= 3) {
             tags += "반복 알림"
+        }
+        if (input.isPersistent) {
+            tags += "지속 알림"
         }
         if (listOf(input.title, input.body).joinToString(" ").contains("인증번호")) {
             tags += "중요 키워드"

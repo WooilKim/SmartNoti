@@ -10,6 +10,7 @@ import com.smartnoti.app.domain.model.withContext
 import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
+import com.smartnoti.app.domain.usecase.PersistentNotificationPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val duplicatePolicy = DuplicateNotificationPolicy()
+    private val persistentNotificationPolicy = PersistentNotificationPolicy()
     private val notifier by lazy { SmartNotiNotifier(applicationContext) }
 
     private val processor by lazy {
@@ -69,7 +71,14 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         serviceScope.launch {
             val rules = rulesRepository.currentRules()
             val settings = settingsRepository.observeSettings().first()
-            val contentSignature = duplicatePolicy.contentSignature(title = title, body = body)
+            val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
+                isOngoing = sbn.isOngoing,
+                isClearable = sbn.isClearable,
+            )
+            val contentSignature = duplicatePolicy.contentSignature(
+                title = title,
+                body = body,
+            ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
             val duplicateCount = repository.countRecentDuplicates(
                 packageName = sbn.packageName,
                 contentSignature = contentSignature,
@@ -83,8 +92,9 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 body = body,
                 postedAtMillis = sbn.postTime,
                 quietHours = false,
-                duplicateCountInWindow = 0,
-            ).withContext(settingsRepository.currentNotificationContext(duplicateCount))
+                duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
+                isPersistent = isPersistent,
+            ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
             val notification = processor.process(captureInput, rules)
             repository.save(notification, sbn.postTime, contentSignature)
@@ -94,7 +104,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 com.smartnoti.app.domain.model.NotificationStatusUi.DIGEST -> com.smartnoti.app.domain.model.NotificationDecision.DIGEST
                 com.smartnoti.app.domain.model.NotificationStatusUi.SILENT -> com.smartnoti.app.domain.model.NotificationDecision.SILENT
             }
-            if (NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+            if ((isPersistent && settings.hidePersistentSourceNotifications) || NotificationSuppressionPolicy.shouldSuppressSourceNotification(
                     suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
                     suppressedApps = settings.suppressedSourceApps,
                     packageName = sbn.packageName,

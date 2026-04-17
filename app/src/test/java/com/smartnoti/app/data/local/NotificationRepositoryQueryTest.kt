@@ -39,6 +39,7 @@ class NotificationRepositoryQueryTest {
             reasonTags = "쇼핑 앱|반복 알림",
             score = 30,
             isBundled = true,
+            isPersistent = false,
             contentSignature = "오늘의 특가 장바구니 상품이 할인 중이에요",
         )
         val digestTwo = digestOne.copy(

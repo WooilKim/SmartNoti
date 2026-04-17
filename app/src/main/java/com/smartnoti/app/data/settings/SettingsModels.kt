@@ -7,4 +7,6 @@ data class SmartNotiSettings(
     val digestHours: List<Int> = listOf(12, 18, 21),
     val suppressSourceForDigestAndSilent: Boolean = false,
     val suppressedSourceApps: Set<String> = emptySet(),
+    val hidePersistentNotifications: Boolean = true,
+    val hidePersistentSourceNotifications: Boolean = false,
 )

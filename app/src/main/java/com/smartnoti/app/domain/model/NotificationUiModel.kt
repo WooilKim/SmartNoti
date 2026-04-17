@@ -12,6 +12,7 @@ data class NotificationUiModel(
     val reasonTags: List<String>,
     val score: Int? = null,
     val isBundled: Boolean = false,
+    val isPersistent: Boolean = false,
 )
 
 enum class NotificationStatusUi {

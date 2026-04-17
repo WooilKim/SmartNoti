@@ -18,6 +18,7 @@ fun NotificationUiModel.toEntity(
     reasonTags = reasonTags.joinToString("|"),
     score = score,
     isBundled = isBundled,
+    isPersistent = isPersistent,
     contentSignature = contentSignature,
 )
 
@@ -33,4 +34,5 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     reasonTags = reasonTags.takeIf { it.isNotBlank() }?.split("|") ?: emptyList(),
     score = score,
     isBundled = isBundled,
+    isPersistent = isPersistent,
 )

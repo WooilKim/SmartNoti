@@ -21,6 +21,7 @@ class NotificationEntityMapperTest {
             reasonTags = listOf("중요한 사람", "발신자 있음"),
             score = 95,
             isBundled = false,
+            isPersistent = false,
         )
 
         val entity = model.toEntity(postedAtMillis = 1_700_000_000_000)
@@ -49,6 +50,7 @@ class NotificationEntityMapperTest {
             reasonTags = "",
             score = null,
             isBundled = false,
+            isPersistent = false,
             contentSignature = "제목 본문",
         )
 
@@ -72,6 +74,7 @@ class NotificationEntityMapperTest {
             reasonTags = listOf("반복 알림"),
             score = 10,
             isBundled = true,
+            isPersistent = false,
         )
 
         val entity = model.toEntity(

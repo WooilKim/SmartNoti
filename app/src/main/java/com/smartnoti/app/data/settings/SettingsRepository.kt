@@ -27,6 +27,8 @@ class SettingsRepository private constructor(
                 digestHours = listOf(12, 18, 21),
                 suppressSourceForDigestAndSilent = prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: false,
                 suppressedSourceApps = prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet(),
+                hidePersistentNotifications = prefs[HIDE_PERSISTENT_NOTIFICATIONS] ?: true,
+                hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: false,
             )
         }
     }
@@ -60,6 +62,18 @@ class SettingsRepository private constructor(
     suspend fun setSuppressedSourceApps(packageNames: Set<String>) {
         context.dataStore.edit { prefs ->
             prefs[SUPPRESSED_SOURCE_APPS] = packageNames
+        }
+    }
+
+    suspend fun setHidePersistentNotifications(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[HIDE_PERSISTENT_NOTIFICATIONS] = enabled
+        }
+    }
+
+    suspend fun setHidePersistentSourceNotifications(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] = enabled
         }
     }
 
@@ -98,6 +112,8 @@ class SettingsRepository private constructor(
         private val QUIET_HOURS_END_HOUR = intPreferencesKey("quiet_hours_end_hour")
         private val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT = booleanPreferencesKey("suppress_source_for_digest_and_silent")
         private val SUPPRESSED_SOURCE_APPS = stringSetPreferencesKey("suppressed_source_apps")
+        private val HIDE_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_notifications")
+        private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
 
         @Volatile private var instance: SettingsRepository? = null

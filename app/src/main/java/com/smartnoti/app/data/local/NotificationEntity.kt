@@ -16,5 +16,6 @@ data class NotificationEntity(
     val reasonTags: String,
     val score: Int?,
     val isBundled: Boolean,
+    val isPersistent: Boolean,
     val contentSignature: String,
 )
