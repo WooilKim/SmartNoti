@@ -21,6 +21,8 @@ import com.smartnoti.app.domain.model.RuleUiModel
 fun RuleRow(
     rule: RuleUiModel,
     onCheckedChange: (Boolean) -> Unit,
+    onMoveUpClick: () -> Unit = {},
+    onMoveDownClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
 ) {
@@ -45,6 +47,12 @@ fun RuleRow(
                 Switch(checked = rule.enabled, onCheckedChange = onCheckedChange)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onMoveUpClick) {
+                    Text("위로")
+                }
+                Button(onClick = onMoveDownClick) {
+                    Text("아래로")
+                }
                 Button(onClick = onEditClick) {
                     Text("수정")
                 }

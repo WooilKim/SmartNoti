@@ -17,6 +17,41 @@ class NotificationClassifierTest {
     )
 
     @Test
+    fun earlier_matching_rule_wins_when_multiple_rules_match() {
+        val input = ClassificationInput(
+            packageName = "com.chat.app",
+            title = "오늘 운영 현황",
+            body = "긴급 장애 대응이 필요해요"
+        )
+
+        val result = classifier.classify(
+            input = input,
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-digest",
+                    title = "운영 Digest",
+                    subtitle = "Digest로 묶기",
+                    type = RuleTypeUi.KEYWORD,
+                    action = RuleActionUi.DIGEST,
+                    enabled = true,
+                    matchValue = "장애,긴급",
+                ),
+                RuleUiModel(
+                    id = "r-priority",
+                    title = "운영 긴급",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.KEYWORD,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "장애,긴급",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.DIGEST, result)
+    }
+
+    @Test
     fun user_person_rule_is_applied_before_default_logic() {
         val result = classifier.classify(
             input = ClassificationInput(

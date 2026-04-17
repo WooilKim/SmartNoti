@@ -13,6 +13,31 @@ import kotlinx.coroutines.flow.map
 
 private val Context.rulesDataStore by preferencesDataStore(name = "smartnoti_rules")
 
+enum class RuleMoveDirection {
+    UP,
+    DOWN,
+}
+
+fun moveRule(
+    rules: List<RuleUiModel>,
+    ruleId: String,
+    direction: RuleMoveDirection,
+): List<RuleUiModel> {
+    val currentIndex = rules.indexOfFirst { it.id == ruleId }
+    if (currentIndex == -1) return rules
+
+    val targetIndex = when (direction) {
+        RuleMoveDirection.UP -> currentIndex - 1
+        RuleMoveDirection.DOWN -> currentIndex + 1
+    }
+    if (targetIndex !in rules.indices) return rules
+
+    val mutable = rules.toMutableList()
+    val item = mutable.removeAt(currentIndex)
+    mutable.add(targetIndex, item)
+    return mutable.toList()
+}
+
 class RulesRepository private constructor(
     private val context: Context,
 ) {
@@ -46,6 +71,10 @@ class RulesRepository private constructor(
 
     suspend fun deleteRule(ruleId: String) {
         persist(currentRules().filterNot { it.id == ruleId })
+    }
+
+    suspend fun moveRule(ruleId: String, direction: RuleMoveDirection) {
+        persist(moveRule(currentRules(), ruleId, direction))
     }
 
     private suspend fun persist(rules: List<RuleUiModel>) {

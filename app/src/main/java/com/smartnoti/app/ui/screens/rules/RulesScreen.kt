@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeRuleRepository
+import com.smartnoti.app.data.rules.RuleMoveDirection
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
@@ -99,6 +100,12 @@ fun RulesScreen(contentPadding: PaddingValues) {
                 rule = rule,
                 onCheckedChange = { checked ->
                     scope.launch { repository.setRuleEnabled(rule.id, checked) }
+                },
+                onMoveUpClick = {
+                    scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
+                },
+                onMoveDownClick = {
+                    scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
                 },
                 onEditClick = { startEdit(rule) },
                 onDeleteClick = {
