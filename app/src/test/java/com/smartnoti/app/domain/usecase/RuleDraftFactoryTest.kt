@@ -52,4 +52,17 @@ class RuleDraftFactoryTest {
         assertEquals("배포,장애,긴급", draft.matchValue)
         assertEquals("keyword:배포,장애,긴급", draft.id)
     }
+
+    @Test
+    fun schedule_rule_normalizes_overnight_hours_into_canonical_range() {
+        val draft = factory.create(
+            title = "야간 근무",
+            matchValue = " 23-7 ",
+            type = RuleTypeUi.SCHEDULE,
+            action = RuleActionUi.DIGEST,
+        )
+
+        assertEquals("23-7", draft.matchValue)
+        assertEquals("schedule:23-7", draft.id)
+    }
 }

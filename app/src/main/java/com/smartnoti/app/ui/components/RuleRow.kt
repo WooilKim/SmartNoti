@@ -66,5 +66,6 @@ fun RuleRow(
 
 private fun String.toDisplayMatchValue(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.KEYWORD -> split(',').joinToString(", ") { it.trim() }
+    RuleTypeUi.SCHEDULE -> replace("-", ":00 ~ ") + ":00"
     else -> this
 }

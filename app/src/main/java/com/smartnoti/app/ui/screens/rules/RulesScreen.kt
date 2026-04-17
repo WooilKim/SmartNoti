@@ -51,6 +51,8 @@ fun RulesScreen(contentPadding: PaddingValues) {
     var draftMatchValue by remember { mutableStateOf("") }
     var draftType by remember { mutableStateOf(RuleTypeUi.PERSON) }
     var draftAction by remember { mutableStateOf(RuleActionUi.ALWAYS_PRIORITY) }
+    var scheduleStartHour by remember { mutableStateOf("9") }
+    var scheduleEndHour by remember { mutableStateOf("18") }
 
     fun startCreate() {
         editingRule = null
@@ -58,6 +60,8 @@ fun RulesScreen(contentPadding: PaddingValues) {
         draftMatchValue = ""
         draftType = RuleTypeUi.PERSON
         draftAction = RuleActionUi.ALWAYS_PRIORITY
+        scheduleStartHour = "9"
+        scheduleEndHour = "18"
         showEditor = true
     }
 
@@ -67,6 +71,11 @@ fun RulesScreen(contentPadding: PaddingValues) {
         draftMatchValue = rule.matchValue
         draftType = rule.type
         draftAction = rule.action
+        if (rule.type == RuleTypeUi.SCHEDULE) {
+            val parts = rule.matchValue.split('-')
+            scheduleStartHour = parts.getOrNull(0).orEmpty().ifBlank { "9" }
+            scheduleEndHour = parts.getOrNull(1).orEmpty().ifBlank { "18" }
+        }
         showEditor = true
     }
 
@@ -127,23 +136,45 @@ fun RulesScreen(contentPadding: PaddingValues) {
                         label = { Text("규칙 이름") },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    OutlinedTextField(
-                        value = draftMatchValue,
-                        onValueChange = { draftMatchValue = it },
-                        label = { Text(matchLabelFor(draftType)) },
-                        supportingText = {
-                            if (draftType == RuleTypeUi.KEYWORD) {
-                                Text("쉼표로 여러 키워드를 입력할 수 있어요. 예: 배포,장애,긴급")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    if (draftType == RuleTypeUi.SCHEDULE) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = scheduleStartHour,
+                                onValueChange = { scheduleStartHour = it.filter(Char::isDigit).take(2) },
+                                label = { Text("시작") },
+                            )
+                            OutlinedTextField(
+                                value = scheduleEndHour,
+                                onValueChange = { scheduleEndHour = it.filter(Char::isDigit).take(2) },
+                                label = { Text("종료") },
+                            )
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = draftMatchValue,
+                            onValueChange = { draftMatchValue = it },
+                            label = { Text(matchLabelFor(draftType)) },
+                            supportingText = {
+                                if (draftType == RuleTypeUi.KEYWORD) {
+                                    Text("쉼표로 여러 키워드를 입력할 수 있어요. 예: 배포,장애,긴급")
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     Text("규칙 타입", style = MaterialTheme.typography.labelLarge)
                     EnumSelectorRow(
-                        options = listOf(RuleTypeUi.PERSON, RuleTypeUi.APP, RuleTypeUi.KEYWORD),
+                        options = listOf(RuleTypeUi.PERSON, RuleTypeUi.APP, RuleTypeUi.KEYWORD, RuleTypeUi.SCHEDULE),
                         selected = draftType,
                         label = { typeLabel(it) },
-                        onSelect = { draftType = it },
+                        onSelect = {
+                            draftType = it
+                            if (it == RuleTypeUi.SCHEDULE) {
+                                draftMatchValue = "${scheduleStartHour}-${scheduleEndHour}"
+                            } else if (editingRule?.type == RuleTypeUi.SCHEDULE) {
+                                draftMatchValue = ""
+                            }
+                        },
                     )
                     Text("처리 방식", style = MaterialTheme.typography.labelLarge)
                     EnumSelectorRow(
@@ -157,9 +188,14 @@ fun RulesScreen(contentPadding: PaddingValues) {
             confirmButton = {
                 Button(
                     onClick = {
+                        val matchValue = if (draftType == RuleTypeUi.SCHEDULE) {
+                            "${scheduleStartHour.ifBlank { "9" }}-${scheduleEndHour.ifBlank { "18" }}"
+                        } else {
+                            draftMatchValue
+                        }
                         val newRule = ruleFactory.create(
                             title = draftTitle,
-                            matchValue = draftMatchValue,
+                            matchValue = matchValue,
                             type = draftType,
                             action = draftAction,
                             existingId = editingRule?.id,

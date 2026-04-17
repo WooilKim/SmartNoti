@@ -21,6 +21,7 @@ class NotificationCaptureProcessor(
                 body = input.body,
                 quietHours = input.quietHours,
                 duplicateCountInWindow = input.duplicateCountInWindow,
+                hourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
             ),
             rules = rules,
         )

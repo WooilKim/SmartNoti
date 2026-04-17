@@ -35,8 +35,13 @@ class RuleDraftFactory {
                 .filter { it.isNotBlank() }
                 .distinct()
                 .joinToString(",")
+            RuleTypeUi.SCHEDULE -> normalizeSchedule(trimmed)
             else -> trimmed
         }
+    }
+
+    private fun normalizeSchedule(raw: String): String {
+        return raw.replace(" ", "")
     }
 
     private fun RuleActionUi.toSubtitle(): String = when (this) {

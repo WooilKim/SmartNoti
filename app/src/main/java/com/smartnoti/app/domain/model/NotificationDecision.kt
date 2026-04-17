@@ -13,4 +13,5 @@ data class ClassificationInput(
     val body: String = "",
     val quietHours: Boolean = false,
     val duplicateCountInWindow: Int = 0,
+    val hourOfDay: Int? = null,
 )

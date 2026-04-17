@@ -53,8 +53,23 @@ class NotificationClassifier(
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
                     .any { keyword -> content.contains(keyword, ignoreCase = true) }
+                RuleTypeUi.SCHEDULE -> input.hourOfDay != null && matchesSchedule(rule.matchValue, input.hourOfDay)
                 else -> false
             }
+        }
+    }
+
+    private fun matchesSchedule(schedule: String, hourOfDay: Int): Boolean {
+        val parts = schedule.split('-')
+        if (parts.size != 2) return false
+
+        val start = parts[0].toIntOrNull() ?: return false
+        val end = parts[1].toIntOrNull() ?: return false
+
+        return if (start <= end) {
+            hourOfDay in start until end
+        } else {
+            hourOfDay >= start || hourOfDay < end
         }
     }
 

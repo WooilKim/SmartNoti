@@ -17,6 +17,56 @@ class NotificationClassifierTest {
     )
 
     @Test
+    fun schedule_rule_matches_hour_inside_same_day_window() {
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.chat.app",
+                title = "슬랙 요약",
+                body = "새 메시지가 도착했어요",
+                hourOfDay = 10,
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-schedule",
+                    title = "업무 시간에는 Digest",
+                    subtitle = "Digest로 묶기",
+                    type = RuleTypeUi.SCHEDULE,
+                    action = RuleActionUi.DIGEST,
+                    enabled = true,
+                    matchValue = "9-18",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.DIGEST, result)
+    }
+
+    @Test
+    fun schedule_rule_matches_hour_inside_overnight_window() {
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.shopping.app",
+                title = "특가",
+                body = "야간 할인 중이에요",
+                hourOfDay = 2,
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-night",
+                    title = "심야엔 조용히",
+                    subtitle = "조용히 정리",
+                    type = RuleTypeUi.SCHEDULE,
+                    action = RuleActionUi.SILENT,
+                    enabled = true,
+                    matchValue = "23-7",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.SILENT, result)
+    }
+
+    @Test
     fun earlier_matching_rule_wins_when_multiple_rules_match() {
         val input = ClassificationInput(
             packageName = "com.chat.app",
