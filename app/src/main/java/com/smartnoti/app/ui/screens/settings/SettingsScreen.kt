@@ -650,24 +650,26 @@ private fun SuppressedSourceAppChips(
         return
     }
 
-    val selectedApps = filteredCapturedApps.filter { it.packageName in suppressedSourceApps }
-    val unselectedApps = filteredCapturedApps.filter { it.packageName !in suppressedSourceApps }
-
-    if (selectedApps.isNotEmpty()) {
-        AppChipGroup(
-            title = "이미 선택한 앱",
-            apps = selectedApps,
-            suppressedSourceApps = suppressedSourceApps,
-            suppressEnabled = suppressEnabled,
-            onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+    val presentation = remember(filteredCapturedApps, suppressedSourceApps) {
+        SettingsSuppressedAppPresentationBuilder().build(
+            apps = filteredCapturedApps.map { app ->
+                RawSuppressedAppState(
+                    app = app,
+                    isSelected = app.packageName in suppressedSourceApps,
+                )
+            },
         )
     }
 
-    if (unselectedApps.isNotEmpty()) {
-        AppChipGroup(
-            title = "추가로 숨길 수 있는 앱",
-            apps = unselectedApps,
-            suppressedSourceApps = suppressedSourceApps,
+    Text(
+        text = presentation.summary,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    presentation.groups.forEach { group ->
+        AppSelectionGroup(
+            group = group,
             suppressEnabled = suppressEnabled,
             onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
         )
@@ -675,34 +677,65 @@ private fun SuppressedSourceAppChips(
 }
 
 @Composable
-private fun AppChipGroup(
-    title: String,
-    apps: List<CapturedAppSelectionItem>,
-    suppressedSourceApps: Set<String>,
+private fun AppSelectionGroup(
+    group: SettingsSuppressedAppGroup,
     suppressEnabled: Boolean,
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = title,
+            text = group.title,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        apps.forEach { app ->
-            FilterChip(
-                selected = app.packageName in suppressedSourceApps,
+        group.items.forEach { item ->
+            AppSelectionRow(
+                item = item,
                 enabled = suppressEnabled,
-                onClick = {
-                    if (suppressEnabled) {
-                        onSuppressedSourceAppToggle(
-                            app.packageName,
-                            app.packageName !in suppressedSourceApps,
-                        )
-                    }
+                onToggle = { packageName, selected ->
+                    onSuppressedSourceAppToggle(packageName, selected)
                 },
-                label = {
-                    Text("${app.appName} · ${app.notificationCount}건 · ${app.lastSeenLabel}")
-                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppSelectionRow(
+    item: SettingsSuppressedAppItem,
+    enabled: Boolean,
+    onToggle: (String, Boolean) -> Unit,
+) {
+    SmartSurfaceCard(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = item.appName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "${item.notificationCount}건 · ${item.lastSeenLabel}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            FilterChip(
+                selected = item.isSelected,
+                enabled = enabled,
+                onClick = { onToggle(item.packageName, !item.isSelected) },
+                label = { Text(if (item.isSelected) "선택됨" else "선택") },
             )
         }
     }
