@@ -19,34 +19,38 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import com.smartnoti.app.domain.model.AlertLevel
-import com.smartnoti.app.domain.model.LockScreenVisibilityMode
-import com.smartnoti.app.domain.model.VibrationMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.data.settings.SmartNotiSettings
+import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.LockScreenVisibilityMode
+import com.smartnoti.app.domain.model.VibrationMode
 import com.smartnoti.app.domain.usecase.SuppressedAppInsight
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownItem
+import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargets
 import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
-import com.smartnoti.app.navigation.Routes
+import com.smartnoti.app.domain.usecase.SuppressionInsightsSummary
 import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
+import com.smartnoti.app.ui.components.SettingsToggleRow
 import com.smartnoti.app.ui.components.SmartSurfaceCard
 import com.smartnoti.app.ui.theme.DigestOnContainer
 import com.smartnoti.app.ui.theme.GreenAccent
 import com.smartnoti.app.ui.theme.SilentContainer
 import com.smartnoti.app.ui.theme.SilentOnContainer
-import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,9 +66,7 @@ fun SettingsScreen(
     val suppressionInsightsBuilder = remember { SuppressionInsightsBuilder() }
     val suppressionBreakdownBuilder = remember { SuppressionBreakdownChartModelBuilder() }
     val suppressionDrillDownTargetsBuilder = remember { SuppressionInsightDrillDownTargetsBuilder() }
-    val settings by repository.observeSettings().collectAsState(
-        initial = com.smartnoti.app.data.settings.SmartNotiSettings()
-    )
+    val settings by repository.observeSettings().collectAsState(initial = SmartNotiSettings())
     val filteredCapturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
     }
@@ -91,10 +93,41 @@ fun SettingsScreen(
     }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
+    val priorityCallbacks = remember(repository, scope) {
+        DeliveryProfileCallbacks(
+            onAlertLevelChange = { value -> scope.launch { repository.setPriorityAlertLevel(value) } },
+            onVibrationModeChange = { value -> scope.launch { repository.setPriorityVibrationMode(value) } },
+            onHeadsUpChange = { enabled -> scope.launch { repository.setPriorityHeadsUpEnabled(enabled) } },
+            onLockScreenVisibilityChange = { value ->
+                scope.launch { repository.setPriorityLockScreenVisibility(value) }
+            },
+        )
+    }
+    val digestCallbacks = remember(repository, scope) {
+        DeliveryProfileCallbacks(
+            onAlertLevelChange = { value -> scope.launch { repository.setDigestAlertLevel(value) } },
+            onVibrationModeChange = { value -> scope.launch { repository.setDigestVibrationMode(value) } },
+            onHeadsUpChange = { enabled -> scope.launch { repository.setDigestHeadsUpEnabled(enabled) } },
+            onLockScreenVisibilityChange = { value ->
+                scope.launch { repository.setDigestLockScreenVisibility(value) }
+            },
+        )
+    }
+    val silentCallbacks = remember(repository, scope) {
+        DeliveryProfileCallbacks(
+            onAlertLevelChange = { value -> scope.launch { repository.setSilentAlertLevel(value) } },
+            onVibrationModeChange = { value -> scope.launch { repository.setSilentVibrationMode(value) } },
+            onHeadsUpChange = { enabled -> scope.launch { repository.setSilentHeadsUpEnabled(enabled) } },
+            onLockScreenVisibilityChange = { value ->
+                scope.launch { repository.setSilentLockScreenVisibility(value) }
+            },
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             ScreenHeader(
@@ -110,22 +143,7 @@ fun SettingsScreen(
             )
         }
         item {
-            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    if (settings.quietHoursEnabled) "조용한 시간 자동 적용" else "항상 즉시 분류",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    if (settings.quietHoursEnabled) {
-                        "지정한 시간대에는 덜 급한 알림을 정리함 중심으로 다뤄요."
-                    } else {
-                        "모든 시간대에 동일한 기준으로 바로 분류해요."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            CurrentModeCard(settings = settings)
         }
         item {
             SectionLabel(
@@ -134,31 +152,12 @@ fun SettingsScreen(
             )
         }
         item {
-            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "${settings.quietHoursStartHour}:00 ~ ${settings.quietHoursEndHour}:00",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        "조용한 시간 사용",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Switch(
-                        checked = settings.quietHoursEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                repository.setQuietHoursEnabled(enabled)
-                            }
-                        }
-                    )
-                }
-            }
+            QuietHoursCard(
+                settings = settings,
+                onQuietHoursEnabledChange = { enabled ->
+                    scope.launch { repository.setQuietHoursEnabled(enabled) }
+                },
+            )
         }
         item {
             SectionLabel(
@@ -169,18 +168,9 @@ fun SettingsScreen(
         item {
             DeliveryProfileSettingsCard(
                 settings = settings,
-                onPriorityAlertLevelChange = { value -> scope.launch { repository.setPriorityAlertLevel(value) } },
-                onPriorityVibrationChange = { value -> scope.launch { repository.setPriorityVibrationMode(value) } },
-                onPriorityHeadsUpChange = { enabled -> scope.launch { repository.setPriorityHeadsUpEnabled(enabled) } },
-                onPriorityLockScreenChange = { value -> scope.launch { repository.setPriorityLockScreenVisibility(value) } },
-                onDigestAlertLevelChange = { value -> scope.launch { repository.setDigestAlertLevel(value) } },
-                onDigestVibrationChange = { value -> scope.launch { repository.setDigestVibrationMode(value) } },
-                onDigestHeadsUpChange = { enabled -> scope.launch { repository.setDigestHeadsUpEnabled(enabled) } },
-                onDigestLockScreenChange = { value -> scope.launch { repository.setDigestLockScreenVisibility(value) } },
-                onSilentAlertLevelChange = { value -> scope.launch { repository.setSilentAlertLevel(value) } },
-                onSilentVibrationChange = { value -> scope.launch { repository.setSilentVibrationMode(value) } },
-                onSilentHeadsUpChange = { enabled -> scope.launch { repository.setSilentHeadsUpEnabled(enabled) } },
-                onSilentLockScreenChange = { value -> scope.launch { repository.setSilentLockScreenVisibility(value) } },
+                priorityCallbacks = priorityCallbacks,
+                digestCallbacks = digestCallbacks,
+                silentCallbacks = silentCallbacks,
             )
         }
         item {
@@ -200,151 +190,25 @@ fun SettingsScreen(
             )
         }
         item {
-            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "Digest/조용히 결정 시 원본 알림 숨기기",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "켜면 선택한 앱의 중요하지 않은 알림은 SmartNoti에만 남기고, 기기 알림창의 원본 알림은 바로 감춰요.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        "원본 알림 숨기기",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Switch(
-                        checked = settings.suppressSourceForDigestAndSilent,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                repository.setSuppressSourceForDigestAndSilent(enabled)
-                            }
-                        }
-                    )
-                }
-                Text(
-                    if (settings.suppressSourceForDigestAndSilent) {
-                        "선택한 앱만 조용히 숨기고 SmartNoti 대체 알림으로 남겨요."
-                    } else {
-                        "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        "지속 알림은 SmartNoti 목록에서 숨기기",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Switch(
-                        checked = settings.hidePersistentNotifications,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                repository.setHidePersistentNotifications(enabled)
-                            }
-                        }
-                    )
-                }
-                Text(
-                    if (settings.hidePersistentNotifications) {
-                        "충전 중·정리 중 같은 고정 알림은 목록/인사이트 집계에서 제외해요."
-                    } else {
-                        "지속 알림도 일반 알림처럼 집계와 목록에 포함해요."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        "지속 알림은 시스템 알림센터에서도 숨기기",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Switch(
-                        checked = settings.hidePersistentSourceNotifications,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                repository.setHidePersistentSourceNotifications(enabled)
-                            }
-                        }
-                    )
-                }
-                Text(
-                    if (settings.hidePersistentSourceNotifications) {
-                        "고정 시스템 알림이 올라오면 SmartNoti가 바로 감춰요. 중요한 시스템 알림까지 숨길 수 있어 주의가 필요해요."
-                    } else {
-                        "고정 시스템 알림은 기기 알림센터에 그대로 남겨둬요."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        "통화·길안내·녹화 중 알림은 항상 보이기",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Switch(
-                        checked = settings.protectCriticalPersistentNotifications,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                repository.setProtectCriticalPersistentNotifications(enabled)
-                            }
-                        }
-                    )
-                }
-                Text(
-                    if (settings.protectCriticalPersistentNotifications) {
-                        "통화 중, 길안내 중, 화면 녹화/카메라·마이크 사용 중 알림은 숨김 예외로 보호해요."
-                    } else {
-                        "고정 알림 예외 보호를 끄면 중요한 live-state 알림도 일반 고정 알림처럼 숨겨질 수 있어요."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (filteredCapturedApps.isEmpty()) {
-                    Text(
-                        "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    filteredCapturedApps.forEach { app ->
-                        FilterChip(
-                            selected = app.packageName in settings.suppressedSourceApps,
-                            enabled = settings.suppressSourceForDigestAndSilent,
-                            onClick = {
-                                if (settings.suppressSourceForDigestAndSilent) {
-                                    val enabled = app.packageName !in settings.suppressedSourceApps
-                                    scope.launch {
-                                        repository.toggleSuppressedSourceApp(app.packageName, enabled)
-                                    }
-                                }
-                            },
-                            label = {
-                                Text("${app.appName} · ${app.notificationCount}건 · ${app.lastSeenLabel}")
-                            },
-                        )
-                    }
-                }
-            }
+            SuppressionSourceSettingsCard(
+                settings = settings,
+                filteredCapturedApps = filteredCapturedApps,
+                onSuppressSourceChange = { enabled ->
+                    scope.launch { repository.setSuppressSourceForDigestAndSilent(enabled) }
+                },
+                onHidePersistentNotificationsChange = { enabled ->
+                    scope.launch { repository.setHidePersistentNotifications(enabled) }
+                },
+                onHidePersistentSourceNotificationsChange = { enabled ->
+                    scope.launch { repository.setHidePersistentSourceNotifications(enabled) }
+                },
+                onProtectCriticalPersistentNotificationsChange = { enabled ->
+                    scope.launch { repository.setProtectCriticalPersistentNotifications(enabled) }
+                },
+                onSuppressedSourceAppToggle = { packageName, enabled ->
+                    scope.launch { repository.toggleSuppressedSourceApp(packageName, enabled) }
+                },
+            )
         }
         item {
             SectionLabel(
@@ -353,18 +217,7 @@ fun SettingsScreen(
             )
         }
         item {
-            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    settings.digestHours.joinToString(" · ") { "$it:00" },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "반복되거나 덜 급한 알림은 이 시점에 맞춰 Digest로 다시 확인할 수 있어요.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            DigestScheduleCard(settings = settings)
         }
         item {
             SectionLabel(
@@ -373,37 +226,72 @@ fun SettingsScreen(
             )
         }
         item {
-            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "경로: 설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            NotificationAccessCard()
         }
     }
 }
 
 @Composable
+private fun CurrentModeCard(settings: SmartNotiSettings) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = if (settings.quietHoursEnabled) "조용한 시간 자동 적용" else "항상 즉시 분류",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = if (settings.quietHoursEnabled) {
+                "지정한 시간대에는 덜 급한 알림을 정리함 중심으로 다뤄요."
+            } else {
+                "모든 시간대에 동일한 기준으로 바로 분류해요."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun QuietHoursCard(
+    settings: SmartNotiSettings,
+    onQuietHoursEnabledChange: (Boolean) -> Unit,
+) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "${settings.quietHoursStartHour}:00 ~ ${settings.quietHoursEndHour}:00",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "조용한 시간 사용",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Switch(
+                checked = settings.quietHoursEnabled,
+                onCheckedChange = onQuietHoursEnabledChange,
+            )
+        }
+    }
+}
+
+private data class DeliveryProfileCallbacks(
+    val onAlertLevelChange: (String) -> Unit,
+    val onVibrationModeChange: (String) -> Unit,
+    val onHeadsUpChange: (Boolean) -> Unit,
+    val onLockScreenVisibilityChange: (String) -> Unit,
+)
+
+@Composable
 private fun DeliveryProfileSettingsCard(
-    settings: com.smartnoti.app.data.settings.SmartNotiSettings,
-    onPriorityAlertLevelChange: (String) -> Unit,
-    onPriorityVibrationChange: (String) -> Unit,
-    onPriorityHeadsUpChange: (Boolean) -> Unit,
-    onPriorityLockScreenChange: (String) -> Unit,
-    onDigestAlertLevelChange: (String) -> Unit,
-    onDigestVibrationChange: (String) -> Unit,
-    onDigestHeadsUpChange: (Boolean) -> Unit,
-    onDigestLockScreenChange: (String) -> Unit,
-    onSilentAlertLevelChange: (String) -> Unit,
-    onSilentVibrationChange: (String) -> Unit,
-    onSilentHeadsUpChange: (Boolean) -> Unit,
-    onSilentLockScreenChange: (String) -> Unit,
+    settings: SmartNotiSettings,
+    priorityCallbacks: DeliveryProfileCallbacks,
+    digestCallbacks: DeliveryProfileCallbacks,
+    silentCallbacks: DeliveryProfileCallbacks,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -422,61 +310,61 @@ private fun DeliveryProfileSettingsCard(
             subtitle = "중요 알림은 필요할 때 강하게 알리되, 조용한 시간이나 반복 상황에서는 자동으로 낮아질 수 있어요.",
             selectedAlertLevel = settings.priorityAlertLevel,
             allowedAlertLevels = listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET),
-            onAlertLevelChange = onPriorityAlertLevelChange,
+            onAlertLevelChange = priorityCallbacks.onAlertLevelChange,
             selectedVibrationMode = settings.priorityVibrationMode,
             allowedVibrationModes = listOf(VibrationMode.STRONG, VibrationMode.LIGHT, VibrationMode.OFF),
-            onVibrationModeChange = onPriorityVibrationChange,
+            onVibrationModeChange = priorityCallbacks.onVibrationModeChange,
             headsUpEnabled = settings.priorityHeadsUpEnabled,
             headsUpEnabledAllowed = true,
             headsUpDescription = "Heads-up 표시",
-            onHeadsUpChange = onPriorityHeadsUpChange,
+            onHeadsUpChange = priorityCallbacks.onHeadsUpChange,
             selectedLockScreenVisibility = settings.priorityLockScreenVisibility,
             allowedLockScreenModes = listOf(
                 LockScreenVisibilityMode.PUBLIC,
                 LockScreenVisibilityMode.PRIVATE,
                 LockScreenVisibilityMode.SECRET,
             ),
-            onLockScreenVisibilityChange = onPriorityLockScreenChange,
+            onLockScreenVisibilityChange = priorityCallbacks.onLockScreenVisibilityChange,
         )
         DeliveryProfileEditorSection(
             title = "Digest",
             subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud/강한 진동/heads-up은 허용하지 않아요.",
             selectedAlertLevel = settings.digestAlertLevel,
             allowedAlertLevels = listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE),
-            onAlertLevelChange = onDigestAlertLevelChange,
+            onAlertLevelChange = digestCallbacks.onAlertLevelChange,
             selectedVibrationMode = settings.digestVibrationMode,
             allowedVibrationModes = listOf(VibrationMode.LIGHT, VibrationMode.OFF),
-            onVibrationModeChange = onDigestVibrationChange,
+            onVibrationModeChange = digestCallbacks.onVibrationModeChange,
             headsUpEnabled = false,
             headsUpEnabledAllowed = false,
             headsUpDescription = "Digest는 heads-up을 사용하지 않음",
-            onHeadsUpChange = onDigestHeadsUpChange,
+            onHeadsUpChange = digestCallbacks.onHeadsUpChange,
             selectedLockScreenVisibility = settings.digestLockScreenVisibility,
             allowedLockScreenModes = listOf(
                 LockScreenVisibilityMode.PRIVATE,
                 LockScreenVisibilityMode.SECRET,
             ),
-            onLockScreenVisibilityChange = onDigestLockScreenChange,
+            onLockScreenVisibilityChange = digestCallbacks.onLockScreenVisibilityChange,
         )
         DeliveryProfileEditorSection(
             title = "Silent",
             subtitle = "Silent는 항상 비침습적으로 유지돼요. 소리·진동·heads-up은 사용할 수 없어요.",
             selectedAlertLevel = settings.silentAlertLevel,
             allowedAlertLevels = listOf(AlertLevel.NONE, AlertLevel.QUIET),
-            onAlertLevelChange = onSilentAlertLevelChange,
+            onAlertLevelChange = silentCallbacks.onAlertLevelChange,
             selectedVibrationMode = settings.silentVibrationMode,
             allowedVibrationModes = listOf(VibrationMode.OFF),
-            onVibrationModeChange = onSilentVibrationChange,
+            onVibrationModeChange = silentCallbacks.onVibrationModeChange,
             headsUpEnabled = false,
             headsUpEnabledAllowed = false,
             headsUpDescription = "Silent는 heads-up을 사용하지 않음",
-            onHeadsUpChange = onSilentHeadsUpChange,
+            onHeadsUpChange = silentCallbacks.onHeadsUpChange,
             selectedLockScreenVisibility = settings.silentLockScreenVisibility,
             allowedLockScreenModes = listOf(
                 LockScreenVisibilityMode.PRIVATE,
                 LockScreenVisibilityMode.SECRET,
             ),
-            onLockScreenVisibilityChange = onSilentLockScreenChange,
+            onLockScreenVisibilityChange = silentCallbacks.onLockScreenVisibilityChange,
         )
     }
 }
@@ -524,8 +412,8 @@ private fun DeliveryProfileEditorSection(
             onSelected = onVibrationModeChange,
         )
         Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(
                 modifier = Modifier.weight(1f),
@@ -587,29 +475,147 @@ private fun DeliveryProfileOptionChips(
     }
 }
 
-private fun AlertLevel.toKoreanLabel(): String = when (this) {
-    AlertLevel.LOUD -> "강함"
-    AlertLevel.SOFT -> "보통"
-    AlertLevel.QUIET -> "조용함"
-    AlertLevel.NONE -> "없음"
+@Composable
+private fun SuppressionSourceSettingsCard(
+    settings: SmartNotiSettings,
+    filteredCapturedApps: List<CapturedAppSelectionItem>,
+    onSuppressSourceChange: (Boolean) -> Unit,
+    onHidePersistentNotificationsChange: (Boolean) -> Unit,
+    onHidePersistentSourceNotificationsChange: (Boolean) -> Unit,
+    onProtectCriticalPersistentNotificationsChange: (Boolean) -> Unit,
+    onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
+) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Digest/조용히 결정 시 원본 알림 숨기기",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "켜면 선택한 앱의 중요하지 않은 알림은 SmartNoti에만 남기고, 기기 알림창의 원본 알림은 바로 감춰요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SettingsToggleRow(
+            title = "원본 알림 숨기기",
+            checked = settings.suppressSourceForDigestAndSilent,
+            onCheckedChange = onSuppressSourceChange,
+            subtitle = if (settings.suppressSourceForDigestAndSilent) {
+                "선택한 앱만 조용히 숨기고 SmartNoti 대체 알림으로 남겨요."
+            } else {
+                "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
+            },
+        )
+        SettingsToggleRow(
+            title = "지속 알림은 SmartNoti 목록에서 숨기기",
+            checked = settings.hidePersistentNotifications,
+            onCheckedChange = onHidePersistentNotificationsChange,
+            subtitle = if (settings.hidePersistentNotifications) {
+                "충전 중·정리 중 같은 고정 알림은 목록/인사이트 집계에서 제외해요."
+            } else {
+                "지속 알림도 일반 알림처럼 집계와 목록에 포함해요."
+            },
+        )
+        SettingsToggleRow(
+            title = "지속 알림은 시스템 알림센터에서도 숨기기",
+            checked = settings.hidePersistentSourceNotifications,
+            onCheckedChange = onHidePersistentSourceNotificationsChange,
+            subtitle = if (settings.hidePersistentSourceNotifications) {
+                "고정 시스템 알림이 올라오면 SmartNoti가 바로 감춰요. 중요한 시스템 알림까지 숨길 수 있어 주의가 필요해요."
+            } else {
+                "고정 시스템 알림은 기기 알림센터에 그대로 남겨둬요."
+            },
+        )
+        SettingsToggleRow(
+            title = "통화·길안내·녹화 중 알림은 항상 보이기",
+            checked = settings.protectCriticalPersistentNotifications,
+            onCheckedChange = onProtectCriticalPersistentNotificationsChange,
+            subtitle = if (settings.protectCriticalPersistentNotifications) {
+                "통화 중, 길안내 중, 화면 녹화/카메라·마이크 사용 중 알림은 숨김 예외로 보호해요."
+            } else {
+                "고정 알림 예외 보호를 끄면 중요한 live-state 알림도 일반 고정 알림처럼 숨겨질 수 있어요."
+            },
+        )
+        SuppressedSourceAppChips(
+            filteredCapturedApps = filteredCapturedApps,
+            suppressedSourceApps = settings.suppressedSourceApps,
+            suppressEnabled = settings.suppressSourceForDigestAndSilent,
+            onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+        )
+    }
 }
 
-private fun VibrationMode.toKoreanLabel(): String = when (this) {
-    VibrationMode.STRONG -> "강하게"
-    VibrationMode.LIGHT -> "가볍게"
-    VibrationMode.OFF -> "끔"
+@Composable
+private fun SuppressedSourceAppChips(
+    filteredCapturedApps: List<CapturedAppSelectionItem>,
+    suppressedSourceApps: Set<String>,
+    suppressEnabled: Boolean,
+    onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
+) {
+    if (filteredCapturedApps.isEmpty()) {
+        Text(
+            text = "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+
+    filteredCapturedApps.forEach { app ->
+        FilterChip(
+            selected = app.packageName in suppressedSourceApps,
+            enabled = suppressEnabled,
+            onClick = {
+                if (suppressEnabled) {
+                    onSuppressedSourceAppToggle(
+                        app.packageName,
+                        app.packageName !in suppressedSourceApps,
+                    )
+                }
+            },
+            label = {
+                Text("${app.appName} · ${app.notificationCount}건 · ${app.lastSeenLabel}")
+            },
+        )
+    }
 }
 
-private fun LockScreenVisibilityMode.toKoreanLabel(): String = when (this) {
-    LockScreenVisibilityMode.PUBLIC -> "전체 공개"
-    LockScreenVisibilityMode.PRIVATE -> "내용 숨김"
-    LockScreenVisibilityMode.SECRET -> "숨김"
+@Composable
+private fun DigestScheduleCard(settings: SmartNotiSettings) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = settings.digestHours.joinToString(" · ") { "$it:00" },
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "반복되거나 덜 급한 알림은 이 시점에 맞춰 Digest로 다시 확인할 수 있어요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun NotificationAccessCard() {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "경로: 설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
 private fun SuppressionInsightsCard(
     suppressEnabled: Boolean,
-    summary: com.smartnoti.app.domain.usecase.SuppressionInsightsSummary,
+    summary: SuppressionInsightsSummary,
     breakdownItems: List<SuppressionBreakdownItem>,
     topAppRoute: String?,
     breakdownRoutesByAppName: Map<String, String>,
@@ -627,24 +633,24 @@ private fun SuppressionInsightsCard(
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        val headline = when {
-            !suppressEnabled -> "아직 원본 알림 숨기기가 꺼져 있어요"
-            summary.selectedAppCount == 0 -> "숨기기 대상 앱을 아직 고르지 않았어요"
-            else -> "선택한 ${summary.selectedAppCount}개 앱에서 ${summary.selectedFilteredCount}개 알림을 SmartNoti가 대신 정리했어요"
-        }
         Text(
-            text = headline,
+            text = when {
+                !suppressEnabled -> "아직 원본 알림 숨기기가 꺼져 있어요"
+                summary.selectedAppCount == 0 -> "숨기기 대상 앱을 아직 고르지 않았어요"
+                else -> "선택한 ${summary.selectedAppCount}개 앱에서 ${summary.selectedFilteredCount}개 알림을 SmartNoti가 대신 정리했어요"
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        val detail = when {
-            !suppressEnabled -> "기능을 켜고 앱을 선택하면 Settings에서 실제 숨김 효과를 바로 확인할 수 있어요."
-            summary.selectedAppCount == 0 -> "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 요약이 여기에 표시돼요."
-            summary.topSelectedAppName != null -> "선택한 앱 알림 중 ${summary.selectedFilteredSharePercent}%가 정리됐고, ${summary.topSelectedAppName}에서 ${summary.topSelectedAppFilteredCount}건이 가장 많이 정리됐어요."
-            else -> "선택한 앱의 숨김 효과를 계속 집계하고 있어요."
-        }
         Text(
-            text = detail,
+            text = when {
+                !suppressEnabled -> "기능을 켜고 앱을 선택하면 Settings에서 실제 숨김 효과를 바로 확인할 수 있어요."
+                summary.selectedAppCount == 0 -> "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 요약이 여기에 표시돼요."
+                summary.topSelectedAppName != null -> {
+                    "선택한 앱 알림 중 ${summary.selectedFilteredSharePercent}%가 정리됐고, ${summary.topSelectedAppName}에서 ${summary.topSelectedAppFilteredCount}건이 가장 많이 정리됐어요."
+                }
+                else -> "선택한 앱의 숨김 효과를 계속 집계하고 있어요."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = if (topAppRoute != null) {
@@ -663,7 +669,7 @@ private fun SuppressionInsightsCard(
         if (summary.appInsights.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 summary.appInsights.take(3).forEach { appInsight ->
-                    SuppressedAppInsightRow(appInsight)
+                    SuppressedAppInsightRow(appInsight = appInsight)
                 }
             }
         }
@@ -679,10 +685,10 @@ private fun SuppressionBreakdownChart(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { item ->
             Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.clickable {
                     routeByAppName[item.appName]?.let(onInsightClick)
                 },
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
