@@ -15,7 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,7 +37,8 @@ import com.smartnoti.app.domain.usecase.InsightDrillDownBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownFilter
 import com.smartnoti.app.domain.usecase.InsightDrillDownRange
 import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownChartModelBuilder
-import com.smartnoti.app.domain.usecase.InsightDrillDownReasonBreakdownItem
+import com.smartnoti.app.domain.usecase.InsightDrillDownReasonNavigationItem
+import com.smartnoti.app.domain.usecase.InsightDrillDownReasonNavigationModelBuilder
 import com.smartnoti.app.domain.usecase.InsightDrillDownSummaryBuilder
 import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.ui.components.EmptyState
@@ -61,6 +65,7 @@ fun InsightDrillDownScreen(
     val drillDownBuilder = remember { InsightDrillDownBuilder() }
     val summaryBuilder = remember { InsightDrillDownSummaryBuilder() }
     val reasonBreakdownBuilder = remember { InsightDrillDownReasonBreakdownChartModelBuilder() }
+    val reasonNavigationBuilder = remember { InsightDrillDownReasonNavigationModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
     var selectedRange by rememberSaveable(initialRange) {
         mutableStateOf(InsightDrillDownRange.fromRouteValue(initialRange))
@@ -71,7 +76,7 @@ fun InsightDrillDownScreen(
             else -> InsightDrillDownFilter.Reason(reasonTag = filterValue)
         }
     }
-    val isReasonRoot = filter is InsightDrillDownFilter.Reason
+    val currentReasonTag = (filter as? InsightDrillDownFilter.Reason)?.reasonTag
     val currentRangeRouteValue = selectedRange.routeValue
     val result = remember(notifications, filter, selectedRange) {
         drillDownBuilder.build(
@@ -85,6 +90,12 @@ fun InsightDrillDownScreen(
     }
     val reasonBreakdownItems = remember(summary) {
         reasonBreakdownBuilder.build(summary.topReasons).items
+    }
+    val reasonNavigationItems = remember(reasonBreakdownItems, currentReasonTag) {
+        reasonNavigationBuilder.build(
+            items = reasonBreakdownItems,
+            currentReasonTag = currentReasonTag,
+        )
     }
 
     if (result.notifications.isEmpty()) {
@@ -169,10 +180,9 @@ fun InsightDrillDownScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (reasonBreakdownItems.isNotEmpty()) {
+                if (reasonNavigationItems.isNotEmpty()) {
                     InsightReasonBreakdownChart(
-                        items = reasonBreakdownItems,
-                        isReasonRoot = isReasonRoot,
+                        items = reasonNavigationItems,
                         currentRangeRouteValue = currentRangeRouteValue,
                         onInsightClick = onInsightClick,
                     )
@@ -220,17 +230,15 @@ private fun SummaryPill(
 
 @Composable
 private fun InsightReasonBreakdownChart(
-    items: List<InsightDrillDownReasonBreakdownItem>,
-    isReasonRoot: Boolean,
+    items: List<InsightDrillDownReasonNavigationItem>,
     currentRangeRouteValue: String,
     onInsightClick: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { item ->
-            val isClickable = !isReasonRoot || item.isTopReason.not()
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = if (isClickable) {
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = if (item.isClickable) {
                     Modifier.clickable {
                         onInsightClick(
                             Routes.Insight.createForReason(
@@ -243,11 +251,41 @@ private fun InsightReasonBreakdownChart(
                     Modifier
                 },
             ) {
-                Text(
-                    text = "${item.tag} · ${item.count}건",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(
+                            text = "${item.tag} · ${item.count}건",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (item.isCurrentReason) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                        Text(
+                            text = item.hintLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (item.isClickable) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
+                    if (item.isClickable) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -262,7 +300,11 @@ private fun InsightReasonBreakdownChart(
                             .fillMaxHeight()
                             .fillMaxWidth(item.shareFraction.coerceIn(0f, 1f))
                             .background(
-                                color = if (item.isTopReason) GreenAccent else DigestOnContainer,
+                                color = when {
+                                    item.isCurrentReason -> MaterialTheme.colorScheme.primary
+                                    item.isTopReason -> GreenAccent
+                                    else -> DigestOnContainer
+                                },
                                 shape = RoundedCornerShape(999.dp),
                             ),
                     )
