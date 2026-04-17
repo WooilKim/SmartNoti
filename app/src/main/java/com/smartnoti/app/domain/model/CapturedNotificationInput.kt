@@ -10,3 +10,10 @@ data class CapturedNotificationInput(
     val quietHours: Boolean,
     val duplicateCountInWindow: Int,
 )
+
+fun CapturedNotificationInput.withContext(context: NotificationContext): CapturedNotificationInput {
+    return copy(
+        quietHours = context.isQuietHoursActive(),
+        duplicateCountInWindow = context.duplicateCountInWindow,
+    )
+}

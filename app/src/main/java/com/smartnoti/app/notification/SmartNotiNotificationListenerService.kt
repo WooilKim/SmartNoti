@@ -3,7 +3,9 @@ package com.smartnoti.app.notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.withContext
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
 import kotlinx.coroutines.CoroutineScope
@@ -53,8 +55,11 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             sbn.packageName
         }
 
-        val notification = processor.process(
-            CapturedNotificationInput(
+        val repository = NotificationRepository.getInstance(applicationContext)
+        val settingsRepository = SettingsRepository.getInstance(applicationContext)
+
+        serviceScope.launch {
+            val captureInput = CapturedNotificationInput(
                 packageName = sbn.packageName,
                 appName = appName,
                 sender = sender,
@@ -63,11 +68,9 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 postedAtMillis = sbn.postTime,
                 quietHours = false,
                 duplicateCountInWindow = 0,
-            )
-        )
+            ).withContext(settingsRepository.currentNotificationContext())
 
-        val repository = NotificationRepository.getInstance(applicationContext)
-        serviceScope.launch {
+            val notification = processor.process(captureInput)
             repository.save(notification, sbn.postTime)
         }
     }
