@@ -1,0 +1,56 @@
+package com.smartnoti.app.ui.screens.settings
+
+import com.smartnoti.app.data.settings.SmartNotiSettings
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class SettingsDisclosureSummaryBuilderTest {
+
+    private val builder = SettingsDisclosureSummaryBuilder()
+
+    @Test
+    fun delivery_profile_summary_uses_human_readable_labels() {
+        val summary = builder.buildDeliveryProfileSummary(
+            alertLevel = "LOUD",
+            vibrationMode = "STRONG",
+            headsUpEnabled = true,
+            lockScreenVisibility = "PRIVATE",
+        )
+
+        assertEquals("강함 · 강하게 · Heads-up 켜짐 · 내용 숨김", summary)
+    }
+
+    @Test
+    fun suppression_advanced_summary_reflects_toggle_states() {
+        val summary = builder.buildSuppressionAdvancedSummary(
+            SmartNotiSettings(
+                hidePersistentNotifications = true,
+                hidePersistentSourceNotifications = false,
+                protectCriticalPersistentNotifications = true,
+            )
+        )
+
+        assertEquals("목록 숨김 ON · 알림센터 숨김 OFF · 중요 알림 보호 ON", summary)
+    }
+
+    @Test
+    fun suppressed_apps_summary_handles_disabled_and_selected_states() {
+        assertEquals(
+            "원본 알림 숨기기를 켜면 앱을 고를 수 있어요",
+            builder.buildSuppressedAppsSummary(
+                suppressEnabled = false,
+                selectedCount = 0,
+                availableCount = 4,
+            )
+        )
+
+        assertEquals(
+            "선택한 앱 2개 · 캡처된 앱 5개",
+            builder.buildSuppressedAppsSummary(
+                suppressEnabled = true,
+                selectedCount = 2,
+                availableCount = 5,
+            )
+        )
+    }
+}

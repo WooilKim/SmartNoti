@@ -20,9 +20,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -92,6 +96,10 @@ fun SettingsScreen(
         )
     }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
+    val summaryBuilder = remember { SettingsDisclosureSummaryBuilder() }
+    var deliveryProfilesExpanded by rememberSaveable { mutableStateOf(false) }
+    var suppressionAdvancedExpanded by rememberSaveable { mutableStateOf(false) }
+    var suppressedAppsExpanded by rememberSaveable { mutableStateOf(false) }
 
     val priorityCallbacks = remember(repository, scope) {
         DeliveryProfileCallbacks(
@@ -171,6 +179,9 @@ fun SettingsScreen(
                 priorityCallbacks = priorityCallbacks,
                 digestCallbacks = digestCallbacks,
                 silentCallbacks = silentCallbacks,
+                summaryBuilder = summaryBuilder,
+                expanded = deliveryProfilesExpanded,
+                onExpandedChange = { deliveryProfilesExpanded = it },
             )
         }
         item {
@@ -193,6 +204,11 @@ fun SettingsScreen(
             SuppressionSourceSettingsCard(
                 settings = settings,
                 filteredCapturedApps = filteredCapturedApps,
+                summaryBuilder = summaryBuilder,
+                advancedExpanded = suppressionAdvancedExpanded,
+                onAdvancedExpandedChange = { suppressionAdvancedExpanded = it },
+                appsExpanded = suppressedAppsExpanded,
+                onAppsExpandedChange = { suppressedAppsExpanded = it },
                 onSuppressSourceChange = { enabled ->
                     scope.launch { repository.setSuppressSourceForDigestAndSilent(enabled) }
                 },
@@ -292,80 +308,86 @@ private fun DeliveryProfileSettingsCard(
     priorityCallbacks: DeliveryProfileCallbacks,
     digestCallbacks: DeliveryProfileCallbacks,
     silentCallbacks: DeliveryProfileCallbacks,
+    summaryBuilder: SettingsDisclosureSummaryBuilder,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "대체 알림 전달 방식",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
+        ExpandableSettingsSectionHeader(
+            title = "대체 알림 전달 방식",
+            subtitle = if (expanded) {
+                "설정한 값은 SmartNoti가 원본 알림을 대신 보여줄 때만 적용돼요."
+            } else {
+                "Priority · ${summaryBuilder.buildDeliveryProfileSummary(settings.priorityAlertLevel, settings.priorityVibrationMode, settings.priorityHeadsUpEnabled, settings.priorityLockScreenVisibility)}"
+            },
+            expanded = expanded,
+            onExpandedChange = onExpandedChange,
         )
-        Text(
-            text = "설정한 값은 SmartNoti가 원본 알림을 대신 보여줄 때만 적용돼요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        DeliveryProfileEditorSection(
-            title = "Priority",
-            subtitle = "중요 알림은 필요할 때 강하게 알리되, 조용한 시간이나 반복 상황에서는 자동으로 낮아질 수 있어요.",
-            selectedAlertLevel = settings.priorityAlertLevel,
-            allowedAlertLevels = listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET),
-            onAlertLevelChange = priorityCallbacks.onAlertLevelChange,
-            selectedVibrationMode = settings.priorityVibrationMode,
-            allowedVibrationModes = listOf(VibrationMode.STRONG, VibrationMode.LIGHT, VibrationMode.OFF),
-            onVibrationModeChange = priorityCallbacks.onVibrationModeChange,
-            headsUpEnabled = settings.priorityHeadsUpEnabled,
-            headsUpEnabledAllowed = true,
-            headsUpDescription = "Heads-up 표시",
-            onHeadsUpChange = priorityCallbacks.onHeadsUpChange,
-            selectedLockScreenVisibility = settings.priorityLockScreenVisibility,
-            allowedLockScreenModes = listOf(
-                LockScreenVisibilityMode.PUBLIC,
-                LockScreenVisibilityMode.PRIVATE,
-                LockScreenVisibilityMode.SECRET,
-            ),
-            onLockScreenVisibilityChange = priorityCallbacks.onLockScreenVisibilityChange,
-        )
-        DeliveryProfileEditorSection(
-            title = "Digest",
-            subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud/강한 진동/heads-up은 허용하지 않아요.",
-            selectedAlertLevel = settings.digestAlertLevel,
-            allowedAlertLevels = listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE),
-            onAlertLevelChange = digestCallbacks.onAlertLevelChange,
-            selectedVibrationMode = settings.digestVibrationMode,
-            allowedVibrationModes = listOf(VibrationMode.LIGHT, VibrationMode.OFF),
-            onVibrationModeChange = digestCallbacks.onVibrationModeChange,
-            headsUpEnabled = false,
-            headsUpEnabledAllowed = false,
-            headsUpDescription = "Digest는 heads-up을 사용하지 않음",
-            onHeadsUpChange = digestCallbacks.onHeadsUpChange,
-            selectedLockScreenVisibility = settings.digestLockScreenVisibility,
-            allowedLockScreenModes = listOf(
-                LockScreenVisibilityMode.PRIVATE,
-                LockScreenVisibilityMode.SECRET,
-            ),
-            onLockScreenVisibilityChange = digestCallbacks.onLockScreenVisibilityChange,
-        )
-        DeliveryProfileEditorSection(
-            title = "Silent",
-            subtitle = "Silent는 항상 비침습적으로 유지돼요. 소리·진동·heads-up은 사용할 수 없어요.",
-            selectedAlertLevel = settings.silentAlertLevel,
-            allowedAlertLevels = listOf(AlertLevel.NONE, AlertLevel.QUIET),
-            onAlertLevelChange = silentCallbacks.onAlertLevelChange,
-            selectedVibrationMode = settings.silentVibrationMode,
-            allowedVibrationModes = listOf(VibrationMode.OFF),
-            onVibrationModeChange = silentCallbacks.onVibrationModeChange,
-            headsUpEnabled = false,
-            headsUpEnabledAllowed = false,
-            headsUpDescription = "Silent는 heads-up을 사용하지 않음",
-            onHeadsUpChange = silentCallbacks.onHeadsUpChange,
-            selectedLockScreenVisibility = settings.silentLockScreenVisibility,
-            allowedLockScreenModes = listOf(
-                LockScreenVisibilityMode.PRIVATE,
-                LockScreenVisibilityMode.SECRET,
-            ),
-            onLockScreenVisibilityChange = silentCallbacks.onLockScreenVisibilityChange,
-        )
+        AnimatedVisibility(visible = expanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                DeliveryProfileEditorSection(
+                    title = "Priority",
+                    subtitle = "중요 알림은 필요할 때 강하게 알리되, 조용한 시간이나 반복 상황에서는 자동으로 낮아질 수 있어요.",
+                    selectedAlertLevel = settings.priorityAlertLevel,
+                    allowedAlertLevels = listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET),
+                    onAlertLevelChange = priorityCallbacks.onAlertLevelChange,
+                    selectedVibrationMode = settings.priorityVibrationMode,
+                    allowedVibrationModes = listOf(VibrationMode.STRONG, VibrationMode.LIGHT, VibrationMode.OFF),
+                    onVibrationModeChange = priorityCallbacks.onVibrationModeChange,
+                    headsUpEnabled = settings.priorityHeadsUpEnabled,
+                    headsUpEnabledAllowed = true,
+                    headsUpDescription = "Heads-up 표시",
+                    onHeadsUpChange = priorityCallbacks.onHeadsUpChange,
+                    selectedLockScreenVisibility = settings.priorityLockScreenVisibility,
+                    allowedLockScreenModes = listOf(
+                        LockScreenVisibilityMode.PUBLIC,
+                        LockScreenVisibilityMode.PRIVATE,
+                        LockScreenVisibilityMode.SECRET,
+                    ),
+                    onLockScreenVisibilityChange = priorityCallbacks.onLockScreenVisibilityChange,
+                )
+                DeliveryProfileEditorSection(
+                    title = "Digest",
+                    subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud/강한 진동/heads-up은 허용하지 않아요.",
+                    selectedAlertLevel = settings.digestAlertLevel,
+                    allowedAlertLevels = listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE),
+                    onAlertLevelChange = digestCallbacks.onAlertLevelChange,
+                    selectedVibrationMode = settings.digestVibrationMode,
+                    allowedVibrationModes = listOf(VibrationMode.LIGHT, VibrationMode.OFF),
+                    onVibrationModeChange = digestCallbacks.onVibrationModeChange,
+                    headsUpEnabled = false,
+                    headsUpEnabledAllowed = false,
+                    headsUpDescription = "Digest는 heads-up을 사용하지 않음",
+                    onHeadsUpChange = digestCallbacks.onHeadsUpChange,
+                    selectedLockScreenVisibility = settings.digestLockScreenVisibility,
+                    allowedLockScreenModes = listOf(
+                        LockScreenVisibilityMode.PRIVATE,
+                        LockScreenVisibilityMode.SECRET,
+                    ),
+                    onLockScreenVisibilityChange = digestCallbacks.onLockScreenVisibilityChange,
+                )
+                DeliveryProfileEditorSection(
+                    title = "Silent",
+                    subtitle = "Silent는 항상 비침습적으로 유지돼요. 소리·진동·heads-up은 사용할 수 없어요.",
+                    selectedAlertLevel = settings.silentAlertLevel,
+                    allowedAlertLevels = listOf(AlertLevel.NONE, AlertLevel.QUIET),
+                    onAlertLevelChange = silentCallbacks.onAlertLevelChange,
+                    selectedVibrationMode = settings.silentVibrationMode,
+                    allowedVibrationModes = listOf(VibrationMode.OFF),
+                    onVibrationModeChange = silentCallbacks.onVibrationModeChange,
+                    headsUpEnabled = false,
+                    headsUpEnabledAllowed = false,
+                    headsUpDescription = "Silent는 heads-up을 사용하지 않음",
+                    onHeadsUpChange = silentCallbacks.onHeadsUpChange,
+                    selectedLockScreenVisibility = settings.silentLockScreenVisibility,
+                    allowedLockScreenModes = listOf(
+                        LockScreenVisibilityMode.PRIVATE,
+                        LockScreenVisibilityMode.SECRET,
+                    ),
+                    onLockScreenVisibilityChange = silentCallbacks.onLockScreenVisibilityChange,
+                )
+            }
+        }
     }
 }
 
@@ -476,9 +498,51 @@ private fun DeliveryProfileOptionChips(
 }
 
 @Composable
+private fun ExpandableSettingsSectionHeader(
+    title: String,
+    subtitle: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onExpandedChange(!expanded) },
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
 private fun SuppressionSourceSettingsCard(
     settings: SmartNotiSettings,
     filteredCapturedApps: List<CapturedAppSelectionItem>,
+    summaryBuilder: SettingsDisclosureSummaryBuilder,
+    advancedExpanded: Boolean,
+    onAdvancedExpandedChange: (Boolean) -> Unit,
+    appsExpanded: Boolean,
+    onAppsExpandedChange: (Boolean) -> Unit,
     onSuppressSourceChange: (Boolean) -> Unit,
     onHidePersistentNotificationsChange: (Boolean) -> Unit,
     onHidePersistentSourceNotificationsChange: (Boolean) -> Unit,
@@ -491,11 +555,6 @@ private fun SuppressionSourceSettingsCard(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        Text(
-            text = "켜면 선택한 앱의 중요하지 않은 알림은 SmartNoti에만 남기고, 기기 알림창의 원본 알림은 바로 감춰요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         SettingsToggleRow(
             title = "원본 알림 숨기기",
             checked = settings.suppressSourceForDigestAndSilent,
@@ -506,42 +565,66 @@ private fun SuppressionSourceSettingsCard(
                 "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
             },
         )
-        SettingsToggleRow(
-            title = "지속 알림은 SmartNoti 목록에서 숨기기",
-            checked = settings.hidePersistentNotifications,
-            onCheckedChange = onHidePersistentNotificationsChange,
-            subtitle = if (settings.hidePersistentNotifications) {
-                "충전 중·정리 중 같은 고정 알림은 목록/인사이트 집계에서 제외해요."
-            } else {
-                "지속 알림도 일반 알림처럼 집계와 목록에 포함해요."
-            },
+        ExpandableSettingsSectionHeader(
+            title = "고급 숨김 옵션",
+            subtitle = summaryBuilder.buildSuppressionAdvancedSummary(settings),
+            expanded = advancedExpanded,
+            onExpandedChange = onAdvancedExpandedChange,
         )
-        SettingsToggleRow(
-            title = "지속 알림은 시스템 알림센터에서도 숨기기",
-            checked = settings.hidePersistentSourceNotifications,
-            onCheckedChange = onHidePersistentSourceNotificationsChange,
-            subtitle = if (settings.hidePersistentSourceNotifications) {
-                "고정 시스템 알림이 올라오면 SmartNoti가 바로 감춰요. 중요한 시스템 알림까지 숨길 수 있어 주의가 필요해요."
-            } else {
-                "고정 시스템 알림은 기기 알림센터에 그대로 남겨둬요."
-            },
+        AnimatedVisibility(visible = advancedExpanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SettingsToggleRow(
+                    title = "지속 알림은 SmartNoti 목록에서 숨기기",
+                    checked = settings.hidePersistentNotifications,
+                    onCheckedChange = onHidePersistentNotificationsChange,
+                    subtitle = if (settings.hidePersistentNotifications) {
+                        "충전 중·정리 중 같은 고정 알림은 목록/인사이트 집계에서 제외해요."
+                    } else {
+                        "지속 알림도 일반 알림처럼 집계와 목록에 포함해요."
+                    },
+                )
+                SettingsToggleRow(
+                    title = "지속 알림은 시스템 알림센터에서도 숨기기",
+                    checked = settings.hidePersistentSourceNotifications,
+                    onCheckedChange = onHidePersistentSourceNotificationsChange,
+                    subtitle = if (settings.hidePersistentSourceNotifications) {
+                        "고정 시스템 알림이 올라오면 SmartNoti가 바로 감춰요. 중요한 시스템 알림까지 숨길 수 있어 주의가 필요해요."
+                    } else {
+                        "고정 시스템 알림은 기기 알림센터에 그대로 남겨둬요."
+                    },
+                )
+                SettingsToggleRow(
+                    title = "통화·길안내·녹화 중 알림은 항상 보이기",
+                    checked = settings.protectCriticalPersistentNotifications,
+                    onCheckedChange = onProtectCriticalPersistentNotificationsChange,
+                    subtitle = if (settings.protectCriticalPersistentNotifications) {
+                        "통화 중, 길안내 중, 화면 녹화/카메라·마이크 사용 중 알림은 숨김 예외로 보호해요."
+                    } else {
+                        "고정 알림 예외 보호를 끄면 중요한 live-state 알림도 일반 고정 알림처럼 숨겨질 수 있어요."
+                    },
+                )
+            }
+        }
+        ExpandableSettingsSectionHeader(
+            title = "숨길 앱 선택",
+            subtitle = summaryBuilder.buildSuppressedAppsSummary(
+                suppressEnabled = settings.suppressSourceForDigestAndSilent,
+                selectedCount = settings.suppressedSourceApps.size,
+                availableCount = filteredCapturedApps.size,
+            ),
+            expanded = appsExpanded,
+            onExpandedChange = onAppsExpandedChange,
         )
-        SettingsToggleRow(
-            title = "통화·길안내·녹화 중 알림은 항상 보이기",
-            checked = settings.protectCriticalPersistentNotifications,
-            onCheckedChange = onProtectCriticalPersistentNotificationsChange,
-            subtitle = if (settings.protectCriticalPersistentNotifications) {
-                "통화 중, 길안내 중, 화면 녹화/카메라·마이크 사용 중 알림은 숨김 예외로 보호해요."
-            } else {
-                "고정 알림 예외 보호를 끄면 중요한 live-state 알림도 일반 고정 알림처럼 숨겨질 수 있어요."
-            },
-        )
-        SuppressedSourceAppChips(
-            filteredCapturedApps = filteredCapturedApps,
-            suppressedSourceApps = settings.suppressedSourceApps,
-            suppressEnabled = settings.suppressSourceForDigestAndSilent,
-            onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
-        )
+        AnimatedVisibility(visible = appsExpanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SuppressedSourceAppChips(
+                    filteredCapturedApps = filteredCapturedApps,
+                    suppressedSourceApps = settings.suppressedSourceApps,
+                    suppressEnabled = settings.suppressSourceForDigestAndSilent,
+                    onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+                )
+            }
+        }
     }
 }
 
