@@ -27,6 +27,7 @@ class SmartNotiNotifier(
         title: String,
         body: String,
         notificationId: String,
+        reasonTags: List<String>,
     ) {
         ensureChannels()
         val channelId = when (decision) {
@@ -39,8 +40,11 @@ class SmartNotiNotifier(
             NotificationDecision.SILENT -> "Silent"
             NotificationDecision.PRIORITY -> return
         }
-        val contentTitle = title.ifBlank { "$appName 알림" }
-        val contentText = body.ifBlank { "$appName 알림이 SmartNoti에서 정리되었어요." }
+        val contentTitle = title.ifBlank { body.ifBlank { "$appName 알림" } }
+        val contentText = ReplacementNotificationTextFormatter.explanationText(
+            decision = decision,
+            reasonTags = reasonTags,
+        )
         val replacementNotificationId = NotificationReplacementIds.idFor(
             packageName = packageName,
             decision = decision,

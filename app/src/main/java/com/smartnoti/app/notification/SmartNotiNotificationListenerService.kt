@@ -111,6 +111,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                     title = notification.title,
                     body = notification.body,
                     notificationId = notification.id,
+                    reasonTags = notification.reasonTags,
                 )
             }
         }
