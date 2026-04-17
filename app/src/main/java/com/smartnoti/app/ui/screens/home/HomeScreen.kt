@@ -26,11 +26,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
 import com.smartnoti.app.ui.theme.DigestContainer
 import com.smartnoti.app.ui.theme.DigestOnContainer
+import com.smartnoti.app.ui.theme.GreenContainer
+import com.smartnoti.app.ui.theme.GreenAccent
 import com.smartnoti.app.ui.theme.PriorityContainer
 import com.smartnoti.app.ui.theme.PriorityOnContainer
 import com.smartnoti.app.ui.theme.SilentContainer
@@ -45,10 +48,12 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
+    val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
     val recent by repository.observeAll().collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
+    val insights = remember(recent) { insightsBuilder.build(recent) }
 
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
@@ -103,6 +108,16 @@ fun HomeScreen(
                 )
             }
         }
+        if (insights.filteredCount > 0) {
+            item {
+                InsightCard(
+                    filteredCount = insights.filteredCount,
+                    topFilteredAppName = insights.topFilteredAppName,
+                    topFilteredAppCount = insights.topFilteredAppCount,
+                    topReasonTag = insights.topReasonTag,
+                )
+            }
+        }
         item {
             Text(
                 "방금 정리된 알림",
@@ -122,6 +137,61 @@ fun HomeScreen(
             items(recent) { notification ->
                 NotificationCard(model = notification, onClick = onNotificationClick)
             }
+        }
+    }
+}
+
+@Composable
+private fun InsightCard(
+    filteredCount: Int,
+    topFilteredAppName: String?,
+    topFilteredAppCount: Int,
+    topReasonTag: String?,
+) {
+    val primaryLine = buildString {
+        append("지금까지 ")
+        append(filteredCount)
+        append("개의 알림을 대신 정리했어요")
+    }
+    val detailLine = when {
+        topFilteredAppName != null && topReasonTag != null -> {
+            "$topFilteredAppName 알림 ${topFilteredAppCount}개가 가장 많이 정리됐고, 주된 이유는 '$topReasonTag'예요"
+        }
+        topFilteredAppName != null -> {
+            "$topFilteredAppName 알림 ${topFilteredAppCount}개가 가장 많이 정리됐어요"
+        }
+        topReasonTag != null -> {
+            "가장 자주 적용된 정리 이유는 '$topReasonTag'예요"
+        }
+        else -> {
+            "정리된 알림 패턴을 계속 학습하고 있어요"
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GreenContainer),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "SmartNoti 인사이트",
+                style = MaterialTheme.typography.labelLarge,
+                color = GreenAccent,
+            )
+            Text(
+                text = primaryLine,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = detailLine,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
