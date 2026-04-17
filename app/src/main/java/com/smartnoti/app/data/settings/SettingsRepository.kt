@@ -48,10 +48,27 @@ class SettingsRepository private constructor(
         }
     }
 
+    fun observeOnboardingCompleted(): Flow<Boolean> {
+        return context.dataStore.data.map { prefs ->
+            prefs[ONBOARDING_COMPLETED] ?: false
+        }
+    }
+
+    suspend fun isOnboardingCompleted(): Boolean {
+        return observeOnboardingCompleted().first()
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETED] = completed
+        }
+    }
+
     companion object {
         private val QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")
         private val QUIET_HOURS_START_HOUR = intPreferencesKey("quiet_hours_start_hour")
         private val QUIET_HOURS_END_HOUR = intPreferencesKey("quiet_hours_end_hour")
+        private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
 
         @Volatile private var instance: SettingsRepository? = null
 
