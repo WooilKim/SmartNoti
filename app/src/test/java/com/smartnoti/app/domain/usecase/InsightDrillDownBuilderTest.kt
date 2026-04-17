@@ -92,11 +92,29 @@ class InsightDrillDownBuilderTest {
         assertEquals(listOf(timestampedId("1", 6)), result.notifications.map { it.id })
     }
 
+    @Test
+    fun excludes_persistent_notifications_when_hide_option_enabled() {
+        val result = builder.build(
+            notifications = listOf(
+                notification(id = timestampedId("1", hoursAgo = 0), appName = "쿠팡", status = NotificationStatusUi.DIGEST, reasonTags = listOf("쇼핑 앱"), isPersistent = true),
+                notification(id = timestampedId("2", hoursAgo = 0), appName = "쿠팡", status = NotificationStatusUi.SILENT, reasonTags = listOf("반복 알림"), isPersistent = false),
+            ),
+            filter = InsightDrillDownFilter.App(appName = "쿠팡"),
+            range = InsightDrillDownRange.ALL,
+            nowMillis = nowMillis,
+            hidePersistentNotifications = true,
+        )
+
+        assertEquals(listOf(timestampedId("2", 0)), result.notifications.map { it.id })
+        assertEquals("쿠팡 알림 1건이 SmartNoti에서 어떻게 정리됐는지 보여줘요.", result.subtitle)
+    }
+
     private fun notification(
         id: String,
         appName: String,
         status: NotificationStatusUi,
         reasonTags: List<String>,
+        isPersistent: Boolean = false,
     ) = NotificationUiModel(
         id = id,
         appName = appName,
@@ -109,6 +127,7 @@ class InsightDrillDownBuilderTest {
         reasonTags = reasonTags,
         score = null,
         isBundled = false,
+        isPersistent = isPersistent,
     )
 
     private fun timestampedId(prefix: String, hoursAgo: Int): String {

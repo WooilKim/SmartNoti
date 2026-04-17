@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.usecase.InsightDrillDownBuilder
 import com.smartnoti.app.domain.usecase.InsightContextBadgeModelBuilder
 import com.smartnoti.app.domain.usecase.InsightContextBadgeTone
@@ -68,6 +69,7 @@ fun InsightDrillDownScreen(
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
+    val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
     val drillDownBuilder = remember { InsightDrillDownBuilder() }
     val summaryBuilder = remember { InsightDrillDownSummaryBuilder() }
     val copyBuilder = remember { InsightDrillDownCopyBuilder() }
@@ -75,6 +77,7 @@ fun InsightDrillDownScreen(
     val reasonBreakdownBuilder = remember { InsightDrillDownReasonBreakdownChartModelBuilder() }
     val reasonNavigationBuilder = remember { InsightDrillDownReasonNavigationModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
+    val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
     var selectedRange by rememberSaveable(initialRange) {
         mutableStateOf(InsightDrillDownRange.fromRouteValue(initialRange))
     }
@@ -87,11 +90,12 @@ fun InsightDrillDownScreen(
     val drillDownSource = remember(source) { InsightDrillDownSource.fromRouteValue(source) }
     val currentReasonTag = (filter as? InsightDrillDownFilter.Reason)?.reasonTag
     val currentRangeRouteValue = selectedRange.routeValue
-    val result = remember(notifications, filter, selectedRange) {
+    val result = remember(notifications, filter, selectedRange, settings.hidePersistentNotifications) {
         drillDownBuilder.build(
             notifications = notifications,
             filter = filter,
             range = selectedRange,
+            hidePersistentNotifications = settings.hidePersistentNotifications,
         )
     }
     val summary = remember(result) {

@@ -9,10 +9,13 @@ class InsightDrillDownBuilder {
         filter: InsightDrillDownFilter,
         range: InsightDrillDownRange = InsightDrillDownRange.ALL,
         nowMillis: Long = System.currentTimeMillis(),
+        hidePersistentNotifications: Boolean = false,
     ): InsightDrillDownResult {
         val filteredNotifications = notifications.filter { notification ->
             notification.status == NotificationStatusUi.DIGEST ||
                 notification.status == NotificationStatusUi.SILENT
+        }.filter { notification ->
+            !hidePersistentNotifications || !notification.isPersistent
         }.filter { notification ->
             when (filter) {
                 is InsightDrillDownFilter.App -> notification.appName == filter.appName

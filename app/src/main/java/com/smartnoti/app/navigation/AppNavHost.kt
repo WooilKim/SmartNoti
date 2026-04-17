@@ -57,7 +57,9 @@ fun AppNavHost(
 
     val navController = rememberNavController()
     val navigationScope = rememberCoroutineScope()
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val navigationActionBuilder = remember { TopLevelNavigationActionBuilder() }
+    val currentBackStackEntry = navController.currentBackStackEntryAsState().value
+    val currentRoute = currentBackStackEntry?.destination?.route
     val showBottomBar = currentRoute != null && currentRoute != Routes.Onboarding.route
     val startDestination = if (onboardingCompleted) Routes.Home.route else Routes.Onboarding.route
 
@@ -104,12 +106,26 @@ fun AppNavHost(
                     currentRoute = currentRoute,
                     items = bottomNavItems,
                     onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        when (
+                            val action = navigationActionBuilder.build(
+                                currentRoute = currentRoute,
+                                targetRoute = route,
+                                startRoute = startDestination,
+                            )
+                        ) {
+                            TopLevelNavigationAction.NoOp -> Unit
+                            is TopLevelNavigationAction.PopToExisting -> {
+                                navController.popBackStack(action.route, inclusive = false)
                             }
-                            launchSingleTop = true
-                            restoreState = true
+                            is TopLevelNavigationAction.Navigate -> {
+                                navController.navigate(action.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
                         }
                     }
                 )

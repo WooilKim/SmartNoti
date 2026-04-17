@@ -71,12 +71,12 @@ fun SettingsScreen(
             hidePersistentNotifications = settings.hidePersistentNotifications,
         )
     }
-    val filteredCapturedApps = remember(capturedApps, settings.hidePersistentNotifications) {
-        if (settings.hidePersistentNotifications) {
-            capturedApps.filterNot { app -> app.appName.contains("시스템") }
-        } else {
-            capturedApps
-        }
+    val filteredCapturedApps = remember(capturedApps, notifications, settings.hidePersistentNotifications) {
+        persistentFilterBuilder.filterCapturedApps(
+            capturedApps = capturedApps,
+            notifications = notifications,
+            hidePersistentNotifications = settings.hidePersistentNotifications,
+        )
     }
     val suppressionInsights = remember(filteredCapturedApps, filteredNotifications, settings.suppressedSourceApps) {
         suppressionInsightsBuilder.build(
