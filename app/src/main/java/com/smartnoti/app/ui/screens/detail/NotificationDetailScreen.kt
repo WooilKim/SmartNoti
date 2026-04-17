@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,56 +56,104 @@ fun NotificationDetailScreen(
             Text("알림 상세", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         }
         item {
-            Card {
-                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(notification.appName, style = MaterialTheme.typography.labelLarge)
-                    Text(notification.sender ?: notification.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(notification.body, style = MaterialTheme.typography.bodyLarge)
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        notification.appName,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        notification.sender ?: notification.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        notification.body,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     StatusBadge(notification.status)
                 }
             }
         }
         item {
-            Card {
-                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("왜 이렇게 처리됐나요?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        "왜 이렇게 처리됐나요?",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                     ReasonChipRow(notification.reasonTags)
                 }
             }
         }
         item {
-            Card {
-                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("이 알림 학습시키기", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("한 번 누르면 상태를 바꾸고 같은 유형의 규칙도 함께 저장해요", style = MaterialTheme.typography.bodyMedium)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        "이 알림 학습시키기",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        "한 번 누르면 상태를 바꾸고 같은 유형의 규칙도 함께 저장해요",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = {
                             scope.launch {
                                 val updated = feedbackPolicy.applyAction(notification, RuleActionUi.ALWAYS_PRIORITY)
                                 repository.updateNotification(updated)
                                 rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.ALWAYS_PRIORITY))
                             }
-                        }) {
-                            Text("중요로 고정")
-                        }
-                        Button(onClick = {
-                            scope.launch {
-                                val updated = feedbackPolicy.applyAction(notification, RuleActionUi.DIGEST)
-                                repository.updateNotification(updated)
-                                rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.DIGEST))
-                            }
-                        }) {
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("중요로 고정")
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val updated = feedbackPolicy.applyAction(notification, RuleActionUi.DIGEST)
+                                    repository.updateNotification(updated)
+                                    rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.DIGEST))
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
                             Text("Digest로 보내기")
                         }
-                    }
-                    Button(onClick = {
-                        scope.launch {
-                            val updated = feedbackPolicy.applyAction(notification, RuleActionUi.SILENT)
-                            repository.updateNotification(updated)
-                            rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.SILENT))
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val updated = feedbackPolicy.applyAction(notification, RuleActionUi.SILENT)
+                                    repository.updateNotification(updated)
+                                    rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.SILENT))
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("조용히 처리")
                         }
-                    }, modifier = Modifier.fillMaxWidth()) {
-                        Text("조용히 처리")
                     }
                 }
             }

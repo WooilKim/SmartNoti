@@ -11,23 +11,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun ReasonChipRow(tags: List<String>) {
+    if (tags.isEmpty()) return
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.horizontalScroll(rememberScrollState())
     ) {
         tags.forEach { tag ->
             Text(
                 text = tag,
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .background(Color(0xFF24324B), RoundedCornerShape(999.dp))
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(999.dp))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
             )
         }
     }

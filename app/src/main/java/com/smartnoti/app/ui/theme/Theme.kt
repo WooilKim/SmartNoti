@@ -6,14 +6,25 @@ import androidx.compose.runtime.Composable
 
 private val SmartNotiColors = darkColorScheme(
     primary = BlueAccent,
-    secondary = GreenAccent,
-    tertiary = AmberAccent,
-    background = Navy900,
-    surface = SurfaceDark,
     onPrimary = TextPrimary,
-    onSecondary = TextPrimary,
+    primaryContainer = PriorityContainer,
+    onPrimaryContainer = PriorityOnContainer,
+    secondary = GreenAccent,
+    onSecondary = Navy900,
+    secondaryContainer = GreenContainer,
+    onSecondaryContainer = GreenAccent,
+    tertiary = AmberAccent,
+    onTertiary = Navy900,
+    tertiaryContainer = DigestContainer,
+    onTertiaryContainer = DigestOnContainer,
+    background = Navy900,
     onBackground = TextPrimary,
+    surface = SurfaceDark,
     onSurface = TextPrimary,
+    surfaceVariant = Navy800,
+    onSurfaceVariant = TextSecondary,
+    outline = BorderSubtle,
+    outlineVariant = BorderVariant,
 )
 
 @Composable
@@ -21,6 +32,7 @@ fun SmartNotiTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = SmartNotiColors,
         typography = AppTypography,
+        shapes = AppShapes,
         content = content,
     )
 }

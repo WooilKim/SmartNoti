@@ -7,23 +7,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.ui.theme.DigestContainer
+import com.smartnoti.app.ui.theme.DigestOnContainer
+import com.smartnoti.app.ui.theme.PriorityContainer
+import com.smartnoti.app.ui.theme.PriorityOnContainer
+import com.smartnoti.app.ui.theme.SilentContainer
+import com.smartnoti.app.ui.theme.SilentOnContainer
 
 @Composable
 fun StatusBadge(status: NotificationStatusUi) {
-    val (label, color) = when (status) {
-        NotificationStatusUi.PRIORITY -> "즉시 전달" to Color(0xFF2D6BFF)
-        NotificationStatusUi.DIGEST -> "Digest" to Color(0xFF946200)
-        NotificationStatusUi.SILENT -> "조용히 정리" to Color(0xFF4B5563)
+    val (label, bgColor, fgColor) = when (status) {
+        NotificationStatusUi.PRIORITY -> Triple("즉시 전달", PriorityContainer, PriorityOnContainer)
+        NotificationStatusUi.DIGEST -> Triple("Digest", DigestContainer, DigestOnContainer)
+        NotificationStatusUi.SILENT -> Triple("조용히 정리", SilentContainer, SilentOnContainer)
     }
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
-        color = Color.White,
+        color = fgColor,
         modifier = Modifier
-            .background(color = color, shape = RoundedCornerShape(999.dp))
+            .background(color = bgColor, shape = RoundedCornerShape(999.dp))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }
