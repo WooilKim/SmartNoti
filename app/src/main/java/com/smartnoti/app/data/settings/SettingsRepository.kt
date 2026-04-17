@@ -29,6 +29,7 @@ class SettingsRepository private constructor(
                 suppressedSourceApps = prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet(),
                 hidePersistentNotifications = prefs[HIDE_PERSISTENT_NOTIFICATIONS] ?: true,
                 hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: false,
+                protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: true,
             )
         }
     }
@@ -77,6 +78,12 @@ class SettingsRepository private constructor(
         }
     }
 
+    suspend fun setProtectCriticalPersistentNotifications(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] = enabled
+        }
+    }
+
     suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
             val updated = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet()).toMutableSet().apply {
@@ -114,6 +121,7 @@ class SettingsRepository private constructor(
         private val SUPPRESSED_SOURCE_APPS = stringSetPreferencesKey("suppressed_source_apps")
         private val HIDE_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_notifications")
         private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
+        private val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("protect_critical_persistent_notifications")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
 
         @Volatile private var instance: SettingsRepository? = null

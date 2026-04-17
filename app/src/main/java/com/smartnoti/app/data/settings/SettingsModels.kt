@@ -9,4 +9,5 @@ data class SmartNotiSettings(
     val suppressedSourceApps: Set<String> = emptySet(),
     val hidePersistentNotifications: Boolean = true,
     val hidePersistentSourceNotifications: Boolean = false,
+    val protectCriticalPersistentNotifications: Boolean = true,
 )

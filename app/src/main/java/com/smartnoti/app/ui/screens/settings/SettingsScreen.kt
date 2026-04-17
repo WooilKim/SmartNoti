@@ -266,6 +266,33 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "통화·길안내·녹화 중 알림은 항상 보이기",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Switch(
+                        checked = settings.protectCriticalPersistentNotifications,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                repository.setProtectCriticalPersistentNotifications(enabled)
+                            }
+                        }
+                    )
+                }
+                Text(
+                    if (settings.protectCriticalPersistentNotifications) {
+                        "통화 중, 길안내 중, 화면 녹화/카메라·마이크 사용 중 알림은 숨김 예외로 보호해요."
+                    } else {
+                        "고정 알림 예외 보호를 끄면 중요한 live-state 알림도 일반 고정 알림처럼 숨겨질 수 있어요."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (filteredCapturedApps.isEmpty()) {
                     Text(
                         "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요.",

@@ -80,6 +80,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                     packageName = sbn.packageName,
                     title = title,
                     body = body,
+                    protectCriticalPersistentNotifications = settings.protectCriticalPersistentNotifications,
                 )
             } else {
                 false

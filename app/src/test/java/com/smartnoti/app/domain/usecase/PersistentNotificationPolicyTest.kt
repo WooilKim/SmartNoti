@@ -30,6 +30,7 @@ class PersistentNotificationPolicyTest {
                 packageName = "com.android.dialer",
                 title = "통화 중",
                 body = "00:31",
+                protectCriticalPersistentNotifications = true,
             )
         )
     }
@@ -41,6 +42,7 @@ class PersistentNotificationPolicyTest {
                 packageName = "com.google.android.apps.maps",
                 title = "길안내 중",
                 body = "다음 교차로에서 우회전",
+                protectCriticalPersistentNotifications = true,
             )
         )
         assertTrue(
@@ -48,6 +50,7 @@ class PersistentNotificationPolicyTest {
                 packageName = "com.android.systemui",
                 title = "화면 녹화 중",
                 body = "탭하여 중지",
+                protectCriticalPersistentNotifications = true,
             )
         )
     }
@@ -59,6 +62,19 @@ class PersistentNotificationPolicyTest {
                 packageName = "android",
                 title = "충전 중",
                 body = "배터리 보호",
+                protectCriticalPersistentNotifications = true,
+            )
+        )
+    }
+
+    @Test
+    fun disables_bypass_when_critical_persistent_protection_is_turned_off() {
+        assertFalse(
+            policy.shouldBypassPersistentHiding(
+                packageName = "com.android.dialer",
+                title = "통화 중",
+                body = "00:31",
+                protectCriticalPersistentNotifications = false,
             )
         )
     }

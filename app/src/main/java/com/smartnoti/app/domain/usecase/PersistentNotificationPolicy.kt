@@ -12,7 +12,10 @@ class PersistentNotificationPolicy {
         packageName: String,
         title: String,
         body: String,
+        protectCriticalPersistentNotifications: Boolean,
     ): Boolean {
+        if (!protectCriticalPersistentNotifications) return false
+
         val normalizedText = listOf(packageName, title, body)
             .joinToString(" ")
             .lowercase()
