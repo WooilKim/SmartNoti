@@ -24,6 +24,7 @@ import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.ui.components.AppBottomBar
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import com.smartnoti.app.ui.screens.detail.InsightDrillDownScreen
 import com.smartnoti.app.ui.screens.detail.NotificationDetailScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.home.HomeScreen
@@ -136,7 +137,8 @@ fun AppNavHost(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onPriorityClick = { navController.navigate(Routes.Priority.route) },
-                    onDigestClick = { navController.navigate(Routes.Digest.route) }
+                    onDigestClick = { navController.navigate(Routes.Digest.route) },
+                    onInsightClick = { navController.navigate(it) },
                 )
             }
             composable(Routes.Priority.route) {
@@ -164,6 +166,20 @@ fun AppNavHost(
                 NotificationDetailScreen(
                     contentPadding = paddingValues,
                     notificationId = backStackEntry.arguments?.getString("notificationId").orEmpty()
+                )
+            }
+            composable(
+                route = Routes.Insight.route,
+                arguments = listOf(
+                    navArgument("filterType") { type = NavType.StringType },
+                    navArgument("filterValue") { type = NavType.StringType },
+                )
+            ) { backStackEntry ->
+                InsightDrillDownScreen(
+                    contentPadding = paddingValues,
+                    filterType = backStackEntry.arguments?.getString("filterType").orEmpty(),
+                    filterValue = backStackEntry.arguments?.getString("filterValue").orEmpty(),
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                 )
             }
         }

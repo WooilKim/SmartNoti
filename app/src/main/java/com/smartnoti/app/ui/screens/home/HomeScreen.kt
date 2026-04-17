@@ -1,6 +1,7 @@
 package com.smartnoti.app.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import com.smartnoti.app.domain.usecase.HomeReasonInsight
 import com.smartnoti.app.domain.usecase.HomeTimelineBar
 import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeTimelineRange
+import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
@@ -60,6 +62,7 @@ fun HomeScreen(
     onNotificationClick: (String) -> Unit,
     onPriorityClick: () -> Unit,
     onDigestClick: () -> Unit,
+    onInsightClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -149,6 +152,7 @@ fun HomeScreen(
                     topReasonTag = insights.topReasonTag,
                     topReasons = insights.topReasons,
                     reasonBreakdownItems = reasonBreakdownItems,
+                    onInsightClick = onInsightClick,
                 )
             }
         }
@@ -192,6 +196,7 @@ private fun InsightCard(
     topReasonTag: String?,
     topReasons: List<HomeReasonInsight>,
     reasonBreakdownItems: List<HomeReasonBreakdownItem>,
+    onInsightClick: (String) -> Unit,
 ) {
     val primaryLine = buildString {
         append("지금까지 ")
@@ -240,10 +245,14 @@ private fun InsightCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
+            InsightLinkText(
                 text = detailLine,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                enabled = topFilteredAppName != null,
+                onClick = {
+                    topFilteredAppName?.let { appName ->
+                        onInsightClick(Routes.Insight.createForApp(appName))
+                    }
+                },
             )
             if (reasonRankingLine.isNotBlank()) {
                 Text(
@@ -253,17 +262,28 @@ private fun InsightCard(
                 )
             }
             if (reasonBreakdownItems.isNotEmpty()) {
-                ReasonBreakdownChart(items = reasonBreakdownItems)
+                ReasonBreakdownChart(
+                    items = reasonBreakdownItems,
+                    onReasonClick = { reasonTag ->
+                        onInsightClick(Routes.Insight.createForReason(reasonTag))
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ReasonBreakdownChart(items: List<HomeReasonBreakdownItem>) {
+private fun ReasonBreakdownChart(
+    items: List<HomeReasonBreakdownItem>,
+    onReasonClick: (String) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { item ->
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.clickable { onReasonClick(item.tag) },
+            ) {
                 Text(
                     text = "${item.tag} · ${item.count}건",
                     style = MaterialTheme.typography.labelSmall,
@@ -291,6 +311,20 @@ private fun ReasonBreakdownChart(items: List<HomeReasonBreakdownItem>) {
             }
         }
     }
+}
+
+@Composable
+private fun InsightLinkText(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = if (enabled) Modifier.clickable(onClick = onClick) else Modifier,
+    )
 }
 
 @Composable
