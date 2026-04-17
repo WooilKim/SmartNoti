@@ -157,7 +157,10 @@ fun AppNavHost(
                 RulesScreen(contentPadding = paddingValues)
             }
             composable(Routes.Settings.route) {
-                SettingsScreen(contentPadding = paddingValues)
+                SettingsScreen(
+                    contentPadding = paddingValues,
+                    onInsightClick = { navController.navigate(it) },
+                )
             }
             composable(
                 route = Routes.Detail.route,

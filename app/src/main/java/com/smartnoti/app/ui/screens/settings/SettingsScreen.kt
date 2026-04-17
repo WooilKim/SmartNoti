@@ -1,6 +1,7 @@
 package com.smartnoti.app.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,9 @@ import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.usecase.SuppressedAppInsight
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownItem
+import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
+import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
@@ -40,12 +43,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(contentPadding: PaddingValues) {
+fun SettingsScreen(
+    contentPadding: PaddingValues,
+    onInsightClick: (String) -> Unit,
+) {
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
     val suppressionInsightsBuilder = remember { SuppressionInsightsBuilder() }
     val suppressionBreakdownBuilder = remember { SuppressionBreakdownChartModelBuilder() }
+    val suppressionDrillDownTargetsBuilder = remember { SuppressionInsightDrillDownTargetsBuilder() }
     val settings by repository.observeSettings().collectAsState(
         initial = com.smartnoti.app.data.settings.SmartNotiSettings()
     )
@@ -60,6 +67,12 @@ fun SettingsScreen(contentPadding: PaddingValues) {
     }
     val suppressionBreakdownItems = remember(suppressionInsights) {
         suppressionBreakdownBuilder.build(suppressionInsights.appInsights).items
+    }
+    val suppressionDrillDownTargets = remember(suppressionInsights, suppressionBreakdownItems) {
+        suppressionDrillDownTargetsBuilder.build(
+            summary = suppressionInsights,
+            breakdownItems = suppressionBreakdownItems,
+        )
     }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
@@ -143,6 +156,9 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 summary = suppressionInsights,
                 breakdownItems = suppressionBreakdownItems,
+                topAppRoute = suppressionDrillDownTargets.topAppRoute,
+                breakdownRoutesByAppName = suppressionDrillDownTargets.breakdownRoutesByAppName,
+                onInsightClick = onInsightClick,
             )
         }
         item {
@@ -259,6 +275,9 @@ private fun SuppressionInsightsCard(
     suppressEnabled: Boolean,
     summary: com.smartnoti.app.domain.usecase.SuppressionInsightsSummary,
     breakdownItems: List<SuppressionBreakdownItem>,
+    topAppRoute: String?,
+    breakdownRoutesByAppName: Map<String, String>,
+    onInsightClick: (String) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -287,9 +306,18 @@ private fun SuppressionInsightsCard(
             text = detail,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = if (topAppRoute != null) {
+                Modifier.clickable { onInsightClick(topAppRoute) }
+            } else {
+                Modifier
+            },
         )
         if (breakdownItems.isNotEmpty()) {
-            SuppressionBreakdownChart(items = breakdownItems)
+            SuppressionBreakdownChart(
+                items = breakdownItems,
+                routeByAppName = breakdownRoutesByAppName,
+                onInsightClick = onInsightClick,
+            )
         }
         if (summary.appInsights.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -302,10 +330,19 @@ private fun SuppressionInsightsCard(
 }
 
 @Composable
-private fun SuppressionBreakdownChart(items: List<SuppressionBreakdownItem>) {
+private fun SuppressionBreakdownChart(
+    items: List<SuppressionBreakdownItem>,
+    routeByAppName: Map<String, String>,
+    onInsightClick: (String) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { item ->
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.clickable {
+                    routeByAppName[item.appName]?.let(onInsightClick)
+                },
+            ) {
                 Text(
                     text = "${item.appName} · ${item.filteredCount}건",
                     style = MaterialTheme.typography.labelSmall,
