@@ -110,6 +110,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                     appName = appName,
                     title = notification.title,
                     body = notification.body,
+                    notificationId = notification.id,
                 )
             }
         }

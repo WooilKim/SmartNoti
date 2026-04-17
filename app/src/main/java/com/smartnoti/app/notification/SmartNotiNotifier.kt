@@ -1,5 +1,6 @@
 package com.smartnoti.app.notification
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -10,18 +11,21 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.smartnoti.app.MainActivity
 import com.smartnoti.app.domain.model.NotificationDecision
+import com.smartnoti.app.onboarding.OnboardingPermissions
 
 class SmartNotiNotifier(
     private val context: Context,
 ) {
     private val notificationManager by lazy { NotificationManagerCompat.from(context) }
 
+    @SuppressLint("MissingPermission")
     fun notifySuppressedNotification(
         decision: NotificationDecision,
         packageName: String,
         appName: String,
         title: String,
         body: String,
+        notificationId: String,
     ) {
         ensureChannels()
         val channelId = when (decision) {
@@ -53,8 +57,20 @@ class SmartNotiNotifier(
             .setAutoCancel(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
-            .setContentIntent(createContentIntent())
+            .setContentIntent(
+                createContentIntent(
+                    notificationId = notificationId,
+                    requestCode = NotificationReplacementIds.idFor(
+                        packageName = packageName,
+                        decision = decision,
+                    ),
+                )
+            )
             .build()
+
+        if (!OnboardingPermissions.isPostNotificationsGranted(context)) {
+            return
+        }
 
         notificationManager.notify(
             NotificationReplacementIds.idFor(packageName = packageName, decision = decision),
@@ -90,13 +106,17 @@ class SmartNotiNotifier(
         manager.createNotificationChannel(silentChannel)
     }
 
-    private fun createContentIntent(): PendingIntent {
+    private fun createContentIntent(
+        notificationId: String,
+        requestCode: Int,
+    ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_NOTIFICATION_ID, notificationId)
         }
         return PendingIntent.getActivity(
             context,
-            0,
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
@@ -105,6 +125,7 @@ class SmartNotiNotifier(
     companion object {
         const val DIGEST_CHANNEL_ID = "smartnoti_digest"
         const val SILENT_CHANNEL_ID = "smartnoti_silent"
+        const val EXTRA_NOTIFICATION_ID = "com.smartnoti.app.extra.NOTIFICATION_ID"
     }
 }
 

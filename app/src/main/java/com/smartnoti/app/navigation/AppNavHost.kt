@@ -33,7 +33,11 @@ import com.smartnoti.app.ui.screens.rules.RulesScreen
 import com.smartnoti.app.ui.screens.settings.SettingsScreen
 
 @Composable
-fun AppNavHost(modifier: Modifier = Modifier) {
+fun AppNavHost(
+    modifier: Modifier = Modifier,
+    pendingNotificationId: String? = null,
+    onPendingNotificationConsumed: () -> Unit = {},
+) {
     val context = LocalContext.current
     val settings = remember { SettingsRepository.getInstance(context) }
     val completed: Boolean? by produceState<Boolean?>(initialValue = null, settings) {
@@ -69,6 +73,15 @@ fun AppNavHost(modifier: Modifier = Modifier) {
                     launchSingleTop = true
                 }
             }
+        }
+    }
+
+    LaunchedEffect(pendingNotificationId, onboardingCompleted) {
+        if (onboardingCompleted && !pendingNotificationId.isNullOrBlank()) {
+            navController.navigate(Routes.Detail.create(pendingNotificationId)) {
+                launchSingleTop = true
+            }
+            onPendingNotificationConsumed()
         }
     }
 
