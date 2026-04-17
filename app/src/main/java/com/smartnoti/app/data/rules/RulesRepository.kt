@@ -44,6 +44,10 @@ class RulesRepository private constructor(
         persist(existing)
     }
 
+    suspend fun deleteRule(ruleId: String) {
+        persist(currentRules().filterNot { it.id == ruleId })
+    }
+
     private suspend fun persist(rules: List<RuleUiModel>) {
         context.rulesDataStore.edit { prefs ->
             prefs[RULES] = RuleStorageCodec.encode(rules)

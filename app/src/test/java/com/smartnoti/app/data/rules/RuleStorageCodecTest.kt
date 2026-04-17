@@ -36,4 +36,11 @@ class RuleStorageCodecTest {
 
         assertEquals(rules, decoded)
     }
+
+    @Test
+    fun decode_returns_empty_list_for_invalid_payload_line() {
+        val decoded = RuleStorageCodec.decode("broken-payload")
+
+        assertEquals(emptyList<RuleUiModel>(), decoded)
+    }
 }

@@ -1,9 +1,11 @@
 package com.smartnoti.app.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -18,19 +20,37 @@ import com.smartnoti.app.domain.model.RuleUiModel
 fun RuleRow(
     rule: RuleUiModel,
     onCheckedChange: (Boolean) -> Unit,
+    onEditClick: () -> Unit = {},
+    onDeleteClick: () -> Unit = {},
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            androidx.compose.foundation.layout.Column {
-                Text(rule.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(rule.subtitle, style = MaterialTheme.typography.bodySmall)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(rule.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(rule.subtitle, style = MaterialTheme.typography.bodySmall)
+                    if (rule.matchValue.isNotBlank()) {
+                        Text(rule.matchValue, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                Switch(checked = rule.enabled, onCheckedChange = onCheckedChange)
             }
-            Switch(checked = rule.enabled, onCheckedChange = onCheckedChange)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onEditClick) {
+                    Text("수정")
+                }
+                Button(onClick = onDeleteClick) {
+                    Text("삭제")
+                }
+            }
         }
     }
 }
