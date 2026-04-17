@@ -51,7 +51,8 @@ class SmartNotiNotifier(
             parentRoute = parentRoute,
             requestCode = replacementNotificationId,
         )
-        val notification = NotificationCompat.Builder(context, channelId)
+        val keepAction = keepActionFor(decision)
+        val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(contentTitle)
             .setContentText(contentText)
@@ -72,11 +73,26 @@ class SmartNotiNotifier(
             .addAction(
                 android.R.drawable.ic_input_add,
                 ACTION_LABEL_PROMOTE_TO_PRIORITY,
-                createPromoteToPriorityIntent(
+                createFeedbackActionIntent(
                     notificationId = notificationId,
                     replacementNotificationId = replacementNotificationId,
+                    action = RuleAction.ALWAYS_PRIORITY,
                 ),
             )
+
+        if (keepAction != null) {
+            notificationBuilder.addAction(
+                android.R.drawable.ic_menu_recent_history,
+                keepAction.label,
+                createFeedbackActionIntent(
+                    notificationId = notificationId,
+                    replacementNotificationId = replacementNotificationId,
+                    action = keepAction.action,
+                ),
+            )
+        }
+
+        val notification = notificationBuilder
             .addAction(
                 android.R.drawable.ic_menu_view,
                 ACTION_LABEL_OPEN,
@@ -140,41 +156,71 @@ class SmartNotiNotifier(
         )
     }
 
-    private fun createPromoteToPriorityIntent(
+    private fun createFeedbackActionIntent(
         notificationId: String,
         replacementNotificationId: Int,
+        action: RuleAction,
     ): PendingIntent {
         val intent = Intent(context, SmartNotiNotificationActionReceiver::class.java).apply {
-            action = ACTION_PROMOTE_TO_PRIORITY
+            this.action = action.intentAction
             putExtra(EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(EXTRA_REPLACEMENT_NOTIFICATION_ID, replacementNotificationId)
         }
         return PendingIntent.getBroadcast(
             context,
-            promoteRequestCode(notificationId),
+            feedbackRequestCode(notificationId, action),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
-    private fun promoteRequestCode(notificationId: String): Int {
-        return promoteRequestCodeForTest(notificationId)
+    private fun keepActionFor(decision: NotificationDecision): NotificationQuickAction? = when (decision) {
+        NotificationDecision.PRIORITY -> null
+        NotificationDecision.DIGEST -> NotificationQuickAction(
+            label = ACTION_LABEL_KEEP_DIGEST,
+            action = RuleAction.DIGEST,
+        )
+        NotificationDecision.SILENT -> NotificationQuickAction(
+            label = ACTION_LABEL_KEEP_SILENT,
+            action = RuleAction.SILENT,
+        )
+    }
+
+    private fun feedbackRequestCode(notificationId: String, action: RuleAction): Int {
+        return feedbackRequestCodeForTest(notificationId, action.intentAction)
     }
 
     companion object {
         const val DIGEST_CHANNEL_ID = "smartnoti_digest"
         const val SILENT_CHANNEL_ID = "smartnoti_silent"
         const val ACTION_PROMOTE_TO_PRIORITY = "com.smartnoti.app.action.PROMOTE_TO_PRIORITY"
+        const val ACTION_KEEP_DIGEST = "com.smartnoti.app.action.KEEP_DIGEST"
+        const val ACTION_KEEP_SILENT = "com.smartnoti.app.action.KEEP_SILENT"
         const val ACTION_LABEL_OPEN = "열기"
         const val ACTION_LABEL_PROMOTE_TO_PRIORITY = "중요로 고정"
+        const val ACTION_LABEL_KEEP_DIGEST = "Digest로 유지"
+        const val ACTION_LABEL_KEEP_SILENT = "조용히 유지"
         const val EXTRA_NOTIFICATION_ID = "com.smartnoti.app.extra.NOTIFICATION_ID"
         const val EXTRA_PARENT_ROUTE = "com.smartnoti.app.extra.PARENT_ROUTE"
         const val EXTRA_REPLACEMENT_NOTIFICATION_ID = "com.smartnoti.app.extra.REPLACEMENT_NOTIFICATION_ID"
 
-        internal fun promoteRequestCodeForTest(notificationId: String): Int {
-            return (notificationId.hashCode() * 31) + ACTION_PROMOTE_TO_PRIORITY.hashCode()
+        internal fun feedbackRequestCodeForTest(notificationId: String, action: String): Int {
+            return (notificationId.hashCode() * 31) + action.hashCode()
         }
     }
+}
+
+private data class NotificationQuickAction(
+    val label: String,
+    val action: RuleAction,
+)
+
+private enum class RuleAction(
+    val intentAction: String,
+) {
+    ALWAYS_PRIORITY(SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY),
+    DIGEST(SmartNotiNotifier.ACTION_KEEP_DIGEST),
+    SILENT(SmartNotiNotifier.ACTION_KEEP_SILENT),
 }
 
 object NotificationReplacementIds {

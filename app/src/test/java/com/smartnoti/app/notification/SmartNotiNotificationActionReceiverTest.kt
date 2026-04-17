@@ -6,18 +6,44 @@ import org.junit.Test
 class SmartNotiNotificationActionReceiverTest {
 
     @Test
-    fun promote_request_code_is_stable_for_same_notification() {
-        val first = SmartNotiNotifier.promoteRequestCodeForTest("notification-1")
-        val second = SmartNotiNotifier.promoteRequestCodeForTest("notification-1")
+    fun feedback_request_code_is_stable_for_same_notification_and_action() {
+        val first = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY,
+        )
+        val second = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY,
+        )
 
         assertEquals(first, second)
     }
 
     @Test
-    fun promote_request_code_differs_for_different_notifications() {
-        val first = SmartNotiNotifier.promoteRequestCodeForTest("notification-1")
-        val second = SmartNotiNotifier.promoteRequestCodeForTest("notification-2")
+    fun feedback_request_code_differs_for_different_notifications() {
+        val first = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY,
+        )
+        val second = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-2",
+            action = SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY,
+        )
 
         org.junit.Assert.assertNotEquals(first, second)
+    }
+
+    @Test
+    fun feedback_request_code_differs_for_different_actions() {
+        val promote = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY,
+        )
+        val keepDigest = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_KEEP_DIGEST,
+        )
+
+        org.junit.Assert.assertNotEquals(promote, keepDigest)
     }
 }

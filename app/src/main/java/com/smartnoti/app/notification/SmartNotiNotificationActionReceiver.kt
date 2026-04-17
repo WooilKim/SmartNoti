@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 class SmartNotiNotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY) return
+        val feedbackAction = intent.action.toFeedbackAction() ?: return
 
         val notificationId = intent.getStringExtra(SmartNotiNotifier.EXTRA_NOTIFICATION_ID)
             ?.takeIf { it.isNotBlank() }
@@ -33,10 +33,10 @@ class SmartNotiNotificationActionReceiver : BroadcastReceiver() {
                     .first()
                     ?: return@launch
                 val feedbackPolicy = NotificationFeedbackPolicy()
-                val updated = feedbackPolicy.applyAction(notification, RuleActionUi.ALWAYS_PRIORITY)
+                val updated = feedbackPolicy.applyAction(notification, feedbackAction.ruleAction)
                 repository.updateNotification(updated)
                 RulesRepository.getInstance(appContext)
-                    .upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.ALWAYS_PRIORITY))
+                    .upsertRule(feedbackPolicy.toRule(notification, feedbackAction.ruleAction))
                 if (replacementNotificationId != Int.MIN_VALUE) {
                     NotificationManagerCompat.from(appContext).cancel(replacementNotificationId)
                 }
@@ -45,4 +45,26 @@ class SmartNotiNotificationActionReceiver : BroadcastReceiver() {
             }
         }
     }
+}
+
+private enum class NotificationFeedbackAction(
+    val intentAction: String,
+    val ruleAction: RuleActionUi,
+) {
+    PROMOTE_TO_PRIORITY(
+        intentAction = SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY,
+        ruleAction = RuleActionUi.ALWAYS_PRIORITY,
+    ),
+    KEEP_DIGEST(
+        intentAction = SmartNotiNotifier.ACTION_KEEP_DIGEST,
+        ruleAction = RuleActionUi.DIGEST,
+    ),
+    KEEP_SILENT(
+        intentAction = SmartNotiNotifier.ACTION_KEEP_SILENT,
+        ruleAction = RuleActionUi.SILENT,
+    ),
+}
+
+private fun String?.toFeedbackAction(): NotificationFeedbackAction? {
+    return NotificationFeedbackAction.entries.firstOrNull { it.intentAction == this }
 }
