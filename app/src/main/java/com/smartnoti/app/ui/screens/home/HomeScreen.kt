@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +37,8 @@ import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
 import com.smartnoti.app.domain.usecase.HomeNotificationTimeline
 import com.smartnoti.app.domain.usecase.HomeNotificationTimelineBuilder
 import com.smartnoti.app.domain.usecase.HomeReasonInsight
+import com.smartnoti.app.domain.usecase.HomeTimelineBar
+import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeTimelineRange
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
@@ -58,6 +63,7 @@ fun HomeScreen(
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
+    val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
     var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
     val recent by repository.observeAll().collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
@@ -69,6 +75,9 @@ fun HomeScreen(
             notifications = recent,
             range = selectedTimelineRange,
         )
+    }
+    val timelineBars = remember(timeline) {
+        timelineBarChartBuilder.build(timeline).bars
     }
 
     LazyColumn(
@@ -139,6 +148,7 @@ fun HomeScreen(
         item {
             TimelineCard(
                 timeline = timeline,
+                bars = timelineBars,
                 selectedRange = selectedTimelineRange,
                 onRangeSelected = { range -> selectedTimelineRange = range },
             )
@@ -241,6 +251,7 @@ private fun InsightCard(
 @Composable
 private fun TimelineCard(
     timeline: HomeNotificationTimeline,
+    bars: List<HomeTimelineBar>,
     selectedRange: HomeTimelineRange,
     onRangeSelected: (HomeTimelineRange) -> Unit,
 ) {
@@ -268,24 +279,74 @@ private fun TimelineCard(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (timeline.buckets.isEmpty()) {
+        if (bars.isEmpty()) {
             Text(
                 text = "선택한 구간에는 아직 정리된 흐름이 없어요",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
+            TimelineBarChart(bars = bars)
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                timeline.buckets.forEach { bucket ->
-                    val prefix = if (bucket.isPeakFilteredBucket) "피크" else "흐름"
+                bars.forEach { bar ->
+                    val prefix = if (bar.isPeak) "피크" else "흐름"
                     Text(
-                        text = "$prefix · ${bucket.label} · 정리 ${bucket.filteredCount}건 · 즉시 ${bucket.priorityCount}건",
+                        text = "$prefix · ${bar.label} · 정리 ${bar.filteredCount}건 · 즉시 ${bar.priorityCount}건",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TimelineBarChart(bars: List<HomeTimelineBar>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(96.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        bars.forEach { bar ->
+            TimelineBar(bar = bar)
+        }
+    }
+}
+
+@Composable
+private fun TimelineBar(bar: HomeTimelineBar) {
+    Column(
+        modifier = Modifier.width(56.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .height(72.dp)
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .padding(6.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(bar.fillFraction.coerceIn(0f, 1f))
+                    .align(androidx.compose.ui.Alignment.BottomCenter)
+                    .background(
+                        color = if (bar.isPeak) GreenAccent else MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(10.dp),
+                    ),
+            )
+        }
+        Text(
+            text = bar.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
