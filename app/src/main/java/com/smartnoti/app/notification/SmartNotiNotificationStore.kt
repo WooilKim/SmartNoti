@@ -9,6 +9,10 @@ object SmartNotiNotificationStore {
     private val _capturedNotifications = MutableStateFlow<List<NotificationUiModel>>(emptyList())
     val capturedNotifications: StateFlow<List<NotificationUiModel>> = _capturedNotifications.asStateFlow()
 
+    fun setNotifications(notifications: List<NotificationUiModel>) {
+        _capturedNotifications.value = notifications
+    }
+
     fun prepend(notification: NotificationUiModel) {
         _capturedNotifications.value = listOf(notification) + _capturedNotifications.value
     }

@@ -10,16 +10,25 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeNotificationRepository
+import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.notification.SmartNotiNotificationStore
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -28,11 +37,25 @@ fun HomeScreen(
     onPriorityClick: () -> Unit,
     onDigestClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     val repo by remember { androidx.compose.runtime.mutableStateOf(FakeNotificationRepository()) }
+    val repository = remember(context) { NotificationRepository.getInstance(context) }
     val captured by SmartNotiNotificationStore.capturedNotifications.collectAsState()
+
+    DisposableEffect(repository) {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        scope.launch {
+            repository.observeAll().collect { notifications ->
+                SmartNotiNotificationStore.setNotifications(notifications)
+            }
+        }
+        onDispose { scope.cancel() }
+    }
+
     val recent = remember(captured) {
-        if (captured.isNotEmpty()) captured + repo.getRecentNotifications()
-        else repo.getRecentNotifications()
+        if (captured.isNotEmpty()) captured + repo.getRecentNotifications().filterNot { fake ->
+            captured.any { it.id == fake.id }
+        } else repo.getRecentNotifications()
     }
 
     LazyColumn(

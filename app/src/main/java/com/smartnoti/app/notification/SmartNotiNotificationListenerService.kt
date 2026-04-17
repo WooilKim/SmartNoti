@@ -2,11 +2,20 @@ package com.smartnoti.app.notification
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 
 class SmartNotiNotificationListenerService : NotificationListenerService() {
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val processor by lazy {
         NotificationCaptureProcessor(
@@ -16,6 +25,16 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 shoppingPackages = setOf("com.coupang.mobile"),
             )
         )
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        val repository = NotificationRepository.getInstance(applicationContext)
+        serviceScope.launch {
+            repository.observeAll().collect { notifications ->
+                SmartNotiNotificationStore.setNotifications(notifications)
+            }
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -47,6 +66,14 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             )
         )
 
-        SmartNotiNotificationStore.prepend(notification)
+        val repository = NotificationRepository.getInstance(applicationContext)
+        serviceScope.launch {
+            repository.save(notification, sbn.postTime)
+        }
+    }
+
+    override fun onDestroy() {
+        serviceScope.cancel()
+        super.onDestroy()
     }
 }
