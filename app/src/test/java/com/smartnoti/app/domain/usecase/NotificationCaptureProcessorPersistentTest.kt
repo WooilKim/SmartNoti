@@ -1,8 +1,7 @@
 package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.CapturedNotificationInput
-import com.smartnoti.app.domain.model.NotificationUiModel
-import com.smartnoti.app.domain.model.RuleUiModel
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,5 +53,25 @@ class NotificationCaptureProcessorPersistentTest {
         )
 
         assertTrue(notification.isPersistent)
+    }
+
+    @Test
+    fun does_not_tag_call_related_persistent_notifications_as_generic_persistent() {
+        val notification = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.android.dialer",
+                appName = "전화",
+                sender = null,
+                title = "통화 중",
+                body = "00:31",
+                postedAtMillis = 1_700_000_000_000L,
+                quietHours = false,
+                duplicateCountInWindow = 1,
+                isPersistent = false,
+            ),
+            rules = emptyList(),
+        )
+
+        assertFalse("지속 알림" in notification.reasonTags)
     }
 }

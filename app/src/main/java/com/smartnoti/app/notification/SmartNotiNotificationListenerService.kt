@@ -75,6 +75,15 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 isOngoing = sbn.isOngoing,
                 isClearable = sbn.isClearable,
             )
+            val shouldBypassPersistentHiding = if (isPersistent) {
+                persistentNotificationPolicy.shouldBypassPersistentHiding(
+                    packageName = sbn.packageName,
+                    title = title,
+                    body = body,
+                )
+            } else {
+                false
+            }
             val contentSignature = duplicatePolicy.contentSignature(
                 title = title,
                 body = body,
@@ -93,7 +102,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 postedAtMillis = sbn.postTime,
                 quietHours = false,
                 duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
-                isPersistent = isPersistent,
+                isPersistent = isPersistent && !shouldBypassPersistentHiding,
             ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
             val notification = processor.process(captureInput, rules)
@@ -104,7 +113,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 com.smartnoti.app.domain.model.NotificationStatusUi.DIGEST -> com.smartnoti.app.domain.model.NotificationDecision.DIGEST
                 com.smartnoti.app.domain.model.NotificationStatusUi.SILENT -> com.smartnoti.app.domain.model.NotificationDecision.SILENT
             }
-            if ((isPersistent && settings.hidePersistentSourceNotifications) || NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+            if (((isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications) || NotificationSuppressionPolicy.shouldSuppressSourceNotification(
                     suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
                     suppressedApps = settings.suppressedSourceApps,
                     packageName = sbn.packageName,
