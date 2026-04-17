@@ -35,7 +35,7 @@ import com.smartnoti.app.ui.screens.settings.SettingsScreen
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
-    pendingNotificationId: String? = null,
+    pendingNotificationEntry: ReplacementNotificationEntry? = null,
     onPendingNotificationConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -76,9 +76,17 @@ fun AppNavHost(
         }
     }
 
-    LaunchedEffect(pendingNotificationId, onboardingCompleted) {
-        if (onboardingCompleted && !pendingNotificationId.isNullOrBlank()) {
-            navController.navigate(Routes.Detail.create(pendingNotificationId)) {
+    LaunchedEffect(pendingNotificationEntry, onboardingCompleted) {
+        val pendingEntry = pendingNotificationEntry
+        if (onboardingCompleted && pendingEntry != null) {
+            navController.navigate(pendingEntry.parentRoute) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+            navController.navigate(Routes.Detail.create(pendingEntry.notificationId)) {
                 launchSingleTop = true
             }
             onPendingNotificationConsumed()

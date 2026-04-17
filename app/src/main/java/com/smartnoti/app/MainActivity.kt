@@ -6,20 +6,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import com.smartnoti.app.navigation.AppNavHost
+import com.smartnoti.app.navigation.ReplacementNotificationEntry
+import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
 import com.smartnoti.app.notification.SmartNotiNotifier
 import com.smartnoti.app.ui.theme.SmartNotiTheme
 
 class MainActivity : ComponentActivity() {
-    private val pendingNotificationId = mutableStateOf<String?>(null)
+    private val pendingNotificationEntry = mutableStateOf<ReplacementNotificationEntry?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        pendingNotificationId.value = intent?.extractNotificationId()
+        pendingNotificationEntry.value = intent?.extractReplacementNotificationEntry()
         setContent {
             SmartNotiTheme {
                 AppNavHost(
-                    pendingNotificationId = pendingNotificationId.value,
-                    onPendingNotificationConsumed = { pendingNotificationId.value = null },
+                    pendingNotificationEntry = pendingNotificationEntry.value,
+                    onPendingNotificationConsumed = { pendingNotificationEntry.value = null },
                 )
             }
         }
@@ -28,9 +30,19 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        pendingNotificationId.value = intent.extractNotificationId()
+        pendingNotificationEntry.value = intent.extractReplacementNotificationEntry()
     }
 
-    private fun Intent.extractNotificationId(): String? =
-        getStringExtra(SmartNotiNotifier.EXTRA_NOTIFICATION_ID)?.takeIf { it.isNotBlank() }
+    private fun Intent.extractReplacementNotificationEntry(): ReplacementNotificationEntry? {
+        val notificationId = getStringExtra(SmartNotiNotifier.EXTRA_NOTIFICATION_ID)
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        val parentRoute = ReplacementNotificationEntryRoutes.sanitize(
+            getStringExtra(SmartNotiNotifier.EXTRA_PARENT_ROUTE)
+        )
+        return ReplacementNotificationEntry(
+            notificationId = notificationId,
+            parentRoute = parentRoute,
+        )
+    }
 }

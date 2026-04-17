@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.smartnoti.app.MainActivity
 import com.smartnoti.app.domain.model.NotificationDecision
+import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
 import com.smartnoti.app.onboarding.OnboardingPermissions
 
 class SmartNotiNotifier(
@@ -60,6 +61,7 @@ class SmartNotiNotifier(
             .setContentIntent(
                 createContentIntent(
                     notificationId = notificationId,
+                    parentRoute = ReplacementNotificationEntryRoutes.forDecision(decision),
                     requestCode = NotificationReplacementIds.idFor(
                         packageName = packageName,
                         decision = decision,
@@ -108,11 +110,13 @@ class SmartNotiNotifier(
 
     private fun createContentIntent(
         notificationId: String,
+        parentRoute: String,
         requestCode: Int,
     ): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(EXTRA_PARENT_ROUTE, parentRoute)
         }
         return PendingIntent.getActivity(
             context,
@@ -126,6 +130,7 @@ class SmartNotiNotifier(
         const val DIGEST_CHANNEL_ID = "smartnoti_digest"
         const val SILENT_CHANNEL_ID = "smartnoti_silent"
         const val EXTRA_NOTIFICATION_ID = "com.smartnoti.app.extra.NOTIFICATION_ID"
+        const val EXTRA_PARENT_ROUTE = "com.smartnoti.app.extra.PARENT_ROUTE"
     }
 }
 
