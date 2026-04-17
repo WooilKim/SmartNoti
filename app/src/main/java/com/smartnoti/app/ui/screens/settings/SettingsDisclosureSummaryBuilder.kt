@@ -1,5 +1,6 @@
 package com.smartnoti.app.ui.screens.settings
 
+import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.settings.SmartNotiSettings
 
 class SettingsDisclosureSummaryBuilder {
@@ -27,12 +28,30 @@ class SettingsDisclosureSummaryBuilder {
     fun buildSuppressedAppsSummary(
         suppressEnabled: Boolean,
         selectedCount: Int,
-        availableCount: Int,
+        availableApps: List<CapturedAppSelectionItem>,
     ): String {
         if (!suppressEnabled) {
             return "원본 알림 숨기기를 켜면 앱을 고를 수 있어요"
         }
-        return "선택한 앱 ${selectedCount}개 · 캡처된 앱 ${availableCount}개"
+        if (availableApps.isEmpty()) {
+            return "아직 캡처된 앱이 없어요"
+        }
+
+        val sortedApps = availableApps.sortedWith(
+            compareByDescending<CapturedAppSelectionItem> { it.notificationCount }
+                .thenBy { it.appName }
+        )
+        val topApps = sortedApps.take(MAX_SUMMARY_APPS)
+        val topAppsSummary = topApps.joinToString(" · ") { app ->
+            "${app.appName} ${app.notificationCount}건"
+        }
+        val remainingCount = (availableApps.size - topApps.size).coerceAtLeast(0)
+        val remainingSuffix = if (remainingCount > 0) " 외 ${remainingCount}개" else ""
+        return "선택한 앱 ${selectedCount}개 · $topAppsSummary$remainingSuffix"
+    }
+
+    private companion object {
+        const val MAX_SUMMARY_APPS = 2
     }
 }
 

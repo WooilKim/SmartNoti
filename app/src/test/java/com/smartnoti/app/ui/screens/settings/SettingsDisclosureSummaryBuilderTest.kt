@@ -1,5 +1,6 @@
 package com.smartnoti.app.ui.screens.settings
 
+import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -40,17 +41,45 @@ class SettingsDisclosureSummaryBuilderTest {
             builder.buildSuppressedAppsSummary(
                 suppressEnabled = false,
                 selectedCount = 0,
-                availableCount = 4,
+                availableApps = availableApps(count = 4),
             )
         )
 
         assertEquals(
-            "선택한 앱 2개 · 캡처된 앱 5개",
+            "선택한 앱 2개 · 쿠팡 8건 · 토스 3건 외 3개",
             builder.buildSuppressedAppsSummary(
                 suppressEnabled = true,
                 selectedCount = 2,
-                availableCount = 5,
+                availableApps = listOf(
+                    app("쿠팡", 8),
+                    app("토스", 3),
+                    app("지메일", 2),
+                    app("슬랙", 1),
+                    app("카카오톡", 1),
+                ),
             )
         )
     }
+
+    @Test
+    fun suppressed_apps_summary_uses_empty_state_when_enabled_without_apps() {
+        assertEquals(
+            "아직 캡처된 앱이 없어요",
+            builder.buildSuppressedAppsSummary(
+                suppressEnabled = true,
+                selectedCount = 0,
+                availableApps = emptyList(),
+            )
+        )
+    }
+
+    private fun availableApps(count: Int): List<CapturedAppSelectionItem> =
+        (1..count).map { index -> app(appName = "앱$index", count = index.toLong()) }
+
+    private fun app(appName: String, count: Long) = CapturedAppSelectionItem(
+        packageName = "pkg.$appName",
+        appName = appName,
+        notificationCount = count,
+        lastSeenLabel = "방금",
+    )
 }

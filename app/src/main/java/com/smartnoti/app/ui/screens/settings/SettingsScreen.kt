@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.CapturedAppSelectionItem
@@ -530,6 +531,9 @@ private fun ExpandableSettingsSectionHeader(
             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.graphicsLayer {
+                rotationZ = if (expanded) 90f else 0f
+            },
         )
     }
 }
@@ -610,7 +614,7 @@ private fun SuppressionSourceSettingsCard(
             subtitle = summaryBuilder.buildSuppressedAppsSummary(
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 selectedCount = settings.suppressedSourceApps.size,
-                availableCount = filteredCapturedApps.size,
+                availableApps = filteredCapturedApps,
             ),
             expanded = appsExpanded,
             onExpandedChange = onAppsExpandedChange,
@@ -644,22 +648,61 @@ private fun SuppressedSourceAppChips(
         return
     }
 
-    filteredCapturedApps.forEach { app ->
-        FilterChip(
-            selected = app.packageName in suppressedSourceApps,
-            enabled = suppressEnabled,
-            onClick = {
-                if (suppressEnabled) {
-                    onSuppressedSourceAppToggle(
-                        app.packageName,
-                        app.packageName !in suppressedSourceApps,
-                    )
-                }
-            },
-            label = {
-                Text("${app.appName} · ${app.notificationCount}건 · ${app.lastSeenLabel}")
-            },
+    val selectedApps = filteredCapturedApps.filter { it.packageName in suppressedSourceApps }
+    val unselectedApps = filteredCapturedApps.filter { it.packageName !in suppressedSourceApps }
+
+    if (selectedApps.isNotEmpty()) {
+        AppChipGroup(
+            title = "이미 선택한 앱",
+            apps = selectedApps,
+            suppressedSourceApps = suppressedSourceApps,
+            suppressEnabled = suppressEnabled,
+            onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
         )
+    }
+
+    if (unselectedApps.isNotEmpty()) {
+        AppChipGroup(
+            title = "추가로 숨길 수 있는 앱",
+            apps = unselectedApps,
+            suppressedSourceApps = suppressedSourceApps,
+            suppressEnabled = suppressEnabled,
+            onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+        )
+    }
+}
+
+@Composable
+private fun AppChipGroup(
+    title: String,
+    apps: List<CapturedAppSelectionItem>,
+    suppressedSourceApps: Set<String>,
+    suppressEnabled: Boolean,
+    onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        apps.forEach { app ->
+            FilterChip(
+                selected = app.packageName in suppressedSourceApps,
+                enabled = suppressEnabled,
+                onClick = {
+                    if (suppressEnabled) {
+                        onSuppressedSourceAppToggle(
+                            app.packageName,
+                            app.packageName !in suppressedSourceApps,
+                        )
+                    }
+                },
+                label = {
+                    Text("${app.appName} · ${app.notificationCount}건 · ${app.lastSeenLabel}")
+                },
+            )
+        }
     }
 }
 
