@@ -10,12 +10,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.fake.FakeNotificationRepository
+import com.smartnoti.app.notification.SmartNotiNotificationStore
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
 
@@ -27,7 +29,11 @@ fun HomeScreen(
     onDigestClick: () -> Unit,
 ) {
     val repo by remember { androidx.compose.runtime.mutableStateOf(FakeNotificationRepository()) }
-    val recent = remember { repo.getRecentNotifications() }
+    val captured by SmartNotiNotificationStore.capturedNotifications.collectAsState()
+    val recent = remember(captured) {
+        if (captured.isNotEmpty()) captured + repo.getRecentNotifications()
+        else repo.getRecentNotifications()
+    }
 
     LazyColumn(
         modifier = Modifier.padding(contentPadding),

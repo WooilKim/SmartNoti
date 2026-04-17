@@ -39,5 +39,14 @@ fun SettingsScreen(contentPadding: PaddingValues) {
                 }
             }
         }
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                androidx.compose.foundation.layout.Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("알림 접근 설정", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.", style = MaterialTheme.typography.bodyMedium)
+                    Text("경로: 설정 → 알림 → 기기 및 앱 알림 → 알림 읽기", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
     }
 }
