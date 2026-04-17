@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.smartnoti.app.data.fake.FakeNotificationRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
@@ -28,12 +27,8 @@ fun DigestScreen(
     onNotificationClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val previewRepo = remember { FakeNotificationRepository() }
     val repository = remember(context) { NotificationRepository.getInstance(context) }
-    val liveGroups by repository.observeDigestGroups().collectAsState(initial = emptyList())
-    val groups = remember(liveGroups) {
-        if (liveGroups.isNotEmpty()) liveGroups else previewRepo.getDigestGroups()
-    }
+    val groups by repository.observeDigestGroups().collectAsState(initial = emptyList())
 
     if (groups.isEmpty()) {
         LazyColumn(

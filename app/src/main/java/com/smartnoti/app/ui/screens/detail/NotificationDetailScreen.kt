@@ -20,12 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.smartnoti.app.data.fake.FakeNotificationRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
+import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ReasonChipRow
+import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.StatusBadge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,14 +38,33 @@ fun NotificationDetailScreen(
     notificationId: String,
 ) {
     val context = LocalContext.current
-    val previewRepo = remember { FakeNotificationRepository() }
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val feedbackPolicy = remember { NotificationFeedbackPolicy() }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
-    val notification = remember(liveNotification, notificationId) {
-        liveNotification ?: previewRepo.getNotificationById(notificationId)
+    val notification = liveNotification
+
+    if (notification == null) {
+        LazyColumn(
+            modifier = Modifier.padding(contentPadding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                ScreenHeader(
+                    title = "알림 상세",
+                    subtitle = "캡처된 알림만 상세 화면에서 확인할 수 있어요.",
+                )
+            }
+            item {
+                EmptyState(
+                    title = "알림을 찾을 수 없어요",
+                    subtitle = "이미 삭제됐거나 아직 저장되지 않은 실제 알림일 수 있어요",
+                )
+            }
+        }
+        return
     }
 
     LazyColumn(

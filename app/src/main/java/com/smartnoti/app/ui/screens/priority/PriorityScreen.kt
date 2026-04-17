@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.smartnoti.app.data.fake.FakeNotificationRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
@@ -28,12 +27,8 @@ fun PriorityScreen(
     onNotificationClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val previewRepo = remember { FakeNotificationRepository() }
     val repository = remember(context) { NotificationRepository.getInstance(context) }
-    val liveNotifications by repository.observePriority().collectAsState(initial = emptyList())
-    val notifications = remember(liveNotifications) {
-        if (liveNotifications.isNotEmpty()) liveNotifications else previewRepo.getPriorityNotifications()
-    }
+    val notifications by repository.observePriority().collectAsState(initial = emptyList())
 
     if (notifications.isEmpty()) {
         LazyColumn(

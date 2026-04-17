@@ -24,9 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.smartnoti.app.data.fake.FakeNotificationRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
 import com.smartnoti.app.ui.theme.DigestContainer
@@ -44,15 +44,8 @@ fun HomeScreen(
     onDigestClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    val previewRepo = remember { FakeNotificationRepository() }
     val repository = remember(context) { NotificationRepository.getInstance(context) }
-    val captured by repository.observeAll().collectAsState(initial = emptyList())
-
-    val recent = remember(captured) {
-        if (captured.isNotEmpty()) captured + previewRepo.getRecentNotifications().filterNot { fake ->
-            captured.any { it.id == fake.id }
-        } else previewRepo.getRecentNotifications()
-    }
+    val recent by repository.observeAll().collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
@@ -118,8 +111,17 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        items(recent) { notification ->
-            NotificationCard(model = notification, onClick = onNotificationClick)
+        if (recent.isEmpty()) {
+            item {
+                EmptyState(
+                    title = "아직 쌓인 알림이 없어요",
+                    subtitle = "알림 접근 권한을 허용하면 실제 캡처된 알림만 여기에 보여드릴게요",
+                )
+            }
+        } else {
+            items(recent) { notification ->
+                NotificationCard(model = notification, onClick = onNotificationClick)
+            }
         }
     }
 }
