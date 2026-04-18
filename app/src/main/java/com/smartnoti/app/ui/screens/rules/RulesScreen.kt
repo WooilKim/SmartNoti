@@ -1,5 +1,7 @@
 package com.smartnoti.app.ui.screens.rules
 
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -26,10 +28,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.smartnoti.app.data.fake.FakeRuleRepository
+import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RuleMoveDirection
 import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
@@ -45,11 +50,19 @@ import kotlinx.coroutines.launch
 @Composable
 fun RulesScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
-    val previewRepo = remember { FakeRuleRepository() }
     val repository = remember(context) { RulesRepository.getInstance(context) }
+    val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
+    val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
     val ruleFactory = remember { RuleDraftFactory() }
     val draftValidator = remember { RuleEditorDraftValidator() }
-    val rules by repository.observeRules().collectAsState(initial = previewRepo.getRules())
+    val appSuggestionBuilder = remember { RuleEditorAppSuggestionBuilder() }
+    val settings by settingsRepository.observeSettings().collectAsState(initial = SmartNotiSettings())
+    val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
+        notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
+    }
+    val capturedApps by capturedAppsFlow.collectAsState(initial = emptyList())
+    val appSuggestions = remember(capturedApps) { appSuggestionBuilder.build(capturedApps) }
+    val rules by repository.observeRules().collectAsState(initial = emptyList())
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     var showEditor by remember { mutableStateOf(false) }
@@ -106,7 +119,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = "사람 / 앱 / 키워드 규칙을 직접 만들어 알림 흐름을 제어할 수 있어요.",
+                    text = "사람 / 앱 / 키워드 / 반복 규칙을 직접 만들고, 앱 규칙은 최근 캡처된 앱에서 바로 고를 수 있어요.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -191,10 +204,35 @@ fun RulesScreen(contentPadding: PaddingValues) {
                             supportingText = {
                                 if (draftType == RuleTypeUi.KEYWORD) {
                                     Text("쉼표로 여러 키워드를 입력할 수 있어요. 예: 배포,장애,긴급")
+                                } else if (draftType == RuleTypeUi.APP) {
+                                    val message = if (appSuggestions.isEmpty()) {
+                                        "아직 캡처된 앱이 없어요. 실제 알림이 들어오면 여기서 바로 선택할 수 있어요."
+                                    } else {
+                                        "아래 최근 캡처된 앱에서 바로 선택하거나 패키지명을 직접 입력할 수 있어요."
+                                    }
+                                    Text(message)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        if (draftType == RuleTypeUi.APP && appSuggestions.isNotEmpty()) {
+                            SectionLabel(
+                                title = "최근 캡처된 앱",
+                                subtitle = "알림이 자주 들어오는 앱부터 보여줘요.",
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                appSuggestions.forEach { suggestion ->
+                                    RuleEditorAppSuggestionRow(
+                                        suggestion = suggestion,
+                                        selected = draftMatchValue == suggestion.packageName,
+                                        onClick = {
+                                            draftTitle = suggestion.appName
+                                            draftMatchValue = suggestion.packageName
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
                     SectionLabel(title = "규칙 타입")
                     EnumSelectorRow(
@@ -263,6 +301,49 @@ fun RulesScreen(contentPadding: PaddingValues) {
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun RuleEditorAppSuggestionRow(
+    suggestion: RuleEditorAppSuggestion,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = suggestion.appName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = suggestion.supportingLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = if (selected) "선택됨" else "선택",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
     }
 }
 
