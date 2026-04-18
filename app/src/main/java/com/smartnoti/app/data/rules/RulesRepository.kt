@@ -38,12 +38,20 @@ fun moveRule(
     return mutable.toList()
 }
 
+fun resolveStoredRules(encodedPayload: String?): List<RuleUiModel> {
+    return when {
+        encodedPayload == null -> defaultRules()
+        encodedPayload.isBlank() -> emptyList()
+        else -> RuleStorageCodec.decode(encodedPayload)
+    }
+}
+
 class RulesRepository private constructor(
     private val context: Context,
 ) {
     fun observeRules(): Flow<List<RuleUiModel>> {
         return context.rulesDataStore.data.map { prefs ->
-            RuleStorageCodec.decode(prefs[RULES] ?: "").ifEmpty { defaultRules() }
+            resolveStoredRules(prefs[RULES])
         }
     }
 
@@ -67,6 +75,10 @@ class RulesRepository private constructor(
             existing += rule
         }
         persist(existing)
+    }
+
+    suspend fun replaceAllRules(rules: List<RuleUiModel>) {
+        persist(rules)
     }
 
     suspend fun deleteRule(ruleId: String) {
@@ -93,35 +105,35 @@ class RulesRepository private constructor(
                 instance ?: RulesRepository(context.applicationContext).also { instance = it }
             }
         }
-
-        private fun defaultRules(): List<RuleUiModel> = listOf(
-            RuleUiModel(
-                id = "default-person-mom",
-                title = "엄마",
-                subtitle = "항상 바로 보기",
-                type = RuleTypeUi.PERSON,
-                action = RuleActionUi.ALWAYS_PRIORITY,
-                enabled = true,
-                matchValue = "엄마",
-            ),
-            RuleUiModel(
-                id = "default-app-coupang",
-                title = "쿠팡",
-                subtitle = "Digest로 묶기",
-                type = RuleTypeUi.APP,
-                action = RuleActionUi.DIGEST,
-                enabled = true,
-                matchValue = "com.coupang.mobile",
-            ),
-            RuleUiModel(
-                id = "default-keyword-otp",
-                title = "인증번호",
-                subtitle = "즉시 전달",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.ALWAYS_PRIORITY,
-                enabled = true,
-                matchValue = "인증번호",
-            ),
-        )
     }
 }
+
+private fun defaultRules(): List<RuleUiModel> = listOf(
+    RuleUiModel(
+        id = "default-person-mom",
+        title = "엄마",
+        subtitle = "항상 바로 보기",
+        type = RuleTypeUi.PERSON,
+        action = RuleActionUi.ALWAYS_PRIORITY,
+        enabled = true,
+        matchValue = "엄마",
+    ),
+    RuleUiModel(
+        id = "default-app-coupang",
+        title = "쿠팡",
+        subtitle = "Digest로 묶기",
+        type = RuleTypeUi.APP,
+        action = RuleActionUi.DIGEST,
+        enabled = true,
+        matchValue = "com.coupang.mobile",
+    ),
+    RuleUiModel(
+        id = "default-keyword-otp",
+        title = "인증번호",
+        subtitle = "즉시 전달",
+        type = RuleTypeUi.KEYWORD,
+        action = RuleActionUi.ALWAYS_PRIORITY,
+        enabled = true,
+        matchValue = "인증번호",
+    ),
+)
