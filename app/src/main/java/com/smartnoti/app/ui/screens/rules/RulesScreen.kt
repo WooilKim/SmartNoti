@@ -67,6 +67,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val repeatThresholdController = remember { RuleEditorRepeatBundleThresholdController() }
     val listPresentationBuilder = remember { RuleListPresentationBuilder() }
     val listFilterApplicator = remember { RuleListFilterApplicator() }
+    val listGroupingBuilder = remember { RuleListGroupingBuilder() }
     val settings by settingsRepository.observeSettings().collectAsState(initial = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -79,6 +80,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val visibleRules = remember(rules, selectedActionFilter) {
         listFilterApplicator.apply(rules, selectedActionFilter)
     }
+    val groupedVisibleRules = remember(visibleRules) { listGroupingBuilder.build(visibleRules) }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     var showEditor by remember { mutableStateOf(false) }
@@ -189,23 +191,31 @@ fun RulesScreen(contentPadding: PaddingValues) {
                 )
             }
         }
-        items(visibleRules, key = { it.id }) { rule ->
-            RuleRow(
-                rule = rule,
-                onCheckedChange = { checked ->
-                    scope.launch { repository.setRuleEnabled(rule.id, checked) }
-                },
-                onMoveUpClick = {
-                    scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
-                },
-                onMoveDownClick = {
-                    scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
-                },
-                onEditClick = { startEdit(rule) },
-                onDeleteClick = {
-                    scope.launch { repository.deleteRule(rule.id) }
-                }
-            )
+        groupedVisibleRules.forEach { group ->
+            item(key = "group:${group.action.name}") {
+                SectionLabel(
+                    title = group.title,
+                    subtitle = group.subtitle,
+                )
+            }
+            items(group.rules, key = { it.id }) { rule ->
+                RuleRow(
+                    rule = rule,
+                    onCheckedChange = { checked ->
+                        scope.launch { repository.setRuleEnabled(rule.id, checked) }
+                    },
+                    onMoveUpClick = {
+                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
+                    },
+                    onMoveDownClick = {
+                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
+                    },
+                    onEditClick = { startEdit(rule) },
+                    onDeleteClick = {
+                        scope.launch { repository.deleteRule(rule.id) }
+                    }
+                )
+            }
         }
     }
 
