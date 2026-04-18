@@ -6,6 +6,7 @@ import com.smartnoti.app.domain.model.NotificationContext
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.toUiStatus
@@ -78,16 +79,12 @@ class NotificationCaptureProcessor(
         if (input.sender in setOf("엄마", "팀장")) {
             tags += "중요한 사람"
         }
-        rules.firstOrNull { rule ->
-            rule.enabled && when (rule.type) {
-                com.smartnoti.app.domain.model.RuleTypeUi.PERSON -> !input.sender.isNullOrBlank() && input.sender.equals(rule.matchValue, ignoreCase = true)
-                com.smartnoti.app.domain.model.RuleTypeUi.APP -> input.packageName.equals(rule.matchValue, ignoreCase = true)
-                com.smartnoti.app.domain.model.RuleTypeUi.KEYWORD -> listOf(input.title, input.body).joinToString(" ").contains(rule.matchValue, ignoreCase = true)
-                else -> false
-            }
-        }?.let { rule ->
+        matchingRule(input, rules)?.let { rule ->
             tags += "사용자 규칙"
             tags += rule.title
+            if (rule.title in setOf("프로모션 알림", "반복 알림", "중요 알림")) {
+                tags += "온보딩 추천"
+            }
         }
         if (input.quietHours) {
             tags += "조용한 시간"
@@ -114,5 +111,25 @@ class NotificationCaptureProcessor(
         }
 
         return tags.toList()
+    }
+
+    private fun matchingRule(
+        input: CapturedNotificationInput,
+        rules: List<RuleUiModel>,
+    ): RuleUiModel? {
+        val content = listOf(input.title, input.body).joinToString(" ")
+        return rules.firstOrNull { rule ->
+            rule.enabled && when (rule.type) {
+                RuleTypeUi.PERSON -> !input.sender.isNullOrBlank() && input.sender.equals(rule.matchValue, ignoreCase = true)
+                RuleTypeUi.APP -> input.packageName.equals(rule.matchValue, ignoreCase = true)
+                RuleTypeUi.KEYWORD -> rule.matchValue
+                    .split(',')
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .any { keyword -> content.contains(keyword, ignoreCase = true) }
+                RuleTypeUi.SCHEDULE,
+                RuleTypeUi.REPEAT_BUNDLE -> false
+            }
+        }
     }
 }

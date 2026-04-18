@@ -58,6 +58,70 @@ class NotificationCaptureProcessorTest {
     }
 
     @Test
+    fun onboarding_promo_rule_adds_onboarding_recommendation_reason_tag() {
+        val result = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.coupang.mobile",
+                appName = "쿠팡",
+                sender = null,
+                title = "(광고) 오늘만 특가",
+                body = "쿠폰을 확인해 보세요",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 0,
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "keyword:promo",
+                    title = "프로모션 알림",
+                    subtitle = "Digest로 묶기",
+                    type = RuleTypeUi.KEYWORD,
+                    action = RuleActionUi.DIGEST,
+                    enabled = true,
+                    matchValue = "광고,프로모션,쿠폰,세일,특가,이벤트,혜택",
+                ),
+            ),
+            settings = SmartNotiSettings(),
+        )
+
+        assertEquals(NotificationStatusUi.DIGEST, result.status)
+        assertTrue(result.reasonTags.contains("프로모션 알림"))
+        assertTrue(result.reasonTags.contains("온보딩 추천"))
+    }
+
+    @Test
+    fun onboarding_important_rule_matches_keywords_inside_comma_delimited_rule() {
+        val result = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.toss.app",
+                appName = "토스",
+                sender = null,
+                title = "결제가 완료됐어요",
+                body = "승인 내역을 확인해 주세요",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 0,
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "keyword:important",
+                    title = "중요 알림",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.KEYWORD,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "인증번호,결제,배송,출발",
+                ),
+            ),
+            settings = SmartNotiSettings(),
+        )
+
+        assertEquals(NotificationStatusUi.PRIORITY, result.status)
+        assertTrue(result.reasonTags.contains("중요 알림"))
+        assertTrue(result.reasonTags.contains("온보딩 추천"))
+    }
+
+    @Test
     fun vip_sender_becomes_priority_notification_with_priority_delivery_metadata() {
         val result = processor.process(
             input = CapturedNotificationInput(
