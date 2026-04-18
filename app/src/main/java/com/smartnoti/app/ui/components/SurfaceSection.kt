@@ -51,7 +51,7 @@ fun ScreenHeader(
     ) {
         if (!eyebrow.isNullOrBlank()) {
             Text(
-                text = eyebrow.uppercase(),
+                text = eyebrow,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -84,7 +84,7 @@ fun SettingsCardHeader(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            text = eyebrow.uppercase(),
+            text = eyebrow,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
         )

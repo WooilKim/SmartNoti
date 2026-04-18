@@ -22,8 +22,8 @@ val SilentContainer = Color(0xFF1A2435)
 val SilentOnContainer = Color(0xFF7A8BA6)
 
 // Borders and dividers
-val BorderSubtle = Color(0xFF1E2D45)
-val BorderVariant = Color(0xFF0E1A2E)
+val BorderSubtle = Color(0xFF2A3E5E)
+val BorderVariant = Color(0xFF18253A)
 
 // Secondary container
 val GreenContainer = Color(0xFF0D3320)

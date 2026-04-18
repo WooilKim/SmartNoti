@@ -267,7 +267,7 @@ private fun OperationalSummaryRow(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = label.uppercase(),
+                text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

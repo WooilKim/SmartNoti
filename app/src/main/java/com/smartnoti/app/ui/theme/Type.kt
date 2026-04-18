@@ -64,14 +64,14 @@ val AppTypography = Typography(
     ),
     labelMedium = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.3.sp,
+        fontSize = 12.sp,
+        lineHeight = 17.sp,
+        letterSpacing = 0.2.sp,
     ),
     labelSmall = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 10.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 0.5.sp,
+        fontSize = 11.sp,
+        lineHeight = 15.sp,
+        letterSpacing = 0.3.sp,
     ),
 )
