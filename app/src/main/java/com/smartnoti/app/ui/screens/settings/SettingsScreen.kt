@@ -269,7 +269,8 @@ private fun OperationalSummaryRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1f),
@@ -739,7 +740,8 @@ private fun ExpandableSettingsSubsection(
     onExpandedChange: (Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    SettingsSubsection(title = title) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
         ExpandableSettingsSectionHeader(
             title = title,
             subtitle = subtitle,
@@ -747,7 +749,9 @@ private fun ExpandableSettingsSubsection(
             onExpandedChange = onExpandedChange,
         )
         AnimatedVisibility(visible = expanded) {
-            content()
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                content()
+            }
         }
     }
 }
@@ -959,22 +963,16 @@ private fun SuppressionManagementCard(
             }
         }
 
-        SettingsSubsection(
-            title = "Digest/조용히 결정 시 원본 알림 숨기기",
-            subtitle = if (settings.suppressSourceForDigestAndSilent) {
-                "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요."
-            } else {
-                "먼저 원본 알림 숨기기를 켜면 아래 옵션과 앱 선택이 활성화돼요."
-            },
-        ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
             SettingsToggleRow(
-                title = "원본 알림 숨기기",
+                title = "Digest·조용히 알림의 원본 숨기기",
                 checked = settings.suppressSourceForDigestAndSilent,
                 onCheckedChange = onSuppressSourceChange,
                 subtitle = if (settings.suppressSourceForDigestAndSilent) {
                     "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요. 기기/앱에 따라 원본이 남을 수 있어요."
                 } else {
-                    "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
+                    "먼저 이 옵션을 켜면 아래 고급 옵션과 앱별 선택이 활성화돼요."
                 },
             )
         }
