@@ -31,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -53,6 +54,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RulesScreen(contentPadding: PaddingValues) {
     val context = LocalContext.current
@@ -63,6 +65,8 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val draftValidator = remember { RuleEditorDraftValidator() }
     val appSuggestionBuilder = remember { RuleEditorAppSuggestionBuilder() }
     val repeatThresholdController = remember { RuleEditorRepeatBundleThresholdController() }
+    val listPresentationBuilder = remember { RuleListPresentationBuilder() }
+    val listFilterApplicator = remember { RuleListFilterApplicator() }
     val settings by settingsRepository.observeSettings().collectAsState(initial = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -70,6 +74,11 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val capturedApps by capturedAppsFlow.collectAsState(initial = emptyList())
     val appSuggestions = remember(capturedApps) { appSuggestionBuilder.build(capturedApps) }
     val rules by repository.observeRules().collectAsState(initial = emptyList())
+    val listPresentation = remember(rules) { listPresentationBuilder.build(rules) }
+    var selectedActionFilter by rememberSaveable { mutableStateOf<RuleActionUi?>(null) }
+    val visibleRules = remember(rules, selectedActionFilter) {
+        listFilterApplicator.apply(rules, selectedActionFilter)
+    }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     var showEditor by remember { mutableStateOf(false) }
@@ -139,12 +148,48 @@ fun RulesScreen(contentPadding: PaddingValues) {
             }
         }
         item {
-            SectionLabel(
-                title = "활성 규칙 ${rules.size}개",
-                subtitle = "우선순위 변경, 수정, 삭제는 각 규칙 카드에서 바로 처리할 수 있어요.",
-            )
+            SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "활성 규칙 ${rules.size}개",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = listPresentation.overview,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    listPresentation.filters.forEach { filter ->
+                        FilterChip(
+                            selected = selectedActionFilter == filter.action,
+                            onClick = {
+                                selectedActionFilter = if (selectedActionFilter == filter.action) {
+                                    null
+                                } else {
+                                    filter.action
+                                }
+                            },
+                            label = { Text(filter.label) },
+                        )
+                    }
+                }
+                Text(
+                    text = if (selectedActionFilter == null) {
+                        "우선순위 변경, 수정, 삭제는 각 규칙 카드에서 바로 처리할 수 있어요."
+                    } else {
+                        "선택한 처리 방식 규칙 ${visibleRules.size}개만 보고 있어요."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        items(rules, key = { it.id }) { rule ->
+        items(visibleRules, key = { it.id }) { rule ->
             RuleRow(
                 rule = rule,
                 onCheckedChange = { checked ->
