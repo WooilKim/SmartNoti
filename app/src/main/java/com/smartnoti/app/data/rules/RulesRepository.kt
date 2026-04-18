@@ -46,6 +46,13 @@ fun resolveStoredRules(encodedPayload: String?): List<RuleUiModel> {
     }
 }
 
+fun resolveConfiguredRules(encodedPayload: String?): List<RuleUiModel> {
+    return when {
+        encodedPayload == null -> emptyList()
+        else -> resolveStoredRules(encodedPayload)
+    }
+}
+
 class RulesRepository private constructor(
     private val context: Context,
 ) {
@@ -56,6 +63,11 @@ class RulesRepository private constructor(
     }
 
     suspend fun currentRules(): List<RuleUiModel> = observeRules().first()
+
+    suspend fun currentConfiguredRules(): List<RuleUiModel> {
+        val encodedPayload = context.rulesDataStore.data.first()[RULES]
+        return resolveConfiguredRules(encodedPayload)
+    }
 
     suspend fun setRuleEnabled(ruleId: String, enabled: Boolean) {
         val updated = currentRules().map { rule ->

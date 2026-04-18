@@ -238,9 +238,11 @@ fun OnboardingScreen(onCompleted: () -> Unit) {
                             scope.launch {
                                 isSaving = true
                                 try {
-                                    rulesRepository.replaceAllRules(
-                                        quickStartRuleApplier.buildRules(selectedPresetIdSet)
+                                    val mergedRules = quickStartRuleApplier.mergeRules(
+                                        existingRules = rulesRepository.currentConfiguredRules(),
+                                        selectedPresetIds = selectedPresetIdSet,
                                     )
+                                    rulesRepository.replaceAllRules(mergedRules)
                                     onCompleted()
                                 } finally {
                                     isSaving = false

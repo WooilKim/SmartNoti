@@ -14,6 +14,26 @@ class OnboardingQuickStartRuleApplier(
             .map(::toRule)
     }
 
+    fun mergeRules(
+        existingRules: List<RuleUiModel>,
+        selectedPresetIds: Set<OnboardingQuickStartPresetId>,
+    ): List<RuleUiModel> {
+        val selectedRules = buildRules(selectedPresetIds)
+        if (selectedRules.isEmpty()) return existingRules
+
+        val reusedRuleIds = mutableSetOf<String>()
+        val prioritizedRules = selectedRules.map { selectedRule ->
+            existingRules.firstOrNull { existingRule ->
+                existingRule.matchesRuleIdentity(selectedRule)
+            }?.let { existingRule ->
+                reusedRuleIds += existingRule.id
+                selectedRule.copy(id = existingRule.id)
+            } ?: selectedRule
+        }
+        val preservedRules = existingRules.filterNot { it.id in reusedRuleIds }
+        return prioritizedRules + preservedRules
+    }
+
     private fun toRule(presetId: OnboardingQuickStartPresetId): RuleUiModel {
         return when (presetId) {
             OnboardingQuickStartPresetId.IMPORTANT_PRIORITY -> ruleDraftFactory.create(
@@ -35,6 +55,10 @@ class OnboardingQuickStartRuleApplier(
                 action = RuleActionUi.DIGEST,
             )
         }
+    }
+
+    private fun RuleUiModel.matchesRuleIdentity(other: RuleUiModel): Boolean {
+        return id == other.id || (type == other.type && matchValue == other.matchValue)
     }
 
     companion object {

@@ -149,7 +149,7 @@ fun SettingsScreen(
     ) {
         item {
             ScreenHeader(
-                eyebrow = "Settings",
+                eyebrow = "설정",
                 title = "설정",
                 subtitle = "알림 분류 동작을 운영 도구처럼 명확하게 조정할 수 있어요.",
             )
@@ -1188,7 +1188,7 @@ private fun AppSelectionRow(
 private fun NotificationAccessCard() {
     SmartSurfaceCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
     ) {
         SettingsCardHeader(
             eyebrow = "알림 접근 권한",
@@ -1196,25 +1196,40 @@ private fun NotificationAccessCard() {
             subtitle = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
         )
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
-                    shape = RoundedCornerShape(12.dp),
-                )
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                text = "경로",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-            )
-            Text(
-                text = "설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
+                text = "한 번만 연결하면 들어오는 알림이 Home·Priority·Digest 흐름에 바로 반영돼요.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
+                        shape = RoundedCornerShape(14.dp),
+                    )
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "설정 경로",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
+                Text(
+                    text = "SmartNoti를 켜면 실제 캡처된 알림만 홈 화면에 쌓이고, 추천 규칙 효과도 최근 데이터 기준으로 보여줘요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
