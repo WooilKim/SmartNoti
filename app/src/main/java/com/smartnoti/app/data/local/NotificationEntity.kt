@@ -23,4 +23,6 @@ data class NotificationEntity(
     val vibrationMode: String = "OFF",
     val headsUpEnabled: Boolean = false,
     val lockScreenVisibility: String = "SECRET",
+    val sourceSuppressionState: String = "NOT_CONFIGURED",
+    val replacementNotificationIssued: Boolean = false,
 )

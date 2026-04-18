@@ -18,6 +18,8 @@ data class NotificationUiModel(
     val vibrationMode: VibrationMode = VibrationMode.OFF,
     val headsUpEnabled: Boolean = false,
     val lockScreenVisibility: LockScreenVisibilityMode = LockScreenVisibilityMode.SECRET,
+    val sourceSuppressionState: SourceNotificationSuppressionState = SourceNotificationSuppressionState.NOT_CONFIGURED,
+    val replacementNotificationIssued: Boolean = false,
 )
 
 enum class NotificationStatusUi {

@@ -4,8 +4,10 @@ import com.smartnoti.app.domain.model.AlertLevel
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.VibrationMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class NotificationEntityMapperTest {
@@ -30,6 +32,8 @@ class NotificationEntityMapperTest {
             vibrationMode = VibrationMode.STRONG,
             headsUpEnabled = true,
             lockScreenVisibility = LockScreenVisibilityMode.PRIVATE,
+            sourceSuppressionState = SourceNotificationSuppressionState.CANCEL_ATTEMPTED,
+            replacementNotificationIssued = true,
         )
 
         val entity = model.toEntity(postedAtMillis = 1_700_000_000_000)
@@ -49,6 +53,8 @@ class NotificationEntityMapperTest {
         assertEquals(model.vibrationMode, roundTrip.vibrationMode)
         assertEquals(model.headsUpEnabled, roundTrip.headsUpEnabled)
         assertEquals(model.lockScreenVisibility, roundTrip.lockScreenVisibility)
+        assertEquals(model.sourceSuppressionState, roundTrip.sourceSuppressionState)
+        assertEquals(model.replacementNotificationIssued, roundTrip.replacementNotificationIssued)
     }
 
     @Test
@@ -103,6 +109,8 @@ class NotificationEntityMapperTest {
             vibrationMode = "DEFAULT",
             headsUpEnabled = true,
             lockScreenVisibility = "PRIVATE",
+            sourceSuppressionState = "APP_NOT_SELECTED",
+            replacementNotificationIssued = false,
         )
 
         val model = entity.toUiModel()
@@ -110,6 +118,8 @@ class NotificationEntityMapperTest {
         assertEquals(AlertLevel.LOUD, model.alertLevel)
         assertEquals(VibrationMode.STRONG, model.vibrationMode)
         assertEquals(LockScreenVisibilityMode.PRIVATE, model.lockScreenVisibility)
+        assertEquals(SourceNotificationSuppressionState.APP_NOT_SELECTED, model.sourceSuppressionState)
+        assertFalse(model.replacementNotificationIssued)
     }
 
     @Test

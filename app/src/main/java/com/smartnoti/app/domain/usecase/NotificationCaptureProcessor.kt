@@ -7,6 +7,7 @@ import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.toUiStatus
 
 class NotificationCaptureProcessor(
@@ -59,6 +60,8 @@ class NotificationCaptureProcessor(
             vibrationMode = deliveryProfile.vibrationMode,
             headsUpEnabled = deliveryProfile.headsUpEnabled,
             lockScreenVisibility = deliveryProfile.lockScreenVisibilityMode,
+            sourceSuppressionState = SourceNotificationSuppressionState.NOT_CONFIGURED,
+            replacementNotificationIssued = false,
         )
     }
 

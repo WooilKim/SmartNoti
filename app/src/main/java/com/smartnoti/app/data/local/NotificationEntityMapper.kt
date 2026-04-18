@@ -4,6 +4,7 @@ import com.smartnoti.app.domain.model.AlertLevel
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.VibrationMode
 
 fun NotificationUiModel.toEntity(
@@ -28,6 +29,8 @@ fun NotificationUiModel.toEntity(
     vibrationMode = vibrationMode.name,
     headsUpEnabled = headsUpEnabled,
     lockScreenVisibility = lockScreenVisibility.name,
+    sourceSuppressionState = sourceSuppressionState.name,
+    replacementNotificationIssued = replacementNotificationIssued,
 )
 
 fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
@@ -48,6 +51,8 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     vibrationMode = vibrationMode.toVibrationMode(),
     headsUpEnabled = headsUpEnabled,
     lockScreenVisibility = lockScreenVisibility.toLockScreenVisibility(),
+    sourceSuppressionState = sourceSuppressionState.toSourceNotificationSuppressionState(),
+    replacementNotificationIssued = replacementNotificationIssued,
 )
 
 private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {
@@ -68,4 +73,9 @@ private fun String.toVibrationMode(): VibrationMode = when (trim().uppercase()) 
 private fun String.toLockScreenVisibility(): LockScreenVisibilityMode {
     return runCatching { enumValueOf<LockScreenVisibilityMode>(trim().uppercase()) }
         .getOrDefault(LockScreenVisibilityMode.SECRET)
+}
+
+private fun String.toSourceNotificationSuppressionState(): SourceNotificationSuppressionState {
+    return runCatching { enumValueOf<SourceNotificationSuppressionState>(trim().uppercase()) }
+        .getOrDefault(SourceNotificationSuppressionState.NOT_CONFIGURED)
 }

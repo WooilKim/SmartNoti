@@ -110,15 +110,14 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 isPersistent = isPersistent && !shouldBypassPersistentHiding,
             ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
-            val notification = processor.process(
+            val baseNotification = processor.process(
                 input = captureInput,
                 rules = rules,
                 settings = settings,
             )
-            repository.save(notification, sbn.postTime, contentSignature)
 
-            val decision = notification.status.toDecision()
-            val deliveryProfile = notification.toDeliveryProfileOrDefault()
+            val decision = baseNotification.status.toDecision()
+            val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
             val shouldHidePersistentSourceNotification =
                 (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
             val shouldSuppressSourceNotification = NotificationSuppressionPolicy.shouldSuppressSourceNotification(
@@ -132,6 +131,17 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
                 suppressSourceNotification = shouldSuppressSourceNotification,
             )
+            val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
+                decision = decision,
+                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                suppressedApps = settings.suppressedSourceApps,
+                packageName = sbn.packageName,
+                hidePersistentSourceNotifications = settings.hidePersistentSourceNotifications,
+                isPersistent = isPersistent,
+                bypassPersistentHiding = shouldBypassPersistentHiding,
+                sourceRouting = sourceRouting,
+            )
+            var replacementNotificationPosted = false
             if (sourceRouting.cancelSourceNotification) {
                 withContext(Dispatchers.Main) {
                     cancelNotification(sbn.key)
@@ -142,13 +152,23 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                     decision = decision,
                     packageName = sbn.packageName,
                     appName = appName,
-                    title = notification.title,
-                    body = notification.body,
-                    notificationId = notification.id,
-                    reasonTags = notification.reasonTags,
+                    title = baseNotification.title,
+                    body = baseNotification.body,
+                    notificationId = baseNotification.id,
+                    reasonTags = baseNotification.reasonTags,
                     deliveryProfile = deliveryProfile,
                 )
+                replacementNotificationPosted = true
             }
+            val notification = baseNotification.copy(
+                sourceSuppressionState = suppressionState,
+                replacementNotificationIssued = SourceNotificationSuppressionStateResolver.replacementNotificationRecorded(
+                    sourceRouting = sourceRouting,
+                    replacementNotificationPosted = replacementNotificationPosted,
+                ),
+                isPersistent = isPersistent,
+            )
+            repository.save(notification, sbn.postTime, contentSignature)
         }
     }
 

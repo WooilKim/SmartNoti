@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -24,12 +25,13 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
+import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
+import com.smartnoti.app.domain.usecase.shouldShowDetailCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ReasonChipRow
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.StatusBadge
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -43,11 +45,22 @@ fun NotificationDetailScreen(
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val feedbackPolicy = remember { NotificationFeedbackPolicy() }
     val deliveryProfileSummaryBuilder = remember { NotificationDetailDeliveryProfileSummaryBuilder() }
-    val scope = remember { CoroutineScope(Dispatchers.IO) }
+    val sourceSuppressionSummaryBuilder = remember { NotificationDetailSourceSuppressionSummaryBuilder() }
+    val scope = rememberCoroutineScope()
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
     val deliveryProfileSummary = remember(notification) {
         notification?.let(deliveryProfileSummaryBuilder::build)
+    }
+    val sourceSuppressionSummary = remember(notification) {
+        notification?.takeIf {
+            it.sourceSuppressionState.shouldShowDetailCard(it.replacementNotificationIssued)
+        }?.let {
+            sourceSuppressionSummaryBuilder.build(
+                suppressionState = it.sourceSuppressionState,
+                replacementNotificationIssued = it.replacementNotificationIssued,
+            )
+        }
     }
 
     if (notification == null) {
@@ -165,6 +178,39 @@ fun NotificationDetailScreen(
                         )
                         Text(
                             "잠금화면 · ${deliveryProfileSummary.lockScreenVisibilityLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        }
+        if (sourceSuppressionSummary != null) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            "원본 알림 처리 상태",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            sourceSuppressionSummary.overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "원본 상태 · ${sourceSuppressionSummary.statusLabel}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "대체 알림 · ${sourceSuppressionSummary.replacementLabel}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
