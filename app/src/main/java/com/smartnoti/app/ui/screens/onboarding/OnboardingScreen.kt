@@ -25,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.NotificationsNone
@@ -66,6 +67,53 @@ import kotlinx.coroutines.launch
 private enum class OnboardingStep {
     PERMISSIONS,
     QUICK_START,
+}
+
+private data class QuickStartPreviewSummary(
+    val title: String,
+    val body: String,
+    val supporting: String,
+)
+
+private fun buildQuickStartPreviewSummary(
+    selectedPresetIds: Set<OnboardingQuickStartPresetId>,
+    summaryText: String,
+): QuickStartPreviewSummary {
+    val allSelected = selectedPresetIds.containsAll(
+        setOf(
+            OnboardingQuickStartPresetId.PROMO_QUIETING,
+            OnboardingQuickStartPresetId.REPEAT_BUNDLING,
+            OnboardingQuickStartPresetId.IMPORTANT_PRIORITY,
+        ),
+    )
+    return when {
+        selectedPresetIds.isEmpty() -> QuickStartPreviewSummary(
+            title = "직접 고르기",
+            body = "기본 추천 없이 시작하고, 나중에 Rules에서 필요한 규칙만 직접 정할 수 있어요.",
+            supporting = "자동으로 추가되는 빠른 시작 규칙 없음",
+        )
+        allSelected -> QuickStartPreviewSummary(
+            title = "방해는 줄이고 중요한 건 유지",
+            body = summaryText,
+            supporting = "프로모션·반복 알림은 정리하고 결제·배송·인증은 바로 보여줘요",
+        )
+        selectedPresetIds.contains(OnboardingQuickStartPresetId.IMPORTANT_PRIORITY) -> QuickStartPreviewSummary(
+            title = "놓치면 안 되는 알림 보호",
+            body = summaryText,
+            supporting = "결제·배송·인증처럼 중요한 알림이 묻히지 않게 우선 전달해요",
+        )
+        else -> QuickStartPreviewSummary(
+            title = "알림 소음 먼저 줄이기",
+            body = summaryText,
+            supporting = "여러 앱의 반복·프로모션 알림을 한 번에 덜 방해되게 정리해요",
+        )
+    }
+}
+
+private fun OnboardingQuickStartPresetUiModel.stateChipLabel(): String = when (id) {
+    OnboardingQuickStartPresetId.PROMO_QUIETING -> "여러 앱 적용"
+    OnboardingQuickStartPresetId.REPEAT_BUNDLING -> "반복 소음 감소"
+    OnboardingQuickStartPresetId.IMPORTANT_PRIORITY -> "중요 알림 보호"
 }
 
 @Composable
@@ -324,25 +372,56 @@ private fun QuickStartStepContent(
     onTogglePreset: (OnboardingQuickStartPresetId) -> Unit,
     summaryText: String,
 ) {
+    val previewSummary = remember(selectedPresetIds, summaryText) {
+        buildQuickStartPreviewSummary(selectedPresetIds, summaryText)
+    }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        SmartSurfaceCard(
+            containerColor = Navy800,
+            borderColor = BorderSubtle,
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 18.dp),
         ) {
-            ContextBadge(
-                label = "여러 앱 한 번에",
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                contentColor = MaterialTheme.colorScheme.primary,
+            Text(
+                text = "예상되는 변화",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
             )
-            ContextBadge(
-                label = "중요 알림은 유지",
-                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
-                contentColor = MaterialTheme.colorScheme.secondary,
+            Text(
+                text = previewSummary.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
             )
-            ContextBadge(
-                label = "나중에 변경 가능",
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = previewSummary.body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            androidx.compose.material3.HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ContextBadge(
+                    label = "여러 앱 한 번에",
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                    contentColor = MaterialTheme.colorScheme.primary,
+                )
+                ContextBadge(
+                    label = "중요 알림은 유지",
+                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f),
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                )
+                ContextBadge(
+                    label = "나중에 변경 가능",
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = previewSummary.supporting,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         presets.forEach { preset ->
@@ -350,21 +429,6 @@ private fun QuickStartStepContent(
                 preset = preset,
                 selected = selectedPresetIds.contains(preset.id),
                 onClick = { onTogglePreset(preset.id) },
-            )
-        }
-        SmartSurfaceCard(
-            containerColor = Navy800,
-            borderColor = BorderSubtle,
-        ) {
-            Text(
-                text = "예상되는 변화",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                text = summaryText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -387,8 +451,9 @@ private fun QuickStartPresetCard(
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .border(1.dp, borderColor, MaterialTheme.shapes.large),
-        containerColor = Navy800,
+        containerColor = if (selected) Navy800.copy(alpha = 0.96f) else Navy800,
         borderColor = androidx.compose.ui.graphics.Color.Transparent,
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 18.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -397,14 +462,32 @@ private fun QuickStartPresetCard(
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    text = preset.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = preset.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    ContextBadge(
+                        label = preset.stateChipLabel(),
+                        containerColor = if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        contentColor = if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
                 Text(
                     text = preset.description,
                     style = MaterialTheme.typography.bodyMedium,
@@ -412,14 +495,16 @@ private fun QuickStartPresetCard(
                 )
             }
             Icon(
-                imageVector = if (selected) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                imageVector = if (selected) Icons.Outlined.CheckCircle else Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                 contentDescription = null,
                 tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(22.dp),
             )
         }
+        androidx.compose.material3.HorizontalDivider(color = BorderSubtle.copy(alpha = 0.72f))
         ImpactSection(section = preset.reducedSection)
         ImpactSection(section = preset.preservedSection)
+        androidx.compose.material3.HorizontalDivider(color = BorderSubtle.copy(alpha = 0.72f))
         Text(
             text = preset.footerText,
             style = MaterialTheme.typography.bodySmall,
