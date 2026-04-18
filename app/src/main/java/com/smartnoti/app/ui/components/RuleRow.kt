@@ -23,6 +23,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +42,7 @@ fun RuleRow(
     onEditClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
 ) {
+    val description = rememberRuleRowDescription(rule)
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
@@ -67,7 +69,7 @@ fun RuleRow(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        rule.subtitle,
+                        text = description.primaryText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -75,13 +77,11 @@ fun RuleRow(
                         RuleMetaChip(typeLabel(rule.type))
                         RuleMetaChip(actionLabel(rule.action))
                     }
-                    if (rule.matchValue.isNotBlank()) {
-                        Text(
-                            rule.matchValue.toDisplayMatchValue(rule.type),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
+                    Text(
+                        text = description.secondaryText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
                 Switch(
                     checked = rule.enabled,
@@ -173,9 +173,8 @@ private fun actionLabel(action: RuleActionUi): String = when (action) {
     RuleActionUi.CONTEXTUAL -> "상황별"
 }
 
-internal fun String.toDisplayMatchValue(type: RuleTypeUi): String = when (type) {
-    RuleTypeUi.KEYWORD -> split(',').joinToString(", ") { it.trim() }
-    RuleTypeUi.SCHEDULE -> replace("-", ":00 ~ ") + ":00"
-    RuleTypeUi.REPEAT_BUNDLE -> "${filter(Char::isDigit).ifBlank { this }}회 이상 반복되면 적용"
-    else -> this
+@Composable
+private fun rememberRuleRowDescription(rule: RuleUiModel): RuleRowDescription {
+    val builder = remember { RuleRowDescriptionBuilder() }
+    return remember(rule) { builder.build(rule) }
 }
