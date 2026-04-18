@@ -53,6 +53,14 @@ class SettingsSuppressedAppPresentationBuilderTest {
         assertEquals("선택 1개 · 추가 가능 2개", presentation.summary)
     }
 
+    @Test
+    fun summary_is_zeroed_when_no_apps_are_captured() {
+        val presentation = builder.build(apps = emptyList())
+
+        assertEquals("선택 0개 · 추가 가능 0개", presentation.summary)
+        assertEquals(emptyList<SettingsSuppressedAppGroup>(), presentation.groups)
+    }
+
     private fun app(name: String, count: Long, selected: Boolean) = RawSuppressedAppState(
         app = CapturedAppSelectionItem(
             packageName = "pkg.$name",

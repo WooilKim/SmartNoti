@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -47,15 +49,13 @@ import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargets
 import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsSummary
-import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SettingsToggleRow
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.theme.BorderSubtle
 import com.smartnoti.app.ui.theme.DigestOnContainer
 import com.smartnoti.app.ui.theme.GreenAccent
-import com.smartnoti.app.ui.theme.SilentContainer
-import com.smartnoti.app.ui.theme.SilentOnContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -193,21 +193,16 @@ fun SettingsScreen(
             )
         }
         item {
-            SuppressionInsightsCard(
-                suppressEnabled = settings.suppressSourceForDigestAndSilent,
+            SuppressionManagementCard(
+                settings = settings,
+                filteredCapturedApps = filteredCapturedApps,
+                disclosureSummaryBuilder = summaryBuilder,
+                insightSummaryBuilder = suppressionSummaryBuilder,
                 summary = suppressionInsights,
-                summaryBuilder = suppressionSummaryBuilder,
                 breakdownItems = suppressionBreakdownItems,
                 topAppRoute = suppressionDrillDownTargets.topAppRoute,
                 breakdownRoutesByAppName = suppressionDrillDownTargets.breakdownRoutesByAppName,
                 onInsightClick = onInsightClick,
-            )
-        }
-        item {
-            SuppressionSourceSettingsCard(
-                settings = settings,
-                filteredCapturedApps = filteredCapturedApps,
-                summaryBuilder = summaryBuilder,
                 advancedExpanded = suppressionAdvancedExpanded,
                 onAdvancedExpandedChange = { suppressionAdvancedExpanded = it },
                 appsExpanded = suppressedAppsExpanded,
@@ -541,10 +536,221 @@ private fun ExpandableSettingsSectionHeader(
 }
 
 @Composable
-private fun SuppressionSourceSettingsCard(
+private fun SettingsSubsection(
+    title: String,
+    subtitle: String? = null,
+    isFirst: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (!isFirst) {
+            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        content()
+    }
+}
+
+@Composable
+private fun ExpandableSettingsSubsection(
+    title: String,
+    subtitle: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    SettingsSubsection(title = title) {
+        ExpandableSettingsSectionHeader(
+            title = title,
+            subtitle = subtitle,
+            expanded = expanded,
+            onExpandedChange = onExpandedChange,
+        )
+        AnimatedVisibility(visible = expanded) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SuppressionInsightMetricStrip(metrics: List<SuppressionInsightMetric>) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        metrics.chunked(2).forEach { rowMetrics ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowMetrics.forEach { metric ->
+                    SuppressionInsightMetricCard(
+                        metric = metric,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (rowMetrics.size == 1) {
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuppressionInsightMetricCard(
+    metric: SuppressionInsightMetric,
+    modifier: Modifier = Modifier,
+) {
+    SmartSurfaceCard(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = metric.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = metric.value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun SuppressionBreakdownList(
+    items: List<SuppressionBreakdownItem>,
+    routeByAppName: Map<String, String>,
+    onInsightClick: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        items.forEach { item ->
+            SuppressionBreakdownRow(
+                item = item,
+                route = routeByAppName[item.appName],
+                onInsightClick = onInsightClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuppressionBreakdownRow(
+    item: SuppressionBreakdownItem,
+    route: String?,
+    onInsightClick: (String) -> Unit,
+) {
+    Column(
+        modifier = if (route != null) {
+            Modifier.clickable { onInsightClick(route) }
+        } else {
+            Modifier
+        },
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = item.appName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "${item.filteredCount}건 정리 · ${(item.shareFraction * 100).toInt()}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (route != null) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(999.dp),
+                ),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(item.shareFraction.coerceIn(0f, 1f))
+                    .background(
+                        color = if (item.isTopApp) GreenAccent else DigestOnContainer,
+                        shape = RoundedCornerShape(999.dp),
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuppressedAppInsightsList(
+    appInsights: List<SuppressedAppInsight>,
+    topAppRoute: String?,
+    onInsightClick: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        appInsights.take(3).forEachIndexed { index, appInsight ->
+            if (index > 0) {
+                HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+            }
+            SuppressedAppInsightRow(
+                appInsight = appInsight,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                onClick = if (index == 0 && topAppRoute != null) {
+                    { onInsightClick(topAppRoute) }
+                } else {
+                    null
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SuppressionManagementCard(
     settings: SmartNotiSettings,
     filteredCapturedApps: List<CapturedAppSelectionItem>,
-    summaryBuilder: SettingsDisclosureSummaryBuilder,
+    disclosureSummaryBuilder: SettingsDisclosureSummaryBuilder,
+    insightSummaryBuilder: SettingsSuppressionInsightSummaryBuilder,
+    summary: SuppressionInsightsSummary,
+    breakdownItems: List<SuppressionBreakdownItem>,
+    topAppRoute: String?,
+    breakdownRoutesByAppName: Map<String, String>,
+    onInsightClick: (String) -> Unit,
     advancedExpanded: Boolean,
     onAdvancedExpandedChange: (Boolean) -> Unit,
     appsExpanded: Boolean,
@@ -556,28 +762,62 @@ private fun SuppressionSourceSettingsCard(
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "Digest/조용히 결정 시 원본 알림 숨기기",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        SettingsToggleRow(
-            title = "원본 알림 숨기기",
-            checked = settings.suppressSourceForDigestAndSilent,
-            onCheckedChange = onSuppressSourceChange,
+        val insightTokens = remember(settings.suppressSourceForDigestAndSilent, summary) {
+            insightSummaryBuilder.buildTokens(
+                suppressEnabled = settings.suppressSourceForDigestAndSilent,
+                insights = summary,
+            )
+        }
+
+        SettingsSubsection(
+            title = "원본 알림 숨김 상태",
+            subtitle = insightTokens.supportingMessage,
+            isFirst = true,
+        ) {
+            if (insightTokens.metrics.isNotEmpty()) {
+                SuppressionInsightMetricStrip(metrics = insightTokens.metrics)
+            }
+            if (breakdownItems.isNotEmpty()) {
+                SuppressionBreakdownList(
+                    items = breakdownItems,
+                    routeByAppName = breakdownRoutesByAppName,
+                    onInsightClick = onInsightClick,
+                )
+            }
+            if (summary.appInsights.isNotEmpty()) {
+                SuppressedAppInsightsList(
+                    appInsights = summary.appInsights,
+                    topAppRoute = topAppRoute,
+                    onInsightClick = onInsightClick,
+                )
+            }
+        }
+
+        SettingsSubsection(
+            title = "Digest/조용히 결정 시 원본 알림 숨기기",
             subtitle = if (settings.suppressSourceForDigestAndSilent) {
-                "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요. 기기/앱에 따라 원본이 남을 수 있어요."
+                "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요."
             } else {
-                "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
+                "먼저 원본 알림 숨기기를 켜면 아래 옵션과 앱 선택이 활성화돼요."
             },
-        )
-        ExpandableSettingsSectionHeader(
+        ) {
+            SettingsToggleRow(
+                title = "원본 알림 숨기기",
+                checked = settings.suppressSourceForDigestAndSilent,
+                onCheckedChange = onSuppressSourceChange,
+                subtitle = if (settings.suppressSourceForDigestAndSilent) {
+                    "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요. 기기/앱에 따라 원본이 남을 수 있어요."
+                } else {
+                    "먼저 원본 알림 숨기기를 켜면 앱별 선택이 활성화돼요."
+                },
+            )
+        }
+        ExpandableSettingsSubsection(
             title = "고급 숨김 옵션",
-            subtitle = summaryBuilder.buildSuppressionAdvancedSummary(settings),
+            subtitle = disclosureSummaryBuilder.buildSuppressionAdvancedSummary(settings),
             expanded = advancedExpanded,
             onExpandedChange = onAdvancedExpandedChange,
-        )
-        AnimatedVisibility(visible = advancedExpanded) {
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SettingsToggleRow(
                     title = "지속 알림은 SmartNoti 목록에서 숨기기",
@@ -611,25 +851,22 @@ private fun SuppressionSourceSettingsCard(
                 )
             }
         }
-        ExpandableSettingsSectionHeader(
+        ExpandableSettingsSubsection(
             title = "숨길 앱 선택",
-            subtitle = summaryBuilder.buildSuppressedAppsSummary(
+            subtitle = disclosureSummaryBuilder.buildSuppressedAppsSummary(
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 selectedCount = settings.suppressedSourceApps.size,
                 availableApps = filteredCapturedApps,
             ),
             expanded = appsExpanded,
             onExpandedChange = onAppsExpandedChange,
-        )
-        AnimatedVisibility(visible = appsExpanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SuppressedSourceAppChips(
-                    filteredCapturedApps = filteredCapturedApps,
-                    suppressedSourceApps = settings.suppressedSourceApps,
-                    suppressEnabled = settings.suppressSourceForDigestAndSilent,
-                    onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
-                )
-            }
+        ) {
+            SuppressedSourceAppChips(
+                filteredCapturedApps = filteredCapturedApps,
+                suppressedSourceApps = settings.suppressedSourceApps,
+                suppressEnabled = settings.suppressSourceForDigestAndSilent,
+                onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+            )
         }
     }
 }
@@ -661,18 +898,20 @@ private fun SuppressedSourceAppChips(
         )
     }
 
-    Text(
-        text = presentation.summary,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-
-    presentation.groups.forEach { group ->
-        AppSelectionGroup(
-            group = group,
-            suppressEnabled = suppressEnabled,
-            onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = presentation.summary,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        presentation.groups.forEach { group ->
+            AppSelectionGroup(
+                group = group,
+                suppressEnabled = suppressEnabled,
+                onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+            )
+        }
     }
 }
 
@@ -688,14 +927,27 @@ private fun AppSelectionGroup(
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        group.items.forEach { item ->
-            AppSelectionRow(
-                item = item,
-                enabled = suppressEnabled,
-                onToggle = { packageName, selected ->
-                    onSuppressedSourceAppToggle(packageName, selected)
-                },
-            )
+        SmartSurfaceCard(
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            group.items.forEachIndexed { index, item ->
+                if (index > 0) {
+                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+                }
+                AppSelectionRow(
+                    item = item,
+                    enabled = suppressEnabled,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    onToggle = { packageName, selected ->
+                        onSuppressedSourceAppToggle(packageName, selected)
+                    },
+                )
+            }
         }
     }
 }
@@ -704,40 +956,50 @@ private fun AppSelectionGroup(
 private fun AppSelectionRow(
     item: SettingsSuppressedAppItem,
     enabled: Boolean,
+    modifier: Modifier = Modifier,
     onToggle: (String, Boolean) -> Unit,
 ) {
-    SmartSurfaceCard(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    text = item.appName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                Box(
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .size(8.dp)
+                        .background(
+                            color = if (item.isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(999.dp),
+                        ),
                 )
-                Text(
-                    text = "${item.notificationCount}건 · ${item.lastSeenLabel}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = item.appName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "${item.notificationCount}건 · ${item.lastSeenLabel}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            FilterChip(
-                selected = item.isSelected,
-                enabled = enabled,
-                onClick = { onToggle(item.packageName, !item.isSelected) },
-                label = { Text(if (item.isSelected) "선택됨" else "선택") },
-            )
         }
+        FilterChip(
+            selected = item.isSelected,
+            enabled = enabled,
+            onClick = { onToggle(item.packageName, !item.isSelected) },
+            label = { Text(if (item.isSelected) "선택됨" else "선택") },
+        )
     }
 }
 
@@ -774,138 +1036,55 @@ private fun NotificationAccessCard() {
 }
 
 @Composable
-private fun SuppressionInsightsCard(
-    suppressEnabled: Boolean,
-    summary: SuppressionInsightsSummary,
-    summaryBuilder: SettingsSuppressionInsightSummaryBuilder,
-    breakdownItems: List<SuppressionBreakdownItem>,
-    topAppRoute: String?,
-    breakdownRoutesByAppName: Map<String, String>,
-    onInsightClick: (String) -> Unit,
+private fun SuppressedAppInsightRow(
+    appInsight: SuppressedAppInsight,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
-    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        ContextBadge(
-            label = "숨김 인사이트",
-            containerColor = SilentContainer,
-            contentColor = SilentOnContainer,
-        )
-        Text(
-            text = "원본 알림 숨김 인사이트",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = summaryBuilder.build(
-                suppressEnabled = suppressEnabled,
-                insights = summary,
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = when {
-                !suppressEnabled -> "기능을 켜고 앱을 선택하면 원본 알림 숨김 시도 상태를 여기서 확인할 수 있어요."
-                summary.selectedAppCount == 0 -> "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 원본 숨김 시도 요약이 여기에 표시돼요."
-                summary.topSelectedAppName != null -> {
-                    "선택한 앱 알림 중 ${summary.selectedFilteredSharePercent}%에 대해 원본 숨김을 시도했고, ${summary.topSelectedAppName}에서 ${summary.topSelectedAppFilteredCount}건이 가장 많았어요. 기기/앱에 따라 원본은 계속 남아있을 수 있어요."
-                }
-                else -> "선택한 앱의 원본 숨김 시도 상태를 계속 집계하고 있어요."
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = if (topAppRoute != null) {
-                Modifier.clickable { onInsightClick(topAppRoute) }
-            } else {
-                Modifier
-            },
-        )
-        if (breakdownItems.isNotEmpty()) {
-            SuppressionBreakdownChart(
-                items = breakdownItems,
-                routeByAppName = breakdownRoutesByAppName,
-                onInsightClick = onInsightClick,
-            )
-        }
-        if (summary.appInsights.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                summary.appInsights.take(3).forEach { appInsight ->
-                    SuppressedAppInsightRow(appInsight = appInsight)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SuppressionBreakdownChart(
-    items: List<SuppressionBreakdownItem>,
-    routeByAppName: Map<String, String>,
-    onInsightClick: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.forEach { item ->
-            Column(
-                modifier = Modifier.clickable {
-                    routeByAppName[item.appName]?.let(onInsightClick)
-                },
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Text(
-                            text = "${item.appName} · ${item.filteredCount}건",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = "탭해서 자세히 보기",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
+    val prefix = if (appInsight.isSuppressed) "선택됨" else "관찰 중"
+    Row(
+        modifier = if (onClick != null) {
+            modifier.clickable(onClick = onClick)
+        } else {
+            modifier
+        },
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp)
+                        .padding(top = 6.dp)
+                        .size(8.dp)
                         .background(
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f),
+                            color = if (appInsight.isSuppressed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                             shape = RoundedCornerShape(999.dp),
                         ),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(item.shareFraction.coerceIn(0f, 1f))
-                            .background(
-                                color = if (item.isTopApp) GreenAccent else DigestOnContainer,
-                                shape = RoundedCornerShape(999.dp),
-                            ),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = appInsight.appName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "$prefix · ${appInsight.filteredCount}건 정리 · ${appInsight.filteredSharePercent}% · ${appInsight.lastSeenLabel}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
         }
+        if (onClick != null) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
-}
-
-@Composable
-private fun SuppressedAppInsightRow(appInsight: SuppressedAppInsight) {
-    val prefix = if (appInsight.isSuppressed) "선택됨" else "관찰 중"
-    Text(
-        text = "$prefix · ${appInsight.appName} · ${appInsight.filteredCount}건 정리 · ${appInsight.filteredSharePercent}% · ${appInsight.lastSeenLabel}",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
