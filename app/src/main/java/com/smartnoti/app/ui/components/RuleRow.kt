@@ -76,6 +76,9 @@ fun RuleRow(
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         RuleMetaChip(typeLabel(rule.type))
                         RuleMetaChip(actionLabel(rule.action))
+                        if (!description.emphasisLabel.isNullOrBlank()) {
+                            RuleMetaChip(description.emphasisLabel)
+                        }
                     }
                     Text(
                         text = description.secondaryText,

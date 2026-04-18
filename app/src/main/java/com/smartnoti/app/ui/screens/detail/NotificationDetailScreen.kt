@@ -25,6 +25,7 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
+import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendationSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
@@ -45,12 +46,16 @@ fun NotificationDetailScreen(
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val feedbackPolicy = remember { NotificationFeedbackPolicy() }
     val deliveryProfileSummaryBuilder = remember { NotificationDetailDeliveryProfileSummaryBuilder() }
+    val onboardingRecommendationSummaryBuilder = remember { NotificationDetailOnboardingRecommendationSummaryBuilder() }
     val sourceSuppressionSummaryBuilder = remember { NotificationDetailSourceSuppressionSummaryBuilder() }
     val scope = rememberCoroutineScope()
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
     val deliveryProfileSummary = remember(notification) {
         notification?.let(deliveryProfileSummaryBuilder::build)
+    }
+    val onboardingRecommendationSummary = remember(notification) {
+        notification?.let(onboardingRecommendationSummaryBuilder::build)
     }
     val sourceSuppressionSummary = remember(notification) {
         notification?.takeIf {
@@ -134,6 +139,29 @@ fun NotificationDetailScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     ReasonChipRow(notification.reasonTags)
+                }
+            }
+        }
+        if (onboardingRecommendationSummary != null) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            onboardingRecommendationSummary.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            onboardingRecommendationSummary.body,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
