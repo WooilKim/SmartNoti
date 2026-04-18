@@ -12,11 +12,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +62,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val ruleFactory = remember { RuleDraftFactory() }
     val draftValidator = remember { RuleEditorDraftValidator() }
     val appSuggestionBuilder = remember { RuleEditorAppSuggestionBuilder() }
+    val repeatThresholdController = remember { RuleEditorRepeatBundleThresholdController() }
     val settings by settingsRepository.observeSettings().collectAsState(initial = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -196,6 +203,23 @@ fun RulesScreen(contentPadding: PaddingValues) {
                                 modifier = Modifier.weight(1f),
                             )
                         }
+                    } else if (draftType == RuleTypeUi.REPEAT_BUNDLE) {
+                        RepeatBundleThresholdEditor(
+                            value = repeatThresholdController.normalize(draftMatchValue),
+                            presets = repeatThresholdController.presets,
+                            onValueChange = { updated ->
+                                draftMatchValue = repeatThresholdController.normalize(updated)
+                            },
+                            onDecrease = {
+                                draftMatchValue = repeatThresholdController.decrement(draftMatchValue)
+                            },
+                            onIncrease = {
+                                draftMatchValue = repeatThresholdController.increment(draftMatchValue)
+                            },
+                            onPresetClick = { preset ->
+                                draftMatchValue = preset.value
+                            },
+                        )
                     } else {
                         OutlinedTextField(
                             value = draftMatchValue,
@@ -249,8 +273,10 @@ fun RulesScreen(contentPadding: PaddingValues) {
                             draftType = it
                             if (it == RuleTypeUi.SCHEDULE) {
                                 draftMatchValue = "${scheduleStartHour}-${scheduleEndHour}"
-                            } else if (it == RuleTypeUi.REPEAT_BUNDLE && draftMatchValue.isBlank()) {
-                                draftMatchValue = "3"
+                            } else if (it == RuleTypeUi.REPEAT_BUNDLE) {
+                                draftMatchValue = repeatThresholdController.normalize(
+                                    draftMatchValue.ifBlank { "3" }
+                                )
                             } else if (editingRule?.type == RuleTypeUi.SCHEDULE) {
                                 draftMatchValue = ""
                             }
@@ -301,6 +327,62 @@ fun RulesScreen(contentPadding: PaddingValues) {
                 }
             }
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RepeatBundleThresholdEditor(
+    value: String,
+    presets: List<RepeatBundleThresholdPreset>,
+    onValueChange: (String) -> Unit,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    onPresetClick: (RepeatBundleThresholdPreset) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel(
+            title = "반복 기준",
+            subtitle = "같은 알림이 몇 번 이상 반복되면 이 규칙을 적용할지 정해요.",
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onDecrease) {
+                Icon(Icons.Outlined.Remove, contentDescription = "반복 기준 낮추기")
+            }
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text("반복 횟수") },
+                supportingText = { Text("예: 3회 이상 반복되면 적용") },
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onIncrease) {
+                Icon(Icons.Outlined.Add, contentDescription = "반복 기준 높이기")
+            }
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            presets.forEach { preset ->
+                FilterChip(
+                    selected = value == preset.value,
+                    onClick = { onPresetClick(preset) },
+                    label = { Text(preset.label) },
+                )
+            }
+        }
+        OutlinedButton(
+            onClick = { onPresetClick(presets[1]) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("추천 기준으로 되돌리기")
+        }
     }
 }
 
