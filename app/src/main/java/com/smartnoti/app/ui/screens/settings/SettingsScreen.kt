@@ -53,11 +53,15 @@ import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilde
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsSummary
 import com.smartnoti.app.ui.components.ScreenHeader
+import com.smartnoti.app.ui.components.SettingsCardHeader
 import com.smartnoti.app.ui.components.SettingsToggleRow
 import com.smartnoti.app.ui.components.SmartSurfaceCard
 import com.smartnoti.app.ui.theme.BorderSubtle
 import com.smartnoti.app.ui.theme.DigestOnContainer
 import com.smartnoti.app.ui.theme.GreenAccent
+import com.smartnoti.app.ui.theme.PriorityOnContainer
+import com.smartnoti.app.ui.theme.SilentOnContainer
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -213,29 +217,18 @@ private fun OperationalSummaryCard(
     onQuietHoursEnabledChange: (Boolean) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "운영 상태",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = "현재 모드·Quiet Hours·Digest 시간을 한눈에 확인해요.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        // Grouped so dividers don't accumulate the card's 12dp spacedBy gap on both sides.
-        Column {
+        SettingsCardHeader(
+            eyebrow = "운영 상태",
+            title = "지금 동작 중인 전달 상태",
+            subtitle = "현재 모드·Quiet Hours·Digest 시간을 한눈에 확인해요.",
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             OperationalSummaryRow(
                 label = "현재 모드",
                 value = summary.modeTitle,
                 detail = summary.modeDetail,
             )
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 10.dp),
-                color = BorderSubtle.copy(alpha = 0.7f),
-            )
+            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
             OperationalSummaryRow(
                 label = "Quiet Hours",
                 value = summary.quietHoursWindow,
@@ -247,10 +240,7 @@ private fun OperationalSummaryCard(
                     )
                 },
             )
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 10.dp),
-                color = BorderSubtle.copy(alpha = 0.7f),
-            )
+            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
             OperationalSummaryRow(
                 label = "Digest 시간",
                 value = summary.digestSchedule,
@@ -270,14 +260,14 @@ private fun OperationalSummaryRow(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = if (trailing != null) Alignment.Top else Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = label,
+                text = label.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -371,16 +361,19 @@ private fun DeliveryProfileSettingsCard(
             DeliveryProfileSummaryRow(
                 title = "Priority",
                 modeLabel = "즉시 대응",
+                accentColor = PriorityOnContainer,
                 tokens = priorityTokens,
             )
             DeliveryProfileSummaryRow(
                 title = "Digest",
                 modeLabel = "묶음 확인",
+                accentColor = DigestOnContainer,
                 tokens = digestTokens,
             )
             DeliveryProfileSummaryRow(
                 title = "Silent",
                 modeLabel = "비침습 모드",
+                accentColor = SilentOnContainer,
                 tokens = silentTokens,
             )
         }
@@ -389,6 +382,7 @@ private fun DeliveryProfileSettingsCard(
                 DeliveryProfileEditorSection(
                     title = "Priority",
                     subtitle = "중요 알림은 필요할 때 강하게 알리되, 조용한 시간이나 반복 상황에서는 자동으로 낮아질 수 있어요.",
+                    accentColor = PriorityOnContainer,
                     summaryTokens = priorityTokens,
                     selectedAlertLevel = settings.priorityAlertLevel,
                     allowedAlertLevels = listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET),
@@ -411,6 +405,7 @@ private fun DeliveryProfileSettingsCard(
                 DeliveryProfileEditorSection(
                     title = "Digest",
                     subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud·강한 진동·heads-up은 허용하지 않아요.",
+                    accentColor = DigestOnContainer,
                     summaryTokens = digestTokens,
                     selectedAlertLevel = settings.digestAlertLevel,
                     allowedAlertLevels = listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE),
@@ -432,6 +427,7 @@ private fun DeliveryProfileSettingsCard(
                 DeliveryProfileEditorSection(
                     title = "Silent",
                     subtitle = "Silent는 항상 비침습적으로 유지돼요. 소리·진동·heads-up은 사용할 수 없어요.",
+                    accentColor = SilentOnContainer,
                     summaryTokens = silentTokens,
                     selectedAlertLevel = settings.silentAlertLevel,
                     allowedAlertLevels = listOf(AlertLevel.NONE, AlertLevel.QUIET),
@@ -459,6 +455,7 @@ private fun DeliveryProfileSettingsCard(
 private fun DeliveryProfileSummaryRow(
     title: String,
     modeLabel: String,
+    accentColor: Color,
     tokens: DeliveryProfileSummaryTokens,
 ) {
     Column(
@@ -469,17 +466,24 @@ private fun DeliveryProfileSummaryRow(
                 shape = RoundedCornerShape(18.dp),
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(color = accentColor, shape = RoundedCornerShape(999.dp)),
+            )
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
             )
             Text(
                 text = modeLabel,
@@ -491,6 +495,7 @@ private fun DeliveryProfileSummaryRow(
             text = tokens.toSummaryLine(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 18.dp),
         )
     }
 }
@@ -499,6 +504,7 @@ private fun DeliveryProfileSummaryRow(
 private fun DeliveryProfileEditorSection(
     title: String,
     subtitle: String,
+    accentColor: Color,
     summaryTokens: DeliveryProfileSummaryTokens,
     selectedAlertLevel: String,
     allowedAlertLevels: List<AlertLevel>,
@@ -521,12 +527,22 @@ private fun DeliveryProfileEditorSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(color = accentColor, shape = RoundedCornerShape(999.dp)),
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
@@ -1174,31 +1190,29 @@ private fun NotificationAccessCard() {
         modifier = Modifier.fillMaxWidth(),
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "알림 접근 권한",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+        SettingsCardHeader(
+            eyebrow = "알림 접근 권한",
+            title = "시스템 설정 연결",
+            subtitle = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
+        )
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
                 text = "경로",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
             )
             Text(
                 text = "설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
