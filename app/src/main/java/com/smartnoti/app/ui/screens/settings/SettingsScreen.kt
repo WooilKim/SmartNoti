@@ -50,7 +50,6 @@ import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilde
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsSummary
 import com.smartnoti.app.ui.components.ScreenHeader
-import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SettingsToggleRow
 import com.smartnoti.app.ui.components.SmartSurfaceCard
 import com.smartnoti.app.ui.theme.BorderSubtle
@@ -99,6 +98,8 @@ fun SettingsScreen(
     val scope = remember { CoroutineScope(Dispatchers.IO) }
     val summaryBuilder = remember { SettingsDisclosureSummaryBuilder() }
     val suppressionSummaryBuilder = remember { SettingsSuppressionInsightSummaryBuilder() }
+    val operationalSummaryBuilder = remember { SettingsOperationalSummaryBuilder() }
+    val operationalSummary = remember(settings) { operationalSummaryBuilder.build(settings) }
     var deliveryProfilesExpanded by rememberSaveable { mutableStateOf(false) }
     var suppressionAdvancedExpanded by rememberSaveable { mutableStateOf(false) }
     var suppressedAppsExpanded by rememberSaveable { mutableStateOf(false) }
@@ -147,32 +148,11 @@ fun SettingsScreen(
             )
         }
         item {
-            SectionLabel(
-                title = "현재 모드",
-                subtitle = "SmartNoti가 지금 어떤 기준으로 알림을 다루는지 보여줘요.",
-            )
-        }
-        item {
-            CurrentModeCard(settings = settings)
-        }
-        item {
-            SectionLabel(
-                title = "Quiet Hours",
-                subtitle = "자동 완화 시간대를 확인하고 즉시 켜거나 끌 수 있어요.",
-            )
-        }
-        item {
-            QuietHoursCard(
-                settings = settings,
+            OperationalSummaryCard(
+                summary = operationalSummary,
                 onQuietHoursEnabledChange = { enabled ->
                     scope.launch { repository.setQuietHoursEnabled(enabled) }
                 },
-            )
-        }
-        item {
-            SectionLabel(
-                title = "알림 전달 방식",
-                subtitle = "Priority/Digest/Silent 대체 알림의 주목도를 안전한 범위 안에서 조절해요.",
             )
         }
         item {
@@ -184,12 +164,6 @@ fun SettingsScreen(
                 summaryBuilder = summaryBuilder,
                 expanded = deliveryProfilesExpanded,
                 onExpandedChange = { deliveryProfilesExpanded = it },
-            )
-        }
-        item {
-            SectionLabel(
-                title = "소스 알림 처리",
-                subtitle = "Digest·조용히 결정 시 원본 알림을 숨길지 선택할 수 있어요.",
             )
         }
         item {
@@ -225,70 +199,89 @@ fun SettingsScreen(
             )
         }
         item {
-            SectionLabel(
-                title = "Digest 시간",
-                subtitle = "덜 중요한 알림을 묶어 보여줄 정리 시점을 확인해요.",
-            )
-        }
-        item {
-            DigestScheduleCard(settings = settings)
-        }
-        item {
-            SectionLabel(
-                title = "알림 접근 설정",
-                subtitle = "실시간 반영을 위해 필요한 시스템 권한 위치를 안내해요.",
-            )
-        }
-        item {
             NotificationAccessCard()
         }
     }
 }
 
 @Composable
-private fun CurrentModeCard(settings: SmartNotiSettings) {
+private fun OperationalSummaryCard(
+    summary: SettingsOperationalSummary,
+    onQuietHoursEnabledChange: (Boolean) -> Unit,
+) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = if (settings.quietHoursEnabled) "조용한 시간 자동 적용" else "항상 즉시 분류",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = "운영 상태",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "현재 모드·Quiet Hours·Digest 시간을 한눈에 확인해요.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        OperationalSummaryRow(
+            label = "현재 모드",
+            value = summary.modeTitle,
+            detail = summary.modeDetail,
         )
-        Text(
-            text = if (settings.quietHoursEnabled) {
-                "지정한 시간대에는 덜 급한 알림을 정리함 중심으로 다뤄요."
-            } else {
-                "모든 시간대에 동일한 기준으로 바로 분류해요."
+        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+        OperationalSummaryRow(
+            label = "Quiet Hours",
+            value = summary.quietHoursWindow,
+            detail = summary.quietHoursState,
+            trailing = {
+                Switch(
+                    checked = summary.quietHoursEnabled,
+                    onCheckedChange = onQuietHoursEnabledChange,
+                )
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+        OperationalSummaryRow(
+            label = "Digest 시간",
+            value = summary.digestSchedule,
+            detail = summary.digestDetail,
         )
     }
 }
 
 @Composable
-private fun QuietHoursCard(
-    settings: SmartNotiSettings,
-    onQuietHoursEnabledChange: (Boolean) -> Unit,
+private fun OperationalSummaryRow(
+    label: String,
+    value: String,
+    detail: String,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
-    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "${settings.quietHoursStartHour}:00 ~ ${settings.quietHoursEndHour}:00",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = "조용한 시간 사용",
-                style = MaterialTheme.typography.bodyMedium,
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Switch(
-                checked = settings.quietHoursEnabled,
-                onCheckedChange = onQuietHoursEnabledChange,
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (trailing != null) {
+            trailing()
         }
     }
 }
@@ -1004,24 +997,13 @@ private fun AppSelectionRow(
 }
 
 @Composable
-private fun DigestScheduleCard(settings: SmartNotiSettings) {
-    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = settings.digestHours.joinToString(" · ") { "$it:00" },
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "반복되거나 덜 급한 알림은 이 시점에 맞춰 Digest로 다시 확인할 수 있어요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
 private fun NotificationAccessCard() {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "알림 접근 권한",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
         Text(
             text = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
             style = MaterialTheme.typography.bodyMedium,
