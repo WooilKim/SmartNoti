@@ -37,9 +37,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
 import com.smartnoti.app.domain.usecase.HomeNotificationTimeline
 import com.smartnoti.app.domain.usecase.HomeNotificationTimelineBuilder
+import com.smartnoti.app.domain.usecase.HomeQuickStartAppliedSummaryBuilder
 import com.smartnoti.app.domain.usecase.HomeReasonBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeReasonBreakdownItem
 import com.smartnoti.app.domain.usecase.HomeReasonInsight
@@ -66,12 +68,15 @@ fun HomeScreen(
     onNotificationClick: (String) -> Unit,
     onPriorityClick: () -> Unit,
     onDigestClick: () -> Unit,
+    onRulesClick: () -> Unit,
     onInsightClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
+    val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val settingsRepository = remember(context) { com.smartnoti.app.data.settings.SettingsRepository.getInstance(context) }
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
+    val quickStartAppliedSummaryBuilder = remember { HomeQuickStartAppliedSummaryBuilder() }
     val reasonBreakdownBuilder = remember { HomeReasonBreakdownChartModelBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
     val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
@@ -81,10 +86,12 @@ fun HomeScreen(
         repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
     val recent by recentFlow.collectAsState(initial = emptyList())
+    val rules by rulesRepository.observeRules().collectAsState(initial = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
     val insights = remember(recent) { insightsBuilder.build(recent) }
+    val quickStartAppliedSummary = remember(rules) { quickStartAppliedSummaryBuilder.build(rules) }
     val reasonBreakdownItems = remember(insights) {
         reasonBreakdownBuilder.build(insights.topReasons).items
     }
@@ -148,6 +155,14 @@ fun HomeScreen(
                     title = "정리함",
                     subtitle = "묶인 알림 ${digestCount}개",
                     onClick = onDigestClick,
+                )
+            }
+        }
+        if (quickStartAppliedSummary != null) {
+            item {
+                HomeQuickStartAppliedCard(
+                    summary = quickStartAppliedSummary,
+                    onClick = onRulesClick,
                 )
             }
         }
