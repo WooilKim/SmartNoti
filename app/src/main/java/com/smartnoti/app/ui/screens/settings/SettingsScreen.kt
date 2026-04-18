@@ -211,7 +211,7 @@ private fun OperationalSummaryCard(
     onQuietHoursEnabledChange: (Boolean) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "운영 상태",
                 style = MaterialTheme.typography.labelMedium,
@@ -223,29 +223,38 @@ private fun OperationalSummaryCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        OperationalSummaryRow(
-            label = "현재 모드",
-            value = summary.modeTitle,
-            detail = summary.modeDetail,
-        )
-        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
-        OperationalSummaryRow(
-            label = "Quiet Hours",
-            value = summary.quietHoursWindow,
-            detail = summary.quietHoursState,
-            trailing = {
-                Switch(
-                    checked = summary.quietHoursEnabled,
-                    onCheckedChange = onQuietHoursEnabledChange,
-                )
-            },
-        )
-        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
-        OperationalSummaryRow(
-            label = "Digest 시간",
-            value = summary.digestSchedule,
-            detail = summary.digestDetail,
-        )
+        // Grouped so dividers don't accumulate the card's 12dp spacedBy gap on both sides.
+        Column {
+            OperationalSummaryRow(
+                label = "현재 모드",
+                value = summary.modeTitle,
+                detail = summary.modeDetail,
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = BorderSubtle.copy(alpha = 0.7f),
+            )
+            OperationalSummaryRow(
+                label = "Quiet Hours",
+                value = summary.quietHoursWindow,
+                detail = summary.quietHoursState,
+                trailing = {
+                    Switch(
+                        checked = summary.quietHoursEnabled,
+                        onCheckedChange = onQuietHoursEnabledChange,
+                    )
+                },
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 10.dp),
+                color = BorderSubtle.copy(alpha = 0.7f),
+            )
+            OperationalSummaryRow(
+                label = "Digest 시간",
+                value = summary.digestSchedule,
+                detail = summary.digestDetail,
+            )
+        }
     }
 }
 
@@ -1158,22 +1167,39 @@ private fun AppSelectionRow(
 
 @Composable
 private fun NotificationAccessCard() {
-    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "알림 접근 권한",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "경로: 설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    SmartSurfaceCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "알림 접근 권한",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "시스템 설정에서 SmartNoti 알림 접근을 켜면 들어오는 알림을 홈 화면에 반영할 수 있어요.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = "경로",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+            )
+            Text(
+                text = "설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
