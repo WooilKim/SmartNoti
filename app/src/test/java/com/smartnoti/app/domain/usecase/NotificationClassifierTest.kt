@@ -224,6 +224,30 @@ class NotificationClassifierTest {
     }
 
     @Test
+    fun repeat_bundle_rule_overrides_default_repeat_handling_at_custom_threshold() {
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.chat.app",
+                body = "같은 알림이 계속 와요",
+                duplicateCountInWindow = 2,
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-repeat-priority",
+                    title = "반복되면 바로 보기",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.REPEAT_BUNDLE,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "2",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.PRIORITY, result)
+    }
+
+    @Test
     fun default_case_is_silent() {
         val result = classifier.classify(
             ClassificationInput(

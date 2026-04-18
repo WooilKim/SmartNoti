@@ -2,6 +2,8 @@ package com.smartnoti.app.ui.screens.rules
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,6 +48,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val previewRepo = remember { FakeRuleRepository() }
     val repository = remember(context) { RulesRepository.getInstance(context) }
     val ruleFactory = remember { RuleDraftFactory() }
+    val draftValidator = remember { RuleEditorDraftValidator() }
     val rules by repository.observeRules().collectAsState(initial = previewRepo.getRules())
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
@@ -195,13 +198,21 @@ fun RulesScreen(contentPadding: PaddingValues) {
                     }
                     SectionLabel(title = "규칙 타입")
                     EnumSelectorRow(
-                        options = listOf(RuleTypeUi.PERSON, RuleTypeUi.APP, RuleTypeUi.KEYWORD, RuleTypeUi.SCHEDULE),
+                        options = listOf(
+                            RuleTypeUi.PERSON,
+                            RuleTypeUi.APP,
+                            RuleTypeUi.KEYWORD,
+                            RuleTypeUi.SCHEDULE,
+                            RuleTypeUi.REPEAT_BUNDLE,
+                        ),
                         selected = draftType,
                         label = { typeLabel(it) },
                         onSelect = {
                             draftType = it
                             if (it == RuleTypeUi.SCHEDULE) {
                                 draftMatchValue = "${scheduleStartHour}-${scheduleEndHour}"
+                            } else if (it == RuleTypeUi.REPEAT_BUNDLE && draftMatchValue.isBlank()) {
+                                draftMatchValue = "3"
                             } else if (editingRule?.type == RuleTypeUi.SCHEDULE) {
                                 draftMatchValue = ""
                             }
@@ -235,7 +246,13 @@ fun RulesScreen(contentPadding: PaddingValues) {
                         scope.launch { repository.upsertRule(newRule) }
                         showEditor = false
                     },
-                    enabled = draftTitle.isNotBlank() && draftMatchValue.isNotBlank(),
+                    enabled = draftValidator.canSave(
+                        title = draftTitle,
+                        matchValue = draftMatchValue,
+                        type = draftType,
+                        scheduleStartHour = scheduleStartHour,
+                        scheduleEndHour = scheduleEndHour,
+                    ),
                 ) {
                     Text(if (editingRule == null) "추가" else "저장")
                 }
@@ -249,6 +266,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun <T> EnumSelectorRow(
     options: List<T>,
@@ -256,8 +274,9 @@ private fun <T> EnumSelectorRow(
     label: (T) -> String,
     onSelect: (T) -> Unit,
 ) {
-    Row(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         options.forEach { option ->

@@ -173,8 +173,9 @@ private fun actionLabel(action: RuleActionUi): String = when (action) {
     RuleActionUi.CONTEXTUAL -> "상황별"
 }
 
-private fun String.toDisplayMatchValue(type: RuleTypeUi): String = when (type) {
+internal fun String.toDisplayMatchValue(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.KEYWORD -> split(',').joinToString(", ") { it.trim() }
     RuleTypeUi.SCHEDULE -> replace("-", ":00 ~ ") + ":00"
+    RuleTypeUi.REPEAT_BUNDLE -> "${filter(Char::isDigit).ifBlank { this }}회 이상 반복되면 적용"
     else -> this
 }

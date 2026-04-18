@@ -54,7 +54,7 @@ class NotificationClassifier(
                     .filter { it.isNotBlank() }
                     .any { keyword -> content.contains(keyword, ignoreCase = true) }
                 RuleTypeUi.SCHEDULE -> input.hourOfDay != null && matchesSchedule(rule.matchValue, input.hourOfDay)
-                else -> false
+                RuleTypeUi.REPEAT_BUNDLE -> matchesRepeatBundleThreshold(rule.matchValue, input.duplicateCountInWindow)
             }
         }
     }
@@ -71,6 +71,11 @@ class NotificationClassifier(
         } else {
             hourOfDay >= start || hourOfDay < end
         }
+    }
+
+    private fun matchesRepeatBundleThreshold(matchValue: String, duplicateCountInWindow: Int): Boolean {
+        val threshold = matchValue.toIntOrNull() ?: return false
+        return threshold > 0 && duplicateCountInWindow >= threshold
     }
 
     private fun RuleActionUi.toDecision(): NotificationDecision = when (this) {

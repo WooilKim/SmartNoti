@@ -36,12 +36,17 @@ class RuleDraftFactory {
                 .distinct()
                 .joinToString(",")
             RuleTypeUi.SCHEDULE -> normalizeSchedule(trimmed)
+            RuleTypeUi.REPEAT_BUNDLE -> normalizeRepeatBundleThreshold(trimmed)
             else -> trimmed
         }
     }
 
     private fun normalizeSchedule(raw: String): String {
         return raw.replace(" ", "")
+    }
+
+    private fun normalizeRepeatBundleThreshold(raw: String): String {
+        return raw.filter(Char::isDigit).trimStart('0').ifEmpty { "0" }
     }
 
     private fun RuleActionUi.toSubtitle(): String = when (this) {

@@ -65,4 +65,17 @@ class RuleDraftFactoryTest {
         assertEquals("23-7", draft.matchValue)
         assertEquals("schedule:23-7", draft.id)
     }
+
+    @Test
+    fun repeat_bundle_rule_normalizes_numeric_threshold() {
+        val draft = factory.create(
+            title = "반복 푸시",
+            matchValue = " 05회 ",
+            type = RuleTypeUi.REPEAT_BUNDLE,
+            action = RuleActionUi.DIGEST,
+        )
+
+        assertEquals("5", draft.matchValue)
+        assertEquals("repeat_bundle:5", draft.id)
+    }
 }
