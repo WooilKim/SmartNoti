@@ -62,12 +62,18 @@ class HomeQuickStartAppliedSummaryBuilder {
         }
 
         val effectBody = buildEffectBody(appliedPresetIds, notifications)
+        val resolvedEffectTitle = if (effectBody == null) {
+            "효과를 확인하는 중"
+        } else {
+            "최근 효과"
+        }
+        val resolvedEffectBody = effectBody ?: "실제 알림이 더 쌓이면 어떤 알림이 정리되고 있는지 여기서 바로 보여드릴게요"
         return HomeQuickStartAppliedSummary(
             title = "빠른 시작 추천이 적용되어 있어요",
             body = body,
             label = label,
-            effectTitle = if (effectBody == null) null else "최근 효과",
-            effectBody = effectBody,
+            effectTitle = resolvedEffectTitle,
+            effectBody = resolvedEffectBody,
         )
     }
 

@@ -111,7 +111,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
     }
 
     @Test
-    fun no_matching_recent_effects_returns_null_effect_copy() {
+    fun no_matching_recent_effects_returns_waiting_effect_copy() {
         val summary = builder.build(
             rules = listOf(promoRule()),
             notifications = listOf(
@@ -126,8 +126,11 @@ class HomeQuickStartAppliedSummaryBuilderTest {
         )
 
         requireNotNull(summary)
-        assertNull(summary.effectTitle)
-        assertNull(summary.effectBody)
+        assertEquals("효과를 확인하는 중", summary.effectTitle)
+        assertEquals(
+            "실제 알림이 더 쌓이면 어떤 알림이 정리되고 있는지 여기서 바로 보여드릴게요",
+            summary.effectBody,
+        )
     }
 
     private fun notification(
