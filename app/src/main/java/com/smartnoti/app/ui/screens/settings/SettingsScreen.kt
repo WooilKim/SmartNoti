@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
@@ -582,6 +584,7 @@ private fun DeliveryProfileControlGroup(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DeliveryProfileOptionRow(
     label: String,
@@ -595,9 +598,10 @@ private fun DeliveryProfileOptionRow(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             options.forEach { option ->
                 FilterChip(
@@ -1123,7 +1127,8 @@ private fun AppSelectionRow(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             modifier = Modifier.weight(1f),
@@ -1141,7 +1146,7 @@ private fun AppSelectionRow(
                             shape = RoundedCornerShape(999.dp),
                         ),
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = item.appName,
                         style = MaterialTheme.typography.bodyMedium,
@@ -1184,10 +1189,9 @@ private fun NotificationAccessCard() {
             )
         }
         HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
                 text = "경로",
@@ -1196,8 +1200,8 @@ private fun NotificationAccessCard() {
             )
             Text(
                 text = "설정 → 알림 → 기기 및 앱 알림 → 알림 읽기",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
@@ -1232,7 +1236,7 @@ private fun SuppressedAppInsightRow(
                             shape = RoundedCornerShape(999.dp),
                         ),
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = appInsight.appName,
                         style = MaterialTheme.typography.bodyMedium,
@@ -1240,9 +1244,14 @@ private fun SuppressedAppInsightRow(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "$prefix · ${appInsight.filteredCount}건 정리 · ${appInsight.filteredSharePercent}% · ${appInsight.lastSeenLabel}",
+                        text = "$prefix · ${appInsight.filteredCount}건 정리 · ${appInsight.filteredSharePercent}%",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = appInsight.lastSeenLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                     )
                 }
             }
