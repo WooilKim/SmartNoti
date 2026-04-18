@@ -1,5 +1,7 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
@@ -15,11 +17,12 @@ class HomeQuickStartAppliedSummaryBuilderTest {
     @Test
     fun all_starter_rules_present_returns_combined_summary() {
         val summary = builder.build(
-            listOf(
+            rules = listOf(
                 importantRule(),
                 promoRule(),
                 repeatRule(),
             ),
+            notifications = emptyList(),
         )
 
         requireNotNull(summary)
@@ -29,8 +32,59 @@ class HomeQuickStartAppliedSummaryBuilderTest {
     }
 
     @Test
+    fun recent_effects_summarize_promo_repeat_and_priority_outcomes() {
+        val summary = builder.build(
+            rules = listOf(
+                importantRule(),
+                promoRule(),
+                repeatRule(),
+            ),
+            notifications = listOf(
+                notification(
+                    id = "1",
+                    appName = "쿠팡",
+                    title = "(광고) 오늘만 특가",
+                    status = NotificationStatusUi.DIGEST,
+                    reasonTags = listOf("프로모션 알림", "사용자 규칙"),
+                ),
+                notification(
+                    id = "2",
+                    appName = "쿠팡",
+                    title = "쿠폰이 도착했어요",
+                    status = NotificationStatusUi.DIGEST,
+                    reasonTags = listOf("프로모션 알림", "사용자 규칙"),
+                ),
+                notification(
+                    id = "3",
+                    appName = "네이버",
+                    title = "재입고 알림",
+                    status = NotificationStatusUi.DIGEST,
+                    reasonTags = listOf("반복 알림", "사용자 규칙"),
+                ),
+                notification(
+                    id = "4",
+                    appName = "토스",
+                    title = "결제가 완료됐어요",
+                    status = NotificationStatusUi.PRIORITY,
+                    reasonTags = listOf("중요 알림", "사용자 규칙"),
+                ),
+            ),
+        )
+
+        requireNotNull(summary)
+        val effectBody = requireNotNull(summary.effectBody)
+        assertEquals("최근 효과", summary.effectTitle)
+        assertTrue(effectBody.contains("쿠팡 프로모션 알림 2건"))
+        assertTrue(effectBody.contains("반복 알림 1건"))
+        assertTrue(effectBody.contains("중요 알림 1건"))
+    }
+
+    @Test
     fun important_only_returns_priority_focused_summary() {
-        val summary = builder.build(listOf(importantRule()))
+        val summary = builder.build(
+            rules = listOf(importantRule()),
+            notifications = emptyList(),
+        )
 
         requireNotNull(summary)
         assertEquals("결제·배송·인증 알림을 우선 전달하고 있어요", summary.body)
@@ -39,7 +93,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
     @Test
     fun non_starter_rules_return_null() {
         val summary = builder.build(
-            listOf(
+            rules = listOf(
                 RuleUiModel(
                     id = "person:엄마",
                     title = "엄마",
@@ -50,10 +104,49 @@ class HomeQuickStartAppliedSummaryBuilderTest {
                     matchValue = "엄마",
                 ),
             ),
+            notifications = emptyList(),
         )
 
         assertNull(summary)
     }
+
+    @Test
+    fun no_matching_recent_effects_returns_null_effect_copy() {
+        val summary = builder.build(
+            rules = listOf(promoRule()),
+            notifications = listOf(
+                notification(
+                    id = "1",
+                    appName = "카카오톡",
+                    title = "친구가 메시지를 보냈어요",
+                    status = NotificationStatusUi.PRIORITY,
+                    reasonTags = listOf("발신자 있음"),
+                ),
+            ),
+        )
+
+        requireNotNull(summary)
+        assertNull(summary.effectTitle)
+        assertNull(summary.effectBody)
+    }
+
+    private fun notification(
+        id: String,
+        appName: String,
+        title: String,
+        status: NotificationStatusUi,
+        reasonTags: List<String>,
+    ) = NotificationUiModel(
+        id = id,
+        appName = appName,
+        packageName = "pkg.$id",
+        sender = null,
+        title = title,
+        body = "",
+        receivedAtLabel = "방금",
+        status = status,
+        reasonTags = reasonTags,
+    )
 
     private fun promoRule() = RuleUiModel(
         id = "keyword:promo",

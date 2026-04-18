@@ -1,11 +1,16 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 
 class HomeQuickStartAppliedSummaryBuilder {
-    fun build(rules: List<RuleUiModel>): HomeQuickStartAppliedSummary? {
+    fun build(
+        rules: List<RuleUiModel>,
+        notifications: List<NotificationUiModel> = emptyList(),
+    ): HomeQuickStartAppliedSummary? {
         val appliedPresetIds = mutableSetOf<String>()
         rules.filter(RuleUiModel::enabled).forEach { rule ->
             when {
@@ -56,11 +61,55 @@ class HomeQuickStartAppliedSummaryBuilder {
             else -> "반복 알림 정리 적용됨"
         }
 
+        val effectBody = buildEffectBody(appliedPresetIds, notifications)
         return HomeQuickStartAppliedSummary(
             title = "빠른 시작 추천이 적용되어 있어요",
             body = body,
             label = label,
+            effectTitle = if (effectBody == null) null else "최근 효과",
+            effectBody = effectBody,
         )
+    }
+
+    private fun buildEffectBody(
+        appliedPresetIds: Set<String>,
+        notifications: List<NotificationUiModel>,
+    ): String? {
+        val effects = mutableListOf<String>()
+        if (PROMO in appliedPresetIds) {
+            val promoNotifications = notifications.filter { notification ->
+                notification.status == NotificationStatusUi.DIGEST &&
+                    notification.reasonTags.contains("프로모션 알림")
+            }
+            if (promoNotifications.isNotEmpty()) {
+                val topPromoApp = promoNotifications
+                    .groupingBy(NotificationUiModel::appName)
+                    .eachCount()
+                    .maxByOrNull { (_, count) -> count }
+                if (topPromoApp != null) {
+                    effects += "${topPromoApp.key} 프로모션 알림 ${topPromoApp.value}건이 정리됐어요"
+                }
+            }
+        }
+        if (REPEAT in appliedPresetIds) {
+            val repeatCount = notifications.count { notification ->
+                notification.status == NotificationStatusUi.DIGEST &&
+                    notification.reasonTags.contains("반복 알림")
+            }
+            if (repeatCount > 0) {
+                effects += "반복 알림 ${repeatCount}건이 Digest로 묶였어요"
+            }
+        }
+        if (IMPORTANT in appliedPresetIds) {
+            val importantCount = notifications.count { notification ->
+                notification.status == NotificationStatusUi.PRIORITY &&
+                    notification.reasonTags.contains("중요 알림")
+            }
+            if (importantCount > 0) {
+                effects += "중요 알림 ${importantCount}건은 그대로 바로 보여줬어요"
+            }
+        }
+        return effects.takeIf { it.isNotEmpty() }?.joinToString(" · ")
     }
 
     private companion object {
@@ -74,4 +123,6 @@ data class HomeQuickStartAppliedSummary(
     val title: String,
     val body: String,
     val label: String,
+    val effectTitle: String? = null,
+    val effectBody: String? = null,
 )

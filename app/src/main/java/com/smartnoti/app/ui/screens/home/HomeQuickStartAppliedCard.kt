@@ -58,5 +58,17 @@ fun HomeQuickStartAppliedCard(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (!summary.effectTitle.isNullOrBlank() && !summary.effectBody.isNullOrBlank()) {
+            Text(
+                text = summary.effectTitle,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = summary.effectBody,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

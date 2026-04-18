@@ -91,7 +91,12 @@ fun HomeScreen(
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
     val insights = remember(recent) { insightsBuilder.build(recent) }
-    val quickStartAppliedSummary = remember(rules) { quickStartAppliedSummaryBuilder.build(rules) }
+    val quickStartAppliedSummary = remember(rules, recent) {
+        quickStartAppliedSummaryBuilder.build(
+            rules = rules,
+            notifications = recent,
+        )
+    }
     val reasonBreakdownItems = remember(insights) {
         reasonBreakdownBuilder.build(insights.topReasons).items
     }
