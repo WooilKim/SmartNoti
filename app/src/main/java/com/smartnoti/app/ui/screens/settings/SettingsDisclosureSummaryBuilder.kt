@@ -3,18 +3,46 @@ package com.smartnoti.app.ui.screens.settings
 import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.settings.SmartNotiSettings
 
+data class DeliveryProfileSummaryTokens(
+    val alertLabel: String,
+    val vibrationLabel: String,
+    val headsUpLabel: String,
+    val lockScreenLabel: String,
+)
+
 class SettingsDisclosureSummaryBuilder {
+    fun buildDeliveryProfileSummaryTokens(
+        alertLevel: String,
+        vibrationMode: String,
+        headsUpEnabled: Boolean,
+        lockScreenVisibility: String,
+    ): DeliveryProfileSummaryTokens {
+        val alertLabel = alertLevel.toAlertLevelOrNull()?.toKoreanLabel() ?: alertLevel
+        val vibrationLabel = vibrationMode.toVibrationModeOrNull()?.toKoreanLabel() ?: vibrationMode
+        val lockScreenLabel = lockScreenVisibility.toLockScreenVisibilityOrNull()?.toKoreanLabel() ?: lockScreenVisibility
+        val headsUpLabel = if (headsUpEnabled) "Heads-up 켜짐" else "Heads-up 꺼짐"
+        return DeliveryProfileSummaryTokens(
+            alertLabel = alertLabel,
+            vibrationLabel = vibrationLabel,
+            headsUpLabel = headsUpLabel,
+            lockScreenLabel = lockScreenLabel,
+        )
+    }
+
     fun buildDeliveryProfileSummary(
         alertLevel: String,
         vibrationMode: String,
         headsUpEnabled: Boolean,
         lockScreenVisibility: String,
     ): String {
-        val alertLabel = alertLevel.toAlertLevelOrNull()?.toKoreanLabel() ?: alertLevel
-        val vibrationLabel = vibrationMode.toVibrationModeOrNull()?.toKoreanLabel() ?: vibrationMode
-        val lockScreenLabel = lockScreenVisibility.toLockScreenVisibilityOrNull()?.toKoreanLabel() ?: lockScreenVisibility
-        val headsUpLabel = if (headsUpEnabled) "Heads-up 켜짐" else "Heads-up 꺼짐"
-        return listOf(alertLabel, vibrationLabel, headsUpLabel, lockScreenLabel).joinToString(" · ")
+        val tokens = buildDeliveryProfileSummaryTokens(
+            alertLevel = alertLevel,
+            vibrationMode = vibrationMode,
+            headsUpEnabled = headsUpEnabled,
+            lockScreenVisibility = lockScreenVisibility,
+        )
+        return listOf(tokens.alertLabel, tokens.vibrationLabel, tokens.headsUpLabel, tokens.lockScreenLabel)
+            .joinToString(" · ")
     }
 
     fun buildAllDeliveryProfilesSummary(settings: SmartNotiSettings): String {

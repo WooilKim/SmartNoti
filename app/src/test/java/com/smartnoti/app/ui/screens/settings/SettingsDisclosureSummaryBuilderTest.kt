@@ -10,6 +10,46 @@ class SettingsDisclosureSummaryBuilderTest {
     private val builder = SettingsDisclosureSummaryBuilder()
 
     @Test
+    fun delivery_profile_summary_tokens_use_human_readable_labels() {
+        val tokens = builder.buildDeliveryProfileSummaryTokens(
+            alertLevel = "LOUD",
+            vibrationMode = "STRONG",
+            headsUpEnabled = true,
+            lockScreenVisibility = "PRIVATE",
+        )
+
+        assertEquals(
+            DeliveryProfileSummaryTokens(
+                alertLabel = "강함",
+                vibrationLabel = "강하게",
+                headsUpLabel = "Heads-up 켜짐",
+                lockScreenLabel = "내용 숨김",
+            ),
+            tokens,
+        )
+    }
+
+    @Test
+    fun delivery_profile_summary_tokens_fall_back_to_raw_values_for_unknown_inputs() {
+        val tokens = builder.buildDeliveryProfileSummaryTokens(
+            alertLevel = "CUSTOM_ALERT",
+            vibrationMode = "CUSTOM_VIBRATION",
+            headsUpEnabled = false,
+            lockScreenVisibility = "CUSTOM_LOCKSCREEN",
+        )
+
+        assertEquals(
+            DeliveryProfileSummaryTokens(
+                alertLabel = "CUSTOM_ALERT",
+                vibrationLabel = "CUSTOM_VIBRATION",
+                headsUpLabel = "Heads-up 꺼짐",
+                lockScreenLabel = "CUSTOM_LOCKSCREEN",
+            ),
+            tokens,
+        )
+    }
+
+    @Test
     fun delivery_profile_summary_uses_human_readable_labels() {
         val summary = builder.buildDeliveryProfileSummary(
             alertLevel = "LOUD",
@@ -94,6 +134,21 @@ class SettingsDisclosureSummaryBuilderTest {
                 suppressEnabled = true,
                 selectedCount = 0,
                 availableApps = emptyList(),
+            )
+        )
+    }
+
+    @Test
+    fun suppressed_apps_summary_omits_remainder_suffix_when_two_or_fewer_apps_exist() {
+        assertEquals(
+            "선택한 앱 1개 · 쿠팡 8건 · 토스 3건",
+            builder.buildSuppressedAppsSummary(
+                suppressEnabled = true,
+                selectedCount = 1,
+                availableApps = listOf(
+                    app("쿠팡", 8),
+                    app("토스", 3),
+                ),
             )
         )
     }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -303,22 +304,80 @@ private fun DeliveryProfileSettingsCard(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
 ) {
+    val priorityTokens = remember(
+        settings.priorityAlertLevel,
+        settings.priorityVibrationMode,
+        settings.priorityHeadsUpEnabled,
+        settings.priorityLockScreenVisibility,
+    ) {
+        summaryBuilder.buildDeliveryProfileSummaryTokens(
+            alertLevel = settings.priorityAlertLevel,
+            vibrationMode = settings.priorityVibrationMode,
+            headsUpEnabled = settings.priorityHeadsUpEnabled,
+            lockScreenVisibility = settings.priorityLockScreenVisibility,
+        )
+    }
+    val digestTokens = remember(
+        settings.digestAlertLevel,
+        settings.digestVibrationMode,
+        settings.digestHeadsUpEnabled,
+        settings.digestLockScreenVisibility,
+    ) {
+        summaryBuilder.buildDeliveryProfileSummaryTokens(
+            alertLevel = settings.digestAlertLevel,
+            vibrationMode = settings.digestVibrationMode,
+            headsUpEnabled = settings.digestHeadsUpEnabled,
+            lockScreenVisibility = settings.digestLockScreenVisibility,
+        )
+    }
+    val silentTokens = remember(
+        settings.silentAlertLevel,
+        settings.silentVibrationMode,
+        settings.silentHeadsUpEnabled,
+        settings.silentLockScreenVisibility,
+    ) {
+        summaryBuilder.buildDeliveryProfileSummaryTokens(
+            alertLevel = settings.silentAlertLevel,
+            vibrationMode = settings.silentVibrationMode,
+            headsUpEnabled = settings.silentHeadsUpEnabled,
+            lockScreenVisibility = settings.silentLockScreenVisibility,
+        )
+    }
+
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         ExpandableSettingsSectionHeader(
             title = "대체 알림 전달 방식",
             subtitle = if (expanded) {
                 "설정한 값은 SmartNoti가 원본 알림을 대신 보여줄 때만 적용돼요."
             } else {
-                summaryBuilder.buildAllDeliveryProfilesSummary(settings)
+                "Priority·Digest·Silent 현재 상태를 먼저 확인하고, 필요할 때만 세부 제약을 펼쳐 조정해요."
             },
             expanded = expanded,
             onExpandedChange = onExpandedChange,
         )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            DeliveryProfileSummaryRow(
+                title = "Priority",
+                modeLabel = "즉시 대응",
+                tokens = priorityTokens,
+            )
+            DeliveryProfileSummaryRow(
+                title = "Digest",
+                modeLabel = "묶음 확인",
+                tokens = digestTokens,
+            )
+            DeliveryProfileSummaryRow(
+                title = "Silent",
+                modeLabel = "비침습 모드",
+                tokens = silentTokens,
+            )
+        }
         AnimatedVisibility(visible = expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DeliveryProfileEditorSection(
                     title = "Priority",
                     subtitle = "중요 알림은 필요할 때 강하게 알리되, 조용한 시간이나 반복 상황에서는 자동으로 낮아질 수 있어요.",
+                    summaryTokens = priorityTokens,
                     selectedAlertLevel = settings.priorityAlertLevel,
                     allowedAlertLevels = listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET),
                     onAlertLevelChange = priorityCallbacks.onAlertLevelChange,
@@ -339,7 +398,8 @@ private fun DeliveryProfileSettingsCard(
                 )
                 DeliveryProfileEditorSection(
                     title = "Digest",
-                    subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud/강한 진동/heads-up은 허용하지 않아요.",
+                    subtitle = "Digest는 조용히 다시 확인하는 용도라서 loud·강한 진동·heads-up은 허용하지 않아요.",
+                    summaryTokens = digestTokens,
                     selectedAlertLevel = settings.digestAlertLevel,
                     allowedAlertLevels = listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE),
                     onAlertLevelChange = digestCallbacks.onAlertLevelChange,
@@ -360,6 +420,7 @@ private fun DeliveryProfileSettingsCard(
                 DeliveryProfileEditorSection(
                     title = "Silent",
                     subtitle = "Silent는 항상 비침습적으로 유지돼요. 소리·진동·heads-up은 사용할 수 없어요.",
+                    summaryTokens = silentTokens,
                     selectedAlertLevel = settings.silentAlertLevel,
                     allowedAlertLevels = listOf(AlertLevel.NONE, AlertLevel.QUIET),
                     onAlertLevelChange = silentCallbacks.onAlertLevelChange,
@@ -383,9 +444,50 @@ private fun DeliveryProfileSettingsCard(
 }
 
 @Composable
+private fun DeliveryProfileSummaryRow(
+    title: String,
+    modeLabel: String,
+    tokens: DeliveryProfileSummaryTokens,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
+                shape = RoundedCornerShape(18.dp),
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = modeLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = tokens.toSummaryLine(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun DeliveryProfileEditorSection(
     title: String,
     subtitle: String,
+    summaryTokens: DeliveryProfileSummaryTokens,
     selectedAlertLevel: String,
     allowedAlertLevels: List<AlertLevel>,
     onAlertLevelChange: (String) -> Unit,
@@ -400,68 +502,79 @@ private fun DeliveryProfileEditorSection(
     allowedLockScreenModes: List<LockScreenVisibilityMode>,
     onLockScreenVisibilityChange: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        DeliveryProfileOptionChips(
-            label = "알림 강도",
-            selected = selectedAlertLevel,
-            options = allowedAlertLevels.map { it.name to it.toKoreanLabel() },
-            onSelected = onAlertLevelChange,
-        )
-        DeliveryProfileOptionChips(
-            label = "진동",
-            selected = selectedVibrationMode,
-            options = allowedVibrationModes.map { it.name to it.toKoreanLabel() },
-            onSelected = onVibrationModeChange,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = headsUpDescription,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (!headsUpEnabledAllowed) {
-                    Text(
-                        text = "안전한 전달을 위해 고정됨",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Switch(
-                checked = headsUpEnabled,
-                enabled = headsUpEnabledAllowed,
-                onCheckedChange = onHeadsUpChange,
+    SmartSurfaceCard(
+        modifier = Modifier.fillMaxWidth(),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "현재 ${summaryTokens.toSummaryLine()}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
             )
         }
-        DeliveryProfileOptionChips(
-            label = "잠금 화면 공개 범위",
-            selected = selectedLockScreenVisibility,
-            options = allowedLockScreenModes.map { it.name to it.toKoreanLabel() },
-            onSelected = onLockScreenVisibilityChange,
-        )
+        DeliveryProfileControlGroup(title = "신호") {
+            DeliveryProfileOptionRow(
+                label = "알림",
+                selected = selectedAlertLevel,
+                options = allowedAlertLevels.map { it.name to it.toKoreanLabel() },
+                onSelected = onAlertLevelChange,
+            )
+            DeliveryProfileOptionRow(
+                label = "진동",
+                selected = selectedVibrationMode,
+                options = allowedVibrationModes.map { it.name to it.toKoreanLabel() },
+                onSelected = onVibrationModeChange,
+            )
+        }
+        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+        DeliveryProfileControlGroup(title = "표시와 보호") {
+            DeliveryProfileHeadsUpRow(
+                headsUpEnabled = headsUpEnabled,
+                headsUpEnabledAllowed = headsUpEnabledAllowed,
+                headsUpDescription = headsUpDescription,
+                onHeadsUpChange = onHeadsUpChange,
+            )
+            DeliveryProfileOptionRow(
+                label = "잠금 화면",
+                selected = selectedLockScreenVisibility,
+                options = allowedLockScreenModes.map { it.name to it.toKoreanLabel() },
+                onSelected = onLockScreenVisibilityChange,
+            )
+        }
     }
 }
 
 @Composable
-private fun DeliveryProfileOptionChips(
+private fun DeliveryProfileControlGroup(
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        content()
+    }
+}
+
+@Composable
+private fun DeliveryProfileOptionRow(
     label: String,
     selected: String,
     options: List<Pair<String, String>>,
@@ -470,7 +583,7 @@ private fun DeliveryProfileOptionChips(
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(
@@ -489,9 +602,51 @@ private fun DeliveryProfileOptionChips(
 }
 
 @Composable
+private fun DeliveryProfileHeadsUpRow(
+    headsUpEnabled: Boolean,
+    headsUpEnabledAllowed: Boolean,
+    headsUpDescription: String,
+    onHeadsUpChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = "Heads-up",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = headsUpDescription,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (!headsUpEnabledAllowed) {
+                Text(
+                    text = "안전한 전달을 위해 고정됨",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Switch(
+            checked = headsUpEnabled,
+            enabled = headsUpEnabledAllowed,
+            onCheckedChange = onHeadsUpChange,
+        )
+    }
+}
+
+@Composable
 private fun ExpandableSettingsSectionHeader(
     title: String,
-    subtitle: String,
+    subtitle: String? = null,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
 ) {
@@ -511,11 +666,13 @@ private fun ExpandableSettingsSectionHeader(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
@@ -527,6 +684,9 @@ private fun ExpandableSettingsSectionHeader(
         )
     }
 }
+
+private fun DeliveryProfileSummaryTokens.toSummaryLine(): String =
+    listOf(alertLabel, vibrationLabel, headsUpLabel, lockScreenLabel).joinToString(" · ")
 
 @Composable
 private fun SettingsSubsection(
