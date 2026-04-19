@@ -24,6 +24,7 @@ For end-to-end verification, SmartNoti now has a documented flow that uses a sep
 
 - Main doc: `docs/real-notification-verification-with-testnotifier.md`
 - Verifier project expected as a sibling repo/project: `/Users/wooil/source/SmartNotiTestNotifier`
+- GitHub repo: `https://github.com/WooilKim/SmartNotiTestNotifier`
 - Verifier package: `com.smartnoti.testnotifier`
 
 This flow is useful when you need to validate:
