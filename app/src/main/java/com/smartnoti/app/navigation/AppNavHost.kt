@@ -103,6 +103,26 @@ fun AppNavHost(
         }
     }
 
+    fun navigateToTopLevel(route: String) {
+        when (
+            val action = navigationActionBuilder.build(
+                currentRoute = currentRoute,
+                targetRoute = route,
+            )
+        ) {
+            TopLevelNavigationAction.NoOp -> Unit
+            is TopLevelNavigationAction.Navigate -> {
+                navController.navigate(action.route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
@@ -111,25 +131,7 @@ fun AppNavHost(
                 AppBottomBar(
                     currentRoute = currentRoute,
                     items = bottomNavItems,
-                    onNavigate = { route ->
-                        when (
-                            val action = navigationActionBuilder.build(
-                                currentRoute = currentRoute,
-                                targetRoute = route,
-                            )
-                        ) {
-                            TopLevelNavigationAction.NoOp -> Unit
-                            is TopLevelNavigationAction.Navigate -> {
-                                navController.navigate(action.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        }
-                    }
+                    onNavigate = ::navigateToTopLevel,
                 )
             }
         }
@@ -160,10 +162,10 @@ fun AppNavHost(
                 HomeScreen(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
-                    onPriorityClick = { navController.navigate(Routes.Priority.route) },
-                    onDigestClick = { navController.navigate(Routes.Digest.route) },
-                    onNotificationAccessClick = { navController.navigate(Routes.Settings.route) },
-                    onRulesClick = { navController.navigate(Routes.Rules.route) },
+                    onPriorityClick = { navigateToTopLevel(Routes.Priority.route) },
+                    onDigestClick = { navigateToTopLevel(Routes.Digest.route) },
+                    onNotificationAccessClick = { navigateToTopLevel(Routes.Settings.route) },
+                    onRulesClick = { navigateToTopLevel(Routes.Rules.route) },
                     onInsightClick = { navController.navigate(it) },
                 )
             }

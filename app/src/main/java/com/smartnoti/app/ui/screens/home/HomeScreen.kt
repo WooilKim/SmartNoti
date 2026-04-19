@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.usecase.HomeNotificationAccessSummary
 import com.smartnoti.app.domain.usecase.HomeNotificationAccessSummaryBuilder
@@ -98,9 +99,10 @@ fun HomeScreen(
     }
     val recent by recentFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val rules by rulesRepository.observeRules().collectAsStateWithLifecycle(initialValue = emptyList())
-    val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
-    val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
-    val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
+    val notificationCounts = remember(recent) { HomeNotificationCounts.from(recent) }
+    val priorityCount = notificationCounts.priority
+    val digestCount = notificationCounts.digest
+    val silentCount = notificationCounts.silent
     val insights = remember(recent) { insightsBuilder.build(recent) }
     val quickStartAppliedSummary = remember(rules, recent) {
         quickStartAppliedSummaryBuilder.build(
@@ -245,6 +247,34 @@ fun HomeScreen(
             items(recent, key = { it.id }) { notification ->
                 NotificationCard(model = notification, onClick = onNotificationClick)
             }
+        }
+    }
+}
+
+internal data class HomeNotificationCounts(
+    val priority: Int,
+    val digest: Int,
+    val silent: Int,
+) {
+    companion object {
+        fun from(notifications: List<NotificationUiModel>): HomeNotificationCounts {
+            var priority = 0
+            var digest = 0
+            var silent = 0
+
+            notifications.forEach { notification ->
+                when (notification.status) {
+                    NotificationStatusUi.PRIORITY -> priority += 1
+                    NotificationStatusUi.DIGEST -> digest += 1
+                    NotificationStatusUi.SILENT -> silent += 1
+                }
+            }
+
+            return HomeNotificationCounts(
+                priority = priority,
+                digest = digest,
+                silent = silent,
+            )
         }
     }
 }
