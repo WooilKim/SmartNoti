@@ -27,7 +27,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,13 +68,13 @@ fun RulesScreen(contentPadding: PaddingValues) {
     val listPresentationBuilder = remember { RuleListPresentationBuilder() }
     val listFilterApplicator = remember { RuleListFilterApplicator() }
     val listGroupingBuilder = remember { RuleListGroupingBuilder() }
-    val settings by settingsRepository.observeSettings().collectAsState(initial = SmartNotiSettings())
+    val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
     }
-    val capturedApps by capturedAppsFlow.collectAsState(initial = emptyList())
+    val capturedApps by capturedAppsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val appSuggestions = remember(capturedApps) { appSuggestionBuilder.build(capturedApps) }
-    val rules by repository.observeRules().collectAsState(initial = emptyList())
+    val rules by repository.observeRules().collectAsStateWithLifecycle(initialValue = emptyList())
     val listPresentation = remember(rules) { listPresentationBuilder.build(rules) }
     var selectedActionFilter by rememberSaveable { mutableStateOf<RuleActionUi?>(null) }
     val visibleRules = remember(rules, selectedActionFilter) {

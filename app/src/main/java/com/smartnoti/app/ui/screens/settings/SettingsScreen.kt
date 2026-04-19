@@ -29,7 +29,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -86,15 +86,15 @@ fun SettingsScreen(
     val suppressionInsightsBuilder = remember { SuppressionInsightsBuilder() }
     val suppressionBreakdownBuilder = remember { SuppressionBreakdownChartModelBuilder() }
     val suppressionDrillDownTargetsBuilder = remember { SuppressionInsightDrillDownTargetsBuilder() }
-    val settings by repository.observeSettings().collectAsState(initial = SmartNotiSettings())
+    val settings by repository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val filteredCapturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
     }
-    val filteredCapturedApps by filteredCapturedAppsFlow.collectAsState(initial = emptyList())
+    val filteredCapturedApps by filteredCapturedAppsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val filteredNotificationsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeAllFiltered(settings.hidePersistentNotifications)
     }
-    val filteredNotifications by filteredNotificationsFlow.collectAsState(initial = emptyList())
+    val filteredNotifications by filteredNotificationsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val suppressionInsights = remember(filteredCapturedApps, filteredNotifications, settings.suppressedSourceApps) {
         suppressionInsightsBuilder.build(
             capturedApps = filteredCapturedApps,

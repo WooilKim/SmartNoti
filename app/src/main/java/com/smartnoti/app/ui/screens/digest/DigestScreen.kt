@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -30,11 +30,11 @@ fun DigestScreen(
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
-    val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
+    val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = com.smartnoti.app.data.settings.SmartNotiSettings())
     val groupsFlow = remember(repository, settings.hidePersistentNotifications) {
         repository.observeDigestGroupsFiltered(settings.hidePersistentNotifications)
     }
-    val groups by groupsFlow.collectAsState(initial = emptyList())
+    val groups by groupsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
     if (groups.isEmpty()) {
         LazyColumn(

@@ -26,7 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,12 +92,12 @@ fun HomeScreen(
     val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
     var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
     var notificationAccessStatus by remember { mutableStateOf(OnboardingPermissions.currentStatus(context)) }
-    val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
+    val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = com.smartnoti.app.data.settings.SmartNotiSettings())
     val recentFlow = remember(repository, settings.hidePersistentNotifications) {
         repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
-    val recent by recentFlow.collectAsState(initial = emptyList())
-    val rules by rulesRepository.observeRules().collectAsState(initial = emptyList())
+    val recent by recentFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val rules by rulesRepository.observeRules().collectAsStateWithLifecycle(initialValue = emptyList())
     val priorityCount = recent.count { it.status == NotificationStatusUi.PRIORITY }
     val digestCount = recent.count { it.status == NotificationStatusUi.DIGEST }
     val silentCount = recent.count { it.status == NotificationStatusUi.SILENT }
