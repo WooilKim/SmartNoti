@@ -6,12 +6,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,15 +36,38 @@ import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ReasonChipRow
-import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.StatusBadge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
+private fun DetailTopBar(title: String, onBack: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = "뒤로 가기",
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
 fun NotificationDetailScreen(
     contentPadding: PaddingValues,
     notificationId: String,
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -75,10 +103,7 @@ fun NotificationDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                ScreenHeader(
-                    title = "알림 상세",
-                    subtitle = "캡처된 알림만 상세 화면에서 확인할 수 있어요.",
-                )
+                DetailTopBar(title = "알림 상세", onBack = onBack)
             }
             item {
                 EmptyState(
@@ -96,7 +121,7 @@ fun NotificationDetailScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("알림 상세", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            DetailTopBar(title = "알림 상세", onBack = onBack)
         }
         item {
             Card(

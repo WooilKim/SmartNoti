@@ -124,7 +124,7 @@ fun RulesScreen(contentPadding: PaddingValues) {
     ) {
         item {
             ScreenHeader(
-                eyebrow = "Rules",
+                eyebrow = "규칙",
                 title = "내 규칙",
                 subtitle = "중요 연락, 앱, 키워드, 시간대를 운영 규칙처럼 정리해 알림 흐름을 직접 제어할 수 있어요.",
             )

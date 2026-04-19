@@ -45,7 +45,7 @@ fun PriorityScreen(
         ) {
             item {
                 ScreenHeader(
-                    eyebrow = "Priority",
+                    eyebrow = "중요",
                     title = "중요 알림",
                     subtitle = "지금 바로 확인해야 하는 알림만 차분하게 모아두었어요.",
                 )
@@ -67,7 +67,7 @@ fun PriorityScreen(
     ) {
         item {
             ScreenHeader(
-                eyebrow = "Priority",
+                eyebrow = "중요",
                 title = "중요 알림",
                 subtitle = "긴급하지만 시끄럽지 않게, 지금 먼저 봐야 할 알림만 남겼어요.",
             )

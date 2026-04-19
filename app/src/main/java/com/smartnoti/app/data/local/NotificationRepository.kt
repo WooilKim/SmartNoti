@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 
 class NotificationRepository(
     private val dao: NotificationDao,
@@ -127,7 +128,11 @@ class NotificationRepository(
 }
 
 fun List<CapturedAppOption>.toCapturedAppSelectionItems(
-    formatter: DateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT),
+    formatter: DateFormat = DateFormat.getDateTimeInstance(
+        DateFormat.SHORT,
+        DateFormat.SHORT,
+        Locale.KOREA,
+    ),
 ): List<CapturedAppSelectionItem> {
     return map { option ->
         CapturedAppSelectionItem(
