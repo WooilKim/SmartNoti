@@ -14,6 +14,14 @@ class OnboardingQuickStartRuleApplier(
             .map(::toRule)
     }
 
+    fun buildRulesByPresetId(
+        selectedPresetIds: Set<OnboardingQuickStartPresetId>,
+    ): Map<OnboardingQuickStartPresetId, RuleUiModel> {
+        return orderedPresetIds
+            .filter(selectedPresetIds::contains)
+            .associateWith(::toRule)
+    }
+
     fun mergeRules(
         existingRules: List<RuleUiModel>,
         selectedPresetIds: Set<OnboardingQuickStartPresetId>,

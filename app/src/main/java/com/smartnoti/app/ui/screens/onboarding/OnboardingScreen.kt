@@ -52,7 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import com.smartnoti.app.onboarding.OnboardingPermissions
 import com.smartnoti.app.onboarding.OnboardingRequirement
@@ -122,8 +124,11 @@ fun OnboardingScreen(onCompleted: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
+    val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
+    val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
     val quickStartPresetBuilder = remember { OnboardingQuickStartPresetBuilder() }
     val quickStartRuleApplier = remember { OnboardingQuickStartRuleApplier(RuleDraftFactory()) }
+    val quickStartSettingsApplier = remember { OnboardingQuickStartSettingsApplier(quickStartRuleApplier) }
     val selectionSummaryBuilder = remember { OnboardingQuickStartSelectionSummaryBuilder() }
     val quickStartPresets = remember { quickStartPresetBuilder.buildDefaultPresets() }
     val defaultSelectedPresetIds = remember(quickStartPresets) {
@@ -238,11 +243,12 @@ fun OnboardingScreen(onCompleted: () -> Unit) {
                             scope.launch {
                                 isSaving = true
                                 try {
-                                    val mergedRules = quickStartRuleApplier.mergeRules(
-                                        existingRules = rulesRepository.currentConfiguredRules(),
+                                    quickStartSettingsApplier.applySelection(
+                                        rulesRepository = rulesRepository,
+                                        settingsRepository = settingsRepository,
+                                        notificationRepository = notificationRepository,
                                         selectedPresetIds = selectedPresetIdSet,
                                     )
-                                    rulesRepository.replaceAllRules(mergedRules)
                                     onCompleted()
                                 } finally {
                                     isSaving = false
