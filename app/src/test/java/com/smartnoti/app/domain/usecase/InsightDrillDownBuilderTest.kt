@@ -48,6 +48,24 @@ class InsightDrillDownBuilderTest {
     }
 
     @Test
+    fun range_parsing_uses_timestamp_segment_even_when_unique_source_key_suffix_exists() {
+        val withinRange = "promo:${nowMillis - 60_000}:2147483647:ranker_group"
+        val outsideRange = "promo:${nowMillis - 5 * 60 * 60 * 1000}:2147483647:ranker_group"
+
+        val result = builder.build(
+            notifications = listOf(
+                notification(id = withinRange, appName = "쿠팡", status = NotificationStatusUi.DIGEST, reasonTags = listOf("쇼핑 앱")),
+                notification(id = outsideRange, appName = "쿠팡", status = NotificationStatusUi.SILENT, reasonTags = listOf("반복 알림")),
+            ),
+            filter = InsightDrillDownFilter.App(appName = "쿠팡"),
+            range = InsightDrillDownRange.RECENT_3_HOURS,
+            nowMillis = nowMillis,
+        )
+
+        assertEquals(listOf(withinRange), result.notifications.map { it.id })
+    }
+
+    @Test
     fun keeps_empty_result_when_no_notifications_match_filter() {
         val result = builder.build(
             notifications = listOf(

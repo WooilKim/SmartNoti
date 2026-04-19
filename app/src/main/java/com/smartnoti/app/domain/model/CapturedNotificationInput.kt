@@ -10,6 +10,7 @@ data class CapturedNotificationInput(
     val quietHours: Boolean,
     val duplicateCountInWindow: Int,
     val isPersistent: Boolean = false,
+    val sourceEntryKey: String? = null,
 )
 
 fun CapturedNotificationInput.withContext(context: NotificationContext): CapturedNotificationInput {

@@ -108,6 +108,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 quietHours = false,
                 duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
                 isPersistent = isPersistent && !shouldBypassPersistentHiding,
+                sourceEntryKey = sbn.key,
             ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
             val baseNotification = processor.process(

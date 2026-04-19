@@ -2,6 +2,7 @@ package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.notificationPostedAtMillisOrNull
 
 class InsightDrillDownBuilder {
     fun build(
@@ -68,7 +69,7 @@ enum class InsightDrillDownRange(
 
 private fun InsightDrillDownRange.includes(notificationId: String, nowMillis: Long): Boolean {
     val windowMillis = windowMillis ?: return true
-    val postedAtMillis = notificationId.substringAfterLast(':').replace("_", "").toLongOrNull() ?: return false
+    val postedAtMillis = notificationId.notificationPostedAtMillisOrNull() ?: return false
     val windowStart = nowMillis - windowMillis
     return postedAtMillis in windowStart..nowMillis
 }

@@ -2,6 +2,7 @@ package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.postedAtMillisOrNull
 import kotlin.math.max
 
 class HomeNotificationTimelineBuilder {
@@ -37,10 +38,7 @@ class HomeNotificationTimelineBuilder {
         }
 
         notifications.forEach { notification ->
-            val postedAtMillis = notification.id
-                .substringAfterLast(':')
-                .replace("_", "")
-                .toLongOrNull() ?: return@forEach
+            val postedAtMillis = notification.postedAtMillisOrNull() ?: return@forEach
             if (postedAtMillis < windowStart || postedAtMillis > nowMillis) return@forEach
 
             val bucketIndex = ((postedAtMillis - windowStart) / bucketSizeMillis)

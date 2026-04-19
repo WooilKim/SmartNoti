@@ -11,6 +11,7 @@ import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.VibrationMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -119,6 +120,63 @@ class NotificationCaptureProcessorTest {
         assertEquals(NotificationStatusUi.PRIORITY, result.status)
         assertTrue(result.reasonTags.contains("중요 알림"))
         assertTrue(result.reasonTags.contains("온보딩 추천"))
+    }
+
+    @Test
+    fun notification_ids_remain_unique_when_same_package_posts_multiple_items_in_same_millisecond() {
+        val first = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.smartnoti.testnotifier",
+                appName = "SmartNoti Test Notifier",
+                sender = null,
+                title = "오늘만 특가 안내",
+                body = "멤버십 쿠폰이 도착했어요.",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 1,
+                sourceEntryKey = "0|com.smartnoti.testnotifier|101|promo",
+            ),
+            settings = SmartNotiSettings(),
+        )
+        val second = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.smartnoti.testnotifier",
+                appName = "SmartNoti Test Notifier",
+                sender = null,
+                title = "배달 상태 업데이트",
+                body = "라이더 위치가 갱신됐어요.",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 1,
+                sourceEntryKey = "0|com.smartnoti.testnotifier|102|delivery",
+            ),
+            settings = SmartNotiSettings(),
+        )
+
+        assertNotEquals(first.id, second.id)
+    }
+
+    @Test
+    fun blank_group_summary_notification_uses_status_bar_key_suffix_in_id() {
+        val result = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.smartnoti.testnotifier",
+                appName = "SmartNoti Test Notifier",
+                sender = null,
+                title = "",
+                body = "",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 1,
+                sourceEntryKey = "0|com.smartnoti.testnotifier|2147483647|ranker_group|10193|ranker_group",
+            ),
+            settings = SmartNotiSettings(),
+        )
+
+        assertEquals(
+            "com.smartnoti.testnotifier:1700000000000:2147483647:ranker_group",
+            result.id,
+        )
     }
 
     @Test

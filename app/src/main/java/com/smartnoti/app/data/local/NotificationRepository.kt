@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.postedAtMillisOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -81,7 +82,7 @@ class NotificationRepository(
     }
 
     suspend fun updateNotification(notification: NotificationUiModel, contentSignature: String? = null) {
-        val postedAtMillis = notification.id.substringAfterLast(':').toLongOrNull() ?: System.currentTimeMillis()
+        val postedAtMillis = notification.postedAtMillisOrNull() ?: System.currentTimeMillis()
         val signature = contentSignature
             ?: dao.observeAll().first().firstOrNull { it.id == notification.id }?.contentSignature
             ?: listOf(notification.title, notification.body).joinToString(" ").trim()

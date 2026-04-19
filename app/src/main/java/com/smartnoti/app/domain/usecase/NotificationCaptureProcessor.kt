@@ -6,6 +6,7 @@ import com.smartnoti.app.domain.model.NotificationContext
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.buildNotificationId
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
@@ -45,7 +46,11 @@ class NotificationCaptureProcessor(
         )
 
         return NotificationUiModel(
-            id = "${input.packageName}:${input.postedAtMillis}",
+            id = buildNotificationId(
+                packageName = input.packageName,
+                postedAtMillis = input.postedAtMillis,
+                sourceEntryKey = input.sourceEntryKey,
+            ),
             appName = input.appName,
             packageName = input.packageName,
             sender = input.sender,

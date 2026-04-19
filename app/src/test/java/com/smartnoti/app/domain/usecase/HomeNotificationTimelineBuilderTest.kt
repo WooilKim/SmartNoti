@@ -31,6 +31,25 @@ class HomeNotificationTimelineBuilderTest {
     }
 
     @Test
+    fun uses_posted_at_suffix_even_when_unique_source_key_is_appended() {
+        val timeline = builder.build(
+            notifications = listOf(
+                notification(id = "a:1000:42:summary", status = NotificationStatusUi.DIGEST),
+                notification(id = "b:1500:99", status = NotificationStatusUi.SILENT),
+                notification(id = "c:2500:alpha", status = NotificationStatusUi.PRIORITY),
+                notification(id = "d:3500", status = NotificationStatusUi.DIGEST),
+            ),
+            nowMillis = 3_600,
+            windowMillis = 3_000,
+            bucketSizeMillis = 1_000,
+        )
+
+        assertEquals(3, timeline.totalFilteredCount)
+        assertEquals(listOf(2, 0, 1), timeline.buckets.map { bucket -> bucket.filteredCount })
+        assertEquals(listOf(0, 1, 0), timeline.buckets.map { bucket -> bucket.priorityCount })
+    }
+
+    @Test
     fun omits_empty_buckets_and_marks_peak_bucket() {
         val timeline = builder.build(
             notifications = listOf(
