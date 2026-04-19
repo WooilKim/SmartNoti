@@ -1,7 +1,5 @@
 package com.smartnoti.app.ui.screens.settings
 
-import android.content.ActivityNotFoundException
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,8 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+
 import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
@@ -67,6 +64,8 @@ import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SettingsCardHeader
 import com.smartnoti.app.ui.components.SettingsToggleRow
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
+import com.smartnoti.app.ui.notificationaccess.openNotificationAccessSettings
 import com.smartnoti.app.ui.theme.BorderSubtle
 import com.smartnoti.app.ui.theme.DigestOnContainer
 import com.smartnoti.app.ui.theme.GreenAccent
@@ -128,11 +127,10 @@ fun SettingsScreen(
     var suppressedAppsExpanded by rememberSaveable { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                notificationAccessStatus = OnboardingPermissions.currentStatus(context)
-            }
-        }
+        val observer = notificationAccessLifecycleObserver(
+            statusProvider = { OnboardingPermissions.currentStatus(context) },
+            onStatusChanged = { notificationAccessStatus = it },
+        )
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -235,17 +233,7 @@ fun SettingsScreen(
             NotificationAccessCard(
                 summary = notificationAccessSummary,
                 onOpenSettings = {
-                    try {
-                        context.startActivity(
-                            OnboardingPermissions.notificationListenerSettingsIntent()
-                        )
-                    } catch (_: ActivityNotFoundException) {
-                        Toast.makeText(
-                            context,
-                            "알림 접근 설정을 찾을 수 없어요.",
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    }
+                    openNotificationAccessSettings(context)
                 },
             )
         }

@@ -37,8 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
@@ -57,6 +55,7 @@ import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeTimelineRange
 import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.onboarding.OnboardingPermissions
+import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
 import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
@@ -132,11 +131,10 @@ fun HomeScreen(
     }
 
     DisposableEffect(lifecycleOwner, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                notificationAccessStatus = OnboardingPermissions.currentStatus(context)
-            }
-        }
+        val observer = notificationAccessLifecycleObserver(
+            statusProvider = { OnboardingPermissions.currentStatus(context) },
+            onStatusChanged = { notificationAccessStatus = it },
+        )
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
