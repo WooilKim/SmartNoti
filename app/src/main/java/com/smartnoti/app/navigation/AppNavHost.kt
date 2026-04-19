@@ -1,5 +1,7 @@
 package com.smartnoti.app.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -139,6 +141,10 @@ fun AppNavHost(
         NavHost(
             navController = navController,
             startDestination = startDestination,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) {
             composable(Routes.Onboarding.route) {
                 OnboardingScreen(
