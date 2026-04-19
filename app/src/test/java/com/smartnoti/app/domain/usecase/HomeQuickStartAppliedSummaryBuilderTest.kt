@@ -80,6 +80,33 @@ class HomeQuickStartAppliedSummaryBuilderTest {
     }
 
     @Test
+    fun partial_recent_effects_include_waiting_copy_for_other_applied_presets() {
+        val summary = builder.build(
+            rules = listOf(
+                importantRule(),
+                promoRule(),
+                repeatRule(),
+            ),
+            notifications = listOf(
+                notification(
+                    id = "1",
+                    appName = "쿠팡",
+                    title = "(광고) 오늘만 특가",
+                    status = NotificationStatusUi.DIGEST,
+                    reasonTags = listOf("프로모션 알림", "사용자 규칙"),
+                ),
+            ),
+        )
+
+        requireNotNull(summary)
+        val effectBody = requireNotNull(summary.effectBody)
+        assertEquals("최근 효과", summary.effectTitle)
+        assertTrue(effectBody.contains("쿠팡 프로모션 알림 1건"))
+        assertTrue(effectBody.contains("반복 알림 효과는 아직 확인 중이에요"))
+        assertTrue(effectBody.contains("중요 알림 효과는 아직 확인 중이에요"))
+    }
+
+    @Test
     fun important_only_returns_priority_focused_summary() {
         val summary = builder.build(
             rules = listOf(importantRule()),
