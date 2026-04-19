@@ -20,11 +20,13 @@ internal object SourceNotificationRoutingPolicy {
                 cancelSourceNotification = false,
                 notifyReplacementNotification = false,
             )
-            NotificationDecision.DIGEST,
-            NotificationDecision.SILENT,
-            -> SourceNotificationRouting(
+            NotificationDecision.DIGEST -> SourceNotificationRouting(
                 cancelSourceNotification = true,
                 notifyReplacementNotification = true,
+            )
+            NotificationDecision.SILENT -> SourceNotificationRouting(
+                cancelSourceNotification = true,
+                notifyReplacementNotification = false,
             )
         }
     }

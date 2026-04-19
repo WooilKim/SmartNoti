@@ -12,7 +12,11 @@ class NotificationDetailSourceSuppressionSummaryBuilder {
             replacementLabel = suppressionState.toReplacementLabel(replacementNotificationIssued),
             overview = when (suppressionState) {
                 SourceNotificationSuppressionState.CANCEL_ATTEMPTED -> {
-                    "SmartNoti가 원본 알림 숨김을 시도했고 대체 알림도 표시했어요. 기기나 앱 정책에 따라 원본은 계속 남아있을 수 있어요."
+                    if (replacementNotificationIssued) {
+                        "SmartNoti가 원본 알림 숨김을 시도했고 대체 알림도 표시했어요. 기기나 앱 정책에 따라 원본은 계속 남아있을 수 있어요."
+                    } else {
+                        "SmartNoti가 원본 알림 숨김을 시도했고 조용히 처리된 알림은 앱 안에서만 보관했어요."
+                    }
                 }
                 SourceNotificationSuppressionState.APP_NOT_SELECTED -> {
                     "원본 알림 숨기기는 켜져 있지만 이 앱은 숨길 앱으로 선택되지 않아 원본을 그대로 남겨뒀어요."
@@ -43,7 +47,7 @@ private fun SourceNotificationSuppressionState.toReplacementLabel(
     if (replacementNotificationIssued) return "표시됨"
 
     return when (this) {
-        SourceNotificationSuppressionState.CANCEL_ATTEMPTED -> "표시 안 됨"
+        SourceNotificationSuppressionState.CANCEL_ATTEMPTED -> "조용히 보관되어 알림 센터 표시 없음"
         SourceNotificationSuppressionState.APP_NOT_SELECTED,
         SourceNotificationSuppressionState.PRIORITY_KEPT,
         SourceNotificationSuppressionState.PERSISTENT_PROTECTED,

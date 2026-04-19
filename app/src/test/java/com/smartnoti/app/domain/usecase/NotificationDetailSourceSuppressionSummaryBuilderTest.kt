@@ -41,6 +41,21 @@ class NotificationDetailSourceSuppressionSummaryBuilderTest {
     }
 
     @Test
+    fun cancel_attempt_without_replacement_marks_it_as_skipped_for_silent_handling() {
+        val summary = builder.build(
+            suppressionState = SourceNotificationSuppressionState.CANCEL_ATTEMPTED,
+            replacementNotificationIssued = false,
+        )
+
+        assertEquals("원본 숨김 시도됨", summary.statusLabel)
+        assertEquals("조용히 보관되어 알림 센터 표시 없음", summary.replacementLabel)
+        assertEquals(
+            "SmartNoti가 원본 알림 숨김을 시도했고 조용히 처리된 알림은 앱 안에서만 보관했어요.",
+            summary.overview,
+        )
+    }
+
+    @Test
     fun priority_kept_summary_explains_why_replacement_is_skipped() {
         val summary = builder.build(
             suppressionState = SourceNotificationSuppressionState.PRIORITY_KEPT,

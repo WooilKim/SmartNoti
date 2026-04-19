@@ -30,4 +30,16 @@ class SourceNotificationRoutingPolicyTest {
         assertTrue(routing.cancelSourceNotification)
         assertTrue(routing.notifyReplacementNotification)
     }
+
+    @Test
+    fun silent_suppression_cancels_source_without_posting_replacement_notification() {
+        val routing = SourceNotificationRoutingPolicy.route(
+            decision = NotificationDecision.SILENT,
+            hidePersistentSourceNotification = false,
+            suppressSourceNotification = true,
+        )
+
+        assertTrue(routing.cancelSourceNotification)
+        assertFalse(routing.notifyReplacementNotification)
+    }
 }
