@@ -7,6 +7,7 @@ import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.postedAtMillisOrNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -56,19 +57,21 @@ class NotificationRepository(
         apps.toCapturedAppSelectionItems()
     }
 
-    fun observeCapturedAppsFiltered(hidePersistentNotifications: Boolean): Flow<List<CapturedAppSelectionItem>> = dao.observeCapturedApps()
-        .map { apps -> apps.toCapturedAppSelectionItems() }
-        .map { capturedApps ->
-            if (!hidePersistentNotifications) {
-                capturedApps
-            } else {
-                val visibleNotifications = observeAll().first()
-                capturedApps.toCapturedAppSelectionItems(
-                    notifications = visibleNotifications,
-                    hidePersistentNotifications = true,
-                )
-            }
+    fun observeCapturedAppsFiltered(hidePersistentNotifications: Boolean): Flow<List<CapturedAppSelectionItem>> {
+        if (!hidePersistentNotifications) {
+            return dao.observeCapturedApps().map { apps -> apps.toCapturedAppSelectionItems() }
         }
+
+        return combine(
+            dao.observeCapturedApps(),
+            dao.observeAll(),
+        ) { apps, notifications ->
+            apps.toCapturedAppSelectionItems().toCapturedAppSelectionItems(
+                notifications = notifications.map(NotificationEntity::toUiModel),
+                hidePersistentNotifications = true,
+            )
+        }
+    }
 
     suspend fun countRecentDuplicates(
         packageName: String,

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,23 +72,65 @@ class NotificationRepositoryTest {
         )
     }
 
+    @Test
+    fun observe_captured_apps_filtered_excludes_persistent_only_apps_without_blocking_nested_lookup() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "persistent-1",
+                packageName = "android.system",
+                appName = "시스템 UI",
+                isPersistent = true,
+                postedAtMillis = 1_700_000_000_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "visible-1",
+                packageName = "com.chat.app",
+                appName = "채팅",
+                isPersistent = false,
+                postedAtMillis = 1_700_000_100_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "visible-2",
+                packageName = "com.chat.app",
+                appName = "채팅",
+                isPersistent = true,
+                postedAtMillis = 1_700_000_200_000,
+            )
+        )
+
+        val apps = repository.observeCapturedAppsFiltered(hidePersistentNotifications = true).first()
+
+        assertEquals(1, apps.size)
+        assertEquals("com.chat.app", apps.first().packageName)
+        assertEquals(1, apps.first().notificationCount)
+        assertTrue(apps.first().lastSeenLabel.isNotBlank())
+    }
+
     private fun notificationEntity(
         id: String,
-        title: String,
-        body: String,
+        title: String = "제목 $id",
+        body: String = "본문 $id",
+        packageName: String = "com.smartnoti.testnotifier",
+        appName: String = "SmartNoti Test Notifier",
+        isPersistent: Boolean = false,
+        postedAtMillis: Long = id.split(':').getOrNull(1)?.toLongOrNull() ?: 1_700_000_000_000,
     ) = NotificationEntity(
         id = id,
-        appName = "SmartNoti Test Notifier",
-        packageName = "com.smartnoti.testnotifier",
+        appName = appName,
+        packageName = packageName,
         sender = null,
         title = title,
         body = body,
-        postedAtMillis = id.split(':')[1].toLong(),
+        postedAtMillis = postedAtMillis,
         status = NotificationStatusUi.DIGEST.name,
         reasonTags = "",
         score = null,
         isBundled = false,
-        isPersistent = false,
+        isPersistent = isPersistent,
         contentSignature = listOf(title, body).joinToString(" ").trim(),
     )
 }
