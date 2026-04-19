@@ -25,19 +25,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.domain.usecase.HomeNotificationAccessSummary
+import com.smartnoti.app.domain.usecase.HomeNotificationAccessSummaryBuilder
 import com.smartnoti.app.domain.usecase.HomeNotificationInsightsBuilder
 import com.smartnoti.app.domain.usecase.HomeNotificationTimeline
 import com.smartnoti.app.domain.usecase.HomeNotificationTimelineBuilder
@@ -49,6 +54,8 @@ import com.smartnoti.app.domain.usecase.HomeTimelineBar
 import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeTimelineRange
 import com.smartnoti.app.navigation.Routes
+import com.smartnoti.app.onboarding.OnboardingPermissions
+import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
 import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
@@ -68,6 +75,7 @@ fun HomeScreen(
     onNotificationClick: (String) -> Unit,
     onPriorityClick: () -> Unit,
     onDigestClick: () -> Unit,
+    onNotificationAccessClick: () -> Unit,
     onRulesClick: () -> Unit,
     onInsightClick: (String) -> Unit,
 ) {
@@ -75,12 +83,15 @@ fun HomeScreen(
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val settingsRepository = remember(context) { com.smartnoti.app.data.settings.SettingsRepository.getInstance(context) }
+    val lifecycleOwner = LocalLifecycleOwner.current
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
     val quickStartAppliedSummaryBuilder = remember { HomeQuickStartAppliedSummaryBuilder() }
+    val notificationAccessSummaryBuilder = remember { HomeNotificationAccessSummaryBuilder() }
     val reasonBreakdownBuilder = remember { HomeReasonBreakdownChartModelBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
     val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
     var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
+    var notificationAccessStatus by remember { mutableStateOf(OnboardingPermissions.currentStatus(context)) }
     val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
     val recentFlow = remember(repository, settings.hidePersistentNotifications) {
         repository.observeAllFiltered(settings.hidePersistentNotifications)
@@ -97,6 +108,15 @@ fun HomeScreen(
             notifications = recent,
         )
     }
+    val notificationAccessSummary = remember(notificationAccessStatus, recent) {
+        notificationAccessSummaryBuilder.build(
+            status = notificationAccessStatus,
+            recentCount = recent.size,
+            priorityCount = priorityCount,
+            digestCount = digestCount,
+            silentCount = silentCount,
+        )
+    }
     val reasonBreakdownItems = remember(insights) {
         reasonBreakdownBuilder.build(insights.topReasons).items
     }
@@ -108,6 +128,15 @@ fun HomeScreen(
     }
     val timelineBars = remember(timeline) {
         timelineBarChartBuilder.build(timeline).bars
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = notificationAccessLifecycleObserver(
+            statusProvider = { OnboardingPermissions.currentStatus(context) },
+            onStatusChanged = { notificationAccessStatus = it },
+        )
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LazyColumn(
@@ -151,6 +180,10 @@ fun HomeScreen(
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HomeNotificationAccessCard(
+                    summary = notificationAccessSummary,
+                    onClick = onNotificationAccessClick,
+                )
                 QuickActionCard(
                     title = "중요 알림",
                     subtitle = "지금 봐야 할 알림 ${priorityCount}개",
@@ -212,6 +245,73 @@ fun HomeScreen(
             items(recent) { notification ->
                 NotificationCard(model = notification, onClick = onNotificationClick)
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeNotificationAccessCard(
+    summary: HomeNotificationAccessSummary,
+    onClick: () -> Unit,
+) {
+    val accentColor = if (summary.granted) GreenAccent else MaterialTheme.colorScheme.primary
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ContextBadge(
+                        label = "실제 알림 상태",
+                        containerColor = accentColor.copy(alpha = 0.16f),
+                        contentColor = accentColor,
+                    )
+                    ContextBadge(
+                        label = summary.statusLabel,
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    text = summary.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = summary.body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = summary.actionLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 12.dp),
+            )
         }
     }
 }

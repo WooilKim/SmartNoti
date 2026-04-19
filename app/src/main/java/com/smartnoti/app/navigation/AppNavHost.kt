@@ -155,6 +155,7 @@ fun AppNavHost(
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onPriorityClick = { navController.navigate(Routes.Priority.route) },
                     onDigestClick = { navController.navigate(Routes.Digest.route) },
+                    onNotificationAccessClick = { navController.navigate(Routes.Settings.route) },
                     onRulesClick = { navController.navigate(Routes.Rules.route) },
                     onInsightClick = { navController.navigate(it) },
                 )

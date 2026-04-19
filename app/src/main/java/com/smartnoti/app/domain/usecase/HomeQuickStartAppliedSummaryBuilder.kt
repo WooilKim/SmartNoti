@@ -81,7 +81,8 @@ class HomeQuickStartAppliedSummaryBuilder {
         appliedPresetIds: Set<String>,
         notifications: List<NotificationUiModel>,
     ): String? {
-        val effects = mutableListOf<String>()
+        val actualEffects = mutableListOf<String>()
+        val pendingEffects = mutableListOf<String>()
         if (PROMO in appliedPresetIds) {
             val promoNotifications = notifications.filter { notification ->
                 notification.status == NotificationStatusUi.DIGEST &&
@@ -93,8 +94,10 @@ class HomeQuickStartAppliedSummaryBuilder {
                     .eachCount()
                     .maxByOrNull { (_, count) -> count }
                 if (topPromoApp != null) {
-                    effects += "${topPromoApp.key} 프로모션 알림 ${topPromoApp.value}건이 정리됐어요"
+                    actualEffects += "${topPromoApp.key} 프로모션 알림 ${topPromoApp.value}건이 정리됐어요"
                 }
+            } else {
+                pendingEffects += "프로모션 알림 효과는 아직 확인 중이에요"
             }
         }
         if (REPEAT in appliedPresetIds) {
@@ -103,7 +106,9 @@ class HomeQuickStartAppliedSummaryBuilder {
                     notification.reasonTags.contains("반복 알림")
             }
             if (repeatCount > 0) {
-                effects += "반복 알림 ${repeatCount}건이 Digest로 묶였어요"
+                actualEffects += "반복 알림 ${repeatCount}건이 Digest로 묶였어요"
+            } else {
+                pendingEffects += "반복 알림 효과는 아직 확인 중이에요"
             }
         }
         if (IMPORTANT in appliedPresetIds) {
@@ -112,10 +117,13 @@ class HomeQuickStartAppliedSummaryBuilder {
                     notification.reasonTags.contains("중요 알림")
             }
             if (importantCount > 0) {
-                effects += "중요 알림 ${importantCount}건은 그대로 바로 보여줬어요"
+                actualEffects += "중요 알림 ${importantCount}건은 그대로 바로 보여줬어요"
+            } else {
+                pendingEffects += "중요 알림 효과는 아직 확인 중이에요"
             }
         }
-        return effects.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+        if (actualEffects.isEmpty()) return null
+        return (actualEffects + pendingEffects).joinToString(" · ")
     }
 
     private companion object {
