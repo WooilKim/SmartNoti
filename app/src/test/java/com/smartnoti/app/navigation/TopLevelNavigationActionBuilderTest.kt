@@ -12,21 +12,19 @@ class TopLevelNavigationActionBuilderTest {
         val action = builder.build(
             currentRoute = Routes.Home.route,
             targetRoute = Routes.Home.route,
-            startRoute = Routes.Home.route,
         )
 
         assertEquals(TopLevelNavigationAction.NoOp, action)
     }
 
     @Test
-    fun pops_to_start_route_when_user_taps_home_from_another_tab() {
+    fun navigates_to_home_when_user_taps_home_from_another_tab() {
         val action = builder.build(
             currentRoute = Routes.Digest.route,
             targetRoute = Routes.Home.route,
-            startRoute = Routes.Home.route,
         )
 
-        assertEquals(TopLevelNavigationAction.PopToExisting(Routes.Home.route), action)
+        assertEquals(TopLevelNavigationAction.Navigate(Routes.Home.route), action)
     }
 
     @Test
@@ -34,7 +32,6 @@ class TopLevelNavigationActionBuilderTest {
         val action = builder.build(
             currentRoute = Routes.Home.route,
             targetRoute = Routes.Settings.route,
-            startRoute = Routes.Home.route,
         )
 
         assertEquals(TopLevelNavigationAction.Navigate(Routes.Settings.route), action)

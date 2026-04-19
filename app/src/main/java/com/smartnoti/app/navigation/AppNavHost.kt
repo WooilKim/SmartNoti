@@ -116,13 +116,9 @@ fun AppNavHost(
                             val action = navigationActionBuilder.build(
                                 currentRoute = currentRoute,
                                 targetRoute = route,
-                                startRoute = startDestination,
                             )
                         ) {
                             TopLevelNavigationAction.NoOp -> Unit
-                            is TopLevelNavigationAction.PopToExisting -> {
-                                navController.popBackStack(action.route, inclusive = false)
-                            }
                             is TopLevelNavigationAction.Navigate -> {
                                 navController.navigate(action.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
