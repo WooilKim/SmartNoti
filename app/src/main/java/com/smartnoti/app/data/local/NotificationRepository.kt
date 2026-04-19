@@ -9,6 +9,7 @@ import com.smartnoti.app.domain.model.postedAtMillisOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import java.text.DateFormat
 import java.util.Date
 
@@ -81,6 +82,10 @@ class NotificationRepository(
         dao.upsert(notification.toEntity(postedAtMillis, contentSignature))
     }
 
+    suspend fun cleanupLegacyBlankGroupSummaryRows(): Int {
+        return dao.deleteLegacyBlankGroupSummaryRows()
+    }
+
     suspend fun updateNotification(notification: NotificationUiModel, contentSignature: String? = null) {
         val postedAtMillis = notification.postedAtMillisOrNull() ?: System.currentTimeMillis()
         val signature = contentSignature
@@ -94,8 +99,17 @@ class NotificationRepository(
 
         fun getInstance(context: Context): NotificationRepository {
             return instance ?: synchronized(this) {
-                instance ?: buildRepository(context.applicationContext).also { instance = it }
+                instance ?: buildRepository(context.applicationContext).also { repository ->
+                    runBlocking {
+                        repository.cleanupLegacyBlankGroupSummaryRows()
+                    }
+                    instance = repository
+                }
             }
+        }
+
+        internal fun clearInstanceForTest() {
+            instance = null
         }
 
         private fun buildRepository(context: Context): NotificationRepository {

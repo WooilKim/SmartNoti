@@ -30,4 +30,14 @@ interface NotificationDao {
         contentSignature: String,
         sinceMillis: Long,
     ): Int
+
+    @Query(
+        """
+        DELETE FROM notifications
+        WHERE id LIKE '%:ranker_group'
+          AND TRIM(title) = ''
+          AND TRIM(body) = ''
+        """
+    )
+    suspend fun deleteLegacyBlankGroupSummaryRows(): Int
 }
