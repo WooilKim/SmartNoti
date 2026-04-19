@@ -40,6 +40,7 @@
 검증:
 - [ ] Home 화면에 실제 알림이 나타난다.
 - [ ] Priority / Digest / Silent 분류 수가 실제 데이터 기준으로 바뀐다.
+- [ ] 에뮬레이터에서 반복/프로모션/중요 시나리오를 재현해야 할 경우 `docs/real-notification-verification-with-testnotifier.md` 절차를 사용한다.
 
 ## 7. Priority 화면
 - [ ] 중요 알림만 표시된다.

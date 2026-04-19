@@ -15,6 +15,22 @@ SmartNoti is an Android Jetpack Compose MVP scaffold for a notification-filterin
 
 - `app/src/main/java/com/smartnoti/app/...` — app code
 - `app/src/test/java/com/smartnoti/app/domain/usecase/...` — pure Kotlin tests for classification logic
+- `docs/device-functional-test-checklist.md` — real-device functional checklist
+- `docs/real-notification-verification-with-testnotifier.md` — emulator verification flow using a separate real notification sender app
+
+## Real-notification verification
+
+For end-to-end verification, SmartNoti now has a documented flow that uses a separate verifier app package instead of shell-posted notifications.
+
+- Main doc: `docs/real-notification-verification-with-testnotifier.md`
+- Verifier project expected as a sibling repo/project: `/Users/wooil/source/SmartNotiTestNotifier`
+- Verifier package: `com.smartnoti.testnotifier`
+
+This flow is useful when you need to validate:
+- onboarding permission gate → quick-start → Home progression
+- real notification capture in the emulator
+- promo / repeat / important classification outcomes
+- Home quick-start effect copy based on actual captured notifications
 
 ## Build prerequisites
 
