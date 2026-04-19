@@ -86,7 +86,7 @@ fun DigestScreen(
                 )
             }
         }
-        items(groups) { group ->
+        items(groups, key = { it.id }) { group ->
             DigestGroupCard(model = group, onNotificationClick = onNotificationClick)
         }
     }

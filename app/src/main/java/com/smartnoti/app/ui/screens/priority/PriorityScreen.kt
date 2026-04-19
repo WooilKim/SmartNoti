@@ -86,7 +86,7 @@ fun PriorityScreen(
                 )
             }
         }
-        items(notifications) { notification ->
+        items(notifications, key = { it.id }) { notification ->
             NotificationCard(model = notification, onClick = onNotificationClick)
         }
     }

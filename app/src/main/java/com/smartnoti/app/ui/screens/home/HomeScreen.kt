@@ -242,7 +242,7 @@ fun HomeScreen(
                 )
             }
         } else {
-            items(recent) { notification ->
+            items(recent, key = { it.id }) { notification ->
                 NotificationCard(model = notification, onClick = onNotificationClick)
             }
         }
