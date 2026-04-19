@@ -11,6 +11,7 @@ import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
 import com.smartnoti.app.domain.model.withContext
 import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
 import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
+import com.smartnoti.app.domain.usecase.LiveDuplicateCountTracker
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
 import com.smartnoti.app.domain.usecase.PersistentNotificationPolicy
@@ -27,6 +28,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val duplicatePolicy = DuplicateNotificationPolicy()
+    private val liveDuplicateCountTracker = LiveDuplicateCountTracker()
     private val persistentNotificationPolicy = PersistentNotificationPolicy()
     private val notifier by lazy { SmartNotiNotifier(applicationContext) }
 
@@ -89,15 +91,6 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             } else {
                 false
             }
-            val contentSignature = duplicatePolicy.contentSignature(
-                title = title,
-                body = body,
-            ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
-            val duplicateCount = repository.countRecentDuplicates(
-                packageName = sbn.packageName,
-                contentSignature = contentSignature,
-                sinceMillis = duplicatePolicy.windowStart(sbn.postTime),
-            ) + 1
             if (
                 NotificationCapturePolicy.shouldIgnoreCapture(
                     title = title,
@@ -107,6 +100,23 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             ) {
                 return@launch
             }
+            val contentSignature = duplicatePolicy.contentSignature(
+                title = title,
+                body = body,
+            ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
+            val duplicateWindowStart = duplicatePolicy.windowStart(sbn.postTime)
+            val duplicateCount = liveDuplicateCountTracker.recordAndCount(
+                packageName = sbn.packageName,
+                contentSignature = contentSignature,
+                sourceEntryKey = sbn.key,
+                postedAtMillis = sbn.postTime,
+                windowStartMillis = duplicateWindowStart,
+                persistedDuplicateCount = repository.countRecentDuplicates(
+                    packageName = sbn.packageName,
+                    contentSignature = contentSignature,
+                    sinceMillis = duplicateWindowStart,
+                ),
+            )
 
             val captureInput = CapturedNotificationInput(
                 packageName = sbn.packageName,
