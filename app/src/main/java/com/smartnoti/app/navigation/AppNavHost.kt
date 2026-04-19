@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.usecase.InsightDrillDownSource
+import com.smartnoti.app.notification.OnboardingActiveNotificationBootstrapCoordinator
 import com.smartnoti.app.ui.components.AppBottomBar
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -42,6 +43,9 @@ fun AppNavHost(
 ) {
     val context = LocalContext.current
     val settings = remember { SettingsRepository.getInstance(context) }
+    val onboardingBootstrapCoordinator = remember {
+        OnboardingActiveNotificationBootstrapCoordinator.create(context)
+    }
     val completed: Boolean? by produceState<Boolean?>(initialValue = null, settings) {
         settings.observeOnboardingCompleted().collect { value = it }
     }
@@ -141,6 +145,7 @@ fun AppNavHost(
                     onCompleted = {
                         navigationScope.launch {
                             settings.setOnboardingCompleted(true)
+                            onboardingBootstrapCoordinator.requestBootstrapForFirstOnboardingCompletion()
                             navController.navigate(Routes.Home.route) {
                                 popUpTo(Routes.Onboarding.route) { inclusive = true }
                                 launchSingleTop = true

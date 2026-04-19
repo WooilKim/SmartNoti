@@ -151,6 +151,38 @@ class SettingsRepository private constructor(
         }
     }
 
+    suspend fun requestOnboardingActiveNotificationBootstrap(): Boolean {
+        var requested = false
+        context.dataStore.edit { prefs ->
+            val completed = prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_COMPLETED] ?: false
+            val pending = prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING] ?: false
+            if (!completed && !pending) {
+                prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING] = true
+                requested = true
+            }
+        }
+        return requested
+    }
+
+    suspend fun consumeOnboardingActiveNotificationBootstrapRequest(): Boolean {
+        var consumed = false
+        context.dataStore.edit { prefs ->
+            val completed = prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_COMPLETED] ?: false
+            val pending = prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING] ?: false
+            when {
+                pending && !completed -> {
+                    prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING] = false
+                    prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_COMPLETED] = true
+                    consumed = true
+                }
+                completed -> {
+                    prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING] = false
+                }
+            }
+        }
+        return consumed
+    }
+
     internal suspend fun clearAllForTest() {
         context.dataStore.edit { prefs ->
             prefs.clear()
@@ -191,6 +223,10 @@ class SettingsRepository private constructor(
         private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
         private val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("protect_critical_persistent_notifications")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        private val ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING =
+            booleanPreferencesKey("onboarding_active_notification_bootstrap_pending")
+        private val ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_COMPLETED =
+            booleanPreferencesKey("onboarding_active_notification_bootstrap_completed")
 
         @Volatile private var instance: SettingsRepository? = null
 

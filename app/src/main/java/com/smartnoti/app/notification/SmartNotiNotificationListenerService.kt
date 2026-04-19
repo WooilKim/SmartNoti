@@ -17,6 +17,7 @@ import com.smartnoti.app.domain.usecase.NotificationClassifier
 import com.smartnoti.app.domain.usecase.PersistentNotificationPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -31,6 +32,10 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     private val liveDuplicateCountTracker = LiveDuplicateCountTracker()
     private val persistentNotificationPolicy = PersistentNotificationPolicy()
     private val notifier by lazy { SmartNotiNotifier(applicationContext) }
+    private var storeSyncJob: Job? = null
+    private val onboardingBootstrapCoordinator by lazy {
+        OnboardingActiveNotificationBootstrapCoordinator.create(applicationContext)
+    }
 
     private val processor by lazy {
         NotificationCaptureProcessor(
@@ -45,18 +50,31 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        activeService = this
         notifier.ensureChannels()
         val repository = NotificationRepository.getInstance(applicationContext)
-        serviceScope.launch {
+        storeSyncJob?.cancel()
+        storeSyncJob = serviceScope.launch {
             repository.observeAll().collect { notifications ->
                 SmartNotiNotificationStore.setNotifications(notifications)
             }
         }
+        enqueueOnboardingBootstrapCheck()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        if (sbn.packageName == packageName) return
+        val bootstrapper = ActiveStatusBarNotificationBootstrapper(
+            appPackageName = packageName,
+            processNotification = ::processNotification,
+        )
+        if (!bootstrapper.shouldProcess(sbn)) return
 
+        serviceScope.launch {
+            processNotification(sbn)
+        }
+    }
+
+    private suspend fun processNotification(sbn: StatusBarNotification) {
         val extras = sbn.notification.extras
         val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
         val body = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
@@ -74,127 +92,148 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         val rulesRepository = RulesRepository.getInstance(applicationContext)
         val settingsRepository = SettingsRepository.getInstance(applicationContext)
 
-        serviceScope.launch {
-            val rules = rulesRepository.currentRules()
-            val settings = settingsRepository.observeSettings().first()
-            val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
-                isOngoing = sbn.isOngoing,
-                isClearable = sbn.isClearable,
-            )
-            val shouldBypassPersistentHiding = if (isPersistent) {
-                persistentNotificationPolicy.shouldBypassPersistentHiding(
-                    packageName = sbn.packageName,
-                    title = title,
-                    body = body,
-                    protectCriticalPersistentNotifications = settings.protectCriticalPersistentNotifications,
-                )
-            } else {
-                false
-            }
-            if (
-                NotificationCapturePolicy.shouldIgnoreCapture(
-                    title = title,
-                    body = body,
-                    notificationFlags = sbn.notification.flags,
-                )
-            ) {
-                return@launch
-            }
-            val contentSignature = duplicatePolicy.contentSignature(
+        val rules = rulesRepository.currentRules()
+        val settings = settingsRepository.observeSettings().first()
+        val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
+            isOngoing = sbn.isOngoing,
+            isClearable = sbn.isClearable,
+        )
+        val shouldBypassPersistentHiding = if (isPersistent) {
+            persistentNotificationPolicy.shouldBypassPersistentHiding(
+                packageName = sbn.packageName,
                 title = title,
                 body = body,
-            ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
-            val duplicateWindowStart = duplicatePolicy.windowStart(sbn.postTime)
-            val duplicateCount = liveDuplicateCountTracker.recordAndCount(
+                protectCriticalPersistentNotifications = settings.protectCriticalPersistentNotifications,
+            )
+        } else {
+            false
+        }
+        val contentSignature = duplicatePolicy.contentSignature(
+            title = title,
+            body = body,
+        ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
+        val duplicateWindowStart = duplicatePolicy.windowStart(sbn.postTime)
+        val duplicateCount = liveDuplicateCountTracker.recordAndCount(
+            packageName = sbn.packageName,
+            contentSignature = contentSignature,
+            sourceEntryKey = sbn.key,
+            postedAtMillis = sbn.postTime,
+            windowStartMillis = duplicateWindowStart,
+            persistedDuplicateCount = repository.countRecentDuplicates(
                 packageName = sbn.packageName,
                 contentSignature = contentSignature,
-                sourceEntryKey = sbn.key,
-                postedAtMillis = sbn.postTime,
-                windowStartMillis = duplicateWindowStart,
-                persistedDuplicateCount = repository.countRecentDuplicates(
-                    packageName = sbn.packageName,
-                    contentSignature = contentSignature,
-                    sinceMillis = duplicateWindowStart,
-                ),
-            )
+                sinceMillis = duplicateWindowStart,
+            ),
+        )
 
-            val captureInput = CapturedNotificationInput(
+        val captureInput = CapturedNotificationInput(
+            packageName = sbn.packageName,
+            appName = appName,
+            sender = sender,
+            title = title,
+            body = body,
+            postedAtMillis = sbn.postTime,
+            quietHours = false,
+            duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
+            isPersistent = isPersistent && !shouldBypassPersistentHiding,
+            sourceEntryKey = sbn.key,
+        ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
+
+        val baseNotification = processor.process(
+            input = captureInput,
+            rules = rules,
+            settings = settings,
+        )
+
+        val decision = baseNotification.status.toDecision()
+        val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
+        val shouldHidePersistentSourceNotification =
+            (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
+        val shouldSuppressSourceNotification = NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+            suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+            suppressedApps = settings.suppressedSourceApps,
+            packageName = sbn.packageName,
+            decision = decision,
+        )
+        val sourceRouting = SourceNotificationRoutingPolicy.route(
+            decision = decision,
+            hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
+            suppressSourceNotification = shouldSuppressSourceNotification,
+        )
+        val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
+            decision = decision,
+            suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+            suppressedApps = settings.suppressedSourceApps,
+            packageName = sbn.packageName,
+            hidePersistentSourceNotifications = settings.hidePersistentSourceNotifications,
+            isPersistent = isPersistent,
+            bypassPersistentHiding = shouldBypassPersistentHiding,
+            sourceRouting = sourceRouting,
+        )
+        var replacementNotificationPosted = false
+        if (sourceRouting.cancelSourceNotification) {
+            withContext(Dispatchers.Main) {
+                cancelNotification(sbn.key)
+            }
+        }
+        if (sourceRouting.notifyReplacementNotification) {
+            notifier.notifySuppressedNotification(
+                decision = decision,
                 packageName = sbn.packageName,
                 appName = appName,
-                sender = sender,
-                title = title,
-                body = body,
-                postedAtMillis = sbn.postTime,
-                quietHours = false,
-                duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
-                isPersistent = isPersistent && !shouldBypassPersistentHiding,
-                sourceEntryKey = sbn.key,
-            ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
-
-            val baseNotification = processor.process(
-                input = captureInput,
-                rules = rules,
-                settings = settings,
+                title = baseNotification.title,
+                body = baseNotification.body,
+                notificationId = baseNotification.id,
+                reasonTags = baseNotification.reasonTags,
+                deliveryProfile = deliveryProfile,
             )
-
-            val decision = baseNotification.status.toDecision()
-            val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
-            val shouldHidePersistentSourceNotification =
-                (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
-            val shouldSuppressSourceNotification = NotificationSuppressionPolicy.shouldSuppressSourceNotification(
-                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                suppressedApps = settings.suppressedSourceApps,
-                packageName = sbn.packageName,
-                decision = decision,
-            )
-            val sourceRouting = SourceNotificationRoutingPolicy.route(
-                decision = decision,
-                hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
-                suppressSourceNotification = shouldSuppressSourceNotification,
-            )
-            val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
-                decision = decision,
-                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                suppressedApps = settings.suppressedSourceApps,
-                packageName = sbn.packageName,
-                hidePersistentSourceNotifications = settings.hidePersistentSourceNotifications,
-                isPersistent = isPersistent,
-                bypassPersistentHiding = shouldBypassPersistentHiding,
-                sourceRouting = sourceRouting,
-            )
-            var replacementNotificationPosted = false
-            if (sourceRouting.cancelSourceNotification) {
-                withContext(Dispatchers.Main) {
-                    cancelNotification(sbn.key)
-                }
-            }
-            if (sourceRouting.notifyReplacementNotification) {
-                notifier.notifySuppressedNotification(
-                    decision = decision,
-                    packageName = sbn.packageName,
-                    appName = appName,
-                    title = baseNotification.title,
-                    body = baseNotification.body,
-                    notificationId = baseNotification.id,
-                    reasonTags = baseNotification.reasonTags,
-                    deliveryProfile = deliveryProfile,
-                )
-                replacementNotificationPosted = true
-            }
-            val notification = baseNotification.copy(
-                sourceSuppressionState = suppressionState,
-                replacementNotificationIssued = SourceNotificationSuppressionStateResolver.replacementNotificationRecorded(
-                    sourceRouting = sourceRouting,
-                    replacementNotificationPosted = replacementNotificationPosted,
-                ),
-                isPersistent = isPersistent,
-            )
-            repository.save(notification, sbn.postTime, contentSignature)
+            replacementNotificationPosted = true
         }
+        val notification = baseNotification.copy(
+            sourceSuppressionState = suppressionState,
+            replacementNotificationIssued = SourceNotificationSuppressionStateResolver.replacementNotificationRecorded(
+                sourceRouting = sourceRouting,
+                replacementNotificationPosted = replacementNotificationPosted,
+            ),
+            isPersistent = isPersistent,
+        )
+        repository.save(notification, sbn.postTime, contentSignature)
     }
 
     override fun onDestroy() {
+        if (activeService === this) {
+            activeService = null
+        }
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    override fun onListenerDisconnected() {
+        if (activeService === this) {
+            activeService = null
+        }
+        super.onListenerDisconnected()
+    }
+
+    private fun enqueueOnboardingBootstrapCheck() {
+        serviceScope.launch {
+            if (onboardingBootstrapCoordinator.consumePendingBootstrapRequest()) {
+                ActiveStatusBarNotificationBootstrapper(
+                    appPackageName = packageName,
+                    processNotification = ::processNotification,
+                ).bootstrap(activeNotifications ?: emptyArray())
+            }
+        }
+    }
+
+    companion object {
+        @Volatile
+        private var activeService: SmartNotiNotificationListenerService? = null
+
+        fun triggerOnboardingBootstrapIfConnected(): Boolean {
+            val service = activeService ?: return false
+            service.enqueueOnboardingBootstrapCheck()
+            return true
+        }
     }
 }
