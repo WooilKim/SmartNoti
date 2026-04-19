@@ -98,6 +98,16 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 contentSignature = contentSignature,
                 sinceMillis = duplicatePolicy.windowStart(sbn.postTime),
             ) + 1
+            if (
+                NotificationCapturePolicy.shouldIgnoreCapture(
+                    title = title,
+                    body = body,
+                    notificationFlags = sbn.notification.flags,
+                )
+            ) {
+                return@launch
+            }
+
             val captureInput = CapturedNotificationInput(
                 packageName = sbn.packageName,
                 appName = appName,
