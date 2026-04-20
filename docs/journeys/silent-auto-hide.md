@@ -3,7 +3,7 @@ id: silent-auto-hide
 title: 조용히 분류된 알림 자동 숨김
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
