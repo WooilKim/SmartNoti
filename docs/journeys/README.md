@@ -19,31 +19,45 @@
 
 ## Active journeys
 
+### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-20 |
-| [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-20 |
-| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-20 |
+| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-20 |
+| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-20 |
+
+### Source notification routing (시스템 tray 조작)
+| ID | Title | Status | Last verified |
+|---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-20 |
+| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-20 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-20 |
+| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-20 |
 
-## Pending stubs (shipped in code, journey 문서 미작성)
+### Inboxes & UI
+| ID | Title | Status | Last verified |
+|---|---|---|---|
+| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-20 |
+| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-20 |
+| [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-20 |
+| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-20 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-20 |
+| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-20 |
 
-후속 PR에서 채울 예정. 당장은 기존 문서의 out-of-scope 링크가 이 항목들을 향합니다.
+### Rules & onboarding
+| ID | Title | Status | Last verified |
+|---|---|---|---|
+| [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-20 |
+| [rules-management](rules-management.md) | 규칙 CRUD | shipped | 2026-04-20 |
+| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-20 |
 
-| ID | Title | Priority to document |
-|---|---|---|
-| digest-suppression | 디제스트 자동 묶음 및 원본 교체 | high |
-| hidden-inbox | 숨긴 알림 인박스 (Hidden 화면) | high |
-| digest-inbox | 정리함 인박스 | medium |
-| home-overview | 홈 요약 + 인사이트 | medium |
-| notification-detail | 알림 상세 + 피드백 액션 | medium |
-| rules-management | 규칙 CRUD | medium |
-| rules-feedback-loop | 알림 피드백 → 룰 저장 | medium |
-| insight-drilldown | 인사이트 드릴다운 | low |
-| quiet-hours | 조용한 시간 | low |
-| persistent-notification-protection | 지속 알림 키워드 기반 보호 | low |
-| duplicate-suppression | 중복 알림 감지/묶음 | low |
+## 아직 문서화하지 않은 영역
+
+다음 기능들은 구현되어 있으나 별도 journey 로 분리하지 않았습니다 (위 journey 들의 out-of-scope 에서 언급). 후속 PR 에서 필요해지면 추가:
+
+- Settings 화면 전반 (개별 토글/옵션 각각은 연관 journey 가 커버)
+- Quick-start 적용 결과 카드 (`QuickStartAppliedCard`) 자체 — `home-overview` 안에서 일부 커버
+- Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Deprecated
 
@@ -51,7 +65,7 @@
 
 ## Journey 문서 작성 가이드
 
-지금 있는 5개 파일을 예시로 사용. 기본 섹션:
+지금 있는 문서들을 예시로 사용. 기본 섹션:
 
 1. **Frontmatter** — `id`, `title`, `status` (planned/in-progress/shipped/deprecated), `owner`, `last-verified`
 2. **Goal** — 제품 의도 한두 문장. 바뀌면 사실상 새 journey

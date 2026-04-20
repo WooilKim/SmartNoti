@@ -1,0 +1,81 @@
+---
+id: digest-inbox
+title: 정리함 인박스
+status: shipped
+owner: @wooilkim
+last-verified: 2026-04-20
+---
+
+## Goal
+
+DIGEST 로 분류된 알림을 **앱 단위로 묶어** 하나의 카드로 보여주고, 카드 안에서 최근 항목을 빠르게 훑어 상세로 진입할 수 있게 한다.
+
+## Preconditions
+
+- 알림이 DIGEST 로 분류되어 DB 에 저장됨 (→ [notification-capture-classify](notification-capture-classify.md))
+- 온보딩 완료
+
+## Trigger
+
+- 사용자가 하단 네비의 "정리함" 탭 탭, 또는
+- Home 의 "정리함 … 열기" 카드 탭
+
+## Observable steps
+
+1. `navigateToTopLevel(Routes.Digest.route)` → NavController 가 Digest composable 렌더링.
+2. `DigestScreen` 이 `observeSettings()` + `NotificationRepository.observeDigestGroupsFiltered(hidePersistentNotifications)` 를 collect.
+3. 저장소 쪽에서 `toDigestGroups()` 변환:
+   - DIGEST 상태 알림만 필터
+   - `packageName` 으로 grouping
+   - 각 그룹을 `DigestGroupUiModel(id="digest:${pkg}", appName, count, summary="{app} 관련 알림 {N}건", items)` 로 매핑
+4. LazyColumn 이 `DigestGroupCard` 렌더링:
+   - 앱명 + 카운트 badge
+   - 요약 문구
+   - "최근 묶음 미리보기" 섹션 + 최근 3건 `NotificationCard`
+5. preview 카드 탭 → `Routes.Detail.create(notificationId)` 로 이동 (→ [notification-detail](notification-detail.md)).
+
+## Exit state
+
+- 정리함 탭에 앱별 DIGEST 묶음이 렌더링됨.
+- 시스템 tray 원본: opt-in 된 앱은 제거 + replacement 교체 (→ [digest-suppression](digest-suppression.md)), 그 외는 원본 유지.
+
+## Out of scope
+
+- 원본 숨김/교체 라우팅 (→ [digest-suppression](digest-suppression.md))
+- 그룹 내 일괄 처리 (현재 개별 카드 탭 → Detail 만 가능)
+- 그룹 삭제/무시 (미구현)
+
+## Code pointers
+
+- `ui/screens/digest/DigestScreen`
+- `ui/components/DigestGroupCard`
+- `data/local/NotificationRepository#observeDigestGroupsFiltered` + `toDigestGroups`
+- `domain/model/DigestGroupUiModel`
+- `navigation/Routes#Digest`, `navigation/BottomNavItem` ("정리함" 라벨)
+
+## Tests
+
+- 분류/저장 레이어가 간접 커버. DigestScreen 직접 테스트는 현재 없음.
+
+## Verification recipe
+
+```bash
+# 1. Digest 로 분류될 알림 여러 건을 한 앱에서 게시 (중복 signature)
+for i in 1 2 3 4; do
+  adb shell cmd notification post -S bigtext -t "Coupang" "Deal$i" "오늘의 딜 ${i}건"
+done
+
+# 2. 정리함 탭 진입 → 한 개 그룹 카드에 count 4 로 묶여 보이는지 확인
+adb shell am start -n com.smartnoti.app/.MainActivity
+# (1080x2400 에뮬레이터 기준 "정리함" 탭 좌표: 539, 2232)
+```
+
+## Known gaps
+
+- 그룹별 "모두 중요로 변경" / "모두 무시" 액션 부재.
+- DigestScreen 직접 UI 테스트 부재.
+- Digest 알림이 0건이면 empty-state 만 보여주는데, suppress opt-in 유도 같은 교육용 문구 없음.
+
+## Change log
+
+- 2026-04-20: 초기 인벤토리 문서화

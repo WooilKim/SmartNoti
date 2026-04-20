@@ -1,0 +1,89 @@
+---
+id: digest-suppression
+title: 디제스트 자동 묶음 및 원본 교체
+status: shipped
+owner: @wooilkim
+last-verified: 2026-04-20
+---
+
+## Goal
+
+DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 한해 원본을 시스템 tray 에서 제거하고 대신 SmartNoti 가 게시하는 "요약+액션" replacement 알림으로 대체해서 반복 알림의 소음을 줄인다.
+
+## Preconditions
+
+- 알림이 DIGEST 로 분류 (→ [notification-capture-classify](notification-capture-classify.md))
+- `SmartNotiSettings.suppressSourceForDigestAndSilent = true`
+- `sbn.packageName ∈ SmartNotiSettings.suppressedSourceApps` (또는 persistent 알림 + `hidePersistentSourceNotifications` 경로)
+- 대상 알림이 protected 가 아님 (→ [protected-source-notifications](protected-source-notifications.md))
+
+## Trigger
+
+`processNotification(sbn)` 의 분류 결과 = DIGEST 이고 `NotificationSuppressionPolicy.shouldSuppressSourceNotification(...)` 가 true 를 반환.
+
+## Observable steps
+
+1. `SourceNotificationRoutingPolicy.route(DIGEST, hidePersistent=*, suppress=true)` → `cancelSourceNotification=true, notifyReplacementNotification=true`.
+2. 리스너가 main thread 에서 `cancelNotification(sbn.key)` 호출 → 원본 알림 제거.
+3. `SmartNotiNotifier.notifySuppressedNotification(DIGEST, ...)` 호출:
+   - 채널: `ReplacementNotificationChannelRegistry.resolve(DIGEST, profile)` 가 반환하는 `smartnoti_replacement_digest_*` 중 하나
+   - 제목: 원본 title (없으면 body / "{appName} 알림")
+   - 본문: `ReplacementNotificationTextFormatter.explanationText(DIGEST, reasonTags)`
+   - subText: "{appName} • Digest"
+   - 액션: `중요로 고정`, `Digest로 유지`, `열기`
+4. 사용자가 액션 탭 → `SmartNotiNotificationActionReceiver` 가 broadcast 수신 → feedback 적용 (→ [rules-feedback-loop](rules-feedback-loop.md)).
+5. 사용자가 본문 탭 → `contentIntent` 가 `MainActivity` 를 열고 parent route = Digest, notification id 를 전달해 Detail 로 이동.
+
+## Exit state
+
+- 시스템 tray: 원본 제거, replacement 1건 잔존 (AutoCancel=true 이므로 탭 시 자동 해제).
+- DB: 원본은 `status=DIGEST` 로 저장됨. `replacementNotificationIssued` 필드 true.
+- 사용자가 액션으로 재분류한 경우 룰이 저장되고 status/태그 업데이트.
+
+## Out of scope
+
+- Silent 은 replacement 없이 요약 알림으로 처리 (→ [silent-auto-hide](silent-auto-hide.md))
+- opt-in 하지 않은 앱의 DIGEST 는 원본 유지 + DB 기록만 (Digest 인박스에서 훑어봄, → digest-inbox)
+- 액션 수신 이후 룰 저장 세부 (→ [rules-feedback-loop](rules-feedback-loop.md))
+
+## Code pointers
+
+- `notification/SourceNotificationRoutingPolicy` — DIGEST 분기
+- `notification/NotificationSuppressionPolicy` — opt-in 판정
+- `notification/SmartNotiNotifier#notifySuppressedNotification` — replacement 빌더
+- `notification/ReplacementNotificationTextFormatter` — 본문 포맷
+- `notification/ReplacementNotificationChannelRegistry` — 채널 선택
+- `notification/SmartNotiNotificationActionReceiver` — 액션 수신
+- `data/settings/SettingsModels` — `suppressSourceForDigestAndSilent`, `suppressedSourceApps`
+
+## Tests
+
+- `SourceNotificationRoutingPolicyTest#digest_suppression_cancels_source_and_shows_replacement`
+- `NotificationSuppressionPolicyTest`
+- `SmartNotiNotificationActionReceiverTest`
+- `ReplacementNotificationChannelRegistryTest`
+- `ReplacementNotificationTextFormatterTest`
+
+## Verification recipe
+
+```bash
+# 1. Digest 분류 대상 앱 게시 + 설정에서 해당 앱 opt-in
+adb shell cmd notification post -S bigtext -t "Coupang" Promo1 "오늘의 딜"
+
+# 2. Settings 에서 "원본 알림 자동 숨김" 토글 on + 해당 앱 선택
+# (또는 RulesRepository + SettingsRepository 로 직접 주입)
+
+# 3. 원본 제거 + replacement 게시 확인
+adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
+
+# 4. replacement 의 "Digest로 유지" 액션 탭 → broadcast 수신 후 룰 생성 확인
+```
+
+## Known gaps
+
+- 앱 단위 opt-in UI 는 Settings 에서 제공되지만 대량 선택/해제 편의 기능 부족.
+- 같은 앱에서 서로 다른 그룹의 digest 알림이 동시에 오면 replacement 하나에만 덮어쓰기 됨 (NotificationReplacementIds 가 `packageName:DIGEST` 해시 기반).
+
+## Change log
+
+- 2026-04-20: 초기 인벤토리 문서화
