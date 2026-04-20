@@ -70,6 +70,7 @@ adb shell dumpsys notification --noredact | grep 숨겨진
 - 화면 단독 테스트 부재.
 - "모두 지우기" / "Priority 로 일괄 복구" 같은 대량 처리 액션 미제공.
 - SILENT 알림이 수백 건 쌓이면 LazyColumn 성능 미검증.
+- **Persistent 필터 비일관**: `observeAll()` 을 그대로 쓰기 때문에 `SmartNotiSettings.hidePersistentNotifications = true` 여도 persistent SILENT 알림이 포함됨. Home StatPill 의 "조용히 N" 은 persistent 를 제외하고 집계하므로 두 숫자가 어긋날 수 있음 (2026-04-20 verification 에서 StatPill=4, Hidden 헤더=5 관측). 제품 결정 필요: Hidden 도 필터링할지 vs StatPill 에서 필터링을 빼고 "보호된 N건" 을 병기할지.
 
 ## Change log
 

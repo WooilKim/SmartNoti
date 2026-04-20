@@ -87,6 +87,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity \
 
 - 이 기능 릴리스 이전에 캡처된 SILENT 원본은 tray 에 그대로 남아 있을 수 있음 — 업그레이드 마이그레이션 cancel 미구현. 시간이 지나 앱이 원본을 재게시할 때 자연스럽게 정리됨.
 - 사용자가 요약을 swipe dismiss 한 뒤 count 가 변하지 않으면 재게시되지 않음 (의도된 동작 — swipe 를 "확인함" 으로 해석). 단, 첫 사용자 입장에서는 혼란 가능.
+- **요약 count 와 Home StatPill 불일치**: 요약은 `observeAll()` 기반, Home StatPill 은 `observeAllFiltered(hidePersistentNotifications=true)` 기반이라 persistent SILENT 가 요약·Hidden 에는 포함되지만 StatPill 에는 제외됨 (→ [hidden-inbox](hidden-inbox.md) 의 Known gap 참고).
 
 ## Change log
 

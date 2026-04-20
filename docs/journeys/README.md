@@ -59,6 +59,43 @@
 - Quick-start 적용 결과 카드 (`QuickStartAppliedCard`) 자체 — `home-overview` 안에서 일부 커버
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
+## Verification log
+
+### 2026-04-20 (initial sweep, emulator-5554)
+
+Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 로 유지(문서 작성일과 동일) 하되, 아래 결과를 기록해 신뢰도를 남긴다.
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | ✅ PASS | "인증번호" 알림이 PRIORITY 로 분류, StatPill `즉시` 카운트 증가 |
+| priority-inbox | ✅ PASS | 원본이 tray 에 유지 + Priority 탭에서 카드 확인 |
+| duplicate-suppression | ✅ PASS | 동일 signature 3회 반복 시 3번째만 DIGEST, 앞 두 건은 SILENT |
+| digest-inbox | ✅ PASS | Digest 탭에 앱 단위 그룹 카드 렌더 |
+| rules-management | ✅ PASS | Rules 탭 렌더, 활성 규칙 3개 표시 (quick-start 프리셋) |
+| notification-detail | ✅ PASS (부분) | "왜 이렇게 처리됐나요?", "어떻게 전달되나요?" 섹션 확인. 액션 버튼 영역은 스크롤 필요 |
+| hidden-inbox | ⚠️ DRIFT | 화면은 정상 렌더, 다만 count 가 Home StatPill 과 불일치 (아래) |
+| silent-auto-hide | ⚠️ DRIFT | 요약 알림 자체는 정상 게시 (`smartnoti_silent_summary` 채널, title "숨겨진 알림 5건"), count 불일치 동일 |
+| home-overview | ✅ PASS (부분) | StatPill / Home 렌더 확인. 상세 카드/차트 시각 회귀는 미실행 |
+| onboarding-bootstrap | ⏭️ SKIP | `pm clear` 가 파괴적이라 이번 sweep 에서 제외 |
+| protected-source-notifications | ⏭️ SKIP | 실제 MediaStyle 앱 필요. 단위 테스트는 통과 |
+| rules-feedback-loop | ⏭️ SKIP | 추후 `am broadcast` 로 검증 예정 |
+| insight-drilldown | ⏭️ SKIP | 이번 sweep 에서 시간상 제외 |
+| quiet-hours | ⏭️ SKIP | 시스템 시간 조작 필요 |
+| persistent-notification-protection | ⏭️ SKIP | `FLAG_ONGOING_EVENT` 설정이 `cmd notification post` 로 제한적 |
+| digest-suppression | ⏭️ SKIP | 앱 opt-in + 설정 조작 필요 |
+
+### 발견된 drift
+
+1. **Silent count 불일치** (→ [silent-auto-hide](silent-auto-hide.md), [hidden-inbox](hidden-inbox.md) Known gaps):
+   - Home StatPill `조용히`: `observeAllFiltered(hidePersistentNotifications=true)` → persistent 제외
+   - Hidden 화면 헤더 + Silent 요약 알림 count: `observeAll()` → persistent 포함
+   - 사용자 세팅 `hidePersistentNotifications=true` 일 때 숫자가 어긋남. 제품 결정 필요.
+
+2. **Home 탭 복귀 회귀 의심** (추가 조사 필요):
+   - 딥링크로 Hidden 진입 후 하단 "홈" 탭 탭해도 Home 으로 navigate 되지 않는 것으로 관측됨.
+   - 이전에 고친 `navigateToTopLevel` stale-closure 버그와 다른 경로일 가능성 — 딥링크 entry 의 back stack 에 Home 이 없을 때의 동작.
+   - 정식 이슈로 판단되면 별도 PR 에서 재검증.
+
 ## Deprecated
 
 (없음)
