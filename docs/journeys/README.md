@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — priority-inbox re-verify #2, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | ✅ PASS | Baseline DB `SELECT status, COUNT(*) FROM notifications GROUP BY status` → `DIGEST\|29, PRIORITY\|10, SILENT\|32` (총 71). Rules DataStore 확인: `person:엄마\|PERSON\|DIGEST` + `person:TestSender_0421_T11\|PERSON\|DIGEST` 등 오염 규칙 잔존 — recipe 의 `"엄마"` posting 경로는 DIGEST 로 떨어질 것이므로, Known gaps 의 권장대로 keyword 기반 PRIORITY 경로로 우회. Fresh unique tag posting: `cmd notification post -S bigtext -t "은행" PriIn0421T3 "인증번호 778899을 입력하세요"` → `dumpsys notification --noredact \| grep -B1 -A3 PriIn0421T3` 에서 `NotificationRecord(… pkg=com.android.shell id=2020 tag=PriIn0421T3 importance=3 key=0\|com.android.shell\|2020\|PriIn0421T3\|2000)` 관측 — 원본 tray 유지 (`SourceNotificationRoutingPolicy.route(PRIORITY,*,*) → cancelSourceNotification=false` 불변조건 충족, 시스템 장치 음 `mSoundNotificationKey` 도 이 key 로 설정). DB row `com.android.shell:2020:PriIn0421T3 \| 은행 \| PRIORITY \| reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|조용한 시간\|중요 키워드` — 키워드 `인증번호` ALWAYS_PRIORITY 규칙 경로를 통해 classifier 가 즉시 PRIORITY 분기. DB 총계 `PRIORITY 10→11`, SILENT/DIGEST 불변. `am force-stop com.smartnoti.app && am start -n com.smartnoti.app/.MainActivity` → 중요 탭 (327, 2232) 탭 → uiautomator dump 에서 header `중요 알림` + summary `총 11건의 알림이 즉시 전달 대기 중이에요.` + helper copy `알림 이유와 상태를 함께 보여줘서 왜 중요한지 빠르게 판단할 수 있어요.` 렌더. 신규 카드 `Shell / 은행 / 인증번호 778899을 입력하세요 / 즉시 전달` + reason chips (`중요 알림 / 중요 키워드 / 인증번호`) bounds `[42,732][1038,1248]` 관측 (첫 번째 카드로 렌더 = postedAtMillis DESC 순서 정합). 동일 signature 의 기존 PRIORITY 카드 `은행 / 인증번호 445566를 입력하세요` (어제 tick #54 의 posting) 가 아래 card slot 에 잔존 = inbox 가 PRIORITY 누적을 유지함 확인. 카드 중앙 (540, 990) 탭 → `NotificationDetailScreen` 진입 (top bar `알림 상세` + 요약 카드 `Shell / 은행 / 인증번호 778899을 입력하세요 / 즉시 전달` + `왜 이렇게 처리됐나요?` 섹션 + reason chips 6개 `발신자 있음 / 사용자 규칙 / 중요 알림 / 온보딩 추천 / 조용한 시간 / 중요 키워드` — DB reasonTags 와 1:1 정합). Observable steps 1–4 (navigateToTopLevel → PriorityScreen → LazyColumn of PRIORITY `NotificationUiModel` → 카드 탭 → Routes.Detail.create) 및 Exit state (Priority 탭에 모든 PRIORITY 알림 렌더 + 시스템 tray 원본 유지 + Detail 진입 가능) 전부 충족. 직전 tick (#54, PR 기록상 priority-inbox re-verify #1) 이 recipe fragility (`엄마` PERSON DIGEST 오염) 를 발견하고 Known gap 에 keyword 우회를 기록했으며, 이번 tick 은 그 우회 경로를 더 큰 baseline (71건, PRIORITY 10건) + 다른 unique tag 로 재현 — contract 안정성 및 recipe 가이드의 유효성을 재확증. Known gaps 변경 없음 (keyword 우회 권고는 유지, recipe 는 차후 리라이트가 안전) |
+
+
 ### 2026-04-21 (v1 loop tick — notification-capture-classify re-verify #2, emulator-5554)
 
 | Journey | Result | Notes |
