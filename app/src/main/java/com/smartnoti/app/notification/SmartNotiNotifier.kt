@@ -212,6 +212,7 @@ class SmartNotiNotifier(
         const val EXTRA_NOTIFICATION_ID = "com.smartnoti.app.extra.NOTIFICATION_ID"
         const val EXTRA_PARENT_ROUTE = "com.smartnoti.app.extra.PARENT_ROUTE"
         const val EXTRA_REPLACEMENT_NOTIFICATION_ID = "com.smartnoti.app.extra.REPLACEMENT_NOTIFICATION_ID"
+        const val EXTRA_DEEP_LINK_ROUTE = "com.smartnoti.app.extra.DEEP_LINK_ROUTE"
 
         internal fun feedbackRequestCodeForTest(notificationId: String, action: String): Int {
             return (notificationId.hashCode() * 31) + action.hashCode()

@@ -6,6 +6,7 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.toDecision
 import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
 import com.smartnoti.app.domain.model.withContext
@@ -32,7 +33,9 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     private val liveDuplicateCountTracker = LiveDuplicateCountTracker()
     private val persistentNotificationPolicy = PersistentNotificationPolicy()
     private val notifier by lazy { SmartNotiNotifier(applicationContext) }
+    private val silentSummaryNotifier by lazy { SilentHiddenSummaryNotifier(applicationContext) }
     private var storeSyncJob: Job? = null
+    private var silentSummaryJob: Job? = null
     private val onboardingBootstrapCoordinator by lazy {
         OnboardingActiveNotificationBootstrapCoordinator.create(applicationContext)
     }
@@ -52,11 +55,28 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         super.onListenerConnected()
         activeService = this
         notifier.ensureChannels()
+        silentSummaryNotifier.ensureChannel()
         val repository = NotificationRepository.getInstance(applicationContext)
         storeSyncJob?.cancel()
         storeSyncJob = serviceScope.launch {
             repository.observeAll().collect { notifications ->
                 SmartNotiNotificationStore.setNotifications(notifications)
+            }
+        }
+        silentSummaryJob?.cancel()
+        silentSummaryJob = serviceScope.launch {
+            // Only repost when the count changes so we do not churn the tray on every
+            // unrelated list update. If the user swipes the summary away, it stays
+            // dismissed until the next classification changes the hidden count, which
+            // matches the user's expected "I acknowledged this" behavior.
+            var lastCount = -1
+            repository.observeAll().collect { notifications ->
+                val count = notifications.count { it.status == NotificationStatusUi.SILENT }
+                if (count == lastCount) return@collect
+                lastCount = count
+                withContext(Dispatchers.Main) {
+                    silentSummaryNotifier.post(count)
+                }
             }
         }
         enqueueOnboardingBootstrapCheck()
@@ -149,17 +169,32 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
         val shouldHidePersistentSourceNotification =
             (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
-        val shouldSuppressSourceNotification = NotificationSuppressionPolicy.shouldSuppressSourceNotification(
-            suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-            suppressedApps = settings.suppressedSourceApps,
-            packageName = sbn.packageName,
-            decision = decision,
+        val isProtectedSourceNotification = ProtectedSourceNotificationDetector.isProtected(
+            ProtectedSourceNotificationDetector.signalsFrom(sbn),
         )
-        val sourceRouting = SourceNotificationRoutingPolicy.route(
-            decision = decision,
-            hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
-            suppressSourceNotification = shouldSuppressSourceNotification,
-        )
+        val shouldSuppressSourceNotification = !isProtectedSourceNotification &&
+            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                suppressedApps = settings.suppressedSourceApps,
+                packageName = sbn.packageName,
+                decision = decision,
+            )
+        val sourceRouting = if (isProtectedSourceNotification) {
+            // Media / call / navigation / foreground-service notifications back a live
+            // MediaSession or foreground service. Cancelling them breaks playback
+            // (for example YouTube Music stops) or tears down the service, so we never
+            // route them through suppression regardless of user settings.
+            SourceNotificationRouting(
+                cancelSourceNotification = false,
+                notifyReplacementNotification = false,
+            )
+        } else {
+            SourceNotificationRoutingPolicy.route(
+                decision = decision,
+                hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
+                suppressSourceNotification = shouldSuppressSourceNotification,
+            )
+        }
         val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
             decision = decision,
             suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
@@ -204,6 +239,8 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         if (activeService === this) {
             activeService = null
         }
+        storeSyncJob?.cancel()
+        silentSummaryJob?.cancel()
         serviceScope.cancel()
         super.onDestroy()
     }

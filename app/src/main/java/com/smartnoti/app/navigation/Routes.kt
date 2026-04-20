@@ -10,6 +10,7 @@ sealed class Routes(val route: String) {
     data object Digest : Routes("digest")
     data object Rules : Routes("rules")
     data object Settings : Routes("settings")
+    data object Hidden : Routes("hidden")
     data object Detail : Routes("detail/{notificationId}") {
         fun create(notificationId: String): String = "detail/${encodeRouteParam(notificationId)}"
     }

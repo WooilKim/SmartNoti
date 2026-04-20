@@ -16,9 +16,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +70,7 @@ fun InsightDrillDownScreen(
     source: String,
     onNotificationClick: (String) -> Unit,
     onInsightClick: (String) -> Unit,
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -134,11 +138,27 @@ fun InsightDrillDownScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                ScreenHeader(
-                    eyebrow = "Insight",
-                    title = copy.title,
-                    subtitle = copy.subtitle ?: result.subtitle,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "뒤로 가기",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    ScreenHeader(
+                        eyebrow = "인사이트",
+                        title = copy.title,
+                        subtitle = copy.subtitle ?: result.subtitle,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 12.dp),
+                    )
+                }
             }
             item {
                 EmptyState(
@@ -157,7 +177,7 @@ fun InsightDrillDownScreen(
     ) {
         item {
             ScreenHeader(
-                eyebrow = "Insight",
+                eyebrow = "인사이트",
                 title = copy.title,
                 subtitle = copy.subtitle ?: result.subtitle,
             )

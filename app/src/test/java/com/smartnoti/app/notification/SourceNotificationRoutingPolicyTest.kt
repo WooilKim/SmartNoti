@@ -32,14 +32,33 @@ class SourceNotificationRoutingPolicyTest {
     }
 
     @Test
-    fun silent_suppression_cancels_source_without_posting_replacement_notification() {
+    fun digest_without_hide_or_suppress_keeps_source_notification() {
         val routing = SourceNotificationRoutingPolicy.route(
+            decision = NotificationDecision.DIGEST,
+            hidePersistentSourceNotification = false,
+            suppressSourceNotification = false,
+        )
+
+        assertFalse(routing.cancelSourceNotification)
+        assertFalse(routing.notifyReplacementNotification)
+    }
+
+    @Test
+    fun silent_always_cancels_source_without_individual_replacement() {
+        val suppressed = SourceNotificationRoutingPolicy.route(
             decision = NotificationDecision.SILENT,
             hidePersistentSourceNotification = false,
             suppressSourceNotification = true,
         )
+        assertTrue(suppressed.cancelSourceNotification)
+        assertFalse(suppressed.notifyReplacementNotification)
 
-        assertTrue(routing.cancelSourceNotification)
-        assertFalse(routing.notifyReplacementNotification)
+        val unsuppressed = SourceNotificationRoutingPolicy.route(
+            decision = NotificationDecision.SILENT,
+            hidePersistentSourceNotification = false,
+            suppressSourceNotification = false,
+        )
+        assertTrue(unsuppressed.cancelSourceNotification)
+        assertFalse(unsuppressed.notifyReplacementNotification)
     }
 }

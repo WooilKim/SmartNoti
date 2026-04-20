@@ -45,7 +45,7 @@ fun DigestScreen(
         ) {
             item {
                 ScreenHeader(
-                    eyebrow = "Digest",
+                    eyebrow = "정리함",
                     title = "알림 정리함",
                     subtitle = "덜 급한 알림은 그룹으로 정리해 한 번에 훑어볼 수 있어요.",
                 )
@@ -67,7 +67,7 @@ fun DigestScreen(
     ) {
         item {
             ScreenHeader(
-                eyebrow = "Digest",
+                eyebrow = "정리함",
                 title = "알림 정리함",
                 subtitle = "지금 바로 보지 않아도 되는 알림을 앱별로 묶어 더 빠르게 정리할 수 있어요.",
             )

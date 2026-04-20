@@ -1,7 +1,8 @@
 package com.smartnoti.app.navigation
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 import com.smartnoti.app.ui.screens.detail.InsightDrillDownScreen
 import com.smartnoti.app.ui.screens.detail.NotificationDetailScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreen
+import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.home.HomeScreen
 import com.smartnoti.app.ui.screens.onboarding.OnboardingScreen
 import com.smartnoti.app.ui.screens.priority.PriorityScreen
@@ -42,6 +44,8 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
     pendingNotificationEntry: ReplacementNotificationEntry? = null,
     onPendingNotificationConsumed: () -> Unit = {},
+    pendingDeepLinkRoute: String? = null,
+    onPendingDeepLinkRouteConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val settings = remember { SettingsRepository.getInstance(context) }
@@ -103,10 +107,25 @@ fun AppNavHost(
         }
     }
 
+    LaunchedEffect(pendingDeepLinkRoute, onboardingCompleted) {
+        val route = pendingDeepLinkRoute
+        if (onboardingCompleted && route != null) {
+            navController.navigate(route) {
+                launchSingleTop = true
+            }
+            onPendingDeepLinkRouteConsumed()
+        }
+    }
+
     fun navigateToTopLevel(route: String) {
+        // Read the active route from the NavController each invocation; the captured
+        // `currentRoute` from the enclosing composition can be stale by the time the
+        // bottom-bar onClick fires (e.g. tapping Home immediately after Priority would
+        // otherwise resolve to NoOp because the closure still saw the old route).
+        val activeRoute = navController.currentBackStackEntry?.destination?.route
         when (
             val action = navigationActionBuilder.build(
-                currentRoute = currentRoute,
+                currentRoute = activeRoute,
                 targetRoute = route,
             )
         ) {
@@ -139,10 +158,10 @@ fun AppNavHost(
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None },
+            enterTransition = { fadeIn(animationSpec = tween(durationMillis = 160)) },
+            exitTransition = { fadeOut(animationSpec = tween(durationMillis = 160)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(durationMillis = 160)) },
+            popExitTransition = { fadeOut(animationSpec = tween(durationMillis = 160)) },
         ) {
             composable(Routes.Onboarding.route) {
                 OnboardingScreen(
@@ -190,13 +209,21 @@ fun AppNavHost(
                     onInsightClick = { navController.navigate(it) },
                 )
             }
+            composable(Routes.Hidden.route) {
+                HiddenNotificationsScreen(
+                    contentPadding = paddingValues,
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable(
                 route = Routes.Detail.route,
                 arguments = listOf(navArgument("notificationId") { type = NavType.StringType })
             ) { backStackEntry ->
                 NotificationDetailScreen(
                     contentPadding = paddingValues,
-                    notificationId = backStackEntry.arguments?.getString("notificationId").orEmpty()
+                    notificationId = backStackEntry.arguments?.getString("notificationId").orEmpty(),
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(
@@ -224,6 +251,7 @@ fun AppNavHost(
                     source = backStackEntry.arguments?.getString("source").orEmpty(),
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onInsightClick = { navController.navigate(it) },
+                    onBack = { navController.popBackStack() },
                 )
             }
         }
