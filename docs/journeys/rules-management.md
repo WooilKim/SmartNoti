@@ -83,6 +83,7 @@ adb shell cmd notification post -S bigtext -t "은행" OtpTest "인증번호 123
 - 룰 편집이 AlertDialog 기반이라 입력 화면이 좁음 — 복잡한 SCHEDULE/REPEAT_BUNDLE 편집이 답답할 수 있음.
 - 룰 내보내기/가져오기 미구현.
 - 동일 매치값 + 다른 액션 룰이 충돌할 때의 우선순위는 `RuleListFilterApplicator` / 분류기 내부 규칙에 암묵적으로 의존.
+- Recipe fragility — baseline 누적 (2026-04-21 cycle): rules-feedback-loop 경로로 upsert 된 `person:*` 룰이 `smartnoti_rules.preferences_pb` 에 영속화되어 이 recipe 의 "활성 규칙 N개" 헤더 baseline 이 cycle 에 따라 증가한다. 검증 시 추가/삭제 delta (N→N+1, N+1→N) 만 관측하고, 절대값(N) 은 테스트 환경 상태에 따라 달라질 수 있다.
 
 ## Change log
 

@@ -62,6 +62,12 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — Known gaps consolidation, no re-verify)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox / rules-feedback-loop / rules-management | 🗒️ docs-only | 13개 non-SKIP journey 가 모두 2026-04-21 기준 **twice** re-verified 된 steady-state 이므로 3rd-pass re-verify 대신 cycle 동안 반복 관측된 recipe fragility 를 Known gaps 로 consolidation. 추가한 항목: (a) hidden-inbox — `am start … -e DEEP_LINK_ROUTE hidden` 가 `MainActivity` top-most 상태에서 `LaunchedEffect` 를 재발화 못해 이동하지 않는 cold-start 요구사항 (hidden-inbox / rules-feedback-loop / notification-detail recipe 에 공통 적용). (b) rules-feedback-loop — `upsertRule` 이 남기는 `person:*` 잔존 룰 (`smartnoti_rules.preferences_pb` 영속) 이 후속 priority-inbox / rules-management baseline 을 오염시킴, 재현 시 unique sender 권고. 또한 Detail 경유 경로(A)의 cold-start 제약 명시. (c) rules-management — `person:*` 잔존으로 "활성 규칙 N개" 헤더 baseline 이 cycle 마다 증가하므로 절대값 대신 delta 를 관측할 것. 13개 journey frontmatter `last-verified` 는 손대지 않음 (실제 recipe 재실행 없음 — `docs-sync.md` 규칙 준수) |
+
 ### 2026-04-21 (v1 loop tick — digest-suppression re-verify #2, emulator-5554)
 
 | Journey | Result | Notes |
