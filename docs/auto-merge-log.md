@@ -1,0 +1,36 @@
+# Auto-merge Log
+
+Append-only record of PRs that were merged by an agent rather than by a human. Exists so a regression can be traced to the exact self-merge that introduced it.
+
+**Every agent self-merge MUST add a row here before calling `gh pr merge`.** If you can't add the row (e.g. the file is locked), do not merge.
+
+## Format
+
+```
+| Date (UTC) | Agent | PR | Journey touched | CI run |
+|---|---|---|---|---|
+| 2026-04-20T12:34:56Z | journey-tester | #123 | silent-auto-hide | https://github.com/WooilKim/SmartNoti/actions/runs/<id> |
+```
+
+Keep rows in chronological order (newest at the bottom). Never edit past rows. If a prior auto-merge turned out to be wrong, add a new row below it noting the revert PR — don't rewrite history.
+
+## Scope
+
+- **journey-tester** may self-merge PRs that touch only `docs/journeys/**` when every gate in its agent definition is green.
+- **gap-planner** and **plan-implementer** never self-merge — their PRs always go through human review.
+- If this file gets a row from any agent other than `journey-tester`, treat it as a bug and audit that agent.
+
+## Revert procedure
+
+If a self-merged row caused a regression:
+
+1. Open a revert PR against the merge commit (`git revert -m 1 <merge-sha>` works for squash merges too).
+2. Label the PR `reverts-auto-merge`.
+3. Add a row below the offending entry here with the revert PR number in the PR column and a short "reverted — <reason>" note in the Journey column.
+
+## Rows
+
+<!-- append rows below this line, newest at the bottom -->
+
+| Date (UTC) | Agent | PR | Journey touched | CI run |
+|---|---|---|---|---|
