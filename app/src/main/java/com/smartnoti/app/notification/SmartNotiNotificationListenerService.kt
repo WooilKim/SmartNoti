@@ -236,6 +236,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 suppressSourceForDigestAndSilent = settings.suppressSourceForDigestAndSilent,
                 packageName = sbn.packageName,
                 currentApps = settings.suppressedSourceApps,
+                excludedApps = settings.suppressionExcludedApps,
             )
         } else {
             null

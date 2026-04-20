@@ -79,4 +79,30 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
 
         assertNull(expanded)
     }
+
+    @Test
+    fun sticky_excluded_app_is_not_re_added_even_when_digest_fires() {
+        val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+            decision = NotificationDecision.DIGEST,
+            suppressSourceForDigestAndSilent = true,
+            packageName = "com.testshop",
+            currentApps = emptySet(),
+            excludedApps = setOf("com.testshop"),
+        )
+
+        assertNull(expanded)
+    }
+
+    @Test
+    fun unrelated_excluded_app_does_not_block_expansion() {
+        val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+            decision = NotificationDecision.DIGEST,
+            suppressSourceForDigestAndSilent = true,
+            packageName = "com.newshop",
+            currentApps = emptySet(),
+            excludedApps = setOf("com.unrelated"),
+        )
+
+        assertEquals(setOf("com.newshop"), expanded)
+    }
 }

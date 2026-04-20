@@ -23,6 +23,7 @@ data class SmartNotiSettings(
     val silentLockScreenVisibility: String = LockScreenVisibilityMode.SECRET.name,
     val suppressSourceForDigestAndSilent: Boolean = false,
     val suppressedSourceApps: Set<String> = emptySet(),
+    val suppressionExcludedApps: Set<String> = emptySet(),
     val hidePersistentNotifications: Boolean = true,
     val hidePersistentSourceNotifications: Boolean = false,
     val protectCriticalPersistentNotifications: Boolean = true,

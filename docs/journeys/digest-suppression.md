@@ -23,7 +23,7 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 ## Observable steps
 
-1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 현재 리스트에 app 이 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화.
+1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 app 이 `suppressedSourceApps` 에 없고 `suppressionExcludedApps` (sticky 제외 리스트) 에도 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화. 사용자가 Settings 에서 해당 앱 토글을 OFF 로 돌린 적이 있다면 해당 앱은 자동 확장 대상에서 영구 제외.
 2. `NotificationSuppressionPolicy.shouldSuppressSourceNotification(...)` 가 확장된 리스트 기준으로 true 반환.
 3. `SourceNotificationRoutingPolicy.route(DIGEST, hidePersistent=*, suppress=true)` → `cancelSourceNotification=true, notifyReplacementNotification=true`.
 4. 리스너가 main thread 에서 `cancelNotification(sbn.key)` 호출 → 원본 알림 제거.
@@ -90,9 +90,9 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 
 - 앱 단위 opt-in UI 는 Settings 에서 제공되지만 대량 선택/해제 편의 기능 부족.
 - 같은 앱에서 서로 다른 그룹의 digest 알림이 동시에 오면 replacement 하나에만 덮어쓰기 됨 (NotificationReplacementIds 가 `packageName:DIGEST` 해시 기반).
-- Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-20: `SuppressedSourceAppsAutoExpansionPolicy` 추가 — 전역 opt-in 이 켜졌고 DIGEST 로 분류된 새 앱이 들어오면 자동으로 `suppressedSourceApps` 확장. onboarding 이후 게시되는 "(광고)" 류 알림이 원본 유지되던 문제 해소.
+- 2026-04-20: `SmartNotiSettings.suppressionExcludedApps` + sticky 제외 로직 추가 — Settings 토글을 OFF 로 돌린 앱은 DIGEST 가 다시 와도 auto-expansion 대상이 되지 않음. 토글을 ON 으로 복구하면 exclusion 도 함께 해제.
