@@ -23,6 +23,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
@@ -37,9 +39,15 @@ fun HiddenNotificationsScreen(
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
-    val allNotifications by repository.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
-    val hidden = remember(allNotifications) {
-        allNotifications.filter { it.status == NotificationStatusUi.SILENT }
+    val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
+    val settings by settingsRepository.observeSettings()
+        .collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
+    val filteredFlow = remember(repository, settings.hidePersistentNotifications) {
+        repository.observeAllFiltered(settings.hidePersistentNotifications)
+    }
+    val filteredNotifications by filteredFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val hidden = remember(filteredNotifications) {
+        filteredNotifications.filter { it.status == NotificationStatusUi.SILENT }
     }
 
     LazyColumn(
