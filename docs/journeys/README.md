@@ -67,6 +67,7 @@
 | Journey | Result | Notes |
 |---|---|---|
 | digest-inbox | ✅ PASS | 4건 중복 알림 posting 후 Digest 탭에 앱 그룹 카드 "관련 알림 4건" 렌더 |
+| digest-suppression | ⏭️ SKIP | 앱 opt-in + Settings 토글 조작 필요 — 이번 tick 에서 자동화 제외, Settings UI 검증으로 별도 커버 |
 
 ### 2026-04-20 (initial sweep, emulator-5554)
 
