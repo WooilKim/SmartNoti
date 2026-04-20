@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — protected-source-notifications re-verify #2, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| protected-source-notifications | ✅ PASS | Baseline DB `SELECT status, COUNT(*) FROM notifications GROUP BY status` → `DIGEST\|29, PRIORITY\|11, SILENT\|33` (총 73 — 이번 cycle 8개 tick 누적으로 환경이 더 커진 baseline). Recipe A 실행: `cmd notification post -S media -t "Player" MediaTest0421R2 "미디어 스타일 테스트 R2"` → posting 확인 (`category=transport vis=PRIVATE`, flags=0x0, shell_cmd channel). (1) 원본 tray 잔존: `dumpsys notification --noredact \| grep -B1 -A5 MediaTest0421R2` 에서 `NotificationRecord(0x0803d4b1: pkg=com.android.shell user=UserHandle{0} id=2020 tag=MediaTest0421R2 importance=3 key=0\|com.android.shell\|2020\|MediaTest0421R2\|2000: Notification(channel=shell_cmd … category=transport vis=PRIVATE))` 관측, 추가로 `mSoundNotificationKey=0\|com.android.shell\|2020\|MediaTest0421R2\|2000` 로 등록 — SmartNoti 가 cancel 하지 않음 명확. (2) DB row 저장: `SELECT id,packageName,title,status,sourceSuppressionState FROM notifications WHERE id LIKE '%MediaTest0421R2%'` → `com.android.shell:2020:MediaTest0421R2 \| com.android.shell \| Player \| SILENT \| NOT_CONFIGURED`, `reasonTags=발신자 있음\|조용한 시간`. **Critical evidence**: classifier 가 SILENT 로 분류했음에도 원본이 살아있다 — `SourceNotificationRoutingPolicy.route(SILENT,*,*)` 의 기본 정책은 `cancelSourceNotification=true` (SILENT 분기 = unconditional cancel). 원본 tray 잔존 + `sourceSuppressionState=NOT_CONFIGURED` (NOT `SUPPRESSION_ATTEMPTED`) 라는 두 지점이 `SmartNotiNotificationListenerService#processNotification` 의 `isProtectedSourceNotification` 분기가 작동해 routing 을 강제 덮어썼음을 증명 — `-S media` 가 `category=transport` 를 세팅하므로 `ProtectedSourceNotificationDetector.isProtected(signals)` 의 category 기반 경로 (`category ∈ {"call","transport","navigation","alarm","progress"}`) 로 보호 확정. Observable steps 1–5 (`signalsFrom(sbn)` 4필드 추출 → `isProtected` 평가 → `cancelSourceNotification=false`/`notifyReplacementNotification=false`/`shouldSuppressSourceNotification=false` 3필드 강제 덮어쓰기 → cancelNotification/notifySuppressedNotification 미호출 → `NotificationRepository.save` 는 그대로 수행) 과 Exit state (시스템 tray 원본 유지 + DB row SILENT 로 분류·기록 + 후속 Home/Hidden 인박스 노출 가능) 전부 충족. Recipe B (YouTube Music) 는 에뮬레이터에 앱 미설치로 계속 SKIP — category 경로만으로도 contract 증명. 04-21 tick #1 (PR #56) 이 동일 경로를 `MediaTest0421` 로 PASS 로 증명했고, 이번 tick 은 더 큰 baseline (73 vs #56 당시 45ish) + 다른 unique tag 로 재현 — category 기반 보호의 불변조건 안정성 재확증. Known gaps 변경 없음 |
+
+
 ### 2026-04-21 (v1 loop tick — hidden-inbox re-verify, emulator-5554)
 
 | Journey | Result | Notes |
