@@ -88,6 +88,7 @@
 | rules-management | ✅ PASS | Rules 탭 → "내 규칙" 헤더 + "직접 규칙 추가" 섹션 렌더 |
 | protected-source-notifications | ✅ PASS | `cmd notification post -S media` (category=transport) posting 후 dumpsys 에 MediaTest 잔존 — SmartNoti 가 cancel 하지 않음 |
 | notification-detail | ✅ PASS (재검증) | Priority 카드 탭 → Detail 진입. "왜 이렇게 처리됐나요?" / "어떻게 전달되나요?" / "원본 알림 처리 상태" 3 섹션 + reasonTags 렌더 |
+| rules-feedback-loop | ✅ PASS | "엄마" Priority 카드 → Detail → "Digest로 보내기" 탭. Rules 탭에 "엄마" PERSON 규칙 추가됨 (활성 규칙 3→4, Digest 2→3, "발신자 기준" 표시) |
 
 ### 2026-04-20 (initial sweep, emulator-5554)
 
