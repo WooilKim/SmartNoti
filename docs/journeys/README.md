@@ -67,7 +67,7 @@
 | Journey | Result | Notes |
 |---|---|---|
 | digest-inbox | ✅ PASS | 4건 중복 알림 posting 후 Digest 탭에 앱 그룹 카드 "관련 알림 4건" 렌더 |
-| digest-suppression | ⏭️ SKIP | 앱 opt-in + Settings 토글 조작 필요 — 이번 tick 에서 자동화 제외, Settings UI 검증으로 별도 커버 |
+| digest-suppression | ✅ PASS | `com.android.shell` 에서 동일 bigtext 3회 posting → 원본 tray 에서 제거됨. replacement 알림이 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널 + `actions=3` + title `Promo` 로 live 확인. 기존 sweep 의 SKIP 해소 (opt-in 상태가 DataStore 에 이미 persist 돼 있어 자동 실행 가능) |
 | duplicate-suppression | ✅ PASS | 같은 content signature 3회 posting 시 1 Digest + 2 Silent (threshold 3) 관측 |
 | hidden-inbox | ✅ PASS | deep-link 진입 시 "숨겨진 알림 12건" 헤더 + 그룹 카드 렌더 |
 | home-overview | ✅ PASS | StatPill 즉시 2 / Digest 11 / 조용히 12 렌더 |
