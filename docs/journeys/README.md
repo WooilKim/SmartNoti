@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — hidden-inbox re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | ✅ PASS | Deep-link 경로 재검증. `am force-stop com.smartnoti.app && am start -n com.smartnoti.app/.MainActivity -e com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden` 필요 — Activity 가 top-most 로 이미 떠있을 때 단일 `am start` 는 `Intent { has extras }` 가 delivered 로만 기록되고 `AppNavHost` 의 `LaunchedEffect(deepLinkRoute)` 가 재발화하지 않아 새 화면으로 네비게이트되지 않음 (기존 top composable 유지). Force-stop 후 cold start 로 재기동하면 정상. 이 관측은 재현 단계에서 중요하므로 recipe fragility 로 Known gaps 에 추가. Cold start 후 `uiautomator dump` 에서 eyebrow `숨긴 알림`, title `숨겨진 알림 31건`, subtitle (그룹 카드 복구/삭제 안내), summary `3개 앱에서 31건을 숨겼어요.`, helper `같은 앱의 여러 알림은 한 카드로 모아서 보여줘요...`, `전체 숨긴 알림 모두 지우기` 버튼, 앱별 그룹 카드 `Shell / 29건 / Shell 숨긴 알림 29건 / 최근 묶음 미리보기` + preview rows (`Shell · 방금`, `Coupang · 오늘의` 등) 관측. 시스템 tray 의 `smartnoti_silent_summary` 요약 알림 title `숨겨진 알림 31건` + content `탭해서 숨겨진 알림 보기` + action `숨겨진 알림 보기 → PendingIntent` (Routes.Hidden) 이 화면 title 과 완전 일치 — silent-auto-hide 와 hidden-inbox 간 count 컨트랙트 유지 확인 (31 = 31 = 요약 알림 count). Observable steps 1–9 (HiddenNotificationsScreen 마운트 → observeSettings → observeAllFiltered → toHiddenGroups → 헤더/ScreenHeader → EmptyState 분기 (비활성) → SmartSurfaceCard + DigestGroupCard 렌더 → preview 탭 가능 상태 → popBackStack 경로) 및 Exit state (DB SILENT = 화면 = 요약 알림 count 일치) 모두 충족. DRIFT 없음 |
+
+
 ### 2026-04-21 (v1 loop tick — priority-inbox re-verify #2, emulator-5554)
 
 | Journey | Result | Notes |
