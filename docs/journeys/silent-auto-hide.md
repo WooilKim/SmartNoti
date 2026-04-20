@@ -88,6 +88,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity \
 
 - 이 기능 릴리스 이전에 캡처된 SILENT 원본은 tray 에 그대로 남아 있을 수 있음 — 업그레이드 마이그레이션 cancel 미구현. 시간이 지나 앱이 원본을 재게시할 때 자연스럽게 정리됨.
 - 사용자가 요약을 swipe dismiss 한 뒤 count 가 변하지 않으면 재게시되지 않음 (의도된 동작 — swipe 를 "확인함" 으로 해석). 요약 알림 본문 카피에 해당 의미를 명시해 첫 사용자 혼란을 줄임.
+- 2026-04-21: 에뮬레이터에 설치된 0.1.0 APK (lastUpdateTime 2026-04-20 15:05) 가 `acf7c39` (초기 구현) 의 copy 를 serve 중 — `android.text=탭해서 숨겨진 알림 보기` + bigText `탭하면 전체 목록을 확인할 수 있어요.` 로, `50e04ef` 에서 갱신된 `탭: 목록 보기 · 스와이프: 확인으로 처리` + bigText `옆으로 밀어 없애면 확인한 것으로 처리돼요` 가 반영되어 있지 않음. 소스 (`SilentHiddenSummaryNotifier#post`) 는 이미 새 copy 를 가지고 있으므로 contract drift 아닌 env noise — 릴리즈 빌드 재설치로 해소. 이전 sweep (#46) 에서 "APK 가 새 copy 반영" 으로 단정한 것은 title + action button 만 보고 판단한 착오. 다음 verify 는 title/action 외 반드시 `extras` 의 `android.text` / `android.bigText` 두 필드도 dumpsys 로 확인.
 
 ## Change log
 
