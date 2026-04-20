@@ -48,3 +48,32 @@ If a self-merged row caused a regression:
 | 2026-04-20T13:49:17Z | journey-tester | #35 | audit backfill for #31/#32/#33 | https://github.com/WooilKim/SmartNoti/pull/35/checks |
 | 2026-04-20T13:49:18Z | journey-tester | #36 | notification-capture-classify (재검증) | https://github.com/WooilKim/SmartNoti/pull/36/checks |
 | 2026-04-20T13:57:00Z | journey-tester | #38 | home-overview (재검증) + insight-drilldown | https://github.com/WooilKim/SmartNoti/pull/38/checks |
+| 2026-04-20T14:17:02Z | journey-tester | #40 | digest-suppression (SKIP→PASS upgrade) | https://github.com/WooilKim/SmartNoti/pull/40/checks |
+| 2026-04-20T14:28:43Z | journey-tester | #43 | quiet-hours SKIP | https://github.com/WooilKim/SmartNoti/pull/43/checks |
+| 2026-04-20T14:49:39Z | journey-tester | #44 | persistent-notification-protection SKIP | https://github.com/WooilKim/SmartNoti/pull/44/checks |
+| 2026-04-20T15:10:33Z | journey-tester | #46 | silent-auto-hide (partial→PASS upgrade) | https://github.com/WooilKim/SmartNoti/pull/46/checks |
+| 2026-04-20T15:29:00Z | journey-tester | #48 | notification-capture-classify (partial→PASS upgrade) | https://github.com/WooilKim/SmartNoti/pull/48/checks |
+| 2026-04-20T15:38:00Z | journey-tester | #49 | home-overview (partial→PASS upgrade) | https://github.com/WooilKim/SmartNoti/pull/49/checks |
+| 2026-04-20T15:59:49Z | journey-tester | #51 | notification-detail (partial→PASS upgrade) | https://github.com/WooilKim/SmartNoti/pull/51/checks |
+| 2026-04-20T16:18:46Z | journey-tester | #52 | duplicate-suppression | https://github.com/WooilKim/SmartNoti/pull/52/checks |
+| 2026-04-20T16:27:09Z | journey-tester | #53 | digest-inbox | https://github.com/WooilKim/SmartNoti/pull/53/checks |
+| 2026-04-20T16:37:15Z | journey-tester | #54 | priority-inbox | https://github.com/WooilKim/SmartNoti/pull/54/checks |
+| 2026-04-20T16:46:21Z | journey-tester | #55 | hidden-inbox | https://github.com/WooilKim/SmartNoti/pull/55/checks |
+| 2026-04-20T16:54:33Z | journey-tester | #56 | protected-source-notifications | https://github.com/WooilKim/SmartNoti/pull/56/checks |
+| 2026-04-20T17:11:38Z | journey-tester | #57 | rules-management | https://github.com/WooilKim/SmartNoti/pull/57/checks |
+| 2026-04-20T17:21:30Z | journey-tester | #58 | rules-feedback-loop | https://github.com/WooilKim/SmartNoti/pull/58/checks |
+| 2026-04-20T17:32:10Z | journey-tester | #59 | insight-drilldown | https://github.com/WooilKim/SmartNoti/pull/59/checks |
+| 2026-04-20T17:40:41Z | journey-tester | #60 | digest-suppression (2) | https://github.com/WooilKim/SmartNoti/pull/60/checks |
+| 2026-04-20T18:01:16Z | journey-tester | #63 | notification-capture-classify (re-verify) | https://github.com/WooilKim/SmartNoti/pull/63/checks |
+| 2026-04-20T18:12:07Z | journey-tester | #65 | notification-detail (re-verify) | https://github.com/WooilKim/SmartNoti/pull/65/checks |
+| 2026-04-20T18:22:22Z | journey-tester | #67 | home-overview (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/67/checks |
+| 2026-04-20T18:31:42Z | journey-tester | #69 | duplicate-suppression (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/69/checks |
+| 2026-04-20T18:39:44Z | journey-tester | #70 | digest-inbox (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/70/checks |
+| 2026-04-20T18:51:21Z | journey-tester | #71 | priority-inbox (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/71/checks |
+| 2026-04-20T19:04:04Z | journey-tester | #72 | hidden-inbox (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/72/checks |
+| 2026-04-20T19:11:54Z | journey-tester | #73 | protected-source-notifications (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/73/checks |
+| 2026-04-20T19:25:05Z | journey-tester | #74 | rules-management (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/74/checks |
+| 2026-04-20T19:36:01Z | journey-tester | #75 | rules-feedback-loop (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/75/checks |
+| 2026-04-20T19:50:38Z | journey-tester | #76 | insight-drilldown (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/76/checks |
+| 2026-04-20T20:00:21Z | journey-tester | #78 | digest-suppression (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/78/checks |
+| 2026-04-20T20:19:50Z | journey-tester | #81 | rules-feedback-loop KEEP_SILENT (re-verify #3) | https://github.com/WooilKim/SmartNoti/pull/81/checks |
