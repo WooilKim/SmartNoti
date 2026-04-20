@@ -89,3 +89,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: v1 loop tick 재검증 (PASS, PR 추가). Recipe fragility 관련 Known gap 추가
+- 2026-04-21: v1 loop tick re-verify #2 (PASS). Keyword 기반 PRIORITY 경로 (은행/인증번호) 로 PERSON DIGEST 규칙 오염을 우회, fresh unique tag `PriIn0421T3` 로 DB+UI+Detail end-to-end 확증
