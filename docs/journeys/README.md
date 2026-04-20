@@ -29,7 +29,7 @@
 ### Source notification routing (시스템 tray 조작)
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-20 |
+| [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-20 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-20 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-20 |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — silent-auto-hide re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | ✅ PASS | Baseline Home StatPill `조용히 14` = silent summary title `숨겨진 알림 14건` (key `0\|com.smartnoti.app\|23057` on channel `smartnoti_silent_summary`, visibility SECRET, importance 1). `cmd notification post -S bigtext -t PromoSweep0421 PromoSweep0421` → source 즉시 tray 에서 제거 (`dumpsys notification --noredact | grep PromoSweep0421` hit 없음), summary 타이틀 `숨겨진 알림 15건` 으로 재게시, Home StatPill `조용히 15` 로 동기화 — 세 지점 숫자 일치. Deep-link: `am force-stop com.smartnoti.app && am start … -e DEEP_LINK_ROUTE hidden` → `HiddenNotificationsScreen` 헤더 `숨겨진 알림 15건` + `3개 앱에서 15건을 숨겼어요` + 새 카드 `PromoSweep0421 / 오늘만 / 조용히 정리` 렌더. 어제 기록된 "emulator APK 가 PR #8 보다 오래돼" 환경 노이즈 해소 — 현재 APK 가 요약 copy (`탭: 목록 보기 · 스와이프: 확인으로 처리`) 를 반영하며 journey Observable steps 와 정합 |
 
 
 ### 2026-04-20 (v1 loop tick — persistent-notification-protection policy re-verify, emulator-5554)
