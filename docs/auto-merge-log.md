@@ -35,3 +35,4 @@ If a self-merged row caused a regression:
 | Date (UTC) | Agent | PR | Journey touched | CI run |
 |---|---|---|---|---|
 | 2026-04-20T12:33:33Z | journey-tester | #20 | digest-inbox | https://github.com/WooilKim/SmartNoti/pull/20/checks |
+| 2026-04-20T12:52:49Z | journey-tester | #24 | digest-suppression | https://github.com/WooilKim/SmartNoti/pull/24/checks |
