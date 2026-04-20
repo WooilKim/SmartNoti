@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-20 (v1 loop tick — quiet-hours re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | ⏭️ SKIP | `com.coupang.mobile` 미설치 + `cmd notification post` 는 `com.android.shell` 로만 게시되어 `packageName in shoppingPackages` 분기를 adb 로 트리거 불가. 현재 22:20 KST (device hour=23) 로 default quiet hours [23,7) 안이라 `currentNotificationContext.quietHours=true` 여야 하지만, 쇼핑 패키지 주입 경로 없음. 릴리즈에서는 실제 Coupang 앱 또는 instrumented 테스트로만 end-to-end 커버. 단위 테스트 `QuietHoursPolicyTest` / `NotificationClassifierTest` 가 policy 단계를 커버. 이전 sweep 과 동일 SKIP — fresh evidence 확인 |
+
+
 ### 2026-04-20 (v1 loop cycle sweep, emulator-5554)
 
 | Journey | Result | Notes |
