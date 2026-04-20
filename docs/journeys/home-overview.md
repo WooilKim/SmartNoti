@@ -3,7 +3,7 @@ id: home-overview
 title: 홈 개요 (요약 + 인사이트)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
