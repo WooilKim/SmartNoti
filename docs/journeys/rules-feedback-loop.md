@@ -89,3 +89,4 @@ adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY \
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: v1 loop re-verify — Detail 경유 PASS (fresh sender `TestSender_0421_T12`, `person:…` rule ALWAYS_PRIORITY 생성 확인)
