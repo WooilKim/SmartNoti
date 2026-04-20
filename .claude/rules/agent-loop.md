@@ -1,36 +1,40 @@
-# Three-agent Improvement Loop
+# Four-agent Improvement Loop
 
-SmartNoti 는 세 개의 사용자 정의 subagent 로 계속 개선되는 구조입니다. 이 문서는 세 agent 가 어떻게 협조하는지 한 페이지로 정리합니다 — 새 세션/새 에이전트가 들어와도 이 그림만 읽으면 루프를 이어갈 수 있게.
+SmartNoti 는 네 개의 사용자 정의 subagent 로 계속 개선되는 구조입니다. 이 문서는 네 agent 가 어떻게 협조하는지 한 페이지로 정리합니다 — 새 세션/새 에이전트가 들어와도 이 그림만 읽으면 루프를 이어갈 수 있게.
 
-## 세 agent
+## 네 agent
 
 | Agent | 입력 | 하는 일 | 출력 | 건드리는 범위 |
 |---|---|---|---|---|
 | [`journey-tester`](../agents/journey-tester.md) | journey id 또는 "all" | Verification recipe 실행, 관측 결과 분류 | PR — journey 의 `last-verified` 갱신 또는 Known gaps 에 드리프트 기록 | `docs/journeys/*.md` 만 |
+| [`ui-ux-inspector`](../agents/ui-ux-inspector.md) | screen/journey id 또는 "all" | 앱 스크린샷 캡처 후 `ui-improvement.md` 규칙 대비 시각 감사 | PR — journey Known gaps 에 visual drift 기록, 큰 리워크는 새 plan 문서 | `docs/journeys/*.md` + `docs/plans/` |
 | [`gap-planner`](../agents/gap-planner.md) | focus 영역 or 빈 값 | Known gaps 중 가장 leverage 높은 한 건 골라 plan 문서 드래프트 | PR — 새 `docs/plans/YYYY-MM-DD-<slug>.md` | `docs/plans/` + 선택적으로 journey 의 Known-gap bullet 옆에 plan 링크 |
 | [`plan-implementer`](../agents/plan-implementer.md) | plan 경로 | Task 순서대로 tests-first 구현 + journey 갱신 | PR — 실제 코드 변경 + journey 문서 동기화 | 해당 plan 이 명시한 파일 + 연결된 journey |
 
 ## 협조는 문서를 통해
 
-세 agent 는 서로 직접 통신하지 않습니다. 문서가 공용 큐 역할을 합니다:
+네 agent 는 서로 직접 통신하지 않습니다. 문서가 공용 큐 역할을 합니다:
 
 ```
-gap-planner              plan-implementer                  journey-tester
-      |                          |                                |
-      v                          v                                v
-docs/plans/*.md  ──────────▶  코드 + journeys/*.md  ──────────▶  journeys/*.md
-(status: planned)             (status: shipped)                (last-verified 갱신)
+gap-planner              plan-implementer                  journey-tester  ui-ux-inspector
+      |                          |                                |              |
+      v                          v                                v              v
+docs/plans/*.md  ──────────▶  코드 + journeys/*.md  ──────────▶  journeys/*.md  ◀──┘
+(status: planned)             (status: shipped)                (last-verified + Known gaps 갱신)
       ▲                                                             |
-      └──── drift 발견 → Known gaps → gap-planner 가 집어감 ────────┘
+      └──── 행동 드리프트(tester) / 시각 드리프트(ui-ux) → Known gaps ─┘
+                                 │
+                                 └─ gap-planner 가 집어감
 ```
 
-- `docs-sync.md` 가 각 agent 의 공통 규약. 세 agent 모두 system prompt 에서 이 규칙을 읽고 따릅니다.
+- 행동 드리프트(recipe 가 실제와 어긋남) 는 `journey-tester` 가 감지. 시각 드리프트(UI 가 `ui-improvement.md` 의도와 어긋남) 는 `ui-ux-inspector` 가 감지. 둘 다 Known gaps 큐에 쌓아 `gap-planner` 가 소화.
+- `docs-sync.md` 가 네 agent 의 공통 규약. 모두 system prompt 에서 이 규칙을 읽고 따릅니다.
 - 각 agent 는 **PR 을 여는 것이 최대**. `main` 에 직접 push 하지 않고, PR merge 는 사람이 결정합니다. 이것이 전체 시스템의 안전 경계.
 
 ## 오케스트레이션 옵션
 
-- **수동 (v0)**: 사용자가 `/journey-test`, `/gap-plan`, `/plan-implement` 로 직접 호출.
-- **반자동 (v1, 지금)**: [`/journey-loop`](../commands/journey-loop.md) Ralph tick 이 `ScheduleWakeup` 으로 6시간마다 자기 자신을 재기동해 `journey-tester` 를 반복 실행. 열린 agent-origin PR 이 2개 이상 쌓이면 자동 정지. `gap-planner` 와 `plan-implementer` 는 여전히 수동 — 코드/plan 생성은 사람 리뷰가 boundary.
+- **수동 (v0)**: 사용자가 `/journey-test`, `/ui-inspect`, `/gap-plan`, `/plan-implement` 로 직접 호출.
+- **반자동 (v1, 지금)**: [`/journey-loop`](../commands/journey-loop.md) Ralph tick 이 `ScheduleWakeup` 으로 6시간마다 자기 자신을 재기동해 `journey-tester` 를 반복 실행. 열린 agent-origin PR 이 2개 이상 쌓이면 자동 정지. `ui-ux-inspector`, `gap-planner`, `plan-implementer` 는 여전히 수동 — 시각/plan/코드 생성은 사람 리뷰가 boundary.
 - **자동 (v2, 나중)**: planner 를 "드리프트 감지 + 열린 plan 없음" 조건에서만 자동 트리거. implementer 는 사용자가 명시적으로 승인한 plan 만 자동 실행. PR merge 는 여전히 사람.
 - **완전 자동 (v3)**: CI 통과한 agent-origin PR 을 agent 가 자동 머지. 추가 세팅 필요 — branch protection rule + required CI job + `gh` 머지 권한 확장 + agent 에 merge 가능 범위 명시.
 
