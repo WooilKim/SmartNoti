@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — rules-feedback-loop re-verify #2, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | ✅ PASS | Baseline DataStore (`run-as com.smartnoti.app strings files/datastore/smartnoti_rules.preferences_pb`) 5 엔트리: 2 KEYWORD + 1 REPEAT_BUNDLE + `person:엄마\|PERSON\|DIGEST` + `person:TestSender_0421_T11\|PERSON\|DIGEST` (이전 re-verify #1 의 upsert 잔존). Fresh unique sender 로 `cmd notification post -S bigtext -t 'TestSender_0421_T12' FbT12 '피드백 루프 재검증 T12'` → DB row `com.android.shell:2020:FbT12 \| sender=TestSender_0421_T12 \| status=SILENT \| reasonTags=발신자 있음\|조용한 시간` (quiet hours 기반 SILENT 분기 — 계약 무관 baseline). **Detail 경유 (recipe A)**: `am force-stop com.smartnoti.app && am start -n com.smartnoti.app/.MainActivity -e com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden` 으로 cold-start deep-link → Hidden 화면에서 `TestSender_0421_T12` preview row bounds `[126,1440][558,1489]` 중앙 (540,1465) 탭 → `NotificationDetailScreen` 진입 확인 (탑바 `알림 상세` + sender `TestSender_0421_T12` + body `피드백 루프 재검증 T12`). 1회 `input swipe 540 1800 540 800 400` 로 `이 알림 학습시키기` 섹션 노출 → 3버튼 (`중요로 고정 [457,1787][623,1836] · Digest로 보내기 [196,1945][429,1994] · 조용히 처리 [685,1945][851,1994]`) 관측. 이번 tick 은 앞선 re-verify #1 (PR #58) 이 `Digest로 보내기` 경로였던 것과 대비해 **다른 액션 분기 (`중요로 고정` → `ALWAYS_PRIORITY`)** 커버를 목적으로 (540,1810) 탭. Observable steps 2.3–2.6 end-to-end 관측: (2.3) `NotificationFeedbackPolicy.applyAction(PROMOTE_TO_PRIORITY)` 적용 → DB row `status=SILENT → PRIORITY` 전이 확인, `reasonTags=발신자 있음\|조용한 시간\|사용자 규칙` 로 `사용자 규칙` 태그 append 됨. (2.5–2.6) `NotificationFeedbackPolicy.toRule` + `RulesRepository.upsertRule` → DataStore 재덤프에 신규 엔트리 `person:TestSender_0421_T12\|TestSender_0421_T12\|항상 바로 보기\|PERSON\|ALWAYS_PRIORITY\|true\|TestSender_0421_T12` insert 관측 (rule id=`person:TestSender_0421_T12`, matchValue=sender, label=`항상 바로 보기`, decision=ALWAYS_PRIORITY). sender 존재 → `RuleTypeUi.PERSON` 분기 정확히 실행 (recipe 본문의 괄호 설명 "매치값=com.android.shell" 은 sender 없는 `-t ""` 경로 전용 — 이번 tick 은 sender 존재 분기를 증명). Exit state (DB status/reasonTags 업데이트 + RulesRepository 신규 upsert + 후속 동일 sender 알림 자동 PRIORITY 적용 가능 상태) 전부 충족. replacement cancel step 은 Detail 경로라 우회 (journey 명시). PR #58 (re-verify #1) 이 `DIGEST` 분기 + fresh insert 를 증명했다면 이번 tick 은 동일 DataStore upsert 경로에서 `ALWAYS_PRIORITY` + SILENT→PRIORITY 전이 + `사용자 규칙` reasonTag 까지 3가지 액션 커버 — PROMOTE/KEEP_DIGEST/KEEP_SILENT 중 2개 분기가 이 cycle 에서 관측적으로 증명됨 (남은 KEEP_SILENT 는 후속 tick 대상). Known gaps 변경 없음. (주의) upsert 된 `person:TestSender_0421_T12` 룰은 다음 tick 환경에 잔존 — 재현 시 다른 unique sender 권장 |
+
+
 ### 2026-04-21 (v1 loop tick — protected-source-notifications re-verify #2, emulator-5554)
 
 | Journey | Result | Notes |
