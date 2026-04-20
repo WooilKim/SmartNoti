@@ -3,7 +3,7 @@ id: rules-management
 title: 규칙 CRUD
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal

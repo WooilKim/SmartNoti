@@ -48,7 +48,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-20 |
-| [rules-management](rules-management.md) | 규칙 CRUD | shipped | 2026-04-20 |
+| [rules-management](rules-management.md) | 규칙 CRUD | shipped | 2026-04-21 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-20 |
 
 ## 아직 문서화하지 않은 영역
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — rules-management re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-management | ✅ PASS | Baseline Rules 탭 렌더: `활성 규칙 5개 · 즉시 전달 2 · Digest 3 · 조용히 0`, KEYWORD 그룹 `규칙 2개` + PERSON 그룹 (이전 sweep 들로 upsert 된 `엄마` DIGEST / `DetailVerify0421` PRIORITY) 관측. `새 규칙 추가` 탭 → AlertDialog 열림 (`기본 정보 / 규칙 이름 / 이름 또는 발신자 / 규칙 타입 (사람/앱/키워드/시간/반복) / 처리 방식 (즉시 전달/Digest/조용히)`). 키워드 chip 탭 → 입력 라벨이 `키워드 / 쉼표로 여러 키워드를 입력할 수 있어요. 예: 배포,장애,긴급` 로 전환 — `RuleTypeUi.KEYWORD` 분기 확인. 이름="RuleMgmt0421" + 매치값="RuleMgmt0421K" + default 처리방식 "즉시 전달" 상태에서 `추가` 탭 → 헤더 `활성 규칙 6개 · 즉시 전달 3 · Digest 3` 로 즉시 증가, DataStore `smartnoti_rules.preferences_pb` 덤프에 `keyword:RuleMgmt0421K\|RuleMgmt0421\|항상 바로 보기\|KEYWORD\|ALWAYS_PRIORITY\|true\|RuleMgmt0421K` 신규 엔트리 영속화 관측. Exit state end-to-end 검증: `cmd notification post -S bigtext -t '은행' OtpMgmt0421 'RuleMgmt0421K 코드 99999 입력하세요'` → DB `com.android.shell:2020:OtpMgmt0421 \| 은행 \| RuleMgmt0421K \| PRIORITY`, `reasonTags=발신자 있음\|사용자 규칙\|RuleMgmt0421\|조용한 시간` — classifier 가 새 룰을 currentRules() 를 통해 바로 참조해 PRIORITY 분기. Priority 탭 dump 에서 카드 `은행 / RuleMgmt0421K` 렌더 확인. 삭제 플로우 (Observable step 6): DetailVerify0421 삭제 버튼 탭 → 6→5 (`즉시 전달 3→2`), RuleMgmt0421 삭제 → 5→4 로 카운트 감소 + DataStore 에서 두 rule key 모두 제거. Observable steps 1–6 (repository 구독 → ScreenHeader + 새 규칙 추가 → 활성 규칙 카드+FilterChip → action 그룹 + RuleRow → 편집 다이얼로그 + validator + factory + upsertRule → deleteRule) 및 Exit state (DataStore 영속화 + 신규 알림에 룰 적용) 전부 충족. 이전 `PASS (기본 렌더만)` 이었던 2026-04-20 sweep 의 얕은 증거를 CRUD + classifier 적용 end-to-end 로 강화 |
 
 
 ### 2026-04-21 (v1 loop tick — protected-source-notifications re-verify, emulator-5554)
