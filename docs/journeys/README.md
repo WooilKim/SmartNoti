@@ -30,7 +30,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
-| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-20 |
+| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-21 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-20 |
 
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — digest-suppression re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | ✅ PASS | Baseline Settings DataStore (`run-as com.smartnoti.app strings files/datastore/smartnoti_settings.preferences_pb`) → `suppress_source_for_digest_and_silent` 토글 ON + `suppressed_source_apps = [com.smartnoti.testnotifier, com.android.shell]` — 전역 opt-in + 대상 앱 영속화 확인. Recipe 그대로 3회 posting: `for i in 1 2 3; do cmd notification post -S bigtext -t 'SuppSweep0421P' "SuppTest0421_$i" '오늘만 특가 할인 텍스트'; done`. (1) 원본 제거: `dumpsys notification --noredact | grep tag=SuppTest0421_` hit 0 — 세 건 모두 tray 에서 cancel. (2) Replacement 게시: `pkg=com.smartnoti.app id=-385633862 channel=smartnoti_replacement_digest_low_off_private_noheadsup importance=2 flags=0x18 category=status groupKey=silent actions=3` 관측, extras `android.title=SuppSweep0421P`, `android.subText=Shell • Digest`, `android.text=원본 알림 숨김을 시도하고 Digest에 모아뒀어요 · 사용자 규칙 · 프로모션 알림`, 3 actions 텍스트 `[0] 중요로 고정 / [1] Digest로 유지 / [2] 열기` (broadcastIntent → `SmartNotiNotificationActionReceiver` / contentIntent → `MainActivity`). (3) DB (`sqlite3 databases/smartnoti.db "SELECT id, title, status, replacementNotificationIssued FROM notifications WHERE title='SuppSweep0421P' ORDER BY postedAtMillis DESC LIMIT 5"`) → 3 rows 모두 `status=DIGEST, replacementNotificationIssued=1`. Observable steps 1–5 (auto-expansion / suppression 판정 / routing / cancelSource / notifySuppressedNotification) 및 Exit state (원본 제거 + replacement 1건 + DB DIGEST+replacement flag) 전부 충족. Step 6 액션 broadcast + Step 7 content-tap 경로는 별도 journey (rules-feedback-loop, notification-detail) 에서 커버 — 이번 tick 은 기본 경로에 집중. 2026-04-20 sweep (PR #40, SKIP→PASS 업그레이드) 이 frontmatter 갱신을 놓친 상태였고, 이번 tick 이 그 PASS 를 새 signature 로 재현하며 frontmatter 를 2026-04-21 로 맞춤 — 이로써 non-SKIP 13개 journey 전부 2026-04-21 evidence 확보 |
 
 
 ### 2026-04-21 (v1 loop tick — insight-drilldown re-verify, emulator-5554)
