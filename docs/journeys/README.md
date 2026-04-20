@@ -62,7 +62,12 @@
 ## Verification log
 
 
-### 2026-04-21 (v1 loop tick — digest-suppression re-verify, emulator-5554)
+### 2026-04-21 (v1 loop tick — silent-auto-hide deep re-verify + env-noise correction, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | ✅ PASS | Baseline DB `SELECT status, isPersistent, COUNT(*) FROM notifications GROUP BY status, isPersistent` → `DIGEST\|0\|27, PRIORITY\|0\|9, SILENT\|0\|25, SILENT\|1\|1`. Summary key `0\|com.smartnoti.app\|23057` (channel `smartnoti_silent_summary`, importance 1, category=status, vis=SECRET, flags=0x18 = AUTO_CANCEL+ONLY_ALERT_ONCE, actions=1), title `숨겨진 알림 25건` = SILENT isPersistent=0 count (hidePersistentNotifications=true filter). Fresh posting `cmd notification post -S bigtext -t 'Promo' SilentSweep0421_A '오늘만 30% 할인'` → (1) `dumpsys notification \| grep -ci SilentSweep0421_A` = 0 (원본 cancel 확인, step 1–2), (2) DB row `com.android.shell:2020:SilentSweep0421_A \| Promo \| SILENT` 저장 (step 3), (3) 25→26 변화에 따라 summary re-post — 새 `when=1776707093479`, 새 title `숨겨진 알림 26건` (step 4–5 combine + dedupe). Step 5 dedupe negative-case 검증: 후속 PRIORITY posting `cmd notification post … '인증번호 445566'` → PRIORITY 9→10 이지만 SILENT 카운트 불변, summary `when` 타임스탬프 `1776707156735 → 1776707156735` 으로 동일 — count 불변시 재게시 안 함 확인. 액션 버튼 `[0] "숨겨진 알림 보기" → PendingIntent` + contentIntent 도 step 6 계약대로 렌더. Step 7 deep-link: `am force-stop && am start … -e DEEP_LINK_ROUTE hidden` → Hidden 화면 렌더 (`숨긴 알림` 탑바 + `숨겨진 알림 26건` 헤더 + `Shell 숨긴 알림 24건` 카드 + 새 `Promo` 카드) — DB / summary title / 화면 헤더 세 지점 `26` 일치 (Exit state 충족). **환경 노이즈 발견**: 에뮬레이터 APK (v0.1.0, lastUpdateTime 2026-04-20 15:05) 가 `extras.android.text=탭해서 숨겨진 알림 보기` + bigText `탭하면 전체 목록을 확인할 수 있어요.` 를 serve — 이는 `acf7c39` (초기) 의 copy. 현재 `main` 의 `SilentHiddenSummaryNotifier#post` 는 `50e04ef` 이후 `탭: 목록 보기 · 스와이프: 확인으로 처리` + bigText `옆으로 밀어 없애면 확인한 것으로 처리돼요` 로 업데이트됨. 소스와 contract 는 일치, 설치된 APK 만 구판 — contract drift 아닌 env noise (릴리즈 빌드 재설치로 해소). #46 sweep 이 "APK 가 새 copy 반영" 으로 단정한 것은 title + action button 만 확인한 착오 (extras 의 text/bigText 미확인) — Known gaps 에 correction 과 함께 재확인 체크포인트 추가. auto-cancel (step 7.5) 은 `am start` 경로로는 트리거되지 않아 이번 tick 미검증 (요약 tap 시뮬 한계) |
+
 
 | Journey | Result | Notes |
 |---|---|---|
