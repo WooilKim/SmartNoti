@@ -90,3 +90,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: v1 loop re-verification (emulator-5554) — Digest 카드 탭 경로로 Observable steps 1~5 전부 관측, 액션 버튼 3종 존재 확인
