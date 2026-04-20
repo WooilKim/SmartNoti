@@ -110,6 +110,31 @@ class NotificationRepositoryTest {
         assertTrue(apps.first().lastSeenLabel.isNotBlank())
     }
 
+    @Test
+    fun silent_mode_column_round_trips_through_dao() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "silent-archived-1",
+                status = NotificationStatusUi.SILENT,
+                silentMode = "ARCHIVED",
+                postedAtMillis = 1_700_000_700_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "silent-processed-1",
+                status = NotificationStatusUi.SILENT,
+                silentMode = "PROCESSED",
+                postedAtMillis = 1_700_000_800_000,
+            )
+        )
+
+        val rows = database.notificationDao().observeAll().first().associateBy { it.id }
+
+        assertEquals("ARCHIVED", rows.getValue("silent-archived-1").silentMode)
+        assertEquals("PROCESSED", rows.getValue("silent-processed-1").silentMode)
+    }
+
     private fun notificationEntity(
         id: String,
         title: String = "제목 $id",
@@ -118,6 +143,8 @@ class NotificationRepositoryTest {
         appName: String = "SmartNoti Test Notifier",
         isPersistent: Boolean = false,
         postedAtMillis: Long = id.split(':').getOrNull(1)?.toLongOrNull() ?: 1_700_000_000_000,
+        status: NotificationStatusUi = NotificationStatusUi.DIGEST,
+        silentMode: String? = null,
     ) = NotificationEntity(
         id = id,
         appName = appName,
@@ -126,11 +153,12 @@ class NotificationRepositoryTest {
         title = title,
         body = body,
         postedAtMillis = postedAtMillis,
-        status = NotificationStatusUi.DIGEST.name,
+        status = status.name,
         reasonTags = "",
         score = null,
         isBundled = false,
         isPersistent = isPersistent,
         contentSignature = listOf(title, body).joinToString(" ").trim(),
+        silentMode = silentMode,
     )
 }

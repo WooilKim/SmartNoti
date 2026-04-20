@@ -4,10 +4,12 @@ import com.smartnoti.app.domain.model.AlertLevel
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.VibrationMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class NotificationEntityMapperTest {
@@ -120,6 +122,123 @@ class NotificationEntityMapperTest {
         assertEquals(LockScreenVisibilityMode.PRIVATE, model.lockScreenVisibility)
         assertEquals(SourceNotificationSuppressionState.APP_NOT_SELECTED, model.sourceSuppressionState)
         assertFalse(model.replacementNotificationIssued)
+    }
+
+    @Test
+    fun silent_mode_archived_round_trips_through_entity() {
+        val model = NotificationUiModel(
+            id = "com.news.app:1700000200",
+            appName = "뉴스",
+            packageName = "com.news.app",
+            sender = null,
+            title = "프로모션",
+            body = "오늘만 30% 할인",
+            receivedAtLabel = "방금",
+            status = NotificationStatusUi.SILENT,
+            reasonTags = listOf("광고"),
+            silentMode = SilentMode.ARCHIVED,
+        )
+
+        val entity = model.toEntity(postedAtMillis = 1_700_000_200_000)
+
+        assertEquals("ARCHIVED", entity.silentMode)
+
+        val roundTrip = entity.toUiModel()
+        assertEquals(SilentMode.ARCHIVED, roundTrip.silentMode)
+        assertEquals(NotificationStatusUi.SILENT, roundTrip.status)
+    }
+
+    @Test
+    fun silent_mode_processed_round_trips_through_entity() {
+        val model = NotificationUiModel(
+            id = "com.news.app:1700000300",
+            appName = "뉴스",
+            packageName = "com.news.app",
+            sender = null,
+            title = "프로모션",
+            body = "오늘만 30% 할인",
+            receivedAtLabel = "방금",
+            status = NotificationStatusUi.SILENT,
+            reasonTags = listOf("광고"),
+            silentMode = SilentMode.PROCESSED,
+        )
+
+        val entity = model.toEntity(postedAtMillis = 1_700_000_300_000)
+
+        assertEquals("PROCESSED", entity.silentMode)
+
+        val roundTrip = entity.toUiModel()
+        assertEquals(SilentMode.PROCESSED, roundTrip.silentMode)
+    }
+
+    @Test
+    fun silent_mode_null_for_non_silent_round_trips_as_null() {
+        val model = NotificationUiModel(
+            id = "com.kakao.talk:1700000400",
+            appName = "카카오톡",
+            packageName = "com.kakao.talk",
+            sender = "엄마",
+            title = "엄마",
+            body = "오늘 저녁 몇 시에 와?",
+            receivedAtLabel = "방금",
+            status = NotificationStatusUi.PRIORITY,
+            reasonTags = listOf("중요한 사람"),
+            silentMode = null,
+        )
+
+        val entity = model.toEntity(postedAtMillis = 1_700_000_400_000)
+
+        assertNull(entity.silentMode)
+
+        val roundTrip = entity.toUiModel()
+        assertNull(roundTrip.silentMode)
+    }
+
+    @Test
+    fun legacy_entity_without_silent_mode_defaults_to_null() {
+        val entity = NotificationEntity(
+            id = "legacy-silent",
+            appName = "앱",
+            packageName = "com.example.app",
+            sender = null,
+            title = "알림",
+            body = "내용",
+            postedAtMillis = 1_700_000_500_000,
+            status = NotificationStatusUi.SILENT.name,
+            reasonTags = "",
+            score = null,
+            isBundled = false,
+            isPersistent = false,
+            contentSignature = "알림 내용",
+        )
+
+        val model = entity.toUiModel()
+
+        assertNull(model.silentMode)
+    }
+
+    @Test
+    fun unknown_silent_mode_string_falls_back_to_null() {
+        val entity = NotificationEntity(
+            id = "bad-mode",
+            appName = "앱",
+            packageName = "com.example.app",
+            sender = null,
+            title = "알림",
+            body = "내용",
+            postedAtMillis = 1_700_000_600_000,
+            status = NotificationStatusUi.SILENT.name,
+            reasonTags = "",
+            score = null,
+            isBundled = false,
+            isPersistent = false,
+            contentSignature = "알림 내용",
+            silentMode = "NOT_A_VALID_MODE",
+        )
+
+        val model = entity.toUiModel()
+
+        assertNull(model.silentMode)
     }
 
     @Test
