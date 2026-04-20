@@ -31,7 +31,7 @@
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-20 |
-| [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-20 |
+| [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-20 |
 
 ### Inboxes & UI
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — protected-source-notifications re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| protected-source-notifications | ✅ PASS | Recipe A 실행: `cmd notification post -S media -t MediaTest0421 Player "미디어 스타일 테스트"` → `dumpsys notification --noredact | grep -B1 -A3 MediaTest0421` 에서 `NotificationRecord(… pkg=com.android.shell id=2020 tag=MediaTest0421 importance=3 category=transport vis=PRIVATE key=0\|com.android.shell\|2020\|MediaTest0421\|2000)` 잔존 관측. SmartNoti DB (`SELECT id,packageName,title,status,sourceSuppressionState FROM notifications WHERE id LIKE '%MediaTest0421%'`) → `com.android.shell:2020:MediaTest0421 \| com.android.shell \| Player \| SILENT \| NOT_CONFIGURED`. Critical evidence: `SourceNotificationRoutingPolicy.route(SILENT,*,*)` 의 기본값은 `cancelSourceNotification=true` 인데 (SILENT 분기 = unconditional cancel), 원본 tray 에 여전히 살아있다는 것은 `SmartNotiNotificationListenerService#processNotification` 의 `isProtectedSourceNotification` 분기 (`ProtectedSourceNotificationDetector.isProtected(signals)` true → routing 강제 덮어쓰기) 가 동작해 `cancelSourceNotification=false` 로 라우팅됐다는 뜻. `-S media` 가 category=transport + MediaStyle template 을 세팅하므로 `signalsFrom(sbn).category=="transport"` 경로로 보호. Observable steps 1–4 (signals 추출 / isProtected 평가 / routing 덮어쓰기 / cancel 호출 안함) 과 Exit state (원본 tray 유지 + DB row 저장) 전부 충족. Recipe B (YouTube Music) 는 에뮬레이터에 앱 미설치로 SKIP — category 기반 보호 확증으로 sufficient. 이번 tick 이 journey 의 end-to-end 검증 첫 PASS (이전 두 sweep 은 "실제 MediaStyle 앱 필요" 로 SKIP 처리됐던 부분). Known gaps 변경 없음 |
 
 
 ### 2026-04-21 (v1 loop tick — hidden-inbox re-verify, emulator-5554)
