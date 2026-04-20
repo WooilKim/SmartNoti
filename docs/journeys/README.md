@@ -91,10 +91,10 @@ Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 
    - (결정) 제품 방향은 "persistent 를 인박스 뷰에서 숨긴다" 는 기존 `hidePersistentNotifications` 설정을 세 곳에서 동일하게 존중.
    - (수정) `HiddenNotificationsScreen` 과 리스너의 `silentSummaryJob` 이 `observeAllFiltered(hidePersistentNotifications)` / `filterPersistent(...)` 를 사용하도록 변경. 세 곳 모두 `조용히 4` 로 일치 확인.
 
-2. **Home 탭 복귀 회귀 의심** (추가 조사 필요):
-   - 딥링크로 Hidden 진입 후 하단 "홈" 탭 탭해도 Home 으로 navigate 되지 않는 것으로 관측됨.
-   - 이전에 고친 `navigateToTopLevel` stale-closure 버그와 다른 경로일 가능성 — 딥링크 entry 의 back stack 에 Home 이 없을 때의 동작.
-   - 정식 이슈로 판단되면 별도 PR 에서 재검증.
+2. **Home 탭 복귀 회귀** — ✅ **해소됨**:
+   - (원인) `navigate(home) { popUpTo(home) saveState; launchSingleTop; restoreState }` 이 nav-compose 2.7.x 에서 특정 back-stack 형태(예: 딥링크 entry 로 도달한 Hidden → Home) 에서 silent no-op. logcat 으로 stack 이 `[null, home, hidden]` 그대로 유지되는 것 확인.
+   - (수정) `navigateToTopLevel` 에서 target 이 start destination 과 같을 때는 `navController.popBackStack(startId, inclusive=false, saveState=true)` 로 직접 pop. 다른 top-level 탭 전환은 기존 navigate 패턴 유지.
+   - (검증) Hidden→Home, Home→Priority→Home, Digest→Home→Digest 세 경로 모두 PASS.
 
 ## Deprecated
 

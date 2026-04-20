@@ -118,10 +118,6 @@ fun AppNavHost(
     }
 
     fun navigateToTopLevel(route: String) {
-        // Read the active route from the NavController each invocation; the captured
-        // `currentRoute` from the enclosing composition can be stale by the time the
-        // bottom-bar onClick fires (e.g. tapping Home immediately after Priority would
-        // otherwise resolve to NoOp because the closure still saw the old route).
         val activeRoute = navController.currentBackStackEntry?.destination?.route
         when (
             val action = navigationActionBuilder.build(
@@ -131,12 +127,23 @@ fun AppNavHost(
         ) {
             TopLevelNavigationAction.NoOp -> Unit
             is TopLevelNavigationAction.Navigate -> {
-                navController.navigate(action.route) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
+                val startDestination = navController.graph.findStartDestination()
+                if (action.route == startDestination.route) {
+                    // `navigate(start) { popUpTo(start) saveState; launchSingleTop; restoreState }`
+                    // is a silent no-op for some back-stack shapes on nav-compose 2.7.x
+                    // (observed when the current destination was reached via a deep link
+                    // rather than a user tap, e.g. entering Hidden from the silent-summary
+                    // notification and then tapping the Home tab). Pop back to the start
+                    // destination directly so the intent survives that code path.
+                    navController.popBackStack(startDestination.id, inclusive = false, saveState = true)
+                } else {
+                    navController.navigate(action.route) {
+                        popUpTo(startDestination.id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                    launchSingleTop = true
-                    restoreState = true
                 }
             }
         }
