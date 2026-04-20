@@ -77,6 +77,14 @@
 | onboarding-bootstrap | ⏭️ SKIP | pm clear 파괴적 — 자동화 제외, 릴리즈 사이클 테스트로만 수동 커버 |
 | persistent-notification-protection | ⏭️ SKIP | cmd notification 이 FLAG_ONGOING_EVENT 미지원 — 유닛 테스트(PersistentNotificationPolicyTest) 가 대신 커버 |
 
+
+
+### 2026-04-20 (v1 loop tick — manual fire, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | ✅ PASS (부분) | 요약 알림 `숨겨진 알림 12건` = Home StatPill `조용히 12`. 단 emulator APK 가 PR #8 보다 오래돼 새 copy 미반영 (env noise, journey drift 아님) |
+
 ### 2026-04-20 (initial sweep, emulator-5554)
 
 Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 로 유지(문서 작성일과 동일) 하되, 아래 결과를 기록해 신뢰도를 남긴다.
