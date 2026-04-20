@@ -83,7 +83,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Known gaps
 
 - 서비스가 disconnect 된 동안 게시된 알림은 놓칠 수 있음. 최초 온보딩에 한해 [onboarding-bootstrap](onboarding-bootstrap.md) 이 `activeNotifications` 로 보완.
-- 일반 재접속(예: 권한 토글) 시점의 누락은 현재 보완 경로 없음.
+- 일반 재접속(예: 권한 토글) 시점의 누락은 현재 보완 경로 없음. → plan: [`docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`](../plans/2026-04-21-listener-reconnect-active-notification-sweep.md)
 
 ## Change log
 

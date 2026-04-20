@@ -93,7 +93,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- Bootstrap 은 첫 완료 시 1회만 실행. 이후 사용자가 앱 데이터를 보존한 채 리스너 권한을 토글해도 재실행되지 않음.
+- Bootstrap 은 첫 완료 시 1회만 실행. 이후 사용자가 앱 데이터를 보존한 채 리스너 권한을 토글해도 재실행되지 않음. → plan: [`docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`](../plans/2026-04-21-listener-reconnect-active-notification-sweep.md)
 - 시스템 tray 가 비어 있는 상태로 온보딩이 완료되면 bootstrap 은 아무 것도 하지 않고 consume 됨.
 
 ## Change log
