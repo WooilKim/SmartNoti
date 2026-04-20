@@ -75,6 +75,7 @@ adb shell dumpsys notification --noredact | grep 숨겨진
 - 화면 단독 테스트 부재.
 - SILENT 알림이 수백 건 쌓이면 LazyColumn 성능 미검증.
 - "모두 중요로 복구" 후 원본 알림은 이미 tray 에서 제거된 상태라 복구해도 알림센터에 다시 뜨지 않음 — DB 상태만 Priority 로 바뀌어 Priority 탭에 나타남. 의도된 동작이지만 사용자는 "복구 = 시스템 알림 재게시" 를 기대할 수 있음.
+- Recipe fragility (2026-04-21 관측): `MainActivity` 가 이미 top-most 로 떠있을 때 단일 `am start … -e DEEP_LINK_ROUTE hidden` 은 `Intent{has extras}` 만 delivered 로 남고 `AppNavHost` 의 `LaunchedEffect(deepLinkRoute)` 가 재발화하지 않아 Hidden 화면으로 이동하지 않음. 검증 시 `am force-stop com.smartnoti.app` 후 cold start 필수. 이 경로는 rules-feedback-loop / notification-detail recipe 에도 동일 적용.
 
 ## Change log
 

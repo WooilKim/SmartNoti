@@ -85,6 +85,8 @@ adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY \
 - 액션 적용 후 사용자에게 토스트나 확인 알림 없음 (조용히 성공).
 - 동일 sender/앱에 기존 룰이 있으면 덮어씀 — 이전 action 과 달라도 경고 없음.
 - NotificationFeedbackPolicy 는 KEYWORD / SCHEDULE / REPEAT_BUNDLE 룰은 만들지 않음 (오직 PERSON / APP).
+- Recipe fragility — 잔존 룰 (2026-04-21 cycle): 이 recipe 가 수행한 `upsertRule` 은 `smartnoti_rules.preferences_pb` 에 영속화되어 다음 tick 환경에 남는다. 재현 시 매번 unique sender (예: `TestSender_<date>_T<n>`) 를 쓰거나, recipe 서두에 남겨진 `person:*` 룰을 정리하는 clean-up 단계를 추가해야 후속 priority-inbox / rules-management recipe 의 baseline 을 오염시키지 않는다.
+- Recipe fragility — deep-link cold-start (2026-04-21 관측): Detail 경유 경로(A)는 `am start … -e DEEP_LINK_ROUTE hidden` 으로 시작하는데, `MainActivity` 가 top-most 로 이미 떠있으면 `LaunchedEffect(deepLinkRoute)` 가 재발화하지 않아 Hidden 화면으로 이동하지 않는다. `am force-stop com.smartnoti.app` 후 cold start 필수. 동일 제약이 hidden-inbox / notification-detail recipe 에도 적용됨.
 
 ## Change log
 
