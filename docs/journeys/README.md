@@ -61,6 +61,13 @@
 
 ## Verification log
 
+
+### 2026-04-20 (v1 loop cycle sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-inbox | ✅ PASS | 4건 중복 알림 posting 후 Digest 탭에 앱 그룹 카드 "관련 알림 4건" 렌더 |
+
 ### 2026-04-20 (initial sweep, emulator-5554)
 
 Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 로 유지(문서 작성일과 동일) 하되, 아래 결과를 기록해 신뢰도를 남긴다.
