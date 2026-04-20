@@ -49,7 +49,7 @@
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-20 |
 | [rules-management](rules-management.md) | 규칙 CRUD | shipped | 2026-04-21 |
-| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-20 |
+| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-21 |
 
 ## 아직 문서화하지 않은 영역
 
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — rules-feedback-loop re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | ✅ PASS | Baseline DataStore `smartnoti_rules.preferences_pb` 에는 기존 PERSON 룰로 `person:엄마` 만 존재. Fresh unique sender 로 `cmd notification post -S bigtext -t 'TestSender_0421_T11' FbkLoop0421 '인증번호 112233을 입력하세요'` 게시 → DB row `com.android.shell:2020:FbkLoop0421 \| sender=TestSender_0421_T11 \| status=PRIORITY \| reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|조용한 시간\|중요 키워드` (키워드 `인증번호` ALWAYS_PRIORITY 규칙 경로 — journey 계약과 무관한 baseline). Priority 탭 (327,2232) 진입 후 카드 `Shell / TestSender_0421_T11 / 인증번호 112233을 입력하세요 / 즉시 전달` bounds `[42,732][1038,1236]` 관측 → 중앙 (540,984) 탭 → `NotificationDetailScreen` 진입 (`알림 상세` 탑바 + `TestSender_0421_T11` sender 라벨). 액션 영역까지 2회 스크롤 (`input swipe 540 1800 540 600 400` x2) 후 `이 알림 학습시키기` 섹션의 3버튼 (`중요로 고정 · Digest로 보내기 · 조용히 처리`) 관측, `Digest로 보내기` 텍스트 bounds `[196,1945][429,1994]` 중앙 (312,1969) 탭. Observable steps 2.3–2.6 end-to-end 관측: (2.3) `NotificationFeedbackPolicy.applyAction` 적용 → DB row `status=PRIORITY → DIGEST`, `reasonTags` 에 `사용자 규칙` 여전히 유지. (2.5–2.6) `NotificationFeedbackPolicy.toRule` + `RulesRepository.upsertRule` 경로 관측 — `smartnoti_rules.preferences_pb` 덤프에 신규 엔트리 `person:TestSender_0421_T11 \| TestSender_0421_T11 \| Digest로 묶기 \| PERSON \| DIGEST \| true \| TestSender_0421_T11` 영속화 (rule id=`person:TestSender_0421_T11`, matchValue=sender). Step 3 (후속 동일 sender 알림 자동 적용) 검증: 동일 sender 로 (a) `'인증번호 987654를 입력하세요'` posting → status=PRIORITY (키워드 ALWAYS_PRIORITY 가 PERSON DIGEST 를 override — classifier 우선순위 산물, 계약 무관), (b) 키워드 제외한 `'오늘 저녁에 만날까'` posting → status=DIGEST + reasonTags `발신자 있음\|사용자 규칙\|TestSender_0421_T11\|조용한 시간` 로 자동 분류 — PERSON DIGEST 룰이 사용자 개입 없이 매치 적용됨 확인. Exit state (DB status/reasonTags 업데이트 + Rules 영속화 + 후속 자동 적용) 전부 충족. Detail 경로는 replacement 알림 cancel step 은 타지 않음 (Broadcast 경로 전용 — journey 에 명시됨). 어제 `PASS ("엄마" 재사용)` 의 "rule id 충돌로 upsert 가 insert 인지 덮어쓰기인지 애매" 한 약점을 fresh unique sender 로 신규 insert 를 명확히 관측 — insert 케이스 증거 확보. (주의) upsert 된 `person:TestSender_0421_T11` 룰은 다음 tick 환경에 남아있음 — 재현 시 다른 unique sender 권장 |
 
 
 ### 2026-04-21 (v1 loop tick — rules-management re-verify, emulator-5554)
