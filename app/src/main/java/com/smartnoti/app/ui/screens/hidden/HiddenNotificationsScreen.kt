@@ -1,7 +1,6 @@
 package com.smartnoti.app.ui.screens.hidden
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -165,24 +164,28 @@ private fun HiddenGroupCardWithBulkActions(
     onRestoreAll: () -> Unit,
     onDeleteAll: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        DigestGroupCard(model = group, onNotificationClick = onNotificationClick)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedButton(
-                onClick = onRestoreAll,
-                modifier = Modifier.weight(1f),
+    DigestGroupCard(
+        model = group,
+        onNotificationClick = onNotificationClick,
+        collapsible = true,
+        bulkActions = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("모두 중요로 복구")
+                OutlinedButton(
+                    onClick = onRestoreAll,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("모두 중요로 복구")
+                }
+                OutlinedButton(
+                    onClick = onDeleteAll,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("모두 지우기")
+                }
             }
-            OutlinedButton(
-                onClick = onDeleteAll,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("모두 지우기")
-            }
-        }
-    }
+        },
+    )
 }
