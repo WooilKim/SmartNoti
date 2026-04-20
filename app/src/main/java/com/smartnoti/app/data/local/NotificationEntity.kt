@@ -25,4 +25,5 @@ data class NotificationEntity(
     val lockScreenVisibility: String = "SECRET",
     val sourceSuppressionState: String = "NOT_CONFIGURED",
     val replacementNotificationIssued: Boolean = false,
+    val silentMode: String? = null,
 )
