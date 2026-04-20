@@ -3,7 +3,7 @@ id: notification-detail
 title: 알림 상세 및 피드백 액션
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
