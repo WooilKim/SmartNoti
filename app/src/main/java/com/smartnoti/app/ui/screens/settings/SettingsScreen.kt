@@ -25,6 +25,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -226,6 +227,9 @@ fun SettingsScreen(
                 },
                 onSuppressedSourceAppToggle = { packageName, enabled ->
                     scope.launch { repository.toggleSuppressedSourceApp(packageName, enabled) }
+                },
+                onSuppressedSourceAppsReplace = { packageNames ->
+                    scope.launch { repository.setSuppressedSourceApps(packageNames) }
                 },
             )
         }
@@ -975,6 +979,7 @@ private fun SuppressionManagementCard(
     onHidePersistentSourceNotificationsChange: (Boolean) -> Unit,
     onProtectCriticalPersistentNotificationsChange: (Boolean) -> Unit,
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
+    onSuppressedSourceAppsReplace: (Set<String>) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         val insightTokens = remember(settings.suppressSourceForDigestAndSilent, summary) {
@@ -1075,6 +1080,7 @@ private fun SuppressionManagementCard(
                 suppressedSourceApps = settings.suppressedSourceApps,
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
+                onSuppressedSourceAppsReplace = onSuppressedSourceAppsReplace,
             )
         }
     }
@@ -1086,6 +1092,7 @@ private fun SuppressedSourceAppChips(
     suppressedSourceApps: Set<String>,
     suppressEnabled: Boolean,
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
+    onSuppressedSourceAppsReplace: (Set<String>) -> Unit,
 ) {
     if (filteredCapturedApps.isEmpty()) {
         Text(
@@ -1106,6 +1113,12 @@ private fun SuppressedSourceAppChips(
             },
         )
     }
+    val allCandidatePackages = remember(filteredCapturedApps) {
+        filteredCapturedApps.map(CapturedAppSelectionItem::packageName).toSet()
+    }
+    val allSelected = remember(allCandidatePackages, suppressedSourceApps) {
+        allCandidatePackages.isNotEmpty() && allCandidatePackages.all { it in suppressedSourceApps }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
@@ -1113,6 +1126,32 @@ private fun SuppressedSourceAppChips(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                enabled = suppressEnabled && !allSelected,
+                onClick = {
+                    // 기존 선택은 그대로 두고 현재 보이는 앱을 모두 선택 상태로 만든다.
+                    onSuppressedSourceAppsReplace(suppressedSourceApps + allCandidatePackages)
+                },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("모두 선택")
+            }
+            OutlinedButton(
+                enabled = suppressEnabled && suppressedSourceApps.any { it in allCandidatePackages },
+                onClick = {
+                    // 현재 보이는 앱만 선택에서 제거; 필터에 가려진 앱의 선택은 유지.
+                    onSuppressedSourceAppsReplace(suppressedSourceApps - allCandidatePackages)
+                },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("모두 해제")
+            }
+        }
 
         presentation.groups.forEach { group ->
             AppSelectionGroup(
