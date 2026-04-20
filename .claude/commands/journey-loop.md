@@ -1,11 +1,13 @@
 ---
 name: journey-loop
-description: One tick of the journey-verification Ralph loop — checks stop conditions, runs journey-tester if safe, self-schedules the next tick via ScheduleWakeup. Start the loop by calling this once; it self-perpetuates.
+description: One tick of the journey-verification Ralph loop — checks stop conditions, runs journey-tester if safe, falls back to plan-implementer on a queued plan when verification is saturated, self-schedules the next tick via ScheduleWakeup. Start the loop by calling this once; it self-perpetuates.
 ---
 
 Execute one iteration of the journey-verification Ralph loop.
 
-This command is the safe-to-automate half of the three-agent system (`.claude/rules/agent-loop.md`). Only `journey-tester` runs here — `gap-planner` and `plan-implementer` stay manual because they write plans or code and need human review before each execution.
+This command spawns `journey-tester` each tick. When the tester returns NO-OP because verification is saturated (all journeys share the same `last-verified` date and no drift surfaced), the loop **falls back** to `plan-implementer` on the oldest `status: planned` file under `docs/plans/` — see the "Plan-implementer fallback" section below.
+
+Rationale: prior design kept `plan-implementer` fully manual because it writes code. Observed consequence: when all journeys share the same `last-verified` date, `journey-tester` correctly no-ops and the loop idles for hours with queued plan work sitting untouched. Auto-merge authorization + per-PR `coverage-guardian` + `project-manager` gates let us safely let the loop attempt code work after the verification queue saturates, without removing human review at merge time.
 
 ## Stop-first check (always before spawning the tester)
 
@@ -32,6 +34,25 @@ If the stop-first check passed (< 2 pending PRs):
 
 If the subagent itself produced an error (permission denied, emulator not reachable, etc.), treat this tick as a failed tick: do NOT self-schedule, and report the error to the user with the exact message from the subagent.
 
+## Plan-implementer fallback (when tester no-ops)
+
+If the tester returns a **NO-OP** outcome (no drift, no stale journey, nothing to verify), do **not** stop the tick. Instead:
+
+1. List planned work:
+   ```bash
+   ls -t docs/plans/*.md | head -20
+   ```
+2. Pick the oldest file (by filename date) whose frontmatter has `status: planned` AND has not already been merged as implemented (search `git log --all --grep=<slug>` for existing implementation PRs).
+3. If such a file exists, spawn the `plan-implementer` subagent via the Agent tool with `subagent_type: plan-implementer` and prompt:
+   > `Implement the plan at <path>. Follow its Tasks section in order, tests-first. Open a normal PR for human review (don't self-merge). If the plan has open questions you can't resolve from the code, stop and report — don't guess.`
+4. Wait for the subagent's report. Include its PR URL (if any) in the final message.
+
+Fallback safety:
+- Still one subagent per tick. If the tester ran + the implementer ran, that's still one *coverage* unit — the tester was just brief.
+- Implementer PRs go through normal human review (plus `coverage-guardian` signal + `project-manager` gate). The loop does NOT self-merge implementer PRs, ever.
+- If no `status: planned` file exists, truly no-op — report "verification saturated, no queued plans" and continue to self-schedule (the user may add a plan later).
+- If the implementer errors (unresolved open question, build failure outside its scope, etc.), treat like tester error: do NOT self-schedule, report the error.
+
 ## Self-schedule
 
 After a successful tick (subagent reported PASS / DRIFT / SKIP without error), call `ScheduleWakeup` with:
@@ -51,9 +72,10 @@ Return exactly this shape to the user:
 ```
 journey-loop tick
  ├─ Open agent PRs before tick: <N>
- ├─ Tester result: <PASS | DRIFT | SKIP | error>
+ ├─ Tester result: <PASS | DRIFT | SKIP | NO-OP | error>
  ├─ Journey: <id or "n/a">
- ├─ PR: <url or "n/a">
+ ├─ Tester PR: <url or "n/a">
+ ├─ Fallback: <plan path + implementer PR url, or "not triggered">
  └─ Next tick: <scheduled for +6h | PAUSED — reason>
 ```
 
@@ -62,6 +84,7 @@ Keep the message under 150 words.
 ## Safety rules
 
 - Never bypass the stop-first check, even "just this once." The check is the entire purpose of wrapping the tester in a loop.
-- Never call `gap-planner` or `plan-implementer` from this command. If the tester reports DRIFT and the user wants a plan, they invoke `/gap-plan` manually.
-- Never push to `main`, never merge PRs — the subagent is already constrained, keep the wrapper aligned.
+- `plan-implementer` may run ONLY as the fallback path described above (tester NO-OP + at least one `status: planned` plan). Never call `gap-planner` from this command — planning requires deliberate user framing.
+- Never self-merge `plan-implementer` PRs. Those changes touch production code and must go through human review plus `project-manager` verdict, regardless of CI status.
+- Never push to `main`, never merge PRs directly from this wrapper. Auto-merge only happens through each subagent's own self-merge rules (tester's `docs/journeys/**` carve-out).
 - If `ScheduleWakeup` fails, report it plainly and stop; do not retry with a shorter delay.
