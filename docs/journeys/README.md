@@ -87,6 +87,7 @@
 | priority-inbox | ✅ PASS | "엄마" VIP sender posting → Priority 탭에 "총 4건" + "엄마" 카드 렌더 |
 | rules-management | ✅ PASS | Rules 탭 → "내 규칙" 헤더 + "직접 규칙 추가" 섹션 렌더 |
 | protected-source-notifications | ✅ PASS | `cmd notification post -S media` (category=transport) posting 후 dumpsys 에 MediaTest 잔존 — SmartNoti 가 cancel 하지 않음 |
+| notification-detail | ✅ PASS (재검증) | Priority 카드 탭 → Detail 진입. "왜 이렇게 처리됐나요?" / "어떻게 전달되나요?" / "원본 알림 처리 상태" 3 섹션 + reasonTags 렌더 |
 
 ### 2026-04-20 (initial sweep, emulator-5554)
 
