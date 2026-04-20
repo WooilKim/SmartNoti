@@ -3,7 +3,7 @@ id: hidden-inbox
 title: 숨긴 알림 인박스 (Hidden 화면)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
