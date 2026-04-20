@@ -84,6 +84,7 @@
 | Journey | Result | Notes |
 |---|---|---|
 | silent-auto-hide | ✅ PASS (부분) | 요약 알림 `숨겨진 알림 12건` = Home StatPill `조용히 12`. 단 emulator APK 가 PR #8 보다 오래돼 새 copy 미반영 (env noise, journey drift 아님) |
+| priority-inbox | ✅ PASS | "엄마" VIP sender posting → Priority 탭에 "총 4건" + "엄마" 카드 렌더 |
 
 ### 2026-04-20 (initial sweep, emulator-5554)
 
