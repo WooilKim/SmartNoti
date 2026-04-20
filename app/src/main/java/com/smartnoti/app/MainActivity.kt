@@ -8,20 +8,25 @@ import androidx.compose.runtime.mutableStateOf
 import com.smartnoti.app.navigation.AppNavHost
 import com.smartnoti.app.navigation.ReplacementNotificationEntry
 import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
+import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.notification.SmartNotiNotifier
 import com.smartnoti.app.ui.theme.SmartNotiTheme
 
 class MainActivity : ComponentActivity() {
     private val pendingNotificationEntry = mutableStateOf<ReplacementNotificationEntry?>(null)
+    private val pendingDeepLinkRoute = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pendingNotificationEntry.value = intent?.extractReplacementNotificationEntry()
+        pendingDeepLinkRoute.value = intent?.extractDeepLinkRoute()
         setContent {
             SmartNotiTheme {
                 AppNavHost(
                     pendingNotificationEntry = pendingNotificationEntry.value,
                     onPendingNotificationConsumed = { pendingNotificationEntry.value = null },
+                    pendingDeepLinkRoute = pendingDeepLinkRoute.value,
+                    onPendingDeepLinkRouteConsumed = { pendingDeepLinkRoute.value = null },
                 )
             }
         }
@@ -31,6 +36,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingNotificationEntry.value = intent.extractReplacementNotificationEntry()
+        pendingDeepLinkRoute.value = intent.extractDeepLinkRoute()
     }
 
     private fun Intent.extractReplacementNotificationEntry(): ReplacementNotificationEntry? {
@@ -44,5 +50,14 @@ class MainActivity : ComponentActivity() {
             notificationId = notificationId,
             parentRoute = parentRoute,
         )
+    }
+
+    private fun Intent.extractDeepLinkRoute(): String? {
+        val raw = getStringExtra(SmartNotiNotifier.EXTRA_DEEP_LINK_ROUTE)?.takeIf { it.isNotBlank() }
+            ?: return null
+        return when (raw) {
+            Routes.Hidden.route -> raw
+            else -> null
+        }
     }
 }

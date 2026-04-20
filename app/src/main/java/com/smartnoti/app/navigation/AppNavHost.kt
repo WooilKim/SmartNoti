@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import com.smartnoti.app.ui.screens.detail.InsightDrillDownScreen
 import com.smartnoti.app.ui.screens.detail.NotificationDetailScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreen
+import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.home.HomeScreen
 import com.smartnoti.app.ui.screens.onboarding.OnboardingScreen
 import com.smartnoti.app.ui.screens.priority.PriorityScreen
@@ -43,6 +44,8 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
     pendingNotificationEntry: ReplacementNotificationEntry? = null,
     onPendingNotificationConsumed: () -> Unit = {},
+    pendingDeepLinkRoute: String? = null,
+    onPendingDeepLinkRouteConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val settings = remember { SettingsRepository.getInstance(context) }
@@ -101,6 +104,16 @@ fun AppNavHost(
                 launchSingleTop = true
             }
             onPendingNotificationConsumed()
+        }
+    }
+
+    LaunchedEffect(pendingDeepLinkRoute, onboardingCompleted) {
+        val route = pendingDeepLinkRoute
+        if (onboardingCompleted && route != null) {
+            navController.navigate(route) {
+                launchSingleTop = true
+            }
+            onPendingDeepLinkRouteConsumed()
         }
     }
 
@@ -194,6 +207,13 @@ fun AppNavHost(
                 SettingsScreen(
                     contentPadding = paddingValues,
                     onInsightClick = { navController.navigate(it) },
+                )
+            }
+            composable(Routes.Hidden.route) {
+                HiddenNotificationsScreen(
+                    contentPadding = paddingValues,
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(
