@@ -88,7 +88,6 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 
 ## Known gaps
 
-- 앱 단위 opt-in UI 는 Settings 에서 제공되지만 대량 선택/해제 편의 기능 부족.
 - Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피.
 
 ## Change log
@@ -96,3 +95,4 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-20: `SuppressedSourceAppsAutoExpansionPolicy` 추가 — 전역 opt-in 이 켜졌고 DIGEST 로 분류된 새 앱이 들어오면 자동으로 `suppressedSourceApps` 확장. onboarding 이후 게시되는 "(광고)" 류 알림이 원본 유지되던 문제 해소.
 - 2026-04-20: `NotificationReplacementIds.idFor` 에 notificationId 포함 — 같은 앱에서 서로 다른 내용의 DIGEST 가 동시에 게시될 때 replacement 가 서로 덮어쓰던 충돌 해소.
+- 2026-04-20: Settings 의 앱 선택 리스트에 "모두 선택" / "모두 해제" OutlinedButton 추가 — 대량 opt-in / opt-out 편의. 현재 필터로 보이는 앱만 영향 (숨겨진 앱의 선택 상태는 보존).
