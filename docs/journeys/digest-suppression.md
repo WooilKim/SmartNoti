@@ -13,8 +13,8 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 ## Preconditions
 
 - 알림이 DIGEST 로 분류 (→ [notification-capture-classify](notification-capture-classify.md))
-- `SmartNotiSettings.suppressSourceForDigestAndSilent = true`
-- `sbn.packageName ∈ SmartNotiSettings.suppressedSourceApps` (또는 persistent 알림 + `hidePersistentSourceNotifications` 경로)
+- `SmartNotiSettings.suppressSourceForDigestAndSilent = true` — 전역 opt-in
+- `sbn.packageName` 이 `SmartNotiSettings.suppressedSourceApps` 에 이미 있거나, 이번 처리 시 `SuppressedSourceAppsAutoExpansionPolicy` 가 자동으로 추가 (아래 "Observable steps" 참고)
 - 대상 알림이 protected 가 아님 (→ [protected-source-notifications](protected-source-notifications.md))
 
 ## Trigger
@@ -23,16 +23,18 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 ## Observable steps
 
-1. `SourceNotificationRoutingPolicy.route(DIGEST, hidePersistent=*, suppress=true)` → `cancelSourceNotification=true, notifyReplacementNotification=true`.
-2. 리스너가 main thread 에서 `cancelNotification(sbn.key)` 호출 → 원본 알림 제거.
-3. `SmartNotiNotifier.notifySuppressedNotification(DIGEST, ...)` 호출:
+1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 현재 리스트에 app 이 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화.
+2. `NotificationSuppressionPolicy.shouldSuppressSourceNotification(...)` 가 확장된 리스트 기준으로 true 반환.
+3. `SourceNotificationRoutingPolicy.route(DIGEST, hidePersistent=*, suppress=true)` → `cancelSourceNotification=true, notifyReplacementNotification=true`.
+4. 리스너가 main thread 에서 `cancelNotification(sbn.key)` 호출 → 원본 알림 제거.
+5. `SmartNotiNotifier.notifySuppressedNotification(DIGEST, ...)` 호출:
    - 채널: `ReplacementNotificationChannelRegistry.resolve(DIGEST, profile)` 가 반환하는 `smartnoti_replacement_digest_*` 중 하나
    - 제목: 원본 title (없으면 body / "{appName} 알림")
    - 본문: `ReplacementNotificationTextFormatter.explanationText(DIGEST, reasonTags)`
    - subText: "{appName} • Digest"
    - 액션: `중요로 고정`, `Digest로 유지`, `열기`
-4. 사용자가 액션 탭 → `SmartNotiNotificationActionReceiver` 가 broadcast 수신 → feedback 적용 (→ [rules-feedback-loop](rules-feedback-loop.md)).
-5. 사용자가 본문 탭 → `contentIntent` 가 `MainActivity` 를 열고 parent route = Digest, notification id 를 전달해 Detail 로 이동.
+6. 사용자가 액션 탭 → `SmartNotiNotificationActionReceiver` 가 broadcast 수신 → feedback 적용 (→ [rules-feedback-loop](rules-feedback-loop.md)).
+7. 사용자가 본문 탭 → `contentIntent` 가 `MainActivity` 를 열고 parent route = Digest, notification id 를 전달해 Detail 로 이동.
 
 ## Exit state
 
@@ -50,6 +52,7 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 - `notification/SourceNotificationRoutingPolicy` — DIGEST 분기
 - `notification/NotificationSuppressionPolicy` — opt-in 판정
+- `notification/SuppressedSourceAppsAutoExpansionPolicy` — 새 앱 자동 추가 규칙
 - `notification/SmartNotiNotifier#notifySuppressedNotification` — replacement 빌더
 - `notification/ReplacementNotificationTextFormatter` — 본문 포맷
 - `notification/ReplacementNotificationChannelRegistry` — 채널 선택
@@ -60,6 +63,7 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 - `SourceNotificationRoutingPolicyTest#digest_suppression_cancels_source_and_shows_replacement`
 - `NotificationSuppressionPolicyTest`
+- `SuppressedSourceAppsAutoExpansionPolicyTest`
 - `SmartNotiNotificationActionReceiverTest`
 - `ReplacementNotificationChannelRegistryTest`
 - `ReplacementNotificationTextFormatterTest`
@@ -86,7 +90,9 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 
 - 앱 단위 opt-in UI 는 Settings 에서 제공되지만 대량 선택/해제 편의 기능 부족.
 - 같은 앱에서 서로 다른 그룹의 digest 알림이 동시에 오면 replacement 하나에만 덮어쓰기 됨 (NotificationReplacementIds 가 `packageName:DIGEST` 해시 기반).
+- Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-20: `SuppressedSourceAppsAutoExpansionPolicy` 추가 — 전역 opt-in 이 켜졌고 DIGEST 로 분류된 새 앱이 들어오면 자동으로 `suppressedSourceApps` 확장. onboarding 이후 게시되는 "(광고)" 류 알림이 원본 유지되던 문제 해소.

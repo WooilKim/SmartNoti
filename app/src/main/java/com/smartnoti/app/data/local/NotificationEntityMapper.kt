@@ -53,6 +53,7 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     lockScreenVisibility = lockScreenVisibility.toLockScreenVisibility(),
     sourceSuppressionState = sourceSuppressionState.toSourceNotificationSuppressionState(),
     replacementNotificationIssued = replacementNotificationIssued,
+    postedAtMillis = postedAtMillis,
 )
 
 private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {

@@ -183,10 +183,24 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         val isProtectedSourceNotification = ProtectedSourceNotificationDetector.isProtected(
             ProtectedSourceNotificationDetector.signalsFrom(sbn),
         )
+        val autoExpandedApps = if (!isProtectedSourceNotification) {
+            SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+                decision = decision,
+                suppressSourceForDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                packageName = sbn.packageName,
+                currentApps = settings.suppressedSourceApps,
+            )
+        } else {
+            null
+        }
+        if (autoExpandedApps != null) {
+            settingsRepository.setSuppressedSourceApps(autoExpandedApps)
+        }
+        val effectiveSuppressedApps = autoExpandedApps ?: settings.suppressedSourceApps
         val shouldSuppressSourceNotification = !isProtectedSourceNotification &&
             NotificationSuppressionPolicy.shouldSuppressSourceNotification(
                 suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                suppressedApps = settings.suppressedSourceApps,
+                suppressedApps = effectiveSuppressedApps,
                 packageName = sbn.packageName,
                 decision = decision,
             )

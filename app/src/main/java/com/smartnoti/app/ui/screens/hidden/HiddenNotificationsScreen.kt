@@ -23,11 +23,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.local.toHiddenGroups
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
-import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
-import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SmartSurfaceCard
 
@@ -46,9 +46,10 @@ fun HiddenNotificationsScreen(
         repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
     val filteredNotifications by filteredFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val hidden = remember(filteredNotifications) {
-        filteredNotifications.filter { it.status == NotificationStatusUi.SILENT }
+    val groups = remember(filteredNotifications) {
+        filteredNotifications.toHiddenGroups(hidePersistentNotifications = false)
     }
+    val totalCount = remember(groups) { groups.sumOf { it.count } }
 
     LazyColumn(
         modifier = Modifier
@@ -72,15 +73,15 @@ fun HiddenNotificationsScreen(
                 }
                 ScreenHeader(
                     eyebrow = "숨긴 알림",
-                    title = "숨겨진 알림 ${hidden.size}건",
-                    subtitle = "조용히로 분류된 알림이에요. 시스템 알림센터에서는 숨기고 여기에만 모아뒀어요.",
+                    title = "숨겨진 알림 ${totalCount}건",
+                    subtitle = "조용히로 분류된 알림을 앱별로 묶어 정리했어요. 그룹 카드 안에서 각 알림을 확인할 수 있어요.",
                     modifier = Modifier
                         .weight(1f)
                         .padding(top = 12.dp),
                 )
             }
         }
-        if (hidden.isEmpty()) {
+        if (groups.isEmpty()) {
             item {
                 EmptyState(
                     title = "아직 숨긴 알림이 없어요",
@@ -91,19 +92,19 @@ fun HiddenNotificationsScreen(
             item {
                 SmartSurfaceCard {
                     Text(
-                        text = "지금 ${hidden.size}건이 정리돼 있어요.",
+                        text = "${groups.size}개 앱에서 ${totalCount}건을 숨겼어요.",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "탭하면 원본 알림 상세를 확인하고, 중요/Digest로 다시 분류할 수도 있어요.",
+                        text = "같은 앱의 여러 알림은 한 카드로 모아서 보여줘요. 탭하면 최신 내용을 바로 확인할 수 있어요.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            items(hidden, key = { it.id }) { notification ->
-                NotificationCard(model = notification, onClick = onNotificationClick)
+            items(groups, key = { it.id }) { group ->
+                DigestGroupCard(model = group, onNotificationClick = onNotificationClick)
             }
         }
     }

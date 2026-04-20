@@ -67,6 +67,7 @@ class NotificationCaptureProcessor(
             headsUpEnabled = deliveryProfile.headsUpEnabled,
             lockScreenVisibility = deliveryProfile.lockScreenVisibilityMode,
             sourceSuppressionState = SourceNotificationSuppressionState.NOT_CONFIGURED,
+            postedAtMillis = input.postedAtMillis,
             replacementNotificationIssued = false,
         )
     }
