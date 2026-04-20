@@ -53,6 +53,7 @@ class SmartNotiNotifier(
         val replacementNotificationId = NotificationReplacementIds.idFor(
             packageName = packageName,
             decision = decision,
+            notificationId = notificationId,
         )
         val parentRoute = ReplacementNotificationEntryRoutes.forDecision(decision)
         val contentIntent = createContentIntent(
@@ -234,7 +235,24 @@ private enum class RuleAction(
 }
 
 object NotificationReplacementIds {
-    fun idFor(packageName: String, decision: NotificationDecision): Int {
-        return "$packageName:${decision.name}".hashCode()
+    /**
+     * Returns a stable replacement-notification id keyed by the source notification's
+     * identity, not just (packageName, decision). Earlier the id collapsed every DIGEST
+     * from the same app into a single replacement slot, so a second DIGEST arriving
+     * while the first was still in the tray would silently overwrite it. Mixing
+     * [notificationId] into the hash keeps each source notification's replacement
+     * distinct. When [notificationId] is blank we fall back to the legacy keying so
+     * the old tests and call paths stay stable.
+     */
+    fun idFor(
+        packageName: String,
+        decision: NotificationDecision,
+        notificationId: String = "",
+    ): Int {
+        return if (notificationId.isBlank()) {
+            "$packageName:${decision.name}".hashCode()
+        } else {
+            "$packageName:${decision.name}:$notificationId".hashCode()
+        }
     }
 }
