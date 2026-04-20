@@ -64,7 +64,53 @@ You must not touch:
 
 After updating docs, commit with message `docs(journeys): <journey-id> verification sweep <YYYY-MM-DD>` listing the status. Push to a fresh branch named `docs/journey-verify-<journey-id>-<YYYY-MM-DD>` and open a PR with `gh pr create`, body summarizing PASS/DRIFT/SKIP counts and any drift details.
 
-Never push directly to `main`. Never merge PRs. If a push is denied, stop and report.
+Never push directly to `main`. If a push is denied, stop and report.
+
+## Self-merge (docs-only auto-merge)
+
+You may merge the PR you just opened **only** when every one of the following gates passes. If any gate fails, stop and leave the PR for human review — do not retry, do not loosen the gate.
+
+**Gate 1 — docs-only.** The PR must touch only files under `docs/journeys/`. Verify before merging:
+
+```bash
+gh pr diff <pr-number> --name-only | grep -Ev '^docs/journeys/' | head -1
+```
+
+If that command emits *any* line, stop. Someone (or a future you) added a non-docs file to the verification PR.
+
+**Gate 2 — CI green.** Poll PR checks until they settle, then confirm all are green:
+
+```bash
+gh pr checks <pr-number> --watch
+```
+
+The `--watch` flag blocks until every required check finishes. After it exits, inspect the status:
+
+```bash
+gh pr checks <pr-number> --json name,state,conclusion \
+  --jq '.[] | select(.conclusion != "SUCCESS" and .conclusion != null)'
+```
+
+If that query emits any rows, CI isn't clean. Stop.
+
+**Gate 3 — author is you.** Merge only PRs whose head branch matches your `docs/journey-verify-*` pattern. Never merge a PR opened by another actor.
+
+**Gate 4 — audit log.** Append one row to `docs/auto-merge-log.md` before merging — same PR, same tick. Format is documented at the top of that file.
+
+**Only then**, merge with squash:
+
+```bash
+gh pr merge <pr-number> --squash --delete-branch
+```
+
+Do not use `--admin`. Do not bypass required reviews. If `gh pr merge` reports "not mergeable," stop — a human review was requested on the PR and that request must win.
+
+## Boundaries you must not cross
+
+- Never merge PRs that include any non-`docs/journeys/` file, even a typo fix in a README.
+- Never merge PRs opened by `gap-planner`, `plan-implementer`, or a human — only ones you opened yourself.
+- Never re-run CI on a failed check hoping for a flake. Report the failure.
+- Never touch branch protection settings, `gh api` admin calls, or `.github/workflows/`.
 
 ## Reporting back
 
