@@ -90,6 +90,35 @@ class NotificationRepository(
         return dao.deleteLegacyBlankGroupSummaryRows()
     }
 
+    suspend fun deleteAllSilent(): Int {
+        return dao.deleteAllSilent()
+    }
+
+    suspend fun deleteSilentByPackage(packageName: String): Int {
+        return dao.deleteSilentByPackage(packageName)
+    }
+
+    suspend fun restoreSilentToPriorityByPackage(packageName: String): Int {
+        val candidates = dao.observeAll().first()
+            .filter { it.status == NotificationStatusUi.SILENT.name && it.packageName == packageName }
+        candidates.forEach { entity ->
+            dao.upsert(
+                entity.copy(
+                    status = NotificationStatusUi.PRIORITY.name,
+                    reasonTags = appendUserReasonTag(entity.reasonTags),
+                )
+            )
+        }
+        return candidates.size
+    }
+
+    private fun appendUserReasonTag(existing: String): String {
+        val tag = "사용자 복구"
+        if (existing.isBlank()) return tag
+        if (existing.split("|").any { it.trim() == tag }) return existing
+        return "$existing|$tag"
+    }
+
     suspend fun updateNotification(notification: NotificationUiModel, contentSignature: String? = null) {
         val postedAtMillis = notification.postedAtMillisOrNull() ?: System.currentTimeMillis()
         val signature = contentSignature

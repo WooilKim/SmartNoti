@@ -40,4 +40,10 @@ interface NotificationDao {
         """
     )
     suspend fun deleteLegacyBlankGroupSummaryRows(): Int
+
+    @Query("DELETE FROM notifications WHERE status = 'SILENT'")
+    suspend fun deleteAllSilent(): Int
+
+    @Query("DELETE FROM notifications WHERE status = 'SILENT' AND packageName = :packageName")
+    suspend fun deleteSilentByPackage(packageName: String): Int
 }
