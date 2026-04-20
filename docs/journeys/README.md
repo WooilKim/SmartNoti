@@ -41,7 +41,7 @@
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-20 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-20 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-20 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-20 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-20 |
 
 ### Rules & onboarding
@@ -61,6 +61,12 @@
 
 ## Verification log
 
+
+### 2026-04-21 (v1 loop tick — notification-detail re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | ✅ PASS | `cmd notification post -S bigtext -t DetailVerify0421 Promo1 "오늘의 이벤트 자세히 보기"` → Home 타임라인 "방금 정리된 알림" 에 `DetailVerify0421` Digest 카드 렌더. 카드 탭 → `NotificationDetailScreen` 진입: `DetailTopBar` `알림 상세`, 요약 카드 (`Shell` / `DetailVerify0421` / body / StatusBadge `Digest`), `왜 이렇게 처리됐나요?` + reasonTags (`발신자 있음 / 사용자 규칙 / 프로모션 알림 / 온보딩 추천 / 조용한 시간`), 온보딩 추천 반영 카드 (`빠른 시작 추천에서 추가된 규칙이에요`), `어떻게 전달되나요?` (`덜 급한 알림이라 Digest로 모아두고 조용하게 보여줘요. · 전달 모드 · Digest 묶음 전달 · 소리 · 부드럽게 알림 · 진동 · 가벼운 진동 · Heads-up · 꺼짐 · 잠금화면 · 내용 일부만 표시`). 스크롤 시 `원본 알림 처리 상태` (`원본 상태 · 원본 숨김 시도됨 · 대체 알림 · 표시됨`) + `이 알림 학습시키기` 3버튼 (`중요로 고정 · Digest로 보내기 · 조용히 처리`) 모두 관측 — 어제 `PASS (부분)` 의 "액션 버튼 영역 스크롤 필요" 제약을 스크롤 검증으로 해소. `중요로 고정` 탭 → StatusBadge `Digest → 즉시 전달`, 전달 모드 카피 `Digest 묶음 전달 → 즉시 전달` + description `중요 알림으로 바로 전달하지만 방해를 줄이기 위해 heads-up은 띄우지 않아요.` 로 전환. Home 복귀 시 StatPill `즉시 5 → 6` 반영. Rules 탭에서 `활성 규칙 5개 · 즉시 전달 2 · Digest 3` + 신규 `DetailVerify0421 연락은 바로 보여줘요 · 사람 · 즉시 전달 · 발신자 기준` PERSON 규칙 upsert 확인 — `NotificationFeedbackPolicy.toRule` + `RulesRepository.upsertRule` 경로 관측. 관측된 부가 동작: 동일 signature 의 2차 posting 은 `프로모션 알림` 키워드 Digest 규칙이 신규 PERSON Priority 규칙을 override 해 Digest 로 분류됨 (Home 카운트 `Digest 15→16`). Observable steps 1–6 및 Exit state (DB row 업데이트 · 규칙 insert · 뒤로가기로 Home 복귀) 전부 충족 — recipe Step 3 의 "자동 Priority" 는 journey 계약이 아니라 classifier 우선순위 규칙 (keyword Digest > PERSON Priority) 의 산물로, contract drift 아님 |
 
 ### 2026-04-21 (v1 loop tick — home-overview re-verify, emulator-5554)
 
