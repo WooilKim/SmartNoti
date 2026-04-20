@@ -40,7 +40,7 @@
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-21 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
-| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-20 |
+| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-20 |
 
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — hidden-inbox re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | ✅ PASS | Baseline: DB `SELECT status,isPersistent,COUNT(*) FROM notifications WHERE status='SILENT' GROUP BY isPersistent` → `SILENT\|0\|24`, `SILENT\|1\|1`. Silent summary notification (`dumpsys notification --noredact`) 타이틀 `숨겨진 알림 24건` (channel `smartnoti_silent_summary`, visibility SECRET, importance 1) — `hidePersistentNotifications=true` 기본값이 persistent 1건을 제외해 시스템 tray 요약은 24 로 맞음. Deep-link: `am force-stop com.smartnoti.app && am start … -e com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden` → uiautomator dump 에서 `HiddenNotificationsScreen` 헤더 `숨긴 알림` / `숨겨진 알림 24건` + summary copy `3개 앱에서 24건을 숨겼어요.` + bulk action `전체 숨긴 알림 모두 지우기` 렌더. 초기 viewport 에서 `Shell 숨긴 알림 22건` 카드 관측, 두 번 스크롤 후 `Android System 숨긴 알림 1건` + `Digital Wellbeing 숨긴 알림 1건` 카드 관측 — DB 그룹핑 `com.android.shell\|22`, `com.google.android.adservices.api\|1`, `com.google.android.apps.wellbeing\|1` 과 앱명/카운트 일치. Observable steps 1–7 (repository 구독 → `toHiddenGroups` → 헤더/요약 카피 → 앱별 `DigestGroupCard` 렌더) 및 Exit state (`DB SILENT 개수 == 화면 카드 합계 == 요약 알림 title` 세 지점 일치) 전부 충족. `hidePersistentNotifications` 경로 (persistent 1건은 화면/요약 둘 다에서 제외) 도 초기 sweep 의 드리프트 해소 이후 계속 정합 |
 
 
 ### 2026-04-21 (v1 loop tick — priority-inbox re-verify, emulator-5554)
