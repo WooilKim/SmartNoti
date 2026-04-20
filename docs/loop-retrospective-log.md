@@ -28,3 +28,4 @@ Columns:
 
 | Date (UTC) | Mode | Healthy | Quiet | Noisy | Blocking | Meta findings | Plans drafted | Recommendation |
 |---|---|---|---|---|---|---|---|---|
+| 2026-04-20T13:06:39Z | analyze | 1 | 8 | 0 | 0 | cold-start: 8/9 agents QUIET (인프라 완료 직후 실사용 전), PM 이 self-merge 경로로 우회되어 review gate 아직 검증 안 됨 | 0 | no action — baseline snapshot, 다음 retrospective 는 1주 실사용 후 |
