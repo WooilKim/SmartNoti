@@ -37,7 +37,7 @@
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-20 |
+| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-20 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-20 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-20 |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — home-overview re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-overview | ✅ PASS | Recipe 3건 posting (`엄마0421` / `Coupang0421` / `광고0421`) 후 `MainActivity` 재개. uiautomator dump (`/tmp/ui_home.xml`) 에서 10개 observable step 모두 관측: ScreenHeader `SmartNoti` + `중요한 알림만 먼저 보여드리고 있어요`, StatPill `즉시 5 / Digest 15 / 조용히 17`, HomeNotificationAccessCard `연결됨 · 실제 알림이 연결되어 있어요 · 최근 실제 알림 37개가 Home에 반영됐어요 · 즉시 5개 · Digest 15개 · 조용히 17개로 분류됐어요`, QuickActionCard `중요 알림 지금 봐야 할 알림 5개` / `정리함 묶인 알림 15개`, QuickStartAppliedCard `추천 3개 적용됨 · 빠른 시작 추천이 적용되어 있어요` + 최근 효과 copy. 2번째 스크롤 dump 에서 InsightCard `지금까지 32개의 알림을 대신 정리했어요 · 86% · Shell 알림 26개가 가장 많이 정리` + 3 reason chip (`사용자 규칙 6건 / 조용한 시간 6건 / 프로모션 알림 5건`) 확인. 3번째 dump 에서 TimelineCard `최근 흐름 · 최근 3시간 / 최근 24시간` 탭 + `피크 · 2시간 전 · 정리 9건 · 즉시 1건` 로우 + 최근 알림 리스트 (`광고0421` Digest / `Coupang0421` 조용히 정리) 렌더. 어제 `PASS (부분)` 의 "상세 카드/차트 시각 회귀 미실행" 한계 해소 — 세 번 스크롤로 전체 스크롤 범위의 카드/차트/리스트가 정상 렌더됨을 dump 로 확증 |
 
 
 ### 2026-04-21 (v1 loop tick — notification-capture-classify re-verify, emulator-5554)
