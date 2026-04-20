@@ -90,6 +90,8 @@
 | notification-detail | ✅ PASS (재검증) | Priority 카드 탭 → Detail 진입. "왜 이렇게 처리됐나요?" / "어떻게 전달되나요?" / "원본 알림 처리 상태" 3 섹션 + reasonTags 렌더 |
 | rules-feedback-loop | ✅ PASS | "엄마" Priority 카드 → Detail → "Digest로 보내기" 탭. Rules 탭에 "엄마" PERSON 규칙 추가됨 (활성 규칙 3→4, Digest 2→3, "발신자 기준" 표시) |
 | notification-capture-classify | ✅ PASS (재검증) | "인증번호 999999" bigtext posting 직후 Home StatPill `즉시` 3→4 관측. 분류 키워드 경로 → UI 반영까지 end-to-end 확인 |
+| home-overview | ✅ PASS (재검증) | Home 렌더: StatPill `즉시 3 / Digest 13 / 조용히 13`, "실제 알림 상태 · 연결됨", 인사이트 카드 (26개 정리, 89%, top-reason 3종 breakdown), 최근 흐름 차트 `최근 3시간 / 24시간` 탭 + peak/flow 로우 |
+| insight-drilldown | ✅ PASS | Home 인사이트 "반복 알림 · 5건" 카드 탭 → "반복 알림 이유" 상세 (8건 시간순 + 공기 이유 `조용한 시간` + filtered 카드 리스트) 렌더 |
 
 ### 2026-04-20 (initial sweep, emulator-5554)
 
