@@ -149,17 +149,32 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
         val shouldHidePersistentSourceNotification =
             (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
-        val shouldSuppressSourceNotification = NotificationSuppressionPolicy.shouldSuppressSourceNotification(
-            suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-            suppressedApps = settings.suppressedSourceApps,
-            packageName = sbn.packageName,
-            decision = decision,
+        val isProtectedSourceNotification = ProtectedSourceNotificationDetector.isProtected(
+            ProtectedSourceNotificationDetector.signalsFrom(sbn),
         )
-        val sourceRouting = SourceNotificationRoutingPolicy.route(
-            decision = decision,
-            hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
-            suppressSourceNotification = shouldSuppressSourceNotification,
-        )
+        val shouldSuppressSourceNotification = !isProtectedSourceNotification &&
+            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
+                suppressedApps = settings.suppressedSourceApps,
+                packageName = sbn.packageName,
+                decision = decision,
+            )
+        val sourceRouting = if (isProtectedSourceNotification) {
+            // Media / call / navigation / foreground-service notifications back a live
+            // MediaSession or foreground service. Cancelling them breaks playback
+            // (for example YouTube Music stops) or tears down the service, so we never
+            // route them through suppression regardless of user settings.
+            SourceNotificationRouting(
+                cancelSourceNotification = false,
+                notifyReplacementNotification = false,
+            )
+        } else {
+            SourceNotificationRoutingPolicy.route(
+                decision = decision,
+                hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
+                suppressSourceNotification = shouldSuppressSourceNotification,
+            )
+        }
         val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
             decision = decision,
             suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
