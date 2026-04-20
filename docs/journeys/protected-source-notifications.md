@@ -81,8 +81,12 @@ adb shell dumpsys notification --noredact \
 ## Known gaps
 
 - 휴리스틱 기반 detector 이므로 custom template 을 쓰는 일부 앱은 놓칠 수 있음. 신고를 받는 대로 조건 보강 예정.
-- 메시징 스타일 지속 알림(예: 채팅방 상단 고정)은 보호 대상 아님 — 사용자가 이들을 SILENT 로 분류하면 의도한 대로 숨김 동작.
+
+## Design decisions
+
+- **MessagingStyle 지속 알림은 의도적으로 보호 대상이 아님.** 메신저의 채팅방 상단 고정 알림은 FLAG_FOREGROUND_SERVICE 도 MediaSession 도 없어서 cancel 해도 서비스가 죽지 않는다. 사용자가 메신저 알림을 SILENT 로 분류해 숨기고 싶을 때 그 의도를 그대로 존중해야 하므로 MessagingStyle 은 `ProtectedSourceNotificationDetector` 의 보호 목록에 **넣지 않는다**. 특정 메신저에서 cancel 후 재게시 루프가 발생한다면 이는 해당 앱의 재게시 패턴 문제이며, 사용자는 재분류 또는 앱 설정의 알림 끄기로 해결.
 
 ## Change log
 
 - 2026-04-20: 최초 구현 + 문서화 (commit `762fa28`, PR #2)
+- 2026-04-20: MessagingStyle 비보호를 Known gap 에서 Design decision 으로 승격 — 의도적 결정임을 명시.

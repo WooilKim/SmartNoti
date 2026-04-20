@@ -36,10 +36,14 @@ class SilentHiddenSummaryNotifier(
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setContentTitle("숨겨진 알림 ${count}건")
-            .setContentText("탭해서 숨겨진 알림 보기")
+            .setContentText("탭: 목록 보기 · 스와이프: 확인으로 처리")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("조용히로 분류된 알림 ${count}건을 알림센터에서 숨겼어요. 탭하면 전체 목록을 확인할 수 있어요."),
+                    .bigText(
+                        "조용히로 분류된 알림 ${count}건을 알림센터에서 숨겼어요. " +
+                            "탭하면 전체 목록을 보고, 옆으로 밀어 없애면 확인한 것으로 처리돼요 " +
+                            "(다음 숨긴 알림이 들어오면 다시 알려드려요).",
+                    ),
             )
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
