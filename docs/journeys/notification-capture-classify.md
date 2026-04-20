@@ -3,7 +3,7 @@ id: notification-capture-classify
 title: 알림 캡처 및 분류
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal

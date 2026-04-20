@@ -22,7 +22,7 @@
 ### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-20 |
+| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-21 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-20 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-20 |
 
@@ -61,6 +61,12 @@
 
 ## Verification log
 
+
+### 2026-04-21 (v1 loop tick — notification-capture-classify re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | ✅ PASS | Baseline Home StatPill `즉시 4 / Digest 14 / 조용히 15` (총 33). `cmd notification post -S bigtext -t BankAuth0421 Bank "인증번호 555555를 입력하세요"` 게시 → `dumpsys notification --noredact | grep BankAuth0421` 에서 `NotificationRecord(… pkg=com.android.shell id=2020 tag=BankAuth0421 importance=3 key=0\|com.android.shell\|2020\|BankAuth0421\|2000)` 관측. 4초 대기 후 Home 재확인 시 StatPill `즉시 5 / Digest 14 / 조용히 15` + "실제 알림 상태" 섹션 요약문이 `최근 실제 알림 34개가 Home에 반영됐어요 · 즉시 5개 · Digest 14개 · 조용히 15개로 분류됐어요.` 로 전환 — 인증번호 키워드 heuristic 경로가 pipeline 을 통과해 `NotificationClassifier` 가 PRIORITY 로 분류, `NotificationRepository.save` 가 즉시 35->34 inbox reflect. 어제 sweep 의 "uiautomator race 로 StatPill 재확인은 inconclusive" 부분 해소 — 게시 후 단일 dump 로 즉시 카운트 일치 확인 |
 
 ### 2026-04-21 (v1 loop tick — silent-auto-hide re-verify, emulator-5554)
 
