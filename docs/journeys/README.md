@@ -73,8 +73,8 @@ Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 
 | digest-inbox | ✅ PASS | Digest 탭에 앱 단위 그룹 카드 렌더 |
 | rules-management | ✅ PASS | Rules 탭 렌더, 활성 규칙 3개 표시 (quick-start 프리셋) |
 | notification-detail | ✅ PASS (부분) | "왜 이렇게 처리됐나요?", "어떻게 전달되나요?" 섹션 확인. 액션 버튼 영역은 스크롤 필요 |
-| hidden-inbox | ⚠️ DRIFT | 화면은 정상 렌더, 다만 count 가 Home StatPill 과 불일치 (아래) |
-| silent-auto-hide | ⚠️ DRIFT | 요약 알림 자체는 정상 게시 (`smartnoti_silent_summary` 채널, title "숨겨진 알림 5건"), count 불일치 동일 |
+| hidden-inbox | ✅ PASS (재검증) | persistent 필터 드리프트 수정 후 재실행 — Home StatPill 과 일치 (둘 다 4) |
+| silent-auto-hide | ✅ PASS (재검증) | 요약 알림 title "숨겨진 알림 4건" 이 Home StatPill `조용히 4` 및 Hidden 헤더 `4` 와 일치 |
 | home-overview | ✅ PASS (부분) | StatPill / Home 렌더 확인. 상세 카드/차트 시각 회귀는 미실행 |
 | onboarding-bootstrap | ⏭️ SKIP | `pm clear` 가 파괴적이라 이번 sweep 에서 제외 |
 | protected-source-notifications | ⏭️ SKIP | 실제 MediaStyle 앱 필요. 단위 테스트는 통과 |
@@ -86,15 +86,15 @@ Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 
 
 ### 발견된 drift
 
-1. **Silent count 불일치** (→ [silent-auto-hide](silent-auto-hide.md), [hidden-inbox](hidden-inbox.md) Known gaps):
-   - Home StatPill `조용히`: `observeAllFiltered(hidePersistentNotifications=true)` → persistent 제외
-   - Hidden 화면 헤더 + Silent 요약 알림 count: `observeAll()` → persistent 포함
-   - 사용자 세팅 `hidePersistentNotifications=true` 일 때 숫자가 어긋남. 제품 결정 필요.
+1. **Silent count 불일치** — ✅ **해소됨**:
+   - (이전) Home StatPill `조용히` 은 persistent 를 제외, Hidden/요약은 persistent 포함 → 숫자 불일치.
+   - (결정) 제품 방향은 "persistent 를 인박스 뷰에서 숨긴다" 는 기존 `hidePersistentNotifications` 설정을 세 곳에서 동일하게 존중.
+   - (수정) `HiddenNotificationsScreen` 과 리스너의 `silentSummaryJob` 이 `observeAllFiltered(hidePersistentNotifications)` / `filterPersistent(...)` 를 사용하도록 변경. 세 곳 모두 `조용히 4` 로 일치 확인.
 
-2. **Home 탭 복귀 회귀 의심** (추가 조사 필요):
-   - 딥링크로 Hidden 진입 후 하단 "홈" 탭 탭해도 Home 으로 navigate 되지 않는 것으로 관측됨.
-   - 이전에 고친 `navigateToTopLevel` stale-closure 버그와 다른 경로일 가능성 — 딥링크 entry 의 back stack 에 Home 이 없을 때의 동작.
-   - 정식 이슈로 판단되면 별도 PR 에서 재검증.
+2. **Home 탭 복귀 회귀** — ✅ **해소됨**:
+   - (원인) `navigate(home) { popUpTo(home) saveState; launchSingleTop; restoreState }` 이 nav-compose 2.7.x 에서 특정 back-stack 형태(예: 딥링크 entry 로 도달한 Hidden → Home) 에서 silent no-op. logcat 으로 stack 이 `[null, home, hidden]` 그대로 유지되는 것 확인.
+   - (수정) `navigateToTopLevel` 에서 target 이 start destination 과 같을 때는 `navController.popBackStack(startId, inclusive=false, saveState=true)` 로 직접 pop. 다른 top-level 탭 전환은 기존 navigate 패턴 유지.
+   - (검증) Hidden→Home, Home→Priority→Home, Digest→Home→Digest 세 경로 모두 PASS.
 
 ## Deprecated
 

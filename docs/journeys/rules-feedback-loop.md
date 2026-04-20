@@ -63,17 +63,21 @@ Digest/Silent replacement 알림 또는 Detail 화면의 "중요로 고정 / Dig
 
 ## Verification recipe
 
-```bash
-# 1. Digest 로 분류되고 replacement 가 게시되는 시나리오 만들기
-adb shell cmd notification post -S bigtext -t "Coupang" Deal "오늘의 딜"
-# (+ 해당 앱이 suppressSourceApps 에 포함되고 suppressSourceForDigestAndSilent 가 true 여야 함)
+가장 쉬운 경로는 **Detail 화면의 "중요로 고정" / "Digest로 보내기" / "조용히 처리" 버튼** — 동일한 `NotificationFeedbackPolicy.applyAction` + `RulesRepository.upsertRule` 경로를 탑니다 (→ [notification-detail](notification-detail.md)). 아래 A 로 UI 검증, B 는 broadcast 경로 직접 검증.
 
-# 2. replacement 알림 내 "중요로 고정" 액션 탭 (실제 디바이스 혹은 am broadcast)
+```bash
+# A) Detail 화면 경유 (권장 — notification ID 확보 불필요)
+# 1. 알림 게시
+adb shell cmd notification post -S bigtext -t "발신자없음테스트" FbTest "피드백 테스트"
+# 2. Home 또는 Hidden 에서 카드 탭 → Detail → "중요로 고정"
+# 3. Rules 탭에서 app 타입 룰이 추가됐는지 확인 (매치값 = com.android.shell)
+
+# B) Broadcast 직접 (CI용)
+# 1. 피드백 대상 notification ID 확보 — observeAll().first() 의 id 필드. DB 직접 조회는
+#    `run-as` 가 debuggable 빌드에서만 가능하므로 실무상 A 경로가 더 간편.
 adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY \
   --es com.smartnoti.app.extra.NOTIFICATION_ID <id> \
   --ei com.smartnoti.app.extra.REPLACEMENT_NOTIFICATION_ID <replId>
-
-# 3. Rules 탭에서 새 룰이 생겼는지 확인 + 다음 동일 signature 알림이 Priority 로 분류되는지 확인
 ```
 
 ## Known gaps

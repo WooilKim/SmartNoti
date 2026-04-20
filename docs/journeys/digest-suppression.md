@@ -67,16 +67,19 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 ## Verification recipe
 
 ```bash
-# 1. Digest 분류 대상 앱 게시 + 설정에서 해당 앱 opt-in
-adb shell cmd notification post -S bigtext -t "Coupang" Promo1 "오늘의 딜"
+# 1. Settings 탭 → "원본 알림 자동 숨김" 섹션 → "자동 숨김" 토글 ON
+#    → 앱 선택 리스트에서 테스트 대상 앱 (예: com.android.shell) 체크
+#    ※ cmd notification 은 com.android.shell 패키지로 게시되므로 테스트에 적합
 
-# 2. Settings 에서 "원본 알림 자동 숨김" 토글 on + 해당 앱 선택
-# (또는 RulesRepository + SettingsRepository 로 직접 주입)
+# 2. Digest 로 분류되는 알림 게시 (중복 혹은 프로모션 키워드)
+for i in 1 2 3; do
+  adb shell cmd notification post -S bigtext -t "Promo" "SuppTest$i" "같은 광고 텍스트"
+done
 
-# 3. 원본 제거 + replacement 게시 확인
+# 3. 원본이 tray 에서 제거되고 SmartNoti replacement 가 게시됐는지 확인
 adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 
-# 4. replacement 의 "Digest로 유지" 액션 탭 → broadcast 수신 후 룰 생성 확인
+# 4. replacement 의 "Digest로 유지" 액션 탭 → Rules 탭에 app 룰 추가 확인
 ```
 
 ## Known gaps
