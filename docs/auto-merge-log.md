@@ -48,3 +48,4 @@ If a self-merged row caused a regression:
 | 2026-04-20T13:49:17Z | journey-tester | #35 | audit backfill for #31/#32/#33 | https://github.com/WooilKim/SmartNoti/pull/35/checks |
 | 2026-04-20T13:49:18Z | journey-tester | #36 | notification-capture-classify (재검증) | https://github.com/WooilKim/SmartNoti/pull/36/checks |
 | 2026-04-20T13:57:00Z | journey-tester | #38 | home-overview (재검증) + insight-drilldown | https://github.com/WooilKim/SmartNoti/pull/38/checks |
+| 2026-04-21T15:09:55Z | journey-tester | #46 | silent-auto-hide (re-verify, env-noise resolved) | https://github.com/WooilKim/SmartNoti/pull/46/checks |
