@@ -38,7 +38,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
-| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-20 |
+| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-21 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-20 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — priority-inbox re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | ✅ PASS | 1차 시도: recipe 그대로 `cmd notification post -S bigtext -t "엄마" Mom "오늘 저녁에 올 수 있어?"` → DB `status=DIGEST` 로 저장됨. 원인 조사: `run-as com.smartnoti.app cat files/datastore/smartnoti_rules.preferences_pb` 덤프에 `person:엄마|PERSON|DIGEST|true` rule 존재 (기존 rules-feedback-loop sweep 에서 upsert 된 PERSON 규칙이 VIP heuristic 을 override). Journey 계약은 "PRIORITY 분류된 알림을 보여준다" 이므로 recipe 를 PRIORITY 를 확실히 유도하는 방식으로 대체: `cmd notification post -S bigtext -t '은행' PriorityVerify0421 '인증번호 123456를 입력하세요'` → DB `id=com.android.shell:2020:PriorityVerify0421 status=PRIORITY`. 시스템 tray 에서 `dumpsys notification --noredact` 로 원본 `pkg=com.android.shell tag=PriorityVerify0421 importance=3 flags=0x0` 잔존 확인 — `SourceNotificationRoutingPolicy.route(PRIORITY,*,*) → cancelSourceNotification=false` 불변조건 충족. `am start … MainActivity` → 중요 탭 (327,2232) 탭 → uiautomator dump 에 헤더 `중요 알림` + `총 7건의 알림이 즉시 전달 대기 중이에요.` + 신규 카드 `Shell / 은행 / 인증번호 123456를 입력하세요 / 즉시 전달` + reason chips (`발신자 있음 / 사용자 규칙 / 중요 알림 / 온보딩 추천 / 조용한 시간 / 중요 키워드`) 렌더. 카드 클릭 가능 영역 bounds `[42,732][1038,1248]` 중앙 (540,990) 탭 → `NotificationDetailScreen` 진입 (`알림 상세` top bar + 요약 카드 + `왜 이렇게 처리됐나요?` / `어떻게 전달되나요?` 섹션). Observable steps 1–4 및 Exit state 전부 충족. Known gap 추가 (recipe 의 `"엄마"` 고정값이 rules-feedback-loop 을 돌린 환경에서는 DIGEST 로 라우팅되어 verify 가 깨짐 — recipe 를 키워드 기반 priority 로 바꾸거나 recipe 전 `엄마` person rule 을 지우는 것이 안전) |
 
 
 ### 2026-04-21 (v1 loop tick — digest-inbox re-verify, emulator-5554)

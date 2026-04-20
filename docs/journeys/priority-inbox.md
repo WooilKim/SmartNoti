@@ -3,7 +3,7 @@ id: priority-inbox
 title: 중요 알림 인박스
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
@@ -83,7 +83,9 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - Priority 인박스 자체에 일괄 처리(읽음/모두 지우기) 액션 없음 — 카드별 Detail 이동 필요.
 - PriorityScreen 직접 UI 테스트 부재.
+- Verification recipe 의 `엄마` 고정값이 rules-feedback-loop sweep 이후 남은 `person:엄마 → DIGEST` rule 에 의해 DIGEST 로 라우팅되어 검증이 무효화될 수 있음. 2026-04-21 sweep 에서는 `'은행' / '인증번호 …'` (ALWAYS_PRIORITY 키워드 규칙) 로 우회해 PASS. 추후 recipe 를 키워드 기반으로 전환하거나 recipe 서두에 `엄마` PERSON rule 지우는 단계를 추가하는 것이 안전.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: v1 loop tick 재검증 (PASS, PR 추가). Recipe fragility 관련 Known gap 추가
