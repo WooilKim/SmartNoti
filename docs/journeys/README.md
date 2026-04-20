@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-20 (v1 loop tick — persistent-notification-protection policy re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| persistent-notification-protection | ⏭️ SKIP | End-to-end 경로는 여전히 `cmd notification post` 로 불가능 — `adb shell cmd notification post --help` 출력에 `-f|--flag` 등 ongoing 플래그 지정 옵션이 없음을 재확인 (flags: `-h`, `-v`, `-t`, `-i`, `-I`, `-S`, `-c` 만 존재). 현재 `dumpsys notification --noredact | grep -iE "flag.*ongoing\|no_clear"` 도 hit 없음 — 에뮬레이터에 실제 지속 알림 소스 없음. 대안으로 `PersistentNotificationPolicyTest` 를 신규 실행해 7 testcase 전부 PASS (`tests="7" skipped="0" failures="0" errors="0"`, 0.016s, timestamp 2026-04-20T14:43:45): `treats_ongoing_notifications_as_persistent`, `treats_non_clearable_notifications_as_persistent`, `keeps_call_related_persistent_notifications_visible`, `keeps_recording_and_navigation_persistent_notifications_visible`, `allows_charging_notifications_to_be_hidden`, `ignores_normal_clearable_notifications`, `disables_bypass_when_critical_persistent_protection_is_turned_off`. Policy 레이어는 건강 — end-to-end 은 여전히 실제 전화/내비/녹화 앱으로 릴리스 QA 에서만 커버 |
+
+
 ### 2026-04-20 (v1 loop tick — quiet-hours re-verify, emulator-5554)
 
 | Journey | Result | Notes |
