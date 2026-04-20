@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — notification-capture-classify re-verify #2, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | ✅ PASS | Baseline DB `SELECT status, COUNT(*) FROM notifications GROUP BY status` → `DIGEST\|27, PRIORITY\|10, SILENT\|27` (총 64). Recipe 그대로 `cmd notification post -S bigtext -t 'Bank' BankAuth0421B '인증번호 778899을 입력하세요'`. (Step 1) `dumpsys notification --noredact \| grep BankAuth0421B` 에서 `NotificationRecord(… pkg=com.android.shell id=2020 tag=BankAuth0421B importance=3 key=0\|com.android.shell\|2020\|BankAuth0421B\|2000)` 관측 — 리스너가 즉시 게시 수신. (Steps 2–9 composite) SmartNoti DB row `id=com.android.shell:2020:BankAuth0421B \| pkg=com.android.shell \| title=Bank \| status=PRIORITY \| reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|조용한 시간\|중요 키워드` — `processNotification` → extras 파싱 → `currentRules()/observeSettings().first()` 스냅샷 → `NotificationCaptureProcessor.process` → `NotificationClassifier.classify` 에서 `중요 키워드` heuristic 경로가 PRIORITY 결정 → `NotificationRepository.save` 가 즉시 upsert (DB 총계 `PRIORITY 10→11`). (Step 10) source routing: SILENT/DIGEST 분기 아니므로 원본 유지 (Exit state 와 `SourceNotificationRoutingPolicy.route(PRIORITY,*,*) → cancelSource=false` 계약 정합). UI reflect 검증: `am force-stop && am start MainActivity` → Home dump 에서 StatPill `즉시 11 / Digest 27 / 조용히 26` + "실제 알림 상태" summary `최근 실제 알림 64개가 Home에 반영됐어요` 관측. SILENT 27 → UI `조용히 26` 은 `hidePersistentNotifications=true` 가 persistent 1건을 인박스에서 숨기는 통상 동작 (cross-journey convention, silent-auto-hide #46/#62 과 동일). Observable steps 1–10 및 Exit state (DB row + `observeAll()` 반영 + 후속 routing) 전부 충족. 어제 tick (#48) 의 "단일 posting 으로 StatPill 즉시 반영" 확증을 오늘 재현 — 더 큰 baseline (64건) 에서도 capture→classify→save→UI 파이프라인 latency 가 사용자 관측 범위에서 안정적임을 확인 |
+
+
 ### 2026-04-21 (v1 loop tick — silent-auto-hide deep re-verify + env-noise correction, emulator-5554)
 
 | Journey | Result | Notes |
