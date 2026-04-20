@@ -57,14 +57,18 @@ last-verified: 2026-04-20
 
 ## Verification recipe
 
-```bash
-# 1. 설정에서 hidePersistentSourceNotifications 를 on 으로 설정
-# 2. 지속 알림 게시 — 키워드 포함 vs 미포함 두 가지
-adb shell cmd notification post -S bigtext -t "통화 중" Call1 "홍길동과 통화 중"
-adb shell cmd notification post -S bigtext -t "저장 중" Bg1 "파일 저장 중"
+`cmd notification post` 는 `FLAG_ONGOING_EVENT` 를 직접 세팅하지 못하기 때문에 persistent 판정(`isOngoing || !isClearable`) 이 트리거되지 않습니다. 그래서 이 journey 는 실제 지속 알림을 띄우는 앱 (전화/내비/녹화) 또는 테스트 전용 앱으로만 end-to-end 검증 가능.
 
-# 3. dumpsys 로 Call1 은 남고 Bg1 은 사라지는지 확인
-adb shell dumpsys notification --noredact | grep -E "Call1|Bg1"
+**Policy 단위 검증** 은 유닛 테스트 `PersistentNotificationPolicyTest` 가 모든 bypass 키워드를 커버합니다.
+
+```bash
+# 유닛 테스트 실행
+./gradlew :app:testDebugUnitTest --tests \
+  "com.smartnoti.app.domain.usecase.PersistentNotificationPolicyTest"
+
+# end-to-end: 전화 / Google Maps 내비 / 화면 녹화 등 실제 시스템 기능으로 ongoing 알림을
+# 발생시킨 뒤 SmartNoti 설정에서 "지속 알림 원본 자동 숨김" 을 켠 상태에서도 tray 에
+# 유지되는지 확인.
 ```
 
 ## Known gaps

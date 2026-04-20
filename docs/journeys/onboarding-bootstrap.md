@@ -71,6 +71,9 @@ last-verified: 2026-04-20
 
 ## Verification recipe
 
+⚠️ `pm clear` 는 **기기에 누적된 앱 상태를 전부 지웁니다** — 테스트 기기에서만 실행.
+실행 후 NotificationListener 권한도 초기화되므로 Settings 에서 재허용해야 합니다.
+
 ```bash
 # 1. 앱 데이터 초기화 → 온보딩 미완료 재현
 adb shell pm clear com.smartnoti.app
@@ -79,11 +82,13 @@ adb shell pm clear com.smartnoti.app
 adb shell cmd notification post -S bigtext -t "Promo" Sample1 "광고 배너입니다"
 adb shell cmd notification post -S bigtext -t "Bank"  Sample2 "인증번호 000000"
 
-# 3. 앱 실행 → 권한 허용 → quick-start 하나 선택 → 시작
+# 3. 앱 실행 → 알림 접근 권한 재허용 → POST_NOTIFICATIONS 허용 → quick-start 선택 → 시작
 adb shell am start -n com.smartnoti.app/.MainActivity
 
 # 4. 온보딩 완료 후 Priority/Digest 탭에 기존 알림이 분류돼 보이는지 확인
 #    (Sample2 는 "인증번호" 키워드로 PRIORITY, Sample1 은 prom_quieting 룰 기준으로 DIGEST/SILENT)
+
+# 5. 다시 bootstrap 이 재실행되지 않는지 확인 — 앱 재시작해도 중복 캡처 없어야 함
 ```
 
 ## Known gaps

@@ -55,17 +55,18 @@ last-verified: 2026-04-20
 
 ## Verification recipe
 
+시스템 시간 조작은 다른 기능에도 영향을 주므로, **앱의 Settings 에서 quietHoursStartHour / quietHoursEndHour 를 현재 시각을 포함하도록 바꾸는 것** 이 가장 간편한 방법입니다.
+
 ```bash
-# 1. 에뮬레이터 시간을 23:30 으로 설정 (quiet hours 창 안)
-adb shell date 112423302026.00
-# 또는 시스템 시간 유지한 채 quiet hours 범위를 현재 시각을 포함하게 설정
+# 1. Settings 탭에서 "조용한 시간" 섹션 열기 — 시작/종료 시간을 현재 시각을 포함하도록 조정
+#    (예: 현재 14:30 이라면 start=14, end=16 으로)
 
-# 2. 쇼핑앱(com.coupang.mobile) 으로 알림 게시
-adb shell cmd notification post -S bigtext --pkg com.coupang.mobile \
-  -t "Coupang" QuietTest "한정 특가"
-# (현재 cmd notification 은 --pkg 옵션이 없을 수 있어 실제 앱으로 테스트 권장)
+# 2. `com.coupang.mobile` 또는 기존 classifier 의 shoppingPackages 에 포함된 앱 패키지로 알림 게시
+#    (cmd notification 는 --pkg 옵션이 없어 `com.android.shell` 로만 게시됨. 쇼핑앱 테스트는
+#     실제 앱 혹은 테스트 전용 앱 필요.)
 
-# 3. Home/정리함 탭에 DIGEST 로 분류됐는지 확인
+# 3. quiet hours 종료 후에도 분류가 남아 있는지 Home/정리함 탭에서 확인 — 알림의
+#    reasonTags 에 "quiet hours" 관련 태그가 있는지 Detail 에서 확인
 ```
 
 ## Known gaps
