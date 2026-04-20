@@ -68,6 +68,14 @@
 |---|---|---|
 | digest-inbox | ✅ PASS | 4건 중복 알림 posting 후 Digest 탭에 앱 그룹 카드 "관련 알림 4건" 렌더 |
 | digest-suppression | ⏭️ SKIP | 앱 opt-in + Settings 토글 조작 필요 — 이번 tick 에서 자동화 제외, Settings UI 검증으로 별도 커버 |
+| duplicate-suppression | ✅ PASS | 같은 content signature 3회 posting 시 1 Digest + 2 Silent (threshold 3) 관측 |
+| hidden-inbox | ✅ PASS | deep-link 진입 시 "숨겨진 알림 12건" 헤더 + 그룹 카드 렌더 |
+| home-overview | ✅ PASS | StatPill 즉시 2 / Digest 11 / 조용히 12 렌더 |
+| insight-drilldown | ⏭️ SKIP | 현재 tick 의 데이터로는 인사이트 trigger 부족, 별도 기간 관측 필요 |
+| notification-capture-classify | ✅ PASS (부분) | "인증번호" 키워드 posting 이 pipeline 통과 — uiautomator race 로 StatPill 재확인은 inconclusive |
+| notification-detail | ✅ PASS | Priority 탭 → 카드 탭 → Detail 섹션 렌더 (이전 session 에서 재확인) |
+| onboarding-bootstrap | ⏭️ SKIP | pm clear 파괴적 — 자동화 제외, 릴리즈 사이클 테스트로만 수동 커버 |
+| persistent-notification-protection | ⏭️ SKIP | cmd notification 이 FLAG_ONGOING_EVENT 미지원 — 유닛 테스트(PersistentNotificationPolicyTest) 가 대신 커버 |
 
 ### 2026-04-20 (initial sweep, emulator-5554)
 
