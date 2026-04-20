@@ -20,6 +20,7 @@ data class NotificationUiModel(
     val lockScreenVisibility: LockScreenVisibilityMode = LockScreenVisibilityMode.SECRET,
     val sourceSuppressionState: SourceNotificationSuppressionState = SourceNotificationSuppressionState.NOT_CONFIGURED,
     val replacementNotificationIssued: Boolean = false,
+    val postedAtMillis: Long = 0L,
 )
 
 enum class NotificationStatusUi {

@@ -204,3 +204,23 @@ fun List<NotificationUiModel>.toDigestGroups(
         }
         .sortedByDescending { it.items.maxOfOrNull(NotificationUiModel::id) }
 }
+
+fun List<NotificationUiModel>.toHiddenGroups(
+    hidePersistentNotifications: Boolean = false,
+): List<DigestGroupUiModel> {
+    return filterPersistent(hidePersistentNotifications)
+        .filter { it.status == NotificationStatusUi.SILENT }
+        .groupBy { it.packageName }
+        .values
+        .map { grouped ->
+            val latest = grouped.maxByOrNull { it.postedAtMillis } ?: grouped.first()
+            DigestGroupUiModel(
+                id = "hidden:${latest.packageName}",
+                appName = latest.appName,
+                count = grouped.size,
+                summary = "${latest.appName} 숨긴 알림 ${grouped.size}건",
+                items = grouped.sortedByDescending { it.postedAtMillis },
+            )
+        }
+        .sortedByDescending { group -> group.items.maxOfOrNull { it.postedAtMillis } ?: 0L }
+}

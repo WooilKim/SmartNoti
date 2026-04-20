@@ -92,3 +92,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity \
 
 - 2026-04-20: 최초 구현 + 문서화 (commit `acf7c39`, PR #2)
 - 2026-04-20: 요약 count 에 persistent 필터 반영 — Home StatPill / Hidden 헤더와 동일 수치 보장
+- 2026-04-20: `buildNotificationId` 안정화 — 같은 notification slot 업데이트가 별도 row 로 누적되던 문제 수정. 음악/미디어 알림 개수가 부풀려지지 않음

@@ -174,7 +174,7 @@ class NotificationCaptureProcessorTest {
         )
 
         assertEquals(
-            "com.smartnoti.testnotifier:1700000000000:2147483647:ranker_group",
+            "com.smartnoti.testnotifier:2147483647:ranker_group",
             result.id,
         )
     }
