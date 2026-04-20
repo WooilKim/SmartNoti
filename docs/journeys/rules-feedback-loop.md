@@ -90,3 +90,4 @@ adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY \
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: v1 loop re-verify — Detail 경유 PASS (fresh sender `TestSender_0421_T12`, `person:…` rule ALWAYS_PRIORITY 생성 확인)
+- 2026-04-21: v1 loop re-verify #3 — KEEP_SILENT 분기 PASS (fresh sender `SilentTest_0421_T1`, Detail "조용히 처리" 탭 → Rules 탭 "조용히 1" 카테고리에 person 타입 룰 `person:SilentTest_0421_T1` 생성 + reasonTags 에 "사용자 규칙" 추가 관측). 3개 액션 분기 (ALWAYS_PRIORITY / ALWAYS_DIGEST / KEEP_SILENT) 모두 관측 완료.

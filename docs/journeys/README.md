@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — rules-feedback-loop re-verify #3 (KEEP_SILENT branch), emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | ✅ PASS | 지금까지 cycle 에서 verify 되지 않았던 **KEEP_SILENT 분기** 를 전용으로 검증. Cold start: `am force-stop com.smartnoti.app` → `am start -n com.smartnoti.app/.MainActivity --es com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden` 로 Hidden (숨긴 알림) 화면 진입. Fresh sender: `cmd notification post -S bigtext -t "SilentTest_0421_T1" FbSilentTest "조용히 처리 피드백 테스트"` → Hidden 목록에 "Shell / SilentTest_0421_T1 / 조용히 정리" 카드로 등장. 카드 탭 → Detail 화면 ("알림 상세") 진입, reasonTags 초기 관측 = `발신자 있음 / 조용한 시간` (사용자 규칙 없음). 스크롤 후 하단 "이 알림 학습시키기" 섹션에서 **"조용히 처리" 버튼 (우측, bounds [685,1945][851,1994]) 탭**. (1) Detail reasonTags 즉시 갱신 관측 → `발신자 있음 / 조용한 시간 / 사용자 규칙` (="사용자 규칙" 태그 추가 — `NotificationFeedbackPolicy.applyAction` 호출 증거). (2) Rules 탭 이동 → 헤더 count `전체 7 · 즉시 전달 2 · Digest 4 · 조용히 1` 로 "조용히 1" 카테고리 **신규 생성** (cycle 시작 시점엔 0). 스크롤하여 "조용히 / 규칙 1개" 섹션에서 신규 rule `SilentTest_0421_T1 / 사람 / 조용히 / 발신자 기준 / "SilentTest_0421_T1 연락은 조용히 정리해요"` 카드 확인 — `RuleTypeUi.PERSON`, matchValue = sender title, id = `person:SilentTest_0421_T1`. sender 존재 분기 (PERSON) + KEEP_SILENT action → `upsertRule` 경로가 의도대로 동작. Observable steps 2.iii/2.iv/2.v/2.vi (applyAction → updateNotification → toRule → upsertRule) 와 Exit state (DB reasonTags 에 "사용자 규칙" + RulesRepository 새 person rule upsert) 모두 충족. 이로써 rules-feedback-loop 의 3개 액션 분기 (ALWAYS_PRIORITY / ALWAYS_DIGEST / KEEP_SILENT) 가 04-21 cycle 에서 **전부 실행 경로로 관측 완료** — 직전 re-verify #2 (PR #75) 에서 남긴 관찰 공백 해소. Known gaps 변경 없음 (잔존 person rule + deep-link cold-start fragility 는 이번에도 동일하게 재현 — 의도된 제약 |
+
+
 ### 2026-04-21 (v1 loop tick — digest-suppression re-verify #2, emulator-5554)
 
 | Journey | Result | Notes |
