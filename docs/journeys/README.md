@@ -39,7 +39,7 @@
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-20 |
-| [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-20 |
+| [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-20 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-20 |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — digest-inbox re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-inbox | ✅ PASS | Recipe 그대로 실행: `for i in 1 2 3 4; do cmd notification post -S bigtext -t "Coupang0421V" "Deal$i" "오늘의 딜 ${i}건"; done` → `MainActivity` 재개 후 정리함 탭 (539, 2232) 탭. `run-as com.smartnoti.app sqlite3 … 'SELECT packageName, COUNT(*) FROM notifications WHERE status="DIGEST" GROUP BY packageName;'` → `com.android.shell\|15`, `com.smartnoti.testnotifier\|4`. uiautomator dump 에서 정확히 두 개의 앱 그룹 카드 렌더: `SmartNoti Test Notifier 관련 알림 4건` + (스크롤 후) `Shell 관련 알림 15건`, 각 카드의 "최근 묶음 미리보기" 섹션에 `Coupang0421V` 프리뷰 카드 관측. Observable step 3 (`packageName` 으로 grouping, `summary="{app} 관련 알림 {N}건"` 매핑) 과 step 4 (앱명 + 카운트 + 요약 + 최근 3건 preview) 모두 DB count 와 UI 문자열이 일치. 포스팅한 4건 중 2건은 DIGEST, 2건은 SILENT 로 분류됐는데 (contentSignature 중복으로 3번째부터 DIGEST, duplicate-suppression 계약), 이는 digest-inbox Exit state (DIGEST 만 그룹 카드로 렌더) 와 정합 — SILENT 2건은 Hidden 으로 라우팅되고 Digest 탭에는 보이지 않음. Journey Observable steps 1–5 및 Exit state 전부 충족 |
 
 
 ### 2026-04-21 (v1 loop tick — duplicate-suppression re-verify, emulator-5554)

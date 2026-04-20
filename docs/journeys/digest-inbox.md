@@ -3,7 +3,7 @@ id: digest-inbox
 title: 정리함 인박스
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
