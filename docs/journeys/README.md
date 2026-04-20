@@ -42,7 +42,7 @@
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
-| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-20 |
+| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-21 |
 
 ### Rules & onboarding
 | ID | Title | Status | Last verified |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — insight-drilldown re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| insight-drilldown | ✅ PASS | Recipe 실행: 5건 posting (`cmd notification post -S bigtext -t "Coupang" "Deal$i" "오늘의 딜 $i"`) 후 DB 덤프 `SELECT title,status FROM notifications ORDER BY postedAtMillis DESC LIMIT 10` → `Coupang DIGEST x3, Coupang SILENT x2` (contentSignature `coupang 오늘의 딜` 로 duplicate heuristic 이 3번째부터 DIGEST 강등 — digest-drill 과 무관한 capture 계약). `am force-stop && am start MainActivity` → Home StatPill `즉시 9 / Digest 24 / 조용히 25`. 첫 번째 스크롤 (`input swipe 540 1800 540 600 400`) 후 dump 에서 InsightCard 확인: `일반 인사이트` 라벨 + header `SmartNoti 인사이트` + body `지금까지 49개의 알림을 대신 정리했어요 / 전체 알림 중 84%를 대신 정리했어요`, clickable app chip `Shell 알림 43개가 가장 많이 정리됐고, 주된 이유는 '조용한 시간'예요` bounds `[84,869][996,995]`, reason breakdown `조용한 시간 · 23건 / 사용자 규칙 · 11건 / 반복 알림 · 9건` 렌더. App chip (540,932) 탭 → `InsightDrillDownScreen` 진입 관측: (step 4) eyebrow `인사이트` + title `Shell 인사이트` + subtitle `Shell 알림 43건이 SmartNoti에서 어떻게 정리됐는지 보여줘요.`, (step 5) `ContextBadge` `일반 인사이트` (GENERAL 톤), (step 6) range `FilterChip` 3개 (`최근 3시간 / 최근 24시간 / 전체`) 중 `최근 24시간` 이 default selection 으로 active — subtitle `최근 24시간 기준 Shell에서 정리된 알림 43건을 시간순으로 보여줘요.`, (step 7) breakdown 차트 `Digest 20 / 조용히 23` + helper copy `이 앱에서 가장 많이 보인 이유는 '조용한 시간'이에요.`, (step 8) reason nav rows `조용한 시간 · 23건 / 사용자 규칙 · 11건 / 반복 알림 · 9건` 각각 `탭해서 자세히 보기` hint, (step 9) 하단 `NotificationCard` 리스트 (`Shell / Shop / 테스트 / 조용히 정리` + reason chips `발신자 있음 / 조용한 시간`). Range chip `최근 3시간` (203,783) 탭 → subtitle 및 총계 `43→21`, breakdown `Digest 10 / 조용히 11`, reason rows `조용한 시간 · 21건 / 사용자 규칙 · 6건 / 반복 알림 · 4건` 으로 재계산 관측 (`InsightDrillDownBuilder` 의 range 분기 동작 확인). Reason nav 검증: `사용자 규칙 · 6건` row (200,1221) 탭 → 새 InsightDrillDown 진입 (`인사이트` eyebrow + title `사용자 규칙 이유` + subtitle `'사용자 규칙' 이유로 정리된 알림 6건을 모아봤어요.`), `Digest 6 / 조용히 0` breakdown, 현재 이유 row `사용자 규칙 · 6건` 옆에 marker `현재 보고 있는 항목`, 공기 reason `조용한 시간 · 6건 / 온보딩 추천 · 3건` 렌더, 카드 리스트에 `DetailVerify0421 / 두 번째 이벤트 안내 / Digest` + reason chips `발신자 있음 / 사용자 규칙 / 프로모션 알림 / 온보딩 추천 / 조용한 시간` 관측 — 이유 기반 재드릴다운 경로 end-to-end 동작 확증. Observable steps 1–10 및 Exit state (앱/이유 필터로 좁혀진 리스트 + 재드릴다운 + Detail 진입 가능) 전부 충족. 2026-04-20 sweep 의 `Home 인사이트 "반복 알림 · 5건" 카드 탭 → "반복 알림 이유"` 얕은 증거를 app-chip + range-chip + reason-nav 세 축으로 강화 |
 
 
 ### 2026-04-21 (v1 loop tick — rules-feedback-loop re-verify, emulator-5554)

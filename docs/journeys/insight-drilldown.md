@@ -3,7 +3,7 @@ id: insight-drilldown
 title: 인사이트 드릴다운
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
