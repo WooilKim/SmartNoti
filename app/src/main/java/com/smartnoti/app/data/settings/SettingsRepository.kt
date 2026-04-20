@@ -41,6 +41,7 @@ class SettingsRepository private constructor(
                 silentLockScreenVisibility = prefs[SILENT_LOCK_SCREEN_VISIBILITY] ?: defaults.silentLockScreenVisibility,
                 suppressSourceForDigestAndSilent = prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: defaults.suppressSourceForDigestAndSilent,
                 suppressedSourceApps = prefs[SUPPRESSED_SOURCE_APPS] ?: defaults.suppressedSourceApps,
+                suppressionExcludedApps = prefs[SUPPRESSION_EXCLUDED_APPS] ?: defaults.suppressionExcludedApps,
                 hidePersistentNotifications = prefs[HIDE_PERSISTENT_NOTIFICATIONS] ?: defaults.hidePersistentNotifications,
                 hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
                 protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
@@ -124,14 +125,27 @@ class SettingsRepository private constructor(
 
     suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            val updated = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet()).toMutableSet().apply {
-                if (enabled) {
-                    add(packageName)
-                } else {
-                    remove(packageName)
-                }
+            val updatedSuppressed = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet()).toMutableSet()
+            val updatedExcluded = (prefs[SUPPRESSION_EXCLUDED_APPS] ?: emptySet()).toMutableSet()
+            if (enabled) {
+                // Turning suppression on for this app also lifts any sticky exclusion so the
+                // user's new intent ("please hide these") wins over their previous opt-out.
+                updatedSuppressed.add(packageName)
+                updatedExcluded.remove(packageName)
+            } else {
+                // Turning suppression off makes the exclusion sticky — the auto-expansion
+                // policy must not quietly re-add this package the next time a DIGEST fires.
+                updatedSuppressed.remove(packageName)
+                updatedExcluded.add(packageName)
             }
-            prefs[SUPPRESSED_SOURCE_APPS] = updated
+            prefs[SUPPRESSED_SOURCE_APPS] = updatedSuppressed
+            prefs[SUPPRESSION_EXCLUDED_APPS] = updatedExcluded
+        }
+    }
+
+    suspend fun setSuppressionExcludedApps(packageNames: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[SUPPRESSION_EXCLUDED_APPS] = packageNames
         }
     }
 
@@ -219,6 +233,7 @@ class SettingsRepository private constructor(
         private val SILENT_LOCK_SCREEN_VISIBILITY = stringPreferencesKey("silent_lock_screen_visibility")
         private val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT = booleanPreferencesKey("suppress_source_for_digest_and_silent")
         private val SUPPRESSED_SOURCE_APPS = stringSetPreferencesKey("suppressed_source_apps")
+        private val SUPPRESSION_EXCLUDED_APPS = stringSetPreferencesKey("suppression_excluded_apps")
         private val HIDE_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_notifications")
         private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
         private val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("protect_critical_persistent_notifications")
