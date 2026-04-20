@@ -39,6 +39,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     private val silentSummaryNotifier by lazy { SilentHiddenSummaryNotifier(applicationContext) }
     private var storeSyncJob: Job? = null
     private var silentSummaryJob: Job? = null
+    private var silentSourceSweepJob: Job? = null
     private val onboardingBootstrapCoordinator by lazy {
         OnboardingActiveNotificationBootstrapCoordinator.create(applicationContext)
     }
@@ -90,7 +91,53 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 }
             }
         }
+        silentSourceSweepJob?.cancel()
+        silentSourceSweepJob = serviceScope.launch {
+            sweepStaleSilentSources(repository)
+        }
         enqueueOnboardingBootstrapCheck()
+    }
+
+    private suspend fun sweepStaleSilentSources(
+        repository: NotificationRepository,
+    ) {
+        val currentSilent = repository.observeAll().first()
+            .filter { it.status == NotificationStatusUi.SILENT }
+        if (currentSilent.isEmpty()) return
+        val silentEntries = currentSilent
+            .mapTo(mutableSetOf()) { notification ->
+                SilentEntry(
+                    packageName = notification.packageName,
+                    contentSignature = duplicatePolicy.contentSignature(
+                        title = notification.title,
+                        body = notification.body,
+                    ),
+                )
+            }
+        val tray = activeNotifications ?: return
+        val active = tray.map { sbn ->
+            val extras = sbn.notification.extras
+            val title = extras?.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
+            val body = extras?.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
+            ActiveSourceNotification(
+                key = sbn.key,
+                packageName = sbn.packageName,
+                contentSignature = duplicatePolicy.contentSignature(title, body),
+                isProtected = ProtectedSourceNotificationDetector.isProtected(
+                    ProtectedSourceNotificationDetector.signalsFrom(sbn),
+                ),
+            )
+        }
+        val keysToCancel = SilentSourceMigrationSweeper.keysToCancel(
+            activeNotifications = active,
+            silentEntries = silentEntries,
+        )
+        if (keysToCancel.isEmpty()) return
+        withContext(Dispatchers.Main) {
+            keysToCancel.forEach { key ->
+                runCatching { cancelNotification(key) }
+            }
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -266,6 +313,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         }
         storeSyncJob?.cancel()
         silentSummaryJob?.cancel()
+        silentSourceSweepJob?.cancel()
         serviceScope.cancel()
         super.onDestroy()
     }
