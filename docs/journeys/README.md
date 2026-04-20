@@ -23,7 +23,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-21 |
-| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-20 |
+| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-21 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-20 |
 
 ### Source notification routing (시스템 tray 조작)
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (v1 loop tick — duplicate-suppression re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| duplicate-suppression | ✅ PASS | Recipe 그대로 실행: `for i in 1 2 3; do cmd notification post -S bigtext -t "Shopping" "Repeat$i" "한정 특가"; done` — `-t` 가 TITLE, 위치인자 1=tag, 2=text 이므로 세 번 모두 title="Shopping" / body="한정 특가" (signature `shopping 한정`) 고정, tag `Repeat1/2/3` 만 달라 `sbn.key` 는 3개로 분리됨. `run-as com.smartnoti.app sqlite3 smartnoti.db "SELECT title, body, status, contentSignature FROM notifications WHERE title='Shopping' ORDER BY postedAtMillis DESC LIMIT 3"` 결과: 최신(3번째)=DIGEST / 두 번째=SILENT / 첫 번째=SILENT — contentSignature 세 건 모두 `shopping 한정` 일치. Digest 탭에서 Shell 그룹 `12건 → 13건` 으로 증가, 그룹 preview 에 `Shell / Shopping / 한정 / Digest` 카드 렌더 — journey Observable step 6 (`duplicateCountInWindow >= 3 → DIGEST`) 와 Exit state (`반복 알림 3번째부터는 DIGEST 로 저장`) 충족. 첫 두 건이 "default" 가 아닌 SILENT 로 떨어진 것은 classifier 가 sender 없는 Shell posting 을 기본 SILENT 로 분류한 산물로, duplicate-suppression 계약과는 무관 (dup heuristic 자체는 3번째에서 정확히 DIGEST 를 돌려줌). Hidden 인박스에서도 첫 두 개 silent 가 group card 에 누적되어 Shell 숨김 카운트 +2 반영 관측 |
 
 
 ### 2026-04-21 (v1 loop tick — notification-detail re-verify, emulator-5554)
