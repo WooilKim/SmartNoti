@@ -88,3 +88,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: v1 loop re-verification sweep — PRIORITY 키워드 posting 이 Home StatPill 까지 end-to-end 반영됨 확인 (자세한 증거는 `docs/journeys/README.md` Verification log)
