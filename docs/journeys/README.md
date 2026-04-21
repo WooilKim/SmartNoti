@@ -47,7 +47,7 @@
 ### Rules & onboarding
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-20 |
+| [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
 | [rules-management](rules-management.md) | 규칙 CRUD | shipped | 2026-04-21 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-21 |
 
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (journey-tester — onboarding-bootstrap reconnect-sweep end-to-end PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| onboarding-bootstrap | ✅ PASS | Listener-reconnect T1–T4 배선 포함 fresh APK (`lastUpdateTime=2026-04-21 15:47:57`) 에서 reconnect-sweep 경로 end-to-end 관측. Recipe: (1) `cmd notification disallow_listener com.smartnoti.app/.SmartNotiNotificationListenerService` 로 리스너 revoke → dumpsys `NotificationListeners: Disallowing` 확인. (2) 리스너 disabled 상태에서 `cmd notification post -S bigtext -t 'ReconnectSweepTest' SweepTag '인증번호 424242 SWEEP_TEST'` 포스팅 (tray 에만 쌓이고 `onNotificationPosted` 는 호출되지 않는 구간). (3) `cmd notification allow_listener ...` 로 재허용 → logcat `NotificationListeners: 0 notification listener service connected` 관측, `onListenerConnected` 재발화. (4) 관측: (a) DB 쿼리 `SELECT id,packageName,title,body,status,postedAtMillis FROM notifications ORDER BY postedAtMillis DESC LIMIT 10` 최상단에 `com.android.shell:2020:SweepTag / ReconnectSweepTest / 인증번호 / PRIORITY / 1776756189019` 저장됨 — disconnect 구간에 posted 되어 `onNotificationPosted` 경로를 못 탔던 알림이 reconnect 후 `enqueueReconnectSweep` → `ListenerReconnectActiveNotificationSweepCoordinator.sweep(activeNotifications)` → `processNotification` 경로로 소급 캡처되었음을 증명. (b) `cmd notification list` 에 SmartNoti 자체 replacement notification `0|com.smartnoti.app|23057|null|10192` 추가 게시 (PRIORITY 계열 라우팅 완료). (c) onboarding bootstrap 플래그는 이미 이전 온보딩에서 consume 된 상태 (기기 firstInstallTime=2026-04-19) 라 `enqueueOnboardingBootstrapCheck` 는 no-op, sweep 만 동작 — Known gaps 의 "권한 토글 등 일반 재접속에서도 tray 에 남은 미처리 알림을 sweep 이 소급 캡처" 계약 그대로. (d) Observable step 10 의 `existsByContentSignature` + in-process `SweepDedupKey` Set 중복 방지도 동반 확인: 재-reconnect 시 이미 저장된 SweepTag row 는 skip (dedup Set 에 기록된 키 + DB 존재 둘 다 hit). DRIFT 없음 — plan `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md` 의 T1–T4 구현 목표가 사용자 관측에서 증명됨. `last-verified` 를 2026-04-20 → 2026-04-21 갱신. |
 
 
 ### 2026-04-21 (journey-tester — hidden-inbox dual-surface + deep-link filter PASS after #127/#128/#130, emulator-5554)
