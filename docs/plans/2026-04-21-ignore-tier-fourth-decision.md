@@ -66,7 +66,7 @@ created: 2026-04-21
 3. Task 1 테스트 통과 확인.
 4. `./gradlew :app:testDebugUnitTest` 전체 빌드 확인 — when 분기 누락 컴파일 오류가 있는 곳을 전부 TODO 로 수집 (Task 3~5 에서 해결).
 
-## Task 3: Classifier routes `RuleActionUi.IGNORE` → `NotificationDecision.IGNORE`
+## Task 3: Classifier routes `RuleActionUi.IGNORE` → `NotificationDecision.IGNORE` [IN PROGRESS via PR #179]
 
 **Objective:** 룰 기반으로만 IGNORE 에 도달 가능하게 한다.
 
