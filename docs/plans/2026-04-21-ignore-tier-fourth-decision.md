@@ -26,7 +26,8 @@ created: 2026-04-21
 - **Rule-driven only.** Classifier 의 cascade (rule → VIP → persistence → default) 는 기본을 여전히 SILENT 로 유지한다. IGNORE 는 사용자가 "이건 쓰레기다" 라고 명시 선언한 것에만 적용되어야 한다. 자동 승격은 파괴적 — 복구 비용이 너무 크다.
 - **Persistence 는 유지.** IGNORE row 도 DB 에 남겨 감사/복구/주간 인사이트에 쓸 수 있게 한다. "보이지 않음" 은 UI 쿼리 필터로 처리하고, 물리 삭제는 하지 않는다.
 - **User-facing view 기본 제외.** Home / Hidden / Digest / Priority / Detail 의 기본 쿼리는 IGNORE 를 filter out. Settings 의 opt-in 토글이 켜졌을 때만 "무시됨" 아카이브가 별도 화면에 노출된다.
-- **Weekly insights 포함 여부는 open question.** 아래 Risks 참조.
+- **Weekly insights 포함 — 확정.** 주간/일간 noise-reduction 카운트에 IGNORE row 를 포함한다 ("SmartNoti 가 N개를 조용히 삭제해줬다" 포함). `InsightDrillDownSummaryBuilder` / `SuppressionInsightsBuilder` 의 집계에 IGNORE 케이스를 추가 (Task 6 에 포함). DIGEST/SILENT/IGNORE 세 카운트를 별도로 분리해 노출하면 투명성이 가장 좋다.
+- **Detail "무시" 피드백 버튼 — 확정 scope-in.** `rules-feedback-loop` 의 promote/keep-digest/keep-silent 패턴에 네 번째 버튼 추가. 파괴적이므로 **확인 다이얼로그 + undo snackbar** 필수. 자동 룰 upsert 는 수행 (기존 feedback 패턴 유지).
 - **Migration 는 아이덴티티.** 기존 DB row 의 `status` 값은 `PRIORITY/DIGEST/SILENT` 셋 중 하나 — v8→v9 는 새 enum 값을 허용하는 것 외에 데이터 재작성이 필요 없다 (string column, enum 파싱이 ingest 시 일어남). 그래도 no-op SQL migration 을 명시적으로 기록해 향후 schema sweep 도구가 당황하지 않게 한다.
 - **Color token 은 neutral gray 제안** — IGNORE 는 "존재감이 가장 낮음" 이 의도. 현재 SILENT 가 low-emphasis gray 계열이라면 IGNORE 는 그보다 더 낮은 opacity 혹은 border-only chip 으로. 구현 시 `ui-improvement.md` 톤에 맞춰 최종 결정.
 
@@ -115,9 +116,9 @@ created: 2026-04-21
 4. Description builder — IGNORE 룰의 설명 문구 ("이 조건에 맞는 알림은 알림센터에서 즉시 삭제합니다. SmartNoti 에도 보이지 않습니다.").
 5. UI smoke 테스트 / preview 렌더 확인. `ui-improvement.md` 톤에 맞춰 chip 색은 neutral gray 로.
 
-## Task 6: Inbox filtering + Settings archive toggle
+## Task 6: Inbox filtering + Settings archive toggle + Insights 집계
 
-**Objective:** 기본 뷰에서 IGNORE 를 숨기고, opt-in 아카이브 뷰를 제공.
+**Objective:** 기본 뷰에서 IGNORE 를 숨기고, opt-in 아카이브 뷰를 제공. Insights 집계에 IGNORE 추가.
 
 **Files:**
 - `app/src/main/java/com/smartnoti/app/data/local/NotificationRepository.kt` — `observePriority/Digest/Silent/Hidden` 에 IGNORE 제외 필터 추가
@@ -126,13 +127,34 @@ created: 2026-04-21
 - 신규: `app/src/main/java/com/smartnoti/app/ui/screens/ignored/IgnoredArchiveScreen.kt` (아카이브 뷰, 토글이 on 일 때만 nav 에 노출)
 - `app/src/main/java/com/smartnoti/app/navigation/AppNavHost.kt` — 조건부 route
 - `app/src/main/java/com/smartnoti/app/ui/components/StatusBadge.kt` / `NotificationCard.kt` — IGNORE 케이스 방어적 추가 (기본 뷰에 나타나면 dev assertion or neutral gray badge)
+- `app/src/main/java/com/smartnoti/app/domain/usecase/InsightDrillDownSummaryBuilder.kt` — `ignoredCount` 필드 추가, 세 카운트 (digest/silent/ignored) 를 별도 집계
+- `app/src/main/java/com/smartnoti/app/domain/usecase/SuppressionInsightsBuilder.kt` — IGNORE 를 "조용히 처리" 묶음이 아닌 별도 스트림으로 집계
 
 **Steps:**
 1. Repository 필터 단위 테스트 — IGNORE row 가 존재해도 observePriority 등에서 반환되지 않는지.
 2. 새 `observeIgnoredArchive()` flow 추가.
 3. Settings 토글과 연결된 나브 entry (조건부 노출).
 4. 아카이브 화면은 plain list — 오래된 순/최신 순 정렬, 탭하면 Detail (IGNORE 상태로 표시).
-5. StatusBadge — IGNORE 브랜치 추가 시 style 은 neutral gray.
+5. StatusBadge — IGNORE 브랜치 추가 시 style 은 neutral gray (low opacity, border-only 고려).
+6. Insights builder 테스트 보강 — DIGEST/SILENT/IGNORE 카운트 분리 집계 검증.
+
+## Task 6a: Detail "무시" feedback button + undo
+
+**Objective:** Detail 화면에 네 번째 피드백 버튼 "무시" 를 추가. 파괴적 액션이므로 확인 다이얼로그 + undo snackbar 필수.
+
+**Files:**
+- `app/src/main/java/com/smartnoti/app/ui/screens/detail/NotificationDetailScreen.kt` — 액션 버튼 줄에 "무시" 추가
+- `app/src/main/java/com/smartnoti/app/domain/usecase/NotificationFeedbackPolicy.kt` — `applyAction` 에 IGNORE 분기 (target status = IGNORE, reasonTag "사용자 규칙"), `toRule` 에 IGNORE action 매핑
+- 신규: `app/src/main/java/com/smartnoti/app/ui/components/IgnoreConfirmationDialog.kt` — "이 알림을 무시하면 앱에서도 삭제됩니다. 되돌리려면 설정 > 무시된 알림 보기." 확인 문구
+- `app/src/main/java/com/smartnoti/app/notification/SmartNotiNotificationActionReceiver.kt` — broadcast 경로에도 `ACTION_IGNORE` 추가 (replacement alert 에는 IGNORE 버튼을 노출하지 않음 — replacement 가 뜨는 것 자체가 non-IGNORE 결정이라서)
+- 테스트: `SmartNotiNotificationActionReceiverTest.kt`, `NotificationFeedbackPolicyTest.kt` 에 IGNORE 케이스 추가
+
+**Steps:**
+1. Detail 버튼 레이아웃에 "무시" 추가 (위치: "조용히 유지" 우측). 탭 시 확인 다이얼로그.
+2. 다이얼로그 확정 시 `NotificationFeedbackPolicy.applyAction(notification, IGNORE)` → DB `status=IGNORE` + `reasonTags += "사용자 규칙"`. `toRule` 로 `RuleActionUi.IGNORE` 룰 upsert (sender → PERSON, packageName → APP).
+3. 3초 undo snackbar 표시 — 탭 시 이전 status/reasonTags 복원 + 룰 upsert rollback (기존 룰이 있었으면 이전 action 으로 되돌림, 새 룰이면 delete).
+4. Detail 화면은 즉시 뒤로 navigate (pop) — IGNORE 된 알림이 현재 화면에 남아있지 않게.
+5. Undo 경로는 SmartNoti 의 임시 in-memory undo stack 으로 충분 (프로세스 재시작 시 undo 불가 — snackbar 창이 닫히면 영구화).
 
 ## Task 7: Journey doc updates + Change log
 
@@ -175,21 +197,21 @@ created: 2026-04-21
 - Journey 문서 동기화.
 
 **Out of scope**
-- Detail 화면의 "무시" 피드백 버튼 (open question — 별도 PR 에서 결정 후 플랜).
 - IGNORE row 의 물리 삭제 / 보관 기간 정책 (현재 전체 보관, retention policy 는 후속).
-- Weekly insights 수치에 IGNORE 포함 여부 (open question — 일단 제외로 출발, 결론 나면 후속 PR).
 - Bulk IGNORE 액션 (Hidden 화면에서 선택 → IGNORE 전환 등).
+- IGNORE 룰의 bulk import / export (단일 규칙 생성만).
 
 ---
 
-## Risks / open questions
+## Risks / resolved design decisions
 
-- **Weekly insights 포함 여부.** "소음 감소량" 지표에 IGNORE 를 포함하면 "SmartNoti 가 N개 삭제해줬다" 는 powerful 한 숫자가 된다. 제외하면 "사용자가 선택해서 버린 것" 이라는 해석이 가능. 제품 결정 필요 — **implementer 는 이 플랜만으로 결정하지 말 것**. 일단 제외로 출발하고 별도 토글 고려.
-- **Detail 의 "무시" 피드백 버튼.** `rules-feedback-loop` 패턴을 따르면 "이 알림 앱을 항상 무시" 가 룰 upsert 를 트리거해야 한다. 그러나 IGNORE 는 파괴적이므로 한 번의 탭으로 즉시 룰 생성은 위험. 확인 다이얼로그 + "되돌리기" snackbar 로 감싸는 UX 가 필요할 수 있음 — 본 플랜 scope 에서 제외, 별도 플랜에서.
-- **Color / typography tokens.** "무시됨" 뱃지가 눈에 띄면 IGNORE 의 "보이지 않음" 의도와 충돌. neutral gray + low opacity 권장, 구현 시 `ui-ux-inspector` 의 톤 가이드 확인 필요.
-- **Override 방향성.** 기존 `overrideOf` 는 base rule → override rule 방향. "IGNORE 를 ALWAYS_PRIORITY 로 덮기" 는 `RuleConflictResolver` 가 현재 지원하는 방향인지 확인 필요 (기존 테스트 재사용 가능한지).
+- **Weekly insights 포함 — 결정: 포함.** DIGEST / SILENT / IGNORE 세 스트림을 별도 카운트로 노출 ("SmartNoti 가 조용히 정리 N개 + 삭제 M개"). `InsightDrillDownSummaryBuilder` + `SuppressionInsightsBuilder` 수정 (Task 6).
+- **Detail "무시" 피드백 버튼 — 결정: scope-in.** 확인 다이얼로그 + undo snackbar 로 파괴성 완화. `rules-feedback-loop` 패턴 유지 (자동 룰 upsert). Task 6a 신설.
+- **Color / typography tokens.** neutral gray + low opacity 로 결정 (border-only chip 도 검토). 구현 시 `ui-improvement.md` 톤 최종 체크.
+- **Override 방향성.** 기존 `overrideOf` 는 base rule → override rule 방향. "IGNORE 를 ALWAYS_PRIORITY 로 덮기" 는 `RuleConflictResolver` 가 현재 지원하는 방향인지 Task 3 테스트로 검증 (미지원 시 resolver 확장 포함).
 - **DB migration 의 no-op 성.** `status` 가 string 이라 실제 schema 변경은 없지만, Room 은 version bump 시 migration 객체를 요구한다. `Migration(8, 9) { /* no-op */ }` 로 명시 등록하고 주석에 "enum value set 확장, 데이터 무변경" 을 남긴다.
-- **기존 SILENT 룰과의 사용자 인지 충돌.** 사용자가 "무시" 라는 단어를 "SILENT 와 같은 것" 으로 오해할 수 있음. Rule editor 의 action 라벨 카피가 매우 중요 — "무시 (즉시 삭제)" 처럼 파괴성을 드러내는 단어를 붙인다.
+- **기존 SILENT 룰과의 사용자 인지 충돌.** Rule editor 의 action 라벨 카피가 중요 — "무시 (즉시 삭제)" 처럼 파괴성을 드러내는 단어를 붙인다.
+- **Undo stack 수명.** Task 6a 의 undo snackbar 는 in-memory only — 프로세스 재시작 시 undo 불가. 사용자 기대와 일치하는지 ADB 검증 시 확인.
 
 ---
 
