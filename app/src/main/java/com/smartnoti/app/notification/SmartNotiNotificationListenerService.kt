@@ -272,6 +272,12 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 packageName = sbn.packageName,
                 decision = decision,
             )
+        val capturedSilentMode = SilentCaptureRoutingSelector.silentModeFor(
+            decision = decision,
+            isPersistent = isPersistent,
+            shouldBypassPersistentHiding = shouldBypassPersistentHiding,
+            isProtectedSourceNotification = isProtectedSourceNotification,
+        )
         val sourceRouting = if (isProtectedSourceNotification) {
             // Media / call / navigation / foreground-service notifications back a live
             // MediaSession or foreground service. Cancelling them breaks playback
@@ -286,6 +292,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 decision = decision,
                 hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
                 suppressSourceNotification = shouldSuppressSourceNotification,
+                silentMode = capturedSilentMode,
             )
         }
         val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
@@ -324,6 +331,12 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 replacementNotificationPosted = replacementNotificationPosted,
             ),
             isPersistent = isPersistent,
+            // Persist the ARCHIVED split so fresh SILENT captures land in the Hidden
+            // inbox "보관 중" tab. Classifier / processor chain already leaves
+            // `silentMode = null` for legacy SILENT rows; when the capture selector
+            // picks ARCHIVED we override here. We only override on ARCHIVED to avoid
+            // trampling modes a future task might set earlier in the pipeline.
+            silentMode = capturedSilentMode ?: baseNotification.silentMode,
         )
         repository.save(notification, sbn.postTime, contentSignature)
     }
