@@ -115,7 +115,7 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 1. **Room 스키마 확장 (tests-first)** [shipped via #145]
    - `NotificationEntity` 에 `ruleHitIds: String?` 추가. SCHEMA_VERSION 7→8. Nullable 이라 기존 row 영향 없음.
    - `NotificationRepositoryTest` 에서 round-trip 확인.
-2. **Classifier 결과 확장** [IN PROGRESS via PR #X]
+2. **Classifier 결과 확장** [IN PROGRESS via PR #146]
    - `NotificationDecision` 에 `matchedRuleIds: List<String>` 필드 추가 (이전엔 단순 enum).
    - `classify()` 가 rule hit 시 그 rule id 를 함께 반환.
    - 기존 classifier signal 은 별도 `reasonSignals: List<String>` 로 유지.
