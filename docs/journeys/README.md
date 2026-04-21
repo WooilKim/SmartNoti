@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (v1 loop tick — hidden-inbox re-verify post-#89 collapsible contract, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | ✅ PASS (new contract) | PR #89 (commit `71d8fd4`) 이 hidden-inbox 의 app 그룹 카드를 기본 collapsed 로 전환한 뒤 첫 re-verify. 문서 (`docs/journeys/hidden-inbox.md`, last-verified 2026-04-21) 의 Observable step 7 이 "기본 상태는 collapsed — preview/bulk action 숨김" + step 8 "헤더 탭 → expanded state toggle + chevron 180° + `AnimatedVisibility`" 로 이미 갱신되어 있어 **새 계약 기준** 으로 검증. Recipe 그대로 cold-start: `am force-stop com.smartnoti.app && am start -n com.smartnoti.app/.MainActivity -e com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden`. (1) Collapsed default 증명 — `uiautomator dump` 결과 eyebrow `숨긴 알림` + title `숨겨진 알림 37건` + summary `3개 앱에서 37건을 숨겼어요.`, 그룹 카드 3개 (`Shell 35건`, `Android System 1건`, `Digital Wellbeing 1건`) 모두 chevron `content-desc="펼치기"` + label `{App} 숨긴 알림 {N}건` 만 노출, `grep -c "최근 묶음 미리보기" /tmp/ui_hidden.xml = 0` (expected per recipe step 3). 프리뷰 rows 와 bulk action row (`모두 중요로 복구` / `모두 지우기`) 부재 확인 — `DigestGroupCard(collapsible=true)` 기본값이 의도대로 collapsed. (2) Expand toggle 증명 — Shell 카드 헤더 중앙 (500, 1050) `input tap` 후 재-dump → `grep -c "최근 묶음 미리보기" /tmp/ui_hidden2.xml = 1`, chevron `content-desc="접기"` 1개 관측 (Shell 만 펼쳐짐, 나머지는 화면 밖으로 밀려났지만 이전 dump 에서 모두 `펼치기` 였음 = 초기값 동일). `rememberSaveable(groupId)` expanded state + `AnimatedVisibility` + chevron 180° rotate 가 관측 가능한 사용자 동작으로 작동. Observable steps 1–9 (HiddenNotificationsScreen 마운트 → observeSettings/observeAllFiltered → toHiddenGroups → ScreenHeader → SmartSurfaceCard + `DigestGroupCard(collapsible=true)` collapsed 렌더 → 헤더 탭 expand → preview 카드 tap 가능 상태) 및 Exit state (DB SILENT=37, 화면=37, 요약 알림 count=37 일치) 전부 충족. DRIFT 없음 — 문서와 코드가 PR #89 계약으로 정렬. Plan `docs/plans/2026-04-20-hidden-inbox-collapsible-groups.md` 의 구현 목표가 사용자 관측에서 증명됨. 다른 12개 non-SKIP journey 는 이번 cycle 에서 same-day PASS 보유 — 재검증 스킵. |
+
+
 ### 2026-04-21 (v1 loop tick — rules-feedback-loop re-verify #3 (KEEP_SILENT branch), emulator-5554)
 
 | Journey | Result | Notes |
