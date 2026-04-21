@@ -45,7 +45,7 @@ created: 2026-04-21
 
 ## Tasks
 
-### Task 1: Failing tests for reconnect sweep behavior (tests-first)
+### Task 1: Failing tests for reconnect sweep behavior (tests-first) [IN PROGRESS via PR #94]
 
 **Objective:** 동작을 테스트로 먼저 고정.
 
