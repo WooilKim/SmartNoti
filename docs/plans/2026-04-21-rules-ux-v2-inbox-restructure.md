@@ -98,16 +98,17 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 2. **Home 에 카드 마운트** [shipped via #141]
    - `HomeScreen` 에서 `NotificationRepository.observeAll()` 로 PRIORITY 개수 집계 → 카드에 전달.
    - "검토하기" 탭 → `Routes.Priority` 혹은 신규 `Routes.PriorityReview` 열기 (Phase A 중반부).
-3. **Priority 탭을 review 화면으로 리팩토링** [IN PROGRESS]
+3. **Priority 탭을 review 화면으로 리팩토링** [shipped via #142]
    - `PriorityInboxScreen` 이 "중요 알림" 대신 "SmartNoti 가 건드리지 않은 알림" framing 으로 변경. 탭 자체는 BottomNav 에서 제거 (아래 task 4), 접근은 Home 카드 tap 으로만.
    - 카드마다 inline 재분류 액션 (→ Digest / → 조용히 / → 규칙 만들기) 표시.
-4. **BottomNav 에서 Priority 탭 제거** [IN PROGRESS]
+4. **BottomNav 에서 Priority 탭 제거** [shipped via #143]
    - `AppNavHost` 의 BottomNav 3 탭 (정리함, 숨김, 규칙, 설정) 유지, Priority 제거.
    - 기존 deep-link `smartnoti://priority` 는 Home + PriorityReview 경유로 redirect.
    - 실제 적용: `bottomNavItems` 에서 "중요" 엔트리 삭제 (4개 탭: 홈 / 정리함 / 규칙 / 설정). `Routes.Priority` 는 `AppNavHost` 의 `composable` 로 그대로 등록되어 Home 카드 탭 (`onPriorityClick`) 및 PRIORITY replacement 알림 parent route 로 계속 사용. 외부 `smartnoti://` URL 딥링크는 아직 Manifest 에 등록된 적이 없으므로 별도 redirect 코드는 불필요.
-5. **Journey 문서 갱신**
-   - `priority-inbox.md` → `status: deprecated` 처리하거나 review-screen 으로 재작성.
-   - `home-overview.md` Observable steps 에 새 카드 추가.
+5. **Journey 문서 갱신** [IN PROGRESS]
+   - `priority-inbox.md` → Home card tap 으로 여전히 진입 가능하므로 `deprecated` 가 아니라 "검토용" framing 으로 재작성 (status: shipped 유지). Observable steps 를 새 title/subtitle + 인라인 재분류 액션 + "Priority 탭 아님" 을 반영하도록 갱신, Change log 에 Phase A 마일스톤 추가.
+   - `home-overview.md` Observable steps 에 `HomePassthroughReviewCard` 추가 + Change log.
+   - `last-verified` 는 bump 하지 않음 (실제 recipe 를 재실행한 것은 아니므로, per docs-sync.md).
 
 ## Phase B — Tasks (Reason-tag traceability)
 
