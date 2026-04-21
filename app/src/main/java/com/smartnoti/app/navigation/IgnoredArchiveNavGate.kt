@@ -40,10 +40,14 @@ object IgnoredArchiveNavGate {
      * whenever [isButtonVisible] is `true`, otherwise the first-tap race
      * returns.
      *
-     * Current implementation mirrors the pre-fix [AppNavHost] wiring (route
-     * registered only while the toggle is ON); Task 2 of plan
-     * `2026-04-22-ignored-archive-first-tap-nav-race` switches this to
-     * unconditional `true` as part of the Option A fix.
+     * Plan `2026-04-22-ignored-archive-first-tap-nav-race` Task 2 (Option A)
+     * switched this to unconditional `true` so the Settings button lambda
+     * and the nav graph are never gated by two independently-observed reads
+     * of the same boolean. The toggle only controls the in-app entry point
+     * ([isButtonVisible]); no deep link currently targets the archive route,
+     * and if one is added later the screen itself is responsible for the
+     * empty-state hint pointing back at Settings.
      */
-    fun isRouteRegistered(showIgnoredArchive: Boolean): Boolean = showIgnoredArchive
+    @Suppress("UNUSED_PARAMETER")
+    fun isRouteRegistered(showIgnoredArchive: Boolean): Boolean = true
 }

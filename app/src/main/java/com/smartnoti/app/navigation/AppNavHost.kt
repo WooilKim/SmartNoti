@@ -254,17 +254,18 @@ fun AppNavHost(
                     },
                 )
             }
-            if (IgnoredArchiveNavGate.isRouteRegistered(showIgnoredArchive)) {
-                // Route registration contract lives in [IgnoredArchiveNavGate];
-                // plan `2026-04-22-ignored-archive-first-tap-nav-race` will flip
-                // the gate to unconditional `true` as part of Task 2 so the
-                // first-tap race window disappears.
-                composable(Routes.IgnoredArchive.route) {
-                    IgnoredArchiveScreen(
-                        contentPadding = paddingValues,
-                        onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
-                    )
-                }
+            // Route registration contract lives in [IgnoredArchiveNavGate].
+            // Plan `2026-04-22-ignored-archive-first-tap-nav-race` Task 2
+            // (Option A): the route is registered unconditionally so the
+            // Settings button lambda and the nav graph can never be gated by
+            // two independently-observed reads of `showIgnoredArchive`. Entry
+            // UX gating stays on the Settings button lambda above; no deep
+            // link currently targets this route, so exposure is equivalent.
+            composable(Routes.IgnoredArchive.route) {
+                IgnoredArchiveScreen(
+                    contentPadding = paddingValues,
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                )
             }
             composable(
                 route = Routes.Hidden.route,
