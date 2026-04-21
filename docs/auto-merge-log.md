@@ -95,3 +95,4 @@ If a self-merged row caused a regression:
 | 2026-04-21T05:01:15Z | project-manager | #116 | silent-tray-sender-grouping Task 2 — group summary + child channel (additive + tests green) | https://github.com/WooilKim/SmartNoti/actions/runs/24704725756 |
 | 2026-04-21T06:59:11Z | journey-tester | #133 | silent-auto-hide (fresh APK PASS — supersedes 2026-04-21 SKIP) | https://github.com/WooilKim/SmartNoti/actions/runs/24708529024 |
 | 2026-04-21T07:16:18Z | journey-tester | #135 | hidden-inbox (dual-surface + deep-link filter PASS post #127/#128/#130) | https://github.com/WooilKim/SmartNoti/actions/runs/24709175307 |
+| 2026-04-21T06:52:00Z | journey-tester | #131 | silent-auto-hide SKIP — stale APK (lastUpdateTime 12:42:01) predates Task 2 commit 2298d16 (14:38); no ARCHIVED rows and no smartnoti_silent_group posts observable | https://github.com/WooilKim/SmartNoti/actions/runs/24707782944 |
