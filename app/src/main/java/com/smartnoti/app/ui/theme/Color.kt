@@ -20,6 +20,11 @@ val DigestContainer = Color(0xFF3D2900)
 val DigestOnContainer = Color(0xFFD4A62A)
 val SilentContainer = Color(0xFF1A2435)
 val SilentOnContainer = Color(0xFF7A8BA6)
+// Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: IGNORE is the
+// "existence-lowest" tier — deliberately flatter and less blue than SILENT so
+// archive rows feel deprioritized without disappearing entirely.
+val IgnoreContainer = Color(0xFF141922)
+val IgnoreOnContainer = Color(0xFF6B7383)
 
 // Borders and dividers
 val BorderSubtle = Color(0xFF2A3E5E)

@@ -116,7 +116,7 @@ created: 2026-04-21
 4. Description builder — IGNORE 룰의 설명 문구 ("이 조건에 맞는 알림은 알림센터에서 즉시 삭제합니다. SmartNoti 에도 보이지 않습니다.").
 5. UI smoke 테스트 / preview 렌더 확인. `ui-improvement.md` 톤에 맞춰 chip 색은 neutral gray 로.
 
-## Task 6: Inbox filtering + Settings archive toggle + Insights 집계
+## Task 6: Inbox filtering + Settings archive toggle + Insights 집계 [IN PROGRESS via PR #185]
 
 **Objective:** 기본 뷰에서 IGNORE 를 숨기고, opt-in 아카이브 뷰를 제공. Insights 집계에 IGNORE 추가.
 

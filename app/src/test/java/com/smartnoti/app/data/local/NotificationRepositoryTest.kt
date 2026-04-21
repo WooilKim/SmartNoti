@@ -200,6 +200,83 @@ class NotificationRepositoryTest {
     }
 
     @Test
+    fun observe_priority_digest_silent_hidden_exclude_ignore_rows_by_default() = runBlocking {
+        // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6 contract: IGNORE
+        // rows remain persisted for audit/insights, but the default inbox flows
+        // must never surface them.
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "priority-row",
+                status = NotificationStatusUi.PRIORITY,
+                postedAtMillis = 1_700_100_000_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "digest-row",
+                status = NotificationStatusUi.DIGEST,
+                postedAtMillis = 1_700_100_100_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "silent-row",
+                status = NotificationStatusUi.SILENT,
+                silentMode = "ARCHIVED",
+                postedAtMillis = 1_700_100_200_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "ignore-row",
+                status = NotificationStatusUi.IGNORE,
+                postedAtMillis = 1_700_100_300_000,
+            )
+        )
+
+        val priority = repository.observePriority().first()
+        val digest = repository.observeDigest().first()
+        val digestGroups = repository.observeDigestGroups().first().flatMap { it.items }
+        val hiddenGroups = repository.observeAll().first().toHiddenGroups().flatMap { it.items }
+
+        assertTrue(priority.none { it.id == "ignore-row" })
+        assertTrue(digest.none { it.id == "ignore-row" })
+        assertTrue(digestGroups.none { it.id == "ignore-row" })
+        assertTrue(hiddenGroups.none { it.id == "ignore-row" })
+        // Sanity: the IGNORE row is still present in raw observeAll (audit retention).
+        assertTrue(repository.observeAll().first().any { it.id == "ignore-row" })
+    }
+
+    @Test
+    fun observe_ignored_archive_returns_only_ignore_rows_sorted_newest_first() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "ignore-older",
+                status = NotificationStatusUi.IGNORE,
+                postedAtMillis = 1_700_200_000_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "ignore-newer",
+                status = NotificationStatusUi.IGNORE,
+                postedAtMillis = 1_700_200_100_000,
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "digest-row",
+                status = NotificationStatusUi.DIGEST,
+                postedAtMillis = 1_700_200_200_000,
+            )
+        )
+
+        val archive = repository.observeIgnoredArchive().first()
+
+        assertEquals(listOf("ignore-newer", "ignore-older"), archive.map { it.id })
+    }
+
+    @Test
     fun silent_mode_column_round_trips_through_dao() = runBlocking {
         database.notificationDao().upsert(
             notificationEntity(

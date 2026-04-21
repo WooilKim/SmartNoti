@@ -61,6 +61,15 @@ sealed class Routes(val route: String) {
     data object Detail : Routes("detail/{notificationId}") {
         fun create(notificationId: String): String = "detail/${encodeRouteParam(notificationId)}"
     }
+    /**
+     * Opt-in 무시됨 아카이브 screen (plan
+     * `2026-04-21-ignore-tier-fourth-decision` Task 6). The route is only
+     * registered with the nav graph when `SmartNotiSettings.showIgnoredArchive`
+     * is true — the Settings toggle is the sole entry point. The archive is a
+     * secondary route reached from Settings (no bottom-nav surface).
+     */
+    data object IgnoredArchive : Routes("ignored_archive")
+
     data object Insight : Routes("insight/{filterType}/{filterValue}?range={range}&source={source}") {
         fun createForApp(appName: String, range: String? = null, source: String? = null): String {
             return buildInsightRoute(filterType = "app", filterValue = appName, range = range, source = source)

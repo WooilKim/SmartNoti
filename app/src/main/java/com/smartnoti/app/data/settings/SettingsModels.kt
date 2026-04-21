@@ -26,4 +26,10 @@ data class SmartNotiSettings(
     val hidePersistentNotifications: Boolean = true,
     val hidePersistentSourceNotifications: Boolean = false,
     val protectCriticalPersistentNotifications: Boolean = true,
+    // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: default OFF. When
+    // true, SmartNoti exposes the 무시됨 아카이브 route (conditional nav entry)
+    // so power users can audit / recover rows the IGNORE rule swept out of
+    // the default views. Toggling this is the only in-app surface that reveals
+    // IGNORE rows — the repository still persists them regardless.
+    val showIgnoredArchive: Boolean = false,
 )

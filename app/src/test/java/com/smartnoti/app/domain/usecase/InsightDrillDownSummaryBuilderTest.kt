@@ -60,8 +60,28 @@ class InsightDrillDownSummaryBuilderTest {
         assertEquals(0, summary.totalCount)
         assertEquals(0, summary.digestCount)
         assertEquals(0, summary.silentCount)
+        assertEquals(0, summary.ignoredCount)
         assertNull(summary.topReasonTag)
         assertEquals(emptyList<HomeReasonInsight>(), summary.topReasons)
+    }
+
+    @Test
+    fun separates_ignored_count_from_digest_and_silent_counts() {
+        // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: insights exposes
+        // DIGEST / SILENT / IGNORE as three distinct streams for transparency.
+        val summary = builder.build(
+            listOf(
+                notification(id = "1", status = NotificationStatusUi.DIGEST, reasonTags = listOf("쇼핑 앱")),
+                notification(id = "2", status = NotificationStatusUi.SILENT, reasonTags = listOf("쇼핑 앱")),
+                notification(id = "3", status = NotificationStatusUi.IGNORE, reasonTags = listOf("사용자 규칙")),
+                notification(id = "4", status = NotificationStatusUi.IGNORE, reasonTags = listOf("사용자 규칙")),
+            )
+        )
+
+        assertEquals(4, summary.totalCount)
+        assertEquals(1, summary.digestCount)
+        assertEquals(1, summary.silentCount)
+        assertEquals(2, summary.ignoredCount)
     }
 
     private fun notification(
