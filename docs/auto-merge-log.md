@@ -93,3 +93,4 @@ If a self-merged row caused a regression:
 | 2026-04-21T04:14:45Z | project-manager | #110 | silent-archive T5 — SilentArchivedSummaryCount helper + notifier rename (backfill) | https://github.com/WooilKim/SmartNoti/actions/runs/24703677983 |
 | 2026-04-21T05:05:00Z | project-manager | #115 | silent-archive T6 — docs-only rewrite of silent-auto-hide + hidden-inbox for ARCHIVED/PROCESSED split | https://github.com/WooilKim/SmartNoti/actions/runs/24704263267 |
 | 2026-04-21T05:01:15Z | project-manager | #116 | silent-tray-sender-grouping Task 2 — group summary + child channel (additive + tests green) | https://github.com/WooilKim/SmartNoti/actions/runs/24704725756 |
+| 2026-04-21T06:59:11Z | journey-tester | #133 | silent-auto-hide (fresh APK PASS — supersedes 2026-04-21 SKIP) | https://github.com/WooilKim/SmartNoti/actions/runs/24708529024 |
