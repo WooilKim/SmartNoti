@@ -25,13 +25,13 @@ last-verified: 2026-04-21
    - `NotificationRepository.observeCapturedAppsFiltered(...)` — 앱 선택 제안용
    - `SettingsRepository.observeSettings()` — persistent 알림 필터 설정
 2. 상단 `ScreenHeader` + "직접 규칙 추가" 카드의 "새 규칙 추가" 버튼.
-3. "활성 규칙 N개" 카드 + `FilterChip` (ALWAYS_PRIORITY / DIGEST / SILENT) — `RuleListFilterApplicator` 가 선택된 액션으로 필터링.
-4. 액션별로 그룹화된 리스트 (`RuleListGroupingBuilder`). 그룹 내부에서 `RuleListHierarchyBuilder` 가 flat list 를 tree 로 재조립 — base rule 아래 해당 rule 을 `overrideOf` 로 가리키는 override rule 이 자식으로 nest. 삭제/필터링된 base 를 참조하는 override 는 top-level 에 "기본 규칙을 찾을 수 없음" broken indicator 와 함께 렌더.
+3. "활성 규칙 N개" 카드 + `FilterChip` (ALWAYS_PRIORITY / DIGEST / SILENT / IGNORE) — `RuleListFilterApplicator` 가 선택된 액션으로 필터링. IGNORE chip 은 사용자가 IGNORE 룰을 최소 하나 이상 만들었을 때만 노출.
+4. 액션별로 그룹화된 리스트 (`RuleListGroupingBuilder`, 순서: 즉시 전달 → Digest → 조용히 → 상황별 → 무시). 그룹 내부에서 `RuleListHierarchyBuilder` 가 flat list 를 tree 로 재조립 — base rule 아래 해당 rule 을 `overrideOf` 로 가리키는 override rule 이 자식으로 nest. 삭제/필터링된 base 를 참조하는 override 는 top-level 에 "기본 규칙을 찾을 수 없음" broken indicator 와 함께 렌더.
 5. `RuleRow` 는 depth 에 따라 indent (16dp per level), override 는 primary tint pill "이 규칙의 예외 · {base 이름}" 라벨을, broken override 는 error tint 경고 문구를 제목 옆에 표시. 제목 / 매치값 / 액션 / 순서 이동 (drag handle + arrow fallback) / 편집 / 삭제 어포던스는 기존과 동일.
 6. 추가 / 편집 탭 → `AlertDialog` (rule editor) 열림:
    - 룰 타입 (`RuleTypeUi`: PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 선택
    - 매치 값 입력 (타입별: 이름, 패키지, 키워드, 시간 범위, 반복 임계)
-   - 액션 선택 (`RuleActionUi`)
+   - 액션 선택 (`RuleActionUi`: 즉시 전달 / Digest / 조용히 / 무시 (즉시 삭제)). IGNORE 는 파괴적이므로 라벨에 "(즉시 삭제)" 를 병기해 혼동 방지.
    - "예외 규칙" 섹션 — "기존 규칙의 예외로 만들기" `Switch` + (ON 일 때) `RuleEditorOverrideOptionsBuilder` 가 만든 base 후보 dropdown. 후보가 없으면 switch 자체 비활성화.
    - `RuleEditorDraftValidator` 가 입력 유효성 검사 (빈 값/잘못된 시간 등), `RuleOverrideSupersetValidator` 가 draft 매치 조건이 선택된 base 의 superset 인지 검증 (KEYWORD 는 token 포함, 그 외는 strict equality) 하여 helper text 로 경고.
    - 저장 → `RuleDraftFactory.create(..., overrideOf = ...)` 로 `RuleUiModel` 생성 → `rulesRepository.upsertRule(rule)`. `RuleOverrideValidator` 가 self-reference / circular chain 을 감지하면 persist 없이 `Log.e` 후 reject.
@@ -104,4 +104,5 @@ adb shell cmd notification post -S bigtext -t "은행" OtpTest "인증번호 123
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: Rule editor 에 IGNORE (무시) 액션 추가 — dropdown 라벨 "무시 (즉시 삭제)", `RuleListPresentationBuilder` 가 IGNORE 룰이 존재할 때만 overview/filter 세그먼트 노출, `RuleListGroupingBuilder` 가 "무시" 섹션을 tier 스택 최하단에 emit, `RuleRow` 의 action chip 이 IGNORE 에 한해 border-only 중립 회색 톤으로 렌더. 코덱/설명/그룹/프레젠테이션 단위 테스트 보강. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 5. `last-verified` 는 ADB 검증 실행 전까지 bump 하지 않음 (Task 8 에서 수행).
 - 2026-04-21: Phase C (hierarchical rules v2) 반영 — `RuleUiModel.overrideOf` 필드 추가, `RuleStorageCodec` 8-column 포맷, `RuleOverrideValidator` 가 self-reference / circular chain reject (#148). Rule editor AlertDialog 에 "예외 규칙" 섹션 + base dropdown + `RuleOverrideSupersetValidator` helper text (#151). Rules 탭이 `RuleListHierarchyBuilder` 로 base/override tree 렌더, `RuleRow` 에 `Base` / `Override` / `BrokenOverride` presentation 분기 (#150). Drag-to-reorder 가 `RuleOrdering` 으로 tier-aware swap 만 허용 (#152). 1-level override 체인만 지원 — Known gaps 참고. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase C Task 1/3/4/5. `last-verified` 는 실제 recipe 재실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).

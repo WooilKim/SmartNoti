@@ -436,8 +436,18 @@ fun RulesScreen(
                         },
                     )
                     SectionLabel(title = "처리 방식")
+                    // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 step 1
+                    // — IGNORE joins the action dropdown. Copy deliberately
+                    // spells out "(즉시 삭제)" so the destructive outcome
+                    // reads at a glance; CONTEXTUAL stays off the editor
+                    // menu because it is system-picked, not user-authored.
                     EnumSelectorRow(
-                        options = listOf(RuleActionUi.ALWAYS_PRIORITY, RuleActionUi.DIGEST, RuleActionUi.SILENT),
+                        options = listOf(
+                            RuleActionUi.ALWAYS_PRIORITY,
+                            RuleActionUi.DIGEST,
+                            RuleActionUi.SILENT,
+                            RuleActionUi.IGNORE,
+                        ),
                         selected = draftAction,
                         label = { actionLabel(it) },
                         onSelect = { draftAction = it },
@@ -660,8 +670,9 @@ private fun actionLabel(action: RuleActionUi): String = when (action) {
     RuleActionUi.SILENT -> "조용히"
     RuleActionUi.CONTEXTUAL -> "상황별"
     // Task 5 of plan `2026-04-21-ignore-tier-fourth-decision` finalizes the
-    // editor copy. Short label keeps existing surfaces readable.
-    RuleActionUi.IGNORE -> "무시"
+    // editor copy — "(즉시 삭제)" spells out the destructive outcome so a
+    // user tapping the chip understands it is not another "조용히" tier.
+    RuleActionUi.IGNORE -> "무시 (즉시 삭제)"
 }
 
 private fun matchLabelFor(type: RuleTypeUi): String = when (type) {
