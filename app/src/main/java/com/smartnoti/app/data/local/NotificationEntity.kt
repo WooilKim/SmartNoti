@@ -26,4 +26,15 @@ data class NotificationEntity(
     val sourceSuppressionState: String = "NOT_CONFIGURED",
     val replacementNotificationIssued: Boolean = false,
     val silentMode: String? = null,
+    /**
+     * StatusBarNotification key of the tray entry that produced this row, when available.
+     *
+     * Captured so the Detail "처리 완료로 표시" action (plan
+     * `silent-archive-drift-fix` Task 3) can pipe it into the live listener
+     * service to cancel the original tray notification alongside the DB flip.
+     * `null` on legacy rows saved before the column existed — consumers must
+     * treat that as "no tray cancel available" and fall back to DB-only
+     * behaviour.
+     */
+    val sourceEntryKey: String? = null,
 )

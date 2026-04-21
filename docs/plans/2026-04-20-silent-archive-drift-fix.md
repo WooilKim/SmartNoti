@@ -23,7 +23,7 @@
 
 ---
 
-## Task 1: Failing test — listener passes `silentMode = ARCHIVED` on SILENT routing  [IN PROGRESS via PR #125]
+## Task 1: Failing test — listener passes `silentMode = ARCHIVED` on SILENT routing  [shipped via #125]
 
 **Objective:** 드리프트를 테스트로 고정. `SmartNotiNotificationListenerService.processNotification` 이 SILENT decision 에 대해 `SourceNotificationRoutingPolicy.route` 를 `silentMode = SilentMode.ARCHIVED` 로 호출하는지 검증.
 
@@ -35,7 +35,7 @@
 2. PROTECTED / PERSISTENT 경로 는 기존 동작 유지 — SILENT 이라도 route 가 `silentMode = null` (legacy) 로 호출되거나 아예 protected short-circuit 에 걸려 routing 자체를 skip 해야 함. 테스트로 고정.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.SilentArchivedCapturePathTest"` 로 빨간 상태 확인.
 
-## Task 2: Implement — thread `silentMode` through the capture path  [IN PROGRESS via PR #125 (bundled with T1)]
+## Task 2: Implement — thread `silentMode` through the capture path  [shipped via #125 (bundled with T1) — `sourceEntryKey` column deferred to Task 3]
 
 **Objective:** Task 1 을 통과시킨다. 신규 SILENT 캡처는 tray 에 남고 DB 에 `silentMode = ARCHIVED` 로 저장.
 
@@ -52,7 +52,7 @@
 3. Room 마이그레이션 작성: `ALTER TABLE notifications ADD COLUMN sourceEntryKey TEXT DEFAULT NULL`.
 4. 전체 테스트 재실행 — Task 1 초록 + 기존 `SourceNotificationRoutingPolicyTest` / `NotificationRepositoryTest` / `HiddenGroupsSilentModeFilterTest` 영향 없음 확인.
 
-## Task 3: Extend `markSilentProcessed` to chain tray cancel from Detail
+## Task 3: Extend `markSilentProcessed` to chain tray cancel from Detail  [IN PROGRESS via PR #126]
 
 **Objective:** Detail 의 "처리 완료로 표시" 가 DB flip 에 더해 원본 tray 알림까지 제거해 journey Observable step 9 와 일치하게 한다.
 

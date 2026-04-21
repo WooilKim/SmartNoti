@@ -145,6 +145,21 @@ class NotificationRepository(
         return "$existing|$tag"
     }
 
+    /**
+     * Looks up the stored `StatusBarNotification.key` for [notificationId], if any.
+     *
+     * Used by the Detail "처리 완료로 표시" action (plan `silent-archive-drift-fix`
+     * Task 3) to decide whether to ask the live listener service to cancel the
+     * original tray entry after a successful [markSilentProcessed] flip.
+     *
+     * Returns `null` when no row matches, or when the row was saved before the
+     * `sourceEntryKey` column existed (legacy rows). Either way the caller
+     * should degrade to DB-only behaviour.
+     */
+    suspend fun sourceEntryKeyForId(notificationId: String): String? {
+        return dao.sourceEntryKeyForId(notificationId)
+    }
+
     suspend fun restoreSilentToPriorityByPackage(packageName: String): Int {
         val candidates = dao.observeAll().first()
             .filter { it.status == NotificationStatusUi.SILENT.name && it.packageName == packageName }
