@@ -63,6 +63,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — hidden-inbox ADB recipe on fresh APK post-IGNORE PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | ✅ PASS | Target: 직전 sweep 이 남겨둔 "last-verified 는 ADB 검증 전까지 bump 하지 않음" 보류 해소 + IGNORE tier (PR #182/#185) 가 Hidden 의 두 탭에서 실제로 누출 없는지 확인. Fresh APK on emulator-5554. Cold-start deep-link path: `am force-stop com.smartnoti.app && am start -n com.smartnoti.app/.MainActivity -e com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden` → `HiddenNotificationsScreen` 마운트 + ScreenHeader `숨긴 알림 / 보관 10건 · 처리 3건 / '보관 중' 은 아직 확인하지 않은 알림, '처리됨' 은 이미 훑어본 알림이에요.` + `HiddenTabRow` 세그먼트 (`보관 중 · 10건` / `처리됨 · 3건`) + 기본 탭 Archived 선택. Recipe 5단계 전부 일치: (1) "보관 중" 문자열 1건 매치, (2) `처리됨` 탭 tap (786,579) → 서브카피 `이미 확인했거나…` 1건 매치 + subcopy `1개 앱에서 3건을 처리했어요.` 관측, (3) collapsed 검증 — `최근 묶음 미리보기` 0건 (Archived 탭으로 되돌아온 직후 동일), (4) Shell 그룹 헤더 tap (500,1290) → `최근 묶음 미리보기` 1건 + bulk action `모두 중요로 복구` / `모두 지우기` 1건 동시 매치 (AnimatedVisibility 체인 확인). IGNORE leak 부재 — 헤더 카운트 `보관 10 / 처리 3` 이 DB 의 SILENT row 수와 일치하며 IGNORE row (이번 세션 기준 1건) 는 Hidden 에 미노출 (`toHiddenGroups` 의 `status == SILENT` 선필터 binary 상 동작 증명, journey Observable step 4 의 IGNORE 배제 bullet 과 exact 일치). DRIFT 없음. `last-verified: 2026-04-21` 유지 (문서상 이미 오늘자이나 이번이 실제 ADB 검증 시점). Change log 에 ADB verification 결과 추가. |
+
+
 ### 2026-04-22 (journey-tester — rules-management Phase C UI re-verify on fresh APK PASS, emulator-5554)
 
 | Journey | Result | Notes |
