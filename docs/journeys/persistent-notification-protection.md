@@ -3,7 +3,7 @@ id: persistent-notification-protection
 title: 지속 알림 키워드 기반 보호
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
@@ -80,3 +80,4 @@ last-verified: 2026-04-20
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: Policy-level verification re-run (`PersistentNotificationPolicyTest`, 7/7 PASS). `last-verified` 갱신.

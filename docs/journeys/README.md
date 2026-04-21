@@ -32,7 +32,7 @@
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-21 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
-| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-20 |
+| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-21 |
 
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (journey-tester — persistent-notification-protection policy-level PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| persistent-notification-protection | ✅ PASS | 가장 오래된 `last-verified=2026-04-20` journey. 문서에 명시된 runnable recipe (`./gradlew :app:testDebugUnitTest --tests PersistentNotificationPolicyTest`) 실행 → `BUILD SUCCESSFUL`, TEST XML `tests=7 skipped=0 failures=0 errors=0` (7/7 bypass / ongoing / isClearable / protect-토글 분기 전부 통과). Code pointer 재확인: `PersistentNotificationPolicy.kt` BYPASS_KEYWORDS 세트가 journey doc Observable step 3 의 키워드 리스트 (`통화, 전화, call, dialer, 길안내, 내비, navigation, maps, 녹화, recording, screen record, 마이크 사용 중, camera in use, camera access, microphone in use`) 와 exact 일치. DRIFT 없음 — contract (`shouldTreatAsPersistent` + `shouldBypassPersistentHiding` + `BYPASS_KEYWORDS`) 가 코드와 doc 양쪽에서 동일. End-to-end (통화/내비/녹화 실앱 트리거) 부분은 `cmd notification post` 가 `FLAG_ONGOING_EVENT` 를 설정할 수 없어 emulator 에서는 불가 — doc recipe 가 이를 명시하고 policy unit test 를 primary 수단으로 제시하므로 해당 보조 단계는 out-of-scope. `last-verified` 를 2026-04-20 → 2026-04-21 갱신. |
 
 
 ### 2026-04-21 (journey-tester — onboarding-bootstrap reconnect-sweep end-to-end PASS, emulator-5554)
