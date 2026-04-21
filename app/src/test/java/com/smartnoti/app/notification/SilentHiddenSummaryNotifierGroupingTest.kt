@@ -10,13 +10,13 @@ import com.smartnoti.app.data.local.NotificationEntity
 import com.smartnoti.app.domain.usecase.SilentGroupKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 /**
  * Tests-first for `silent-tray-sender-grouping` Task 2.
@@ -28,6 +28,7 @@ import org.robolectric.Shadows.shadowOf
  *  - Sender and App group keys produce distinct group tags
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class SilentHiddenSummaryNotifierGroupingTest {
 
     private lateinit var context: Context
@@ -39,8 +40,12 @@ class SilentHiddenSummaryNotifierGroupingTest {
         context = ApplicationProvider.getApplicationContext()
         shadowOf(context as Application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         notifier = SilentHiddenSummaryNotifier(context)
-        systemNm = context.getSystemService(NotificationManager::class.java)!!
+        systemNm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notifier.ensureChannel()
+    }
+
+    private fun active(): List<android.service.notification.StatusBarNotification> {
+        return shadowOf(systemNm).activeNotifications.toList()
     }
 
     @Test
@@ -71,7 +76,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
         )
 
-        val active = systemNm.activeNotifications
+        val active = active()
         assertEquals(1, active.size)
         val summary = active.single()
         assertTrue(
@@ -98,12 +103,14 @@ class SilentHiddenSummaryNotifierGroupingTest {
             key = key,
         )
 
-        val active = systemNm.activeNotifications
+        val active = active()
         assertEquals(2, active.size)
         val child = active.single { (it.notification.flags and android.app.Notification.FLAG_GROUP_SUMMARY) == 0 }
         assertEquals(SmartNotiNotifier.CHANNEL_SILENT_GROUP, child.notification.channelId)
         assertEquals(SilentHiddenSummaryNotifier.groupTagFor(key), child.notification.group)
-        assertEquals(NotificationCompat.PRIORITY_MIN, child.notification.priority)
+        @Suppress("DEPRECATION")
+        val priority = child.notification.priority
+        assertEquals(NotificationCompat.PRIORITY_MIN, priority)
     }
 
     @Test
@@ -123,11 +130,11 @@ class SilentHiddenSummaryNotifierGroupingTest {
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
         )
-        assertEquals(2, systemNm.activeNotifications.size)
+        assertEquals(2, active().size)
 
         notifier.cancelGroupSummary(mom)
 
-        val remaining = systemNm.activeNotifications
+        val remaining = active()
         assertEquals(1, remaining.size)
         assertEquals(SilentHiddenSummaryNotifier.groupTagFor(promo), remaining.single().notification.group)
     }
@@ -154,7 +161,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
         )
-        assertEquals(1, systemNm.activeNotifications.size)
+        assertEquals(1, active().size)
 
         notifier.postGroupSummary(
             key = key,
@@ -163,15 +170,15 @@ class SilentHiddenSummaryNotifierGroupingTest {
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
         )
 
-        assertEquals(0, systemNm.activeNotifications.size)
+        assertEquals(0, active().size)
         // channel itself stays — we don't tear it down per group.
         assertNotNull(systemNm.getNotificationChannel(SmartNotiNotifier.CHANNEL_SILENT_GROUP))
     }
 
     @Test
     fun post_group_child_ensures_silent_group_channel_even_if_not_pre_created() {
-        // Drop and re-create a fresh notifier to simulate a path where a child is posted first.
-        systemNm.cancelAll()
+        // Simulate a path where the channel was never pre-created by a prior post — the child
+        // entry must still bring the channel up on its own.
         val fresh = SilentHiddenSummaryNotifier(context)
         val key = SilentGroupKey.Sender("엄마")
 
@@ -194,10 +201,17 @@ class SilentHiddenSummaryNotifierGroupingTest {
         // summary into the group channel.
         notifier.post(count = 2)
 
-        val active = systemNm.activeNotifications
+        val active = active()
         assertEquals(1, active.size)
-        assertEquals(SilentHiddenSummaryNotifier.CHANNEL_ID, active.single().notification.channelId)
-        assertNull(active.single().notification.group)
+        val posted = active.single().notification
+        assertEquals(SilentHiddenSummaryNotifier.CHANNEL_ID, posted.channelId)
+        // And it must NOT be tagged with a SilentGroupKey-derived group tag. The implicit
+        // `"silent"` group that setSilent(true) attaches is a platform concern, not our
+        // per-sender tag.
+        assertTrue(
+            "archived summary must not be tagged with a SilentGroupKey-derived group tag",
+            posted.group == null || !posted.group.startsWith("smartnoti_silent_group_"),
+        )
     }
 
     private fun silentEntity(
