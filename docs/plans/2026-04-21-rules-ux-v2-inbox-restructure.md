@@ -95,10 +95,10 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 1. **Home passthrough 카드 컴포넌트 (tests-first)** [shipped via #140]
    - `HomePassthroughReviewCard(count, onReviewClick)` 신규 composable.
    - Preview + 단위 테스트 (count=0 empty state, count>0 active state).
-2. **Home 에 카드 마운트** [IN PROGRESS via PR #141]
+2. **Home 에 카드 마운트** [shipped via #141]
    - `HomeScreen` 에서 `NotificationRepository.observeAll()` 로 PRIORITY 개수 집계 → 카드에 전달.
    - "검토하기" 탭 → `Routes.Priority` 혹은 신규 `Routes.PriorityReview` 열기 (Phase A 중반부).
-3. **Priority 탭을 review 화면으로 리팩토링**
+3. **Priority 탭을 review 화면으로 리팩토링** [IN PROGRESS]
    - `PriorityInboxScreen` 이 "중요 알림" 대신 "SmartNoti 가 건드리지 않은 알림" framing 으로 변경. 탭 자체는 BottomNav 에서 제거 (아래 task 4), 접근은 Home 카드 tap 으로만.
    - 카드마다 inline 재분류 액션 (→ Digest / → 조용히 / → 규칙 만들기) 표시.
 4. **BottomNav 에서 Priority 탭 제거**

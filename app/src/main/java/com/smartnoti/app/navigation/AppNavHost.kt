@@ -199,7 +199,13 @@ fun AppNavHost(
             composable(Routes.Priority.route) {
                 PriorityScreen(
                     contentPadding = paddingValues,
-                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) }
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    onCreateRuleClick = { _ ->
+                        // Phase A Task 3 carves the inline "→ 규칙 만들기" entry point.
+                        // For v1 it lands in the Rules tab; a dedicated rule-editor deep
+                        // link is a Phase C task (hierarchical rules editor).
+                        navigateToTopLevel(Routes.Rules.route)
+                    },
                 )
             }
             composable(Routes.Digest.route) {
