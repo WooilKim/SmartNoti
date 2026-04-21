@@ -95,6 +95,8 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 재분류 시 토스트/확인 UI 없음 (상태만 바뀌어 UX 가 조용함).
 - Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Rules 탭으로 수동 이동 필요.
 - 2026-04-21 (journey-tester): Verification recipe step 3 ("다음 동일 signature 알림을 보내 자동 Priority 로 분류되는지 확인") 이 테스트용 sender 로 `"광고"` 를 제안 — 이 값은 온보딩이 기본 주입하는 KEYWORD 룰 (`광고,프로모션,쿠폰,세일,특가,이벤트,혜택 → DIGEST`) 의 매치 대상과 겹쳐 `RuleConflictResolver` 가 PERSON-ALWAYS_PRIORITY 대신 KEYWORD-DIGEST 로 라우팅하므로 step 3 만 단독으로 보면 기대와 달라 보인다. PERSON 분기 자체는 중립 sender (e.g. `TestSender_0421_T12`) 로 검증 시 정상 동작하므로 contract 문제 아님 — recipe 문구를 중립 sender 기반으로 바꾸는 편이 후속 재현성 향상에 도움. (Phase B `ruleHitIds` 를 활용한 "적용된 규칙" 섹션 전용 관측으로 확장되면 자연스레 해소될 가능성 있음.)
+- 2026-04-21 (ui-ux-inspector, emulator-5554): "이 알림 학습시키기" 카드의 3-버튼 secondary row (`Digest로 보내기` / `조용히 처리` / `무시`) 에서 `Digest로 보내기` 라벨만 2줄로 줄바꿈되어 버튼 높이가 나머지 두 버튼과 불일치. `ui-improvement.md` 의 "tighter spacing rhythm" + "Lists and rows: tap targets large enough while reducing visual clutter" 항목에 대한 시각 위반 (moderate). 3개 버튼이 동일한 row 를 공유하므로 폭 제약으로 첫 버튼만 wrap — 라벨 단축 (e.g. `Digest` / `조용히` / `무시`) 또는 `FlowRow` 기반 레이아웃 재고 필요. 같은 스크린 screenshot: `/tmp/ui-ignore-detail2.png`.
+- 2026-04-21 (ui-ux-inspector, emulator-5554): `IgnoreConfirmationDialog` 의 확정 버튼 "무시" 가 primary accent 파랑을 사용 — 파괴성 신호는 전적으로 본문 카피 ("앱에서도 삭제됩니다") 에 의존. `ui-improvement.md` 의 "accent color sparingly for ... primary actions" 규칙에는 부합하므로 Linear/Superhuman 톤 유지. Minor — 현재 문구 중심 접근이 의도적이라면 그대로 두고, 후속에서 파괴 액션 전용 tonal variant 도입 여부를 제품 결정으로 재확인 필요. Screenshot: `/tmp/ui-ignore-confirm-dialog.png`.
 
 ## Change log
 
