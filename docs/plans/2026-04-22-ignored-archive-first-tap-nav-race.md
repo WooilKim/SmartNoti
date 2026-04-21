@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 related-journey: ignored-archive
 ---
 
@@ -23,7 +23,7 @@ related-journey: ignored-archive
 
 ---
 
-## Task 1: Add failing test that pins the race
+## Task 1: Add failing test that pins the race [shipped via PR #199]
 
 **Objective:** toggle OFF→ON 직후 같은 composition 에서 버튼 탭 시 `navigate(Routes.IgnoredArchive.route)` 가 안전해야 한다는 계약을 테스트로 고정.
 
@@ -36,7 +36,7 @@ related-journey: ignored-archive
 2. UI test 셋업이 부담스러우면 단위 테스트로 대체: "버튼 노출 조건" 과 "route 등록 조건" 이 동일한 단일 boolean (또는 동일 source) 에서 파생되는지 contract 테스트.
 3. `./gradlew :app:testDebugUnitTest` (또는 `:app:connectedDebugAndroidTest`) 로 **failing** 확인.
 
-## Task 2: Fix the race in `AppNavHost`
+## Task 2: Fix the race in `AppNavHost` [IN PROGRESS via PR #199]
 
 **Objective:** Task 1 의 테스트가 초록이 되게. 가능한 한 작은 diff.
 

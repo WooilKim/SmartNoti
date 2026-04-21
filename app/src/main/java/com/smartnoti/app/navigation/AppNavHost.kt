@@ -243,7 +243,7 @@ fun AppNavHost(
                 SettingsScreen(
                     contentPadding = paddingValues,
                     onInsightClick = { navController.navigate(it) },
-                    onOpenIgnoredArchive = if (showIgnoredArchive) {
+                    onOpenIgnoredArchive = if (IgnoredArchiveNavGate.isButtonVisible(showIgnoredArchive)) {
                         {
                             navController.navigate(Routes.IgnoredArchive.route) {
                                 launchSingleTop = true
@@ -254,17 +254,18 @@ fun AppNavHost(
                     },
                 )
             }
-            if (showIgnoredArchive) {
-                // Conditional route — absent when the Settings toggle is off,
-                // so the archive is unreachable by any in-app path until the
-                // user opts in (plan `2026-04-21-ignore-tier-fourth-decision`
-                // Task 6).
-                composable(Routes.IgnoredArchive.route) {
-                    IgnoredArchiveScreen(
-                        contentPadding = paddingValues,
-                        onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
-                    )
-                }
+            // Route registration contract lives in [IgnoredArchiveNavGate].
+            // Plan `2026-04-22-ignored-archive-first-tap-nav-race` Task 2
+            // (Option A): the route is registered unconditionally so the
+            // Settings button lambda and the nav graph can never be gated by
+            // two independently-observed reads of `showIgnoredArchive`. Entry
+            // UX gating stays on the Settings button lambda above; no deep
+            // link currently targets this route, so exposure is equivalent.
+            composable(Routes.IgnoredArchive.route) {
+                IgnoredArchiveScreen(
+                    contentPadding = paddingValues,
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                )
             }
             composable(
                 route = Routes.Hidden.route,
