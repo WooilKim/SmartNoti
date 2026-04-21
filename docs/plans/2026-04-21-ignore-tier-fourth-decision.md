@@ -79,7 +79,7 @@ created: 2026-04-21
 2. Classifier 의 기본 fallback 경로 (VIP / 반복 / 기본 SILENT) 는 **건드리지 않는다** — 테스트로 "IGNORE 룰 없이 IGNORE 가 나오지 않는다" 를 고정.
 3. Override 테스트 — base IGNORE 룰 + overrideOf = ALWAYS_PRIORITY 룰 동시 매치 시 최종 decision 이 PRIORITY 인지 검증 (기존 `RuleConflictResolver` 와 합동으로).
 
-## Task 4: Notifier early-return for IGNORE + tray cancel 유지
+## Task 4: Notifier early-return for IGNORE + tray cancel 유지 [IN PROGRESS via PR #181]
 
 **Objective:** replacement alert / heads-up / 채널 posting 을 IGNORE 에서 skip 하되, 원본 tray cancel 은 유지 (사용자가 "삭제" 를 원했으므로).
 

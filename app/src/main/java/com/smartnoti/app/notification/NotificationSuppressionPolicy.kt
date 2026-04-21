@@ -9,6 +9,14 @@ object NotificationSuppressionPolicy {
         packageName: String,
         decision: NotificationDecision,
     ): Boolean {
+        // IGNORE is a user-declared delete-level classification (plan
+        // `2026-04-21-ignore-tier-fourth-decision` Task 4). The user has asked
+        // SmartNoti to delete the notification — not quiet it, not digest it
+        // — so the source tray cancel must run unconditionally. Neither the
+        // global `suppressDigestAndSilent` opt-in nor the per-app
+        // `suppressedApps` set gate this path.
+        if (decision == NotificationDecision.IGNORE) return true
+
         if (!suppressDigestAndSilent) return false
         if (packageName !in suppressedApps) return false
 
@@ -17,11 +25,8 @@ object NotificationSuppressionPolicy {
             NotificationDecision.DIGEST,
             NotificationDecision.SILENT,
             -> true
-            // Task 4 of plan `2026-04-21-ignore-tier-fourth-decision` will add
-            // an unconditional tray-cancel for IGNORE (bypassing the
-            // suppressDigestAndSilent / suppressedApps gates). Task 2 only
-            // mirrors the SILENT behaviour here so exhaustiveness holds; the
-            // Task 4 refactor will split IGNORE into its own early branch.
+            // Handled by the early-return above; kept here so the `when` stays
+            // exhaustive if a future refactor removes the guard.
             NotificationDecision.IGNORE -> true
         }
     }

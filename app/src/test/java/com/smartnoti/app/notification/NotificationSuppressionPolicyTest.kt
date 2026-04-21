@@ -84,4 +84,47 @@ class NotificationSuppressionPolicyTest {
             )
         )
     }
+
+    // IGNORE is a user-declared delete-level classification introduced by plan
+    // `2026-04-21-ignore-tier-fourth-decision`. Unlike DIGEST / SILENT, the
+    // source tray cancel must run unconditionally — the user asked to delete
+    // the notification, not just quiet it. The opt-in
+    // `suppressDigestAndSilent` flag and per-app `suppressedApps` set both
+    // become non-gates for IGNORE.
+
+    @Test
+    fun ignore_suppresses_source_even_when_opt_in_disabled() {
+        assertTrue(
+            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                suppressDigestAndSilent = false,
+                suppressedApps = emptySet(),
+                packageName = "com.coupang.mobile",
+                decision = NotificationDecision.IGNORE,
+            )
+        )
+    }
+
+    @Test
+    fun ignore_suppresses_source_even_when_app_not_selected() {
+        assertTrue(
+            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                suppressDigestAndSilent = true,
+                suppressedApps = setOf("com.kakao.talk"),
+                packageName = "com.coupang.mobile",
+                decision = NotificationDecision.IGNORE,
+            )
+        )
+    }
+
+    @Test
+    fun ignore_suppresses_source_when_app_is_selected() {
+        assertTrue(
+            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
+                suppressDigestAndSilent = true,
+                suppressedApps = setOf("com.coupang.mobile"),
+                packageName = "com.coupang.mobile",
+                decision = NotificationDecision.IGNORE,
+            )
+        )
+    }
 }
