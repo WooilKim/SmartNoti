@@ -14,9 +14,13 @@ import com.smartnoti.app.onboarding.OnboardingPermissions
 
 /**
  * Posts (or cancels) a single persistent SmartNoti notification that acts as the user's
- * inbox for anything classified as Silent. Silent notifications are hidden from the
- * system tray by default (see [SourceNotificationRoutingPolicy]); this summary is the
- * user's affordance to know how many are hidden and jump into a list view.
+ * inbox for anything classified as Silent and still in the **보관 중** (archived) bucket
+ * of the Hidden inbox. Items the user has already moved to **처리됨** (processed) are
+ * excluded — they have been acknowledged and should not re-clutter the tray.
+ *
+ * Silent notifications are hidden from the system tray by default (see
+ * [SourceNotificationRoutingPolicy]); this summary is the user's affordance to know
+ * how many 보관 중 items remain and jump into the list view.
  */
 class SilentHiddenSummaryNotifier(
     private val context: Context,
@@ -35,14 +39,14 @@ class SilentHiddenSummaryNotifier(
         val contentIntent = createContentIntent()
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_view)
-            .setContentTitle("숨겨진 알림 ${count}건")
-            .setContentText("탭: 목록 보기 · 스와이프: 확인으로 처리")
+            .setContentTitle("보관 중인 조용한 알림 ${count}건")
+            .setContentText("탭: 보관함 열기 · 스와이프: 확인으로 처리")
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .bigText(
-                        "조용히로 분류된 알림 ${count}건을 알림센터에서 숨겼어요. " +
-                            "탭하면 전체 목록을 보고, 옆으로 밀어 없애면 확인한 것으로 처리돼요 " +
-                            "(다음 숨긴 알림이 들어오면 다시 알려드려요).",
+                        "조용히로 분류되어 보관 중인 알림이 ${count}건 있어요. " +
+                            "탭하면 '보관 중' 목록을 열고, 옆으로 밀어 없애면 확인한 것으로 처리돼요 " +
+                            "(다음 보관 알림이 들어오면 다시 알려드려요).",
                     ),
             )
             .setPriority(NotificationCompat.PRIORITY_MIN)
@@ -73,10 +77,10 @@ class SilentHiddenSummaryNotifier(
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "SmartNoti 숨긴 알림 요약",
+            "SmartNoti 보관 중 알림 요약",
             NotificationManager.IMPORTANCE_MIN,
         ).apply {
-            description = "조용히로 분류되어 숨겨진 알림의 개수를 보여줍니다."
+            description = "조용히로 분류되어 보관 중인 알림의 개수를 보여줍니다."
             setShowBadge(false)
             enableVibration(false)
             setSound(null, null)

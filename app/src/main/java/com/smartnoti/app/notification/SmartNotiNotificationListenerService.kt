@@ -3,11 +3,9 @@ package com.smartnoti.app.notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.smartnoti.app.data.local.NotificationRepository
-import com.smartnoti.app.data.local.filterPersistent
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
-import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.toDecision
 import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
 import com.smartnoti.app.domain.model.withContext
@@ -93,20 +91,21 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         }
         silentSummaryJob?.cancel()
         silentSummaryJob = serviceScope.launch {
-            // Count only the Silent notifications that the rest of the app's inboxes
-            // would surface, i.e. apply the hidePersistentNotifications setting so the
-            // summary's count matches Home's StatPill and Hidden screen's header.
-            // We repost only on count transitions so a swipe-dismissed summary stays
-            // dismissed until the hidden count actually moves.
+            // The summary now represents only the "보관 중" tab of the Hidden inbox
+            // (plan silent-archive-vs-process-split, Task 5). Already-processed rows
+            // are excluded so the count reflects what the user still needs to act on.
+            // filterPersistent is applied so this matches Home's StatPill / Hidden
+            // screen header. We repost only on count transitions so a swipe-dismissed
+            // summary stays dismissed until the archived count actually moves.
             val settingsRepository = SettingsRepository.getInstance(applicationContext)
             var lastCount = -1
             combine(
                 repository.observeAll(),
                 settingsRepository.observeSettings(),
             ) { notifications, settings ->
-                notifications
-                    .filterPersistent(settings.hidePersistentNotifications)
-                    .count { it.status == NotificationStatusUi.SILENT }
+                notifications.countSilentArchivedForSummary(
+                    hidePersistentNotifications = settings.hidePersistentNotifications,
+                )
             }.distinctUntilChanged().collect { count ->
                 if (count == lastCount) return@collect
                 lastCount = count
