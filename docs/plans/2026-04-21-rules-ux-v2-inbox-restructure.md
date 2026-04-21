@@ -120,11 +120,12 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
    - `classify()` 가 rule hit 시 그 rule id 를 함께 반환.
    - 기존 classifier signal 은 별도 `reasonSignals: List<String>` 로 유지.
    - 실제 구현: 새 wrapper `NotificationClassification(decision, matchedRuleIds)` 를 도입하고 `NotificationClassifier.classify()` 가 그것을 반환. `NotificationDecision` 은 enum 그대로 유지 — 라우팅/상태 전이는 영향 없음. `NotificationCaptureProcessor` 가 wrapper 를 풀어 decision 을 delivery-profile 로 전달하고 `matchedRuleIds` 를 `NotificationUiModel` 로 threading. `NotificationEntityMapper` 가 `matchedRuleIds` 를 Phase B Task 1 의 `ruleHitIds` 컬럼으로 comma-separated 로 persist. 기존 free-form `reasonTags` 는 그대로 유지 (Task 3 에서 Detail UI 가 두 섹션으로 분리할 때 소비).
-3. **Detail UI 분리**
+3. **Detail UI 분리** [IN PROGRESS via PR #147]
    - "왜 이렇게 처리됐나요?" 섹션 아래에 두 서브섹션:
      - **SmartNoti 가 본 신호** — classifier signals (기존 회색 chip, 클릭 불가)
      - **적용된 규칙** — rule hits (파란색 chip, 클릭 시 Rules 탭 → 해당 규칙 하이라이트)
    - 어느 하나가 비어 있으면 섹션 자체 hide.
+   - 실제 구현: 새 use case `NotificationDetailReasonSectionBuilder` 가 `reasonTags` + `matchedRuleIds` 를 받아 `classifierSignals` (List<String>) + `ruleHits` (List<NotificationDetailRuleReference>) 로 분리. Rule 삭제된 stale id 는 drop, rule title 과 중복된 signal chip 도 drop. `사용자 규칙` / `온보딩 추천` 우산 태그는 rule 이 resolve 된 경우에만 숨김 (stale 일 때는 남김). Detail UI 가 sub-section 씩 card 안에 렌더 — 양쪽 모두 비면 card 자체 hide. `적용된 규칙` chip 은 신규 `RuleHitChipRow` 컴포넌트 (primary tint + thin outline) 로 렌더, tap 시 `Routes.Rules.create(highlightRuleId = id)` 로 navigate. `Routes.Rules` 에 `highlightRuleId` optional query param 추가 — `RulesScreen` 이 LaunchedEffect 로 scroll + border flash (1.8s) 처리. BottomNav 의 Rules 엔트리는 bare `"rules"` URL 을 쓰고, `AppBottomBar` 가 prefix 매칭으로 선택 상태를 유지.
 4. **Rules 탭 딥링크**
    - `Routes.Rules` 에 `highlightRuleId: String?` 쿼리 파람 추가.
    - `RulesScreen` 은 해당 rule 을 자동 스크롤 + 깜빡임 애니메이션.
