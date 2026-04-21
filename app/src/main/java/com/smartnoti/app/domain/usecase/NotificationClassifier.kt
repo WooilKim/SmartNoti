@@ -105,11 +105,14 @@ class NotificationClassifier(
         RuleActionUi.DIGEST -> NotificationDecision.DIGEST
         RuleActionUi.SILENT -> NotificationDecision.SILENT
         RuleActionUi.CONTEXTUAL -> NotificationDecision.SILENT
-        // Rule-driven IGNORE routing — introduced by plan
-        // `2026-04-21-ignore-tier-fourth-decision`. Task 2 registers the
-        // mapping here so the enum plumbing is complete; Task 3 adds the
-        // dedicated classifier tests (override interactions, no auto-promotion)
-        // and any cascade refinements.
+        // Rule-driven IGNORE routing — plan
+        // `2026-04-21-ignore-tier-fourth-decision`. Task 2 wired the enum
+        // value through persistence; Task 3 locks in the classifier contract
+        // via `NotificationClassifierTest`: IGNORE is *only* reachable through
+        // a matching user rule. The VIP / priority-keyword / quiet-hours /
+        // repeat-burst / default branches above intentionally never produce
+        // IGNORE. Overrides still apply — a base IGNORE rule may be overridden
+        // by an ALWAYS_PRIORITY override via `RuleConflictResolver`.
         RuleActionUi.IGNORE -> NotificationDecision.IGNORE
     }
 }

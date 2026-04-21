@@ -499,6 +499,155 @@ class NotificationClassifierTest {
 
     // endregion
 
+    // region Plan `2026-04-21-ignore-tier-fourth-decision` Task 3 —
+    // rule-driven IGNORE routing.
+    //
+    // IGNORE must *only* be reachable through a matching user rule. The
+    // classifier cascade (VIP, priority keywords, quiet-hours shopping,
+    // repeat burst, default) must never auto-promote any notification to
+    // IGNORE — that would be too destructive. Overrides still apply via
+    // `RuleConflictResolver`: a base IGNORE rule may be overridden by an
+    // ALWAYS_PRIORITY override so the PRIORITY tier wins.
+
+    @Test
+    fun ignore_rule_match_routes_to_ignore_decision() {
+        val ignoreRule = RuleUiModel(
+            id = "r-ignore-ads",
+            title = "광고",
+            subtitle = "무시",
+            type = RuleTypeUi.KEYWORD,
+            action = RuleActionUi.IGNORE,
+            enabled = true,
+            matchValue = "광고",
+        )
+
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.promo.app",
+                title = "오늘의 광고",
+                body = "새 광고가 도착했어요",
+            ),
+            rules = listOf(ignoreRule),
+        )
+
+        assertEquals(NotificationDecision.IGNORE, result.decision)
+        assertEquals(listOf(ignoreRule.id), result.matchedRuleIds)
+    }
+
+    @Test
+    fun classifier_never_auto_promotes_to_ignore_without_a_rule() {
+        // Sweep: exercise every classifier fallback branch (VIP, priority
+        // keyword, quiet-hours shopping, repeat burst, plain default) and
+        // verify none of them produce IGNORE. Rule list is empty throughout.
+        val inputs = listOf(
+            // VIP sender -> PRIORITY
+            ClassificationInput(sender = "엄마", packageName = "com.kakao.talk", body = "오늘 저녁 몇 시야?"),
+            // Priority keyword -> PRIORITY
+            ClassificationInput(packageName = "com.bank.app", body = "인증번호 123456"),
+            // Quiet-hours shopping -> DIGEST
+            ClassificationInput(
+                packageName = "com.coupang.mobile",
+                body = "장바구니 할인",
+                quietHours = true,
+            ),
+            // Repeat burst -> DIGEST
+            ClassificationInput(
+                packageName = "com.news.app",
+                body = "속보",
+                duplicateCountInWindow = 5,
+            ),
+            // Default fallback -> SILENT
+            ClassificationInput(packageName = "com.social.app", body = "새로운 좋아요"),
+        )
+
+        inputs.forEach { input ->
+            val result = classifier.classify(input, rules = emptyList())
+            assertEquals(
+                "No IGNORE rule present, classifier must not auto-promote to IGNORE " +
+                    "(input packageName=${input.packageName})",
+                false,
+                result.decision == NotificationDecision.IGNORE,
+            )
+        }
+    }
+
+    @Test
+    fun always_priority_override_beats_base_ignore_rule() {
+        // "광고 앱 전부 무시, 단 COMPANY_APP 은 항상 바로 보기" pattern. Base IGNORE
+        // + override ALWAYS_PRIORITY both match -> override wins -> PRIORITY.
+        val baseIgnore = RuleUiModel(
+            id = "base-ignore-ads",
+            title = "광고",
+            subtitle = "무시",
+            type = RuleTypeUi.KEYWORD,
+            action = RuleActionUi.IGNORE,
+            enabled = true,
+            matchValue = "광고",
+        )
+        val priorityOverride = RuleUiModel(
+            id = "override-company-priority",
+            title = "회사 앱은 예외",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.APP,
+            action = RuleActionUi.ALWAYS_PRIORITY,
+            enabled = true,
+            matchValue = "com.company.app",
+            overrideOf = baseIgnore.id,
+        )
+
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.company.app",
+                title = "사내 공지 — 긴급 광고",
+                body = "긴급 사내 광고 알림",
+            ),
+            rules = listOf(baseIgnore, priorityOverride),
+        )
+
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(listOf(priorityOverride.id), result.matchedRuleIds)
+    }
+
+    @Test
+    fun base_ignore_rule_still_wins_when_override_condition_absent() {
+        // Same rule pair as the override test above. A payload that only
+        // satisfies the base IGNORE rule (no matching override condition)
+        // must still route to IGNORE.
+        val baseIgnore = RuleUiModel(
+            id = "base-ignore-ads",
+            title = "광고",
+            subtitle = "무시",
+            type = RuleTypeUi.KEYWORD,
+            action = RuleActionUi.IGNORE,
+            enabled = true,
+            matchValue = "광고",
+        )
+        val priorityOverride = RuleUiModel(
+            id = "override-company-priority",
+            title = "회사 앱은 예외",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.APP,
+            action = RuleActionUi.ALWAYS_PRIORITY,
+            enabled = true,
+            matchValue = "com.company.app",
+            overrideOf = baseIgnore.id,
+        )
+
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.promo.app", // not the company app
+                title = "광고",
+                body = "새 광고",
+            ),
+            rules = listOf(baseIgnore, priorityOverride),
+        )
+
+        assertEquals(NotificationDecision.IGNORE, result.decision)
+        assertEquals(listOf(baseIgnore.id), result.matchedRuleIds)
+    }
+
+    // endregion
+
     @Test
     fun no_rule_match_returns_empty_matched_rule_ids_when_rules_are_defined() {
         // A rule is present but does not match. matchedRuleIds must be empty,
