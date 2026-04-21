@@ -92,7 +92,7 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 
 ## Phase A — Tasks (Inbox restructure)
 
-1. **Home passthrough 카드 컴포넌트 (tests-first)** [IN PROGRESS via PR #X]
+1. **Home passthrough 카드 컴포넌트 (tests-first)** [IN PROGRESS via PR #140]
    - `HomePassthroughReviewCard(count, onReviewClick)` 신규 composable.
    - Preview + 단위 테스트 (count=0 empty state, count>0 active state).
 2. **Home 에 카드 마운트**
