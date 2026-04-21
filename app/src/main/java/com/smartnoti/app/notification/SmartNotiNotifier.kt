@@ -222,6 +222,12 @@ class SmartNotiNotifier(
         const val ACTION_PROMOTE_TO_PRIORITY = "com.smartnoti.app.action.PROMOTE_TO_PRIORITY"
         const val ACTION_KEEP_DIGEST = "com.smartnoti.app.action.KEEP_DIGEST"
         const val ACTION_KEEP_SILENT = "com.smartnoti.app.action.KEEP_SILENT"
+        // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a — Detail screen's
+        // "무시" feedback button dispatches this broadcast. No replacement alert
+        // surfaces IGNORE as a quick action (IGNORE means no replacement at
+        // all), but the constant still participates in the feedback-action
+        // vocabulary so the receiver can resolve it.
+        const val ACTION_IGNORE = "com.smartnoti.app.action.IGNORE"
         const val ACTION_LABEL_OPEN = "열기"
         const val ACTION_LABEL_PROMOTE_TO_PRIORITY = "중요로 고정"
         const val ACTION_LABEL_KEEP_DIGEST = "Digest로 유지"
