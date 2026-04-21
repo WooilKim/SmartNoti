@@ -63,6 +63,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — priority-inbox fresh APK post-IGNORE first ADB verify PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | ✅ PASS | First ADB verification on post-IGNORE fresh APK (`lastUpdateTime=2026-04-22 03:46:30`) — 직전 tick 이 `last-verified` bump 를 ADB 검증까지 보류해두었던 항목. Recipe end-to-end: (1) `cmd notification post -S bigtext -t '은행' PriFreshAPK_0421 '인증번호 778899을 입력하세요'` → `dumpsys notification` 에서 `pkg=com.android.shell tag=PriFreshAPK_0421` 원본 잔존 + `mSoundNotificationKey` 로 등록 (PRIORITY routing `cancelSource=false` 불변조건 재확인). (2) DB row `status=PRIORITY, reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|조용한 시간\|중요 키워드` — 키워드 `인증번호` ALWAYS_PRIORITY 룰 매치. (3) Cold-start `am force-stop && am start MainActivity` → Home 헤더 `오늘 알림 40개 중 중요한 18개를 먼저 전달했어요` + StatPill `즉시 18 / Digest 7 / 조용히 14` + HomePassthroughReviewCard `검토 대기 18 / 건드리지 않은 알림 18건 / 검토하기`. (4) `검토하기` 텍스트 (144,940) 탭 → PriorityScreen 진입: eyebrow `검토` + title `SmartNoti 가 건드리지 않은 알림` + subtitle `이 판단이 맞는지 확인하고, 필요하면 바로 Digest / 조용히 / 규칙으로 보낼 수 있어요.` + SmartSurfaceCard `검토 대기 18건` + subcopy. (5) 첫 번째 카드 (bounds [42,785][1038,1301]) = `Shell / 은행 / 인증번호 / 즉시 전달 / 발신자 있음·사용자 규칙·중요 알림·온보딩 추천·조용한 시간·중요 키워드` (6 reason chips, DB reasonTags 와 1:1 정합). 카드 바로 아래 `이 판단을 바꿀까요?` 헤더 + OutlinedButton `→ Digest` (bounds [74,1415][529,1541]) + `→ 조용히` (bounds [550,1415][1006,1541]) + TextButton `→ 규칙 만들기` (bounds [74,1562][1006,1688]) — PassthroughReclassifyActions 영역 계약 exact. (6) 카드 탭 (540,950) → `NotificationDetailScreen` 마운트 (top bar `알림 상세` + StatusBadge `즉시 전달` + `왜 이렇게 처리됐나요?` + `전달 모드 · 즉시 전달`) — Routes.Detail.create(id) 경로 확인. BottomNav 4탭 (`홈 / 정리함 / 규칙 / 설정`) 재확인 — Phase A 이후 Priority 탭 제거 상태 contract. Observable steps 1–8 + Exit state (검토 화면 PRIORITY 렌더 / tray 원본 유지 / 인라인 재분류 + Detail 진입 가능) 전부 일치. DRIFT 없음. `last-verified` = 2026-04-21 로 유지 (문서 Change log 가 "ADB 검증 전까지 bump 하지 않음" 이라 기록한 값이 실제 ADB verification 로 확정됨). Known gaps 변경 없음. |
+
+
 ### 2026-04-21 (journey-tester — digest-suppression fresh APK post-IGNORE re-verify PASS, emulator-5554)
 
 | Journey | Result | Notes |
