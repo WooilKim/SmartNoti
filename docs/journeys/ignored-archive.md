@@ -3,7 +3,7 @@ id: ignored-archive
 title: 무시됨 아카이브 (opt-in IGNORE 뷰)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -91,9 +91,11 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - IGNORE row 의 retention 정책 미구현 — 물리 삭제 / 오래된 row 자동 정리는 후속. Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` out-of-scope.
 - Weekly insights 에서 IGNORE 카운트가 DIGEST / SILENT 와 별도 스트림으로 노출되는지 (Insights builder contract) 는 test-level 로만 검증되고, 화면 레이블이 실제로 "삭제 N건" 같은 copy 로 분리되어 보이는지는 아직 미검증 — Task 8 verification 에서 확인 필요.
 - Preconditions / Trigger / Observable steps / Exit state / Code pointers 가 아직 "route 가 조건부로 등록됨" 을 전제로 기술되어 있으나, 2026-04-22 픽스 이후 route 는 상시 등록되고 토글은 Settings 버튼 가시성만 gate 함. 다음 verification 패스에서 문구 정비 필요 (별도 journey-tester PR).
+- (resolved 2026-04-22) toggle-ON 직후 즉시 버튼 탭 시 `IllegalArgumentException` 크래시 — PR #199 Option A 로 해소. 단, 초고속 OFF→ON→탭 시퀀스에서 recomposition 타이밍에 따라 버튼 탭이 드물게 noop (onClick lambda 가 null→valid 전환 사이에 탭 소실) 되는 경우는 관측됨. 크래시는 아니고 사용자는 재탭으로 정상 진입. 완전 해소는 onClick 을 항상 non-null 로 두고 내부에서 토글 상태 검사하도록 바꾸는 별도 과제로 가능.
 
 ## Change log
 
 - 2026-04-21: 신규 문서화 — plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`) 구현 결과물. Settings 토글 + `AppNavHost` 조건부 route + `IgnoredArchiveScreen` + `NotificationRepository.observeIgnoredArchive()` 가 함께 shipped. Detail "무시" 피드백 버튼 (#187 `57df6ac`, Task 6a) 과 직결 — IGNORE 결정의 두 진입 경로 (룰 직접 생성 / Detail 피드백) 가 모두 이 화면으로 수렴. `last-verified` 는 실제 recipe 실행 전까지 비워둠 (per `.claude/rules/docs-sync.md`).
 - 2026-04-21: 첫 verification sweep 실행 — 키워드 IGNORE 룰 생성 → 매칭 알림 포스팅 → tray 즉시 제거, Home StatPill 불포함 (28 captured vs 27 classified), Settings 토글 ON→버튼 노출→아카이브 진입→`보관 중 1건` + NotificationCard 렌더 + 카드 탭 시 Detail `무시됨` 뱃지 정상 관측. PASS. 단, Known gaps 에 toggle-ON 직후 즉시 탭 시 한 차례 크래시 관측 기록 (race-condition, 재현 안정성 낮음).
 - 2026-04-22: toggle OFF→ON 직후 same-composition 탭 race 해소 — plan `docs/plans/2026-04-22-ignored-archive-first-tap-nav-race.md` (PR #199). Option A 적용: `AppNavHost` 가 `Routes.IgnoredArchive` 를 상시 등록하고, 토글은 Settings 버튼 가시성만 gate. `IgnoredArchiveNavGate.isRouteRegistered` 이 unconditional `true` 로 전환되어 "button visible ⇒ route registered" 불변식이 단일 읽기 지점으로 고정됨.
+- 2026-04-22: post-fix verification — APK rebuild (`lastUpdateTime=2026-04-22 03:46:30`) 후 OFF→ON→즉시 버튼 탭 시퀀스 3회 반복. 크래시 0건, `IgnoredArchiveScreen` 정상 마운트 확인 (`보관 중 1건` 렌더). 직전 sweep 에서 보고된 `IllegalArgumentException: Navigation destination ... ignored_archive cannot be found` 재현 불가. `last-verified` 를 2026-04-22 로 갱신.
