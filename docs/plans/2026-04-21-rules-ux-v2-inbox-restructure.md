@@ -142,7 +142,7 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
    - 매치 시: base rule + override candidates 모두 수집 → 가장 specific override (더 많은 조건 매치) → tie 는 priority → base 로 fallback.
    - 테스트: 사용자 예 (`결제 → PRIORITY`, `결제+광고 → SILENT`) 재현.
    - 실제 구현: `NotificationClassifier.findMatchingRule` 이 flat `firstOrNull` 대신 `filter { enabled && matches }` → `RuleConflictResolver.resolve(matched, rules)` 에 위임. 매치 로직은 순수 predicate 로 분리 (`matches(rule, input, content)`). 동일 tier 타이-브레이크 (earlier wins) 는 resolver 가 `allRules` 인덱스로 계속 담당 — 기존 `earlier_matching_rule_wins_when_multiple_rules_match` 회귀 없음. 생성자에 `ruleConflictResolver` DI 파라미터 추가 (default 인스턴스, 기존 호출부는 그대로). 신규 behavioral 테스트 5건 (payment+ad 사용자 예, order-invariance, base-only, override-only, disabled-override) 으로 override 우선순위가 `NotificationClassifier` 입력 → output 레벨에서 관측됨을 확인.
-3. **Rules 탭 UI — 계층 시각화** [IN PROGRESS via PR #X]
+3. **Rules 탭 UI — 계층 시각화** [IN PROGRESS via PR #150]
    - `RuleListPresentationBuilder` 가 flat list 를 tree 로 변환 (base rule + nested overrides).
    - `RuleRow` 렌더 시 indent + "이 규칙의 예외" 라벨.
    - Override 가 깨진 상태 (base 삭제됨 등) 의 visual warning.
