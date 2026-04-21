@@ -80,3 +80,4 @@ If a self-merged row caused a regression:
 | 2026-04-21T01:53:26Z | project-manager | #89 | collapsible Hidden-inbox groups (plan-implementer) | https://github.com/WooilKim/SmartNoti/pull/89/checks |
 | 2026-04-21T01:53:43Z | project-manager | #91 | silent-split task 1 (SilentMode enum + nullable column, v5→6) | https://github.com/WooilKim/SmartNoti/pull/91/checks |
 | 2026-04-21T01:53:52Z | project-manager | #92 | pr-review-log audit rows for #88–#91 (PM own) | https://github.com/WooilKim/SmartNoti/pull/92/checks |
+| 2026-04-21T02:10:00Z | journey-tester | #97 | hidden-inbox re-verify vs #89 collapsible contract | https://github.com/WooilKim/SmartNoti/pull/97/checks |
