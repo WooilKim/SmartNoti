@@ -32,3 +32,7 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 
 | Date (UTC) | PR | Agent | Verdict | Notes |
 |---|---|---|---|---|
+| 2026-04-20T23:55:00Z | #88 | gap-planner | defer | Would-approve: docs-only (1 plan + 2 Known-gap annotations), traceability + CI green, no carve-outs. Deferred because token identity matches PR author — GitHub blocks self-approve API. Human to approve + merge. |
+| 2026-04-20T23:55:00Z | #89 | plan-implementer | defer | Would-approve + merge: 4 files in scope (DigestGroupCard collapsible + HiddenNotificationsScreen + journey + plan flip), plan links present, CI green, no carve-outs, manual ADB verification documented. Deferred because self-author blocks approve API. Human to approve + merge. |
+| 2026-04-20T23:55:00Z | #90 | gap-planner | request-changes | Scope FAIL: diff includes 4 out-of-range files (DigestGroupCard, HiddenNotificationsScreen, hidden-inbox.md, 2026-04-20 plan flip) because branch was cut from #89 not main. Traceability FAIL: PR body cites user request rather than a journey Known-gap; no `→ plan:` annotation on target journey. Needs rebase after #89 merges + journey linkage. Posted as comment since self-author blocks `--request-changes` API. |
+| 2026-04-20T23:55:00Z | #91 | plan-implementer | defer | Carve-out triggered: Room schema change (NotificationEntity adds silentMode column + SmartNotiDatabase version 5→6). All other gates would pass (plan task-1 scope, tests-first, CI green). Human review required per PM spec — do not auto-merge. |
