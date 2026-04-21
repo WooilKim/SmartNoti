@@ -42,7 +42,7 @@
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
-| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-21 |
+| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-22 |
 
 ### Rules & onboarding
 | ID | Title | Status | Last verified |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — insight-drilldown end-to-end PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| insight-drilldown | ✅ PASS | All 16 journeys at `last-verified=2026-04-21`; picked insight-drilldown as lowest-risk pre-Phase-C candidate since Home insights + drilldown screen are unaffected by Phase A (BottomNav/HomePassthroughReviewCard) + Phase B (ruleHitIds) + Phase C (hierarchical rules) code paths. 설치된 APK `lastUpdateTime=2026-04-21 15:47:57` KST (= 06:47 UTC, Phase A/B/C merges 전), 하지만 insight drilldown 계약은 pre-Phase 코드와 동일하므로 재현 가능. Recipe end-to-end: (1) `for i in 1..5; do cmd notification post -S bigtext -t 'Coupang' "Deal$i" "오늘의 딜 $i"; done` 포스팅 → 중복 suppression 경로로 5건이 DIGEST/Silent 혼합 분류 (Home `최근 효과` 스트립이 "반복 알림 5건이 Digest로 묶였어요" 기록 확인). (2) `am force-stop && am start MainActivity` cold-start → Home 상단 StatPill `즉시 16 / Digest 10 / 조용히 12` 렌더, 스크롤 다운 시 `일반 인사이트 / SmartNoti 인사이트 / 지금까지 22개의 알림을 대신 정리했어요 / 전체 알림 중 57% / Shell 알림 22개가 가장 많이 정리됐고, 주된 이유는 '조용한 시간'` + reason chip 3개 (`조용한 시간 · 12건 / 반복 알림 · 5건 / 사용자 규칙 · 5건`) 노출. (3) `반복 알림 · 5건` chip 탭 → `Routes.Insight.createForReason('반복 알림', ...)` navigate → InsightDrillDownScreen mount: eyebrow `인사이트` + title `반복 알림 이유` + subtitle `'반복 알림' 이유로 정리된 알림 4건을 모아봤어요.` + ContextBadge `일반 인사이트` + subtitle `최근 24시간 기준 '반복 알림' 이유로 정리된 알림 4건을 시간순으로 보여줘요.` + FilterChip 3종 (`최근 3시간 / 최근 24시간 / 전체`) + stats `Digest 4 / 조용히 0` + reason navigation `조용한 시간 · 4건` + 필터 리스트 (Shell/Shopping/한정/Coupang/오늘의 카드 렌더). Observable steps 1–10 전부 exact 일치. (4) 범위 전환 확인 — Back → Home → `Shell 인사이트` 카드 탭 → `createForApp('Shell', ...)` → App 기준 drilldown mount: title `Shell 인사이트` + subtitle `Shell 알림 20건이…` + stats `Digest 9 / 조용히 11` + reason navigation 3종 (`조용한 시간 · 12건 / 사용자 규칙 · 5건 / 프로모션 알림 · 5건`). `최근 3시간` chip 탭 → `InsightDrillDownBuilder.build` 가 window 재계산해 title `Shell 알림 13건이 …` + subtitle `최근 3시간 기준 Shell에서 정리된 알림 13건을 시간순으로 보여줘요.` + stats `Digest 6 / 조용히 7` + reason 리스트 `조용한 시간 · 12건 / 반복 알림 · 4건 / 사용자 규칙 · 2건` (프로모션 알림 chip 은 5건이 3h 밖 → 필터 아웃, 계약대로 동작). DRIFT 없음 — Observable steps 1-10 + Exit state (특정 앱/이유 좁힌 리스트 + 다른 이유로 재드릴다운 가능) 전부 사용자 관측에서 증명. Known gaps (PRIORITY 드릴다운 제외, range back-stack 복원 안 됨) 변경 없음. Task 요청 "stale pre-Phase-C APK 주의" 는 **confirmed** — `BottomNavItem` 현재 코드 (홈/정리함/규칙/설정, PR #143 `411a759`) 와 달리 실제 탭 영역이 `홈/중요/정리함/규칙/설정` 5개로 관측됨 = APK 가 Phase A Task 4 전 빌드. 이는 insight-drilldown contract 와는 무관하지만, 다음 tick 에서 Phase A/B/C 의존 journey (priority-inbox, home-overview, rules-management Phase C UI, notification-detail Phase B signals) 재검증 전에 APK rebuild + 재설치 선행 필요. `last-verified` 를 2026-04-21 → 2026-04-22 갱신. |
 
 
 ### 2026-04-21 (journey-tester — notification-detail end-to-end PASS, emulator-5554)

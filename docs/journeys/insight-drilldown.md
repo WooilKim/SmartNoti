@@ -3,7 +3,7 @@ id: insight-drilldown
 title: 인사이트 드릴다운
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -82,3 +82,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-22: v1 loop tick re-verify on emulator-5554 (PASS). Coupang × 5 + Shell duplicates → Home 의 `반복 알림 · N건` 칩 탭 → 반복 알림 drilldown (Digest 4/Silent 0, 24h), Shell 인사이트 카드 탭 → 앱 drilldown (Digest 9/Silent 11, 24h → Digest 6/Silent 7 on 3h range 전환). Eyebrow/title/ContextBadge/range chips/reason navigation/필터 리스트 전부 문서대로 렌더. Pre-Phase-C APK (lastUpdateTime=15:47 KST) 지만 insight drilldown 화면은 Phase A/B/C 변경과 무관해 contract 그대로 유효.
