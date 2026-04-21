@@ -111,7 +111,7 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 
 ## Phase B — Tasks (Reason-tag traceability)
 
-1. **Room 스키마 확장 (tests-first)**
+1. **Room 스키마 확장 (tests-first)** [IN PROGRESS via PR #145]
    - `NotificationEntity` 에 `ruleHitIds: String?` 추가. SCHEMA_VERSION 7→8. Nullable 이라 기존 row 영향 없음.
    - `NotificationRepositoryTest` 에서 round-trip 확인.
 2. **Classifier 결과 확장**

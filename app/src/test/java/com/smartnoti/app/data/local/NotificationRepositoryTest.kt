@@ -175,6 +175,31 @@ class NotificationRepositoryTest {
     }
 
     @Test
+    fun rule_hit_ids_column_round_trips_through_dao_and_is_nullable() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "with-rule-hits",
+                status = NotificationStatusUi.PRIORITY,
+                postedAtMillis = 1_700_003_000_000,
+                ruleHitIds = "rule-alpha,rule-beta",
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "no-rule-hits",
+                status = NotificationStatusUi.DIGEST,
+                postedAtMillis = 1_700_003_100_000,
+                ruleHitIds = null,
+            )
+        )
+
+        val rows = database.notificationDao().observeAll().first().associateBy { it.id }
+
+        assertEquals("rule-alpha,rule-beta", rows.getValue("with-rule-hits").ruleHitIds)
+        assertEquals(null, rows.getValue("no-rule-hits").ruleHitIds)
+    }
+
+    @Test
     fun silent_mode_column_round_trips_through_dao() = runBlocking {
         database.notificationDao().upsert(
             notificationEntity(
@@ -210,6 +235,7 @@ class NotificationRepositoryTest {
         status: NotificationStatusUi = NotificationStatusUi.DIGEST,
         silentMode: String? = null,
         sourceEntryKey: String? = null,
+        ruleHitIds: String? = null,
     ) = NotificationEntity(
         id = id,
         appName = appName,
@@ -226,5 +252,6 @@ class NotificationRepositoryTest {
         contentSignature = listOf(title, body).joinToString(" ").trim(),
         silentMode = silentMode,
         sourceEntryKey = sourceEntryKey,
+        ruleHitIds = ruleHitIds,
     )
 }

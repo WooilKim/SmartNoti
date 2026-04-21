@@ -37,4 +37,15 @@ data class NotificationEntity(
      * behaviour.
      */
     val sourceEntryKey: String? = null,
+    /**
+     * Comma-separated list of user rule ids that fired during classification,
+     * when any. `null` on legacy rows saved before schema v8 (plan
+     * `rules-ux-v2-inbox-restructure` Phase B Task 1).
+     *
+     * Stored separately from [reasonTags] so the Detail UI can split
+     * classifier signals ("SmartNoti 가 본 신호") from rule hits
+     * ("적용된 규칙") in Phase B Task 3. Consumers MUST treat `null` as
+     * "no rule hit recorded" — functionally equivalent to an empty list.
+     */
+    val ruleHitIds: String? = null,
 )
