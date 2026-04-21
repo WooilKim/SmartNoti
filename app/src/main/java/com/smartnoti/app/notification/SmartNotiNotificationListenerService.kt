@@ -42,6 +42,31 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     private val onboardingBootstrapCoordinator by lazy {
         OnboardingActiveNotificationBootstrapCoordinator.create(applicationContext)
     }
+    private val reconnectSweepCoordinator by lazy {
+        ListenerReconnectActiveNotificationSweepCoordinator<StatusBarNotification>(
+            appPackageName = packageName,
+            packageNameOf = { it.packageName },
+            titleOf = { sbn ->
+                sbn.notification.extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
+            },
+            bodyOf = { sbn ->
+                sbn.notification.extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
+            },
+            notificationFlagsOf = { it.notification.flags },
+            dedupKeyOf = ::dedupKeyFor,
+            existsInStore = { key ->
+                NotificationRepository.getInstance(applicationContext).existsByContentSignature(
+                    packageName = key.packageName,
+                    contentSignature = key.contentSignature,
+                    postedAtMillis = key.postTimeMillis,
+                )
+            },
+            onboardingBootstrapPending = {
+                SettingsRepository.getInstance(applicationContext).isOnboardingBootstrapPending()
+            },
+            processNotification = ::processNotification,
+        )
+    }
 
     private val processor by lazy {
         NotificationCaptureProcessor(
@@ -91,6 +116,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             }
         }
         enqueueOnboardingBootstrapCheck()
+        enqueueReconnectSweep()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -282,10 +308,47 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             if (onboardingBootstrapCoordinator.consumePendingBootstrapRequest()) {
                 ActiveStatusBarNotificationBootstrapper(
                     appPackageName = packageName,
-                    processNotification = ::processNotification,
+                    processNotification = { sbn ->
+                        // Record the dedup key first so a concurrent reconnect
+                        // sweep (or the one scheduled right after bootstrap in
+                        // onListenerConnected) never re-enqueues the same item.
+                        reconnectSweepCoordinator.recordProcessedByBootstrap(dedupKeyFor(sbn))
+                        processNotification(sbn)
+                    },
                 ).bootstrap(activeNotifications ?: emptyArray())
             }
         }
+    }
+
+    /**
+     * After the onboarding bootstrap has had its chance to consume the pending
+     * flag, sweep the current active-notifications tray to recover anything
+     * posted while the listener was disconnected. The coordinator itself
+     * defers while [SettingsRepository.isOnboardingBootstrapPending] is still
+     * true, so this is safe to enqueue unconditionally after bootstrap.
+     */
+    private fun enqueueReconnectSweep() {
+        serviceScope.launch {
+            val actives = runCatching { activeNotifications }.getOrNull() ?: return@launch
+            reconnectSweepCoordinator.sweep(actives.asIterable())
+        }
+    }
+
+    private fun dedupKeyFor(sbn: StatusBarNotification): SweepDedupKey {
+        val extras = sbn.notification.extras
+        val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
+        val body = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
+        val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
+            isOngoing = sbn.isOngoing,
+            isClearable = sbn.isClearable,
+        )
+        val signature = duplicatePolicy.contentSignature(title, body) +
+            if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
+        return SweepDedupKey(
+            packageName = sbn.packageName,
+            contentSignature = signature,
+            postTimeMillis = sbn.postTime,
+        )
     }
 
     companion object {

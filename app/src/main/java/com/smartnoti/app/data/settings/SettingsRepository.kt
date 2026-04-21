@@ -164,6 +164,17 @@ class SettingsRepository private constructor(
         return requested
     }
 
+    /**
+     * Reader-only poll for the onboarding bootstrap pending flag.
+     * Lets the listener-reconnect sweep coordinator defer while the bootstrap
+     * path still owns the first pass over active notifications.
+     */
+    suspend fun isOnboardingBootstrapPending(): Boolean {
+        return context.dataStore.data.map { prefs ->
+            prefs[ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING] ?: false
+        }.first()
+    }
+
     suspend fun consumeOnboardingActiveNotificationBootstrapRequest(): Boolean {
         var consumed = false
         context.dataStore.edit { prefs ->
