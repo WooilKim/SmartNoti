@@ -111,7 +111,6 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 화면 단독 Compose 테스트 부재.
 - SILENT 알림이 수백 건 쌓이면 LazyColumn 성능 미검증.
 - "모두 중요로 복구" 후 원본 알림은 이미 tray 에서 제거된 상태라 복구해도 알림센터에 다시 뜨지 않음 — DB 상태만 Priority 로 바뀌어 Priority 탭에 나타남. 의도된 동작이지만 사용자는 "복구 = 시스템 알림 재게시" 를 기대할 수 있음.
-- **Capture 경로의 ARCHIVED 기본값 미배선 여파** — 신규 SILENT 알림은 `silentMode = null` 로 저장되어 "처리됨" 탭에 모인다. UX 상 "보관 중" 탭은 지금 수동 경로가 없어 대부분 비어 보일 수 있음. 진행 상황은 [silent-auto-hide](silent-auto-hide.md) 의 Known gaps 와 `silent-archive-vs-process-split` plan 참조.
 - Recipe fragility (2026-04-21 관측): `MainActivity` 가 이미 top-most 로 떠있을 때 단일 `am start … -e DEEP_LINK_ROUTE hidden` 은 `Intent{has extras}` 만 delivered 로 남고 `AppNavHost` 의 `LaunchedEffect(deepLinkRoute)` 가 재발화하지 않아 Hidden 화면으로 이동하지 않음. 검증 시 `am force-stop com.smartnoti.app` 후 cold start 필수. 이 경로는 rules-feedback-loop / notification-detail recipe 에도 동일 적용.
 
 ## Change log
@@ -125,3 +124,4 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 2026-04-21: Observable steps / Exit state / Code pointers 를 탭 분리 구조로 재작성. 관련 plan: `docs/plans/2026-04-21-silent-archive-vs-process-split.md` Task 6.
 - 2026-04-21: tray 그룹 summary deep-link 필터 지원 — `Routes.Hidden` 에 `sender` / `packageName` 쿼리 추가, `HiddenNotificationsScreen` 이 `initialFilter` 로 Archived 탭 자동 선택 + 해당 그룹 스크롤/하이라이트. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 4.
 - 2026-04-21: Trigger 섹션을 세 가지 진입 경로 (루트 요약 · 그룹 summary 딥링크 · Android SystemUI 의 in-tray children 펼침) 로 정리하고, 그룹 summary 경로가 `DEEP_LINK_SENDER` / `DEEP_LINK_PACKAGE_NAME` extra 를 어떻게 `Routes.Hidden.create(...)` URL 로 재구성하는지 명시. silent-auto-hide 의 재작성된 Observable steps 5~9 와 용어/채널명 정렬. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 5.
+- 2026-04-21: **"보관 중" 탭이 실제로 채워지기 시작 (drift fix)** — listener 가 신규 SILENT 캡처 시 `silentMode = ARCHIVED` 로 저장하도록 배선되어 (PR #125) Hidden "보관 중" 탭이 기본 경로에서 채워진다. Detail "처리 완료로 표시" 는 DB flip 에 더해 tray 원본 cancel 까지 연계되어 (PR #126) 사용자 체감 "처리 = tray 에서 사라짐" 과 일치. Known gap "Capture 경로의 ARCHIVED 기본값 미배선 여파" 해소. 관련 plan: `docs/plans/2026-04-20-silent-archive-drift-fix.md` Task 1–3.
