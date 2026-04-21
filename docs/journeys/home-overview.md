@@ -23,13 +23,14 @@ last-verified: 2026-04-21
 1. `HomeScreen` 이 repository/settings/RulesRepository 구독 시작.
 2. 상단 `ScreenHeader` — "SmartNoti" + "중요한 알림만 먼저 보여드리고 있어요".
 3. `StatPill` — `즉시 N / Digest N / 조용히 N` 컬러칩 (분류 카운트 live).
-4. `HomeNotificationAccessCard` — `HomeNotificationAccessSummaryBuilder` 결과로 리스너 연결 상태 + 최근 캡처 현황.
-5. `QuickActionCard` × 2 — "중요 알림 지금 봐야 할 알림 N개" / "정리함 묶인 알림 N개" ("열기" 탭 시 각 탭으로 이동).
-6. `QuickStartAppliedCard` — 온보딩 quick-start 프리셋 적용 결과 요약.
-7. `InsightCard` — `HomeNotificationInsightsBuilder` 가 반환하는 "가장 많은 앱/이유 + 점유율" 정보. 칩 탭 시 `Routes.Insight.createForApp` 또는 `createForReason` 으로 네비.
-8. `TimelineCard` — `HomeNotificationTimelineBuilder` 결과 (bucket 별 바차트, `HomeTimelineBarChartModelBuilder` 로 렌더 모델 변환).
-9. 최근 알림 리스트 — 일반 `NotificationCard` 로 최상단 몇 건.
-10. 카드/리스트 탭 → Detail 또는 Priority/Digest/Insight 로 네비.
+4. `HomePassthroughReviewCard` — PRIORITY 카운트를 받아 "SmartNoti 가 건드리지 않은 알림 N건" + "이 판단이 맞는지 검토하고 필요하면 규칙으로 만들 수 있어요" + "검토하기" 액션 라벨로 렌더. 카운트 0 일 때는 "검토 대기 알림 없음" 의 empty-state 카피로 전환. 카드 전체를 탭하면 `onPriorityClick` → `Routes.Priority.route` 로 이동 (검토 화면, → [priority-inbox](priority-inbox.md)). Rules UX v2 Phase A 이후 Priority 가 BottomNav 에서 제거되면서, 이 카드가 검토 화면으로 진입하는 유일한 UI 엔트리 포인트.
+5. `HomeNotificationAccessCard` — `HomeNotificationAccessSummaryBuilder` 결과로 리스너 연결 상태 + 최근 캡처 현황.
+6. `QuickActionCard` × 2 — "중요 알림 지금 봐야 할 알림 N개" / "정리함 묶인 알림 N개" ("열기" 탭 시 각 탭으로 이동). 중요 알림 카드 역시 검토 화면으로 연결됨 (passthrough review card 와 동일 route).
+7. `QuickStartAppliedCard` — 온보딩 quick-start 프리셋 적용 결과 요약.
+8. `InsightCard` — `HomeNotificationInsightsBuilder` 가 반환하는 "가장 많은 앱/이유 + 점유율" 정보. 칩 탭 시 `Routes.Insight.createForApp` 또는 `createForReason` 으로 네비.
+9. `TimelineCard` — `HomeNotificationTimelineBuilder` 결과 (bucket 별 바차트, `HomeTimelineBarChartModelBuilder` 로 렌더 모델 변환).
+10. 최근 알림 리스트 — 일반 `NotificationCard` 로 최상단 몇 건.
+11. 카드/리스트 탭 → Detail 또는 Priority(검토)/Digest/Insight 로 네비.
 
 ## Exit state
 
@@ -45,17 +46,19 @@ last-verified: 2026-04-21
 ## Code pointers
 
 - `ui/screens/home/HomeScreen`
+- `ui/components/HomePassthroughReviewCard` — passthrough 검토 카드 (count + empty/active 상태)
 - `domain/usecase/HomeNotificationInsightsBuilder`
 - `domain/usecase/HomeNotificationAccessSummaryBuilder`
 - `domain/usecase/HomeNotificationTimelineBuilder`
 - `domain/usecase/HomeQuickStartAppliedSummaryBuilder`
 - `domain/usecase/HomeReasonBreakdownChartModelBuilder`
 - `domain/usecase/HomeTimelineBarChartModelBuilder`
-- `navigation/Routes#Home`, `navigation/BottomNavItem` ("홈" 라벨)
+- `navigation/Routes#Home`, `navigation/BottomNavItem` ("홈" 라벨 — Priority 탭은 Phase A 이후 제거됨)
 
 ## Tests
 
 - 각 builder 별 unit test (예: `HomeNotificationInsightsBuilderTest`, `HomeNotificationTimelineBuilderTest` 등)
+- `HomePassthroughReviewCardStateTest` — passthrough 카드의 count→state 매핑 (empty vs active copy, 음수 clamp)
 
 ## Verification recipe
 
@@ -77,3 +80,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: Rules UX v2 Phase A shipped (PR #140/#141/#142/#143). Home 에 `HomePassthroughReviewCard` 가 StatPill 아래에 마운트되어 PRIORITY count 를 표시하고 탭 시 검토 화면으로 이동. Priority 는 더 이상 BottomNav 탭이 아니며, 이 카드가 검토 화면 유일한 UI 엔트리. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase A
