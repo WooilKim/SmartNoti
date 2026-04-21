@@ -77,3 +77,6 @@ If a self-merged row caused a regression:
 | 2026-04-20T19:50:38Z | journey-tester | #76 | insight-drilldown (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/76/checks |
 | 2026-04-20T20:00:21Z | journey-tester | #78 | digest-suppression (re-verify #2) | https://github.com/WooilKim/SmartNoti/pull/78/checks |
 | 2026-04-20T20:19:50Z | journey-tester | #81 | rules-feedback-loop KEEP_SILENT (re-verify #3) | https://github.com/WooilKim/SmartNoti/pull/81/checks |
+| 2026-04-21T01:53:26Z | project-manager | #89 | collapsible Hidden-inbox groups (plan-implementer) | https://github.com/WooilKim/SmartNoti/pull/89/checks |
+| 2026-04-21T01:53:43Z | project-manager | #91 | silent-split task 1 (SilentMode enum + nullable column, v5→6) | https://github.com/WooilKim/SmartNoti/pull/91/checks |
+| 2026-04-21T01:53:52Z | project-manager | #92 | pr-review-log audit rows for #88–#91 (PM own) | https://github.com/WooilKim/SmartNoti/pull/92/checks |
