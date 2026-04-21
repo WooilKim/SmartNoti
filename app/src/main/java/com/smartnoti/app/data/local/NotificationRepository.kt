@@ -82,6 +82,23 @@ class NotificationRepository(
         return dao.countRecentDuplicates(packageName, contentSignature, sinceMillis)
     }
 
+    /**
+     * Returns true when a persisted row exists whose (packageName,
+     * contentSignature, postedAtMillis) triple matches the arguments exactly.
+     *
+     * Used by the listener-reconnect sweep (see
+     * docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md) to
+     * skip active notifications that survived a previous process life or were
+     * already captured by the onboarding bootstrap.
+     */
+    suspend fun existsByContentSignature(
+        packageName: String,
+        contentSignature: String,
+        postedAtMillis: Long,
+    ): Boolean {
+        return dao.countByContentSignature(packageName, contentSignature, postedAtMillis) > 0
+    }
+
     suspend fun save(notification: NotificationUiModel, postedAtMillis: Long, contentSignature: String) {
         dao.upsert(notification.toEntity(postedAtMillis, contentSignature))
     }

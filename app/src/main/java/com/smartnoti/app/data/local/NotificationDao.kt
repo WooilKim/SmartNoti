@@ -32,6 +32,15 @@ interface NotificationDao {
     ): Int
 
     @Query(
+        "SELECT COUNT(*) FROM notifications WHERE packageName = :packageName AND contentSignature = :contentSignature AND postedAtMillis = :postedAtMillis"
+    )
+    suspend fun countByContentSignature(
+        packageName: String,
+        contentSignature: String,
+        postedAtMillis: Long,
+    ): Int
+
+    @Query(
         """
         DELETE FROM notifications
         WHERE id LIKE '%:ranker_group'
