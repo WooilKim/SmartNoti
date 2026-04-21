@@ -2,6 +2,7 @@ package com.smartnoti.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -97,7 +98,18 @@ fun RuleRow(
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         RuleMetaChip(typeLabel(rule.type))
-                        RuleMetaChip(actionLabel(rule.action))
+                        // Plan 2026-04-21-ignore-tier-fourth-decision Task 5
+                        // step 5 — IGNORE is the lowest-presence tier, so its
+                        // action chip drops the solid fill for a border-only
+                        // neutral gray treatment per ui-improvement.md tone.
+                        RuleMetaChip(
+                            text = actionLabel(rule.action),
+                            style = if (rule.action == RuleActionUi.IGNORE) {
+                                RuleMetaChipStyle.BorderOnly
+                            } else {
+                                RuleMetaChipStyle.Filled
+                            },
+                        )
                         if (!description.emphasisLabel.isNullOrBlank()) {
                             RuleMetaChip(description.emphasisLabel)
                         }
@@ -203,18 +215,42 @@ private fun RuleRowPresentationBanner(presentation: RuleRowPresentation) {
     }
 }
 
+/**
+ * Visual style hook for [RuleMetaChip]. [Filled] is the historical pill look;
+ * [BorderOnly] drops the surface fill and paints a thin subtle border, which
+ * the IGNORE action chip uses to signal a destructive-but-low-presence tier
+ * (plan `2026-04-21-ignore-tier-fourth-decision` Task 5 step 5).
+ */
+private enum class RuleMetaChipStyle {
+    Filled,
+    BorderOnly,
+}
+
 @Composable
-private fun RuleMetaChip(text: String) {
+private fun RuleMetaChip(
+    text: String,
+    style: RuleMetaChipStyle = RuleMetaChipStyle.Filled,
+) {
+    val shape = RoundedCornerShape(999.dp)
+    val baseModifier = Modifier
+        .let { mod ->
+            when (style) {
+                RuleMetaChipStyle.Filled -> mod.background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = shape,
+                )
+                RuleMetaChipStyle.BorderOnly -> mod.border(
+                    border = BorderStroke(1.dp, BorderSubtle),
+                    shape = shape,
+                )
+            }
+        }
+        .padding(horizontal = 8.dp, vertical = 4.dp)
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                shape = RoundedCornerShape(999.dp),
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+        modifier = baseModifier,
     )
 }
 

@@ -28,6 +28,13 @@ class RuleListPresentationBuilder {
             if ((counts[RuleActionUi.CONTEXTUAL] ?: 0) > 0) {
                 add("상황별 ${counts[RuleActionUi.CONTEXTUAL] ?: 0}")
             }
+            // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 — IGNORE is
+            // opt-in and destructive, so the overview only surfaces the count
+            // when there is at least one such rule. Keeping it out of the
+            // "always visible" segments avoids priming users to use it.
+            if ((counts[RuleActionUi.IGNORE] ?: 0) > 0) {
+                add("무시 ${counts[RuleActionUi.IGNORE] ?: 0}")
+            }
         }
 
         val filters = buildList {
@@ -36,6 +43,7 @@ class RuleListPresentationBuilder {
             addFilterIfPresent(RuleActionUi.DIGEST, counts, "Digest")
             addFilterIfPresent(RuleActionUi.SILENT, counts, "조용히")
             addFilterIfPresent(RuleActionUi.CONTEXTUAL, counts, "상황별")
+            addFilterIfPresent(RuleActionUi.IGNORE, counts, "무시")
         }
 
         return RuleListPresentation(

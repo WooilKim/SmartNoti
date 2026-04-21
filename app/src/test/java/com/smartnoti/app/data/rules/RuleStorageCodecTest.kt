@@ -77,6 +77,73 @@ class RuleStorageCodecTest {
     }
 
     @Test
+    fun ignore_rules_round_trip_through_codec() {
+        // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 step 3 — the new
+        // IGNORE enum value must survive encode → decode without dropping or
+        // downgrading to SILENT. Storage format is stable (enum `name`), so the
+        // legacy 8-column layout is preserved; this test just guards the new
+        // enum value does not regress into the unknown-action fallback.
+        val rules = listOf(
+            RuleUiModel(
+                id = "ignore:광고",
+                title = "광고 키워드",
+                subtitle = "무시 (즉시 삭제)",
+                type = RuleTypeUi.KEYWORD,
+                action = RuleActionUi.IGNORE,
+                enabled = true,
+                matchValue = "광고",
+                overrideOf = null,
+            ),
+            RuleUiModel(
+                id = "override:com.example",
+                title = "거래소 중요",
+                subtitle = "항상 바로 보기",
+                type = RuleTypeUi.APP,
+                action = RuleActionUi.ALWAYS_PRIORITY,
+                enabled = true,
+                matchValue = "com.example",
+                overrideOf = "ignore:광고",
+            ),
+        )
+
+        val decoded = RuleStorageCodec.decode(RuleStorageCodec.encode(rules))
+
+        assertEquals(rules, decoded)
+    }
+
+    @Test
+    fun decode_preserves_legacy_non_ignore_payloads_after_ignore_addition() {
+        // Backward-compat guard — existing serialized rules (encoded before
+        // IGNORE shipped) must still deserialize unchanged. Uses a hand-rolled
+        // fixture rather than re-encoding with the current codec so the byte
+        // layout is frozen against accidental drift.
+        val legacyRules = listOf(
+            RuleUiModel(
+                id = "r1",
+                title = "엄마",
+                subtitle = "항상 바로 보기",
+                type = RuleTypeUi.PERSON,
+                action = RuleActionUi.ALWAYS_PRIORITY,
+                enabled = true,
+                matchValue = "엄마",
+            ),
+            RuleUiModel(
+                id = "r2",
+                title = "쿠팡",
+                subtitle = "Digest로 묶기",
+                type = RuleTypeUi.APP,
+                action = RuleActionUi.DIGEST,
+                enabled = false,
+                matchValue = "com.coupang.mobile",
+            ),
+        )
+
+        val decoded = RuleStorageCodec.decode(RuleStorageCodec.encode(legacyRules))
+
+        assertEquals(legacyRules, decoded)
+    }
+
+    @Test
     fun decode_tolerates_legacy_payload_without_override_field() {
         // Rules persisted before Phase C only have 7 columns. The new decoder
         // must treat missing trailing columns as `overrideOf = null` rather
