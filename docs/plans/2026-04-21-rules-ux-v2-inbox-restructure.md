@@ -132,7 +132,7 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 
 ## Phase C — Tasks (Hierarchical rules)
 
-1. **Data model 확장 (tests-first)** [IN PROGRESS via PR #TBD]
+1. **Data model 확장 (tests-first)** [IN PROGRESS via PR #148]
    - `RuleUiModel.overrideOf: String?` 필드.
    - `RulesRepository` upsert 시 circular reference 감지 (A → B → A 는 reject, 에러 로그).
    - `RuleConflictResolverTest` 신규: 동일 tier 충돌 시 priority 필드 (또는 rule 순서) 기준 선택 테스트.
