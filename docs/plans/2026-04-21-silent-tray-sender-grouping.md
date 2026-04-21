@@ -86,7 +86,7 @@ created: 2026-04-21
 
 ## Tasks
 
-1. **`SilentNotificationGroupingPolicy` 도입 (tests-first)**
+1. **`SilentNotificationGroupingPolicy` 도입 (tests-first)** [IN PROGRESS via PR #105]
    - 신규 파일: `domain/usecase/SilentNotificationGroupingPolicy.kt`.
    - 공개 API: `groupKeyFor(entity: NotificationEntity): SilentGroupKey`. `SilentGroupKey` = `sealed class` (`Sender(normalizedName: String)` / `App(packageName: String)`).
    - 정규화: whitespace trim, 대소문자 보존 (한글 등 유니코드 안전).
