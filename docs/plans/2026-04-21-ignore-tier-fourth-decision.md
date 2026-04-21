@@ -1,7 +1,17 @@
 ---
 title: "IGNORE (무시) — 4th decision tier: delete-level classification"
-status: planned
+status: shipped
 created: 2026-04-21
+superseded-by:
+  - ../journeys/ignored-archive.md
+  - ../journeys/notification-capture-classify.md
+  - ../journeys/rules-management.md
+  - ../journeys/notification-detail.md
+  - ../journeys/rules-feedback-loop.md
+  - ../journeys/home-overview.md
+  - ../journeys/hidden-inbox.md
+  - ../journeys/digest-inbox.md
+  - ../journeys/priority-inbox.md
 ---
 
 # IGNORE (무시) — 네 번째 분류 티어
@@ -156,7 +166,7 @@ created: 2026-04-21
 4. Detail 화면은 즉시 뒤로 navigate (pop) — IGNORE 된 알림이 현재 화면에 남아있지 않게.
 5. Undo 경로는 SmartNoti 의 임시 in-memory undo stack 으로 충분 (프로세스 재시작 시 undo 불가 — snackbar 창이 닫히면 영구화).
 
-## Task 7: Journey doc updates + Change log
+## Task 7: Journey doc updates + Change log [IN PROGRESS via PR #189]
 
 **Objective:** 관측 동작 변화를 문서로 동기화.
 
@@ -173,7 +183,7 @@ created: 2026-04-21
 1. 모든 Change log 항목에 PR 번호 + commit hash + 날짜 명시.
 2. Known gaps 에 weekly insights 포함 결정 (open question) 의 잠정 결론을 기록.
 
-## Task 8: Self-review + PR
+## Task 8: Self-review + PR [N/A — docs-only plan closure]
 
 **Steps:**
 1. `./gradlew :app:testDebugUnitTest` 전체 통과.

@@ -30,7 +30,7 @@ PRIORITY 로 분류된 알림을 **"SmartNoti 가 건드리지 않은 알림"** 
 2. `PriorityScreen` 이 `SettingsRepository.observeSettings()` 와 `NotificationRepository.observePriorityFiltered(hidePersistentNotifications)` 를 collect.
 3. 상단 `ScreenHeader` — eyebrow "검토" + 제목 "SmartNoti 가 건드리지 않은 알림" + 서브타이틀 "이 판단이 맞는지 확인하고, 필요하면 바로 Digest / 조용히 / 규칙으로 보낼 수 있어요." (empty 상태에서는 제목이 "검토 대기 알림" 으로 바뀌고 `EmptyState` 카드가 보임.)
 4. 리스트 상단에 `SmartSurfaceCard` — "검토 대기 N건" + 보조 설명.
-5. LazyColumn 이 status = PRIORITY 인 `NotificationUiModel` 리스트를 카드로 표시. 각 카드 아래에는 `PassthroughReclassifyActions` 영역이 함께 렌더 — "이 판단을 바꿀까요?" 라벨 + `→ Digest` / `→ 조용히` OutlinedButton 두 개 + `→ 규칙 만들기` TextButton.
+5. LazyColumn 이 status = PRIORITY 인 `NotificationUiModel` 리스트를 카드로 표시. IGNORE row 는 `observePriorityFiltered` 가 `status == PRIORITY` 로 선필터하므로 여기에 포함되지 않음 — IGNORE 는 [ignored-archive](ignored-archive.md) 전용. 각 카드 아래에는 `PassthroughReclassifyActions` 영역이 함께 렌더 — "이 판단을 바꿀까요?" 라벨 + `→ Digest` / `→ 조용히` OutlinedButton 두 개 + `→ 규칙 만들기` TextButton.
 6. 사용자가 `→ Digest` / `→ 조용히` 탭 → `PassthroughReviewReclassifyDispatcher.reclassify` 가 `NotificationFeedbackPolicy` 로 상태를 바꿔 `NotificationRepository.updateNotification()` 수행 (규칙 생성은 하지 않음).
 7. 사용자가 `→ 규칙 만들기` 탭 → `onCreateRuleClick(notification)` 을 통해 rules feedback flow 로 연결.
 8. 사용자가 카드 본문 탭 → `Routes.Detail.create(notificationId)` 로 navigate (→ notification-detail).
@@ -108,3 +108,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: v1 loop tick 재검증 (PASS, PR 추가). Recipe fragility 관련 Known gap 추가
 - 2026-04-21: v1 loop tick re-verify #2 (PASS). Keyword 기반 PRIORITY 경로 (은행/인증번호) 로 PERSON DIGEST 규칙 오염을 우회, fresh unique tag `PriIn0421T3` 로 DB+UI+Detail end-to-end 확증
 - 2026-04-21: Rules UX v2 Phase A shipped (PR #140/#141/#142/#143). Priority 탭을 "검토 대기 알림" 으로 재프레이밍 — BottomNav 에서 제거, Home `HomePassthroughReviewCard` 탭으로만 진입. 화면 제목 "SmartNoti 가 건드리지 않은 알림" + 인라인 재분류 액션 (`→ Digest` / `→ 조용히` / `→ 규칙 만들기`) 추가. Route (`Routes.Priority`) 는 replacement notification parent 로 유지. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase A
+- 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 검토 대기 리스트에서 제외됨을 명시 — `observePriorityFiltered` 는 `status == PRIORITY` 로만 필터하므로 IGNORE row 는 자동 배제, [ignored-archive](ignored-archive.md) 화면에서만 노출. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음.

@@ -8,7 +8,7 @@ last-verified: 2026-04-21
 
 ## Goal
 
-Digest/Silent replacement 알림 또는 Detail 화면의 "중요로 고정 / Digest로 유지 / 조용히 유지" 액션을 한 번만 눌러도, 해당 알림의 상태를 바꾸는 동시에 동일 유형의 룰을 자동으로 저장해 다음부터는 사용자가 관여하지 않아도 되게 한다.
+Digest/Silent replacement 알림 또는 Detail 화면의 "중요로 고정 / Digest로 보내기 / 조용히 처리 / 무시" 액션을 한 번만 눌러도, 해당 알림의 상태를 바꾸는 동시에 동일 유형의 룰을 자동으로 저장해 다음부터는 사용자가 관여하지 않아도 되게 한다.
 
 ## Preconditions
 
@@ -17,12 +17,12 @@ Digest/Silent replacement 알림 또는 Detail 화면의 "중요로 고정 / Dig
 
 ## Trigger
 
-- replacement 알림의 액션 버튼 탭 → `PendingIntent.getBroadcast` 로 `SmartNotiNotificationActionReceiver` 기동
-- [notification-detail](notification-detail.md) 의 버튼 탭 → 같은 `NotificationFeedbackPolicy` 사용
+- replacement 알림의 액션 버튼 탭 → `PendingIntent.getBroadcast` 로 `SmartNotiNotificationActionReceiver` 기동 (단, IGNORE 는 replacement alert 에 버튼으로 노출되지 않음 — replacement 자체가 non-IGNORE 결정이므로)
+- [notification-detail](notification-detail.md) 의 버튼 탭 → 같은 `NotificationFeedbackPolicy` 사용. Detail 의 "무시" 버튼은 파괴적이라 `IgnoreConfirmationDialog` 확인 + 3초 "되돌리기" 스낵바 경유.
 
 ## Observable steps
 
-1. Broadcast 수신 시 `intent.action` 을 확인: `ACTION_PROMOTE_TO_PRIORITY` / `ACTION_KEEP_DIGEST` / `ACTION_KEEP_SILENT` 중 하나.
+1. Broadcast 수신 시 `intent.action` 을 확인: `ACTION_PROMOTE_TO_PRIORITY` / `ACTION_KEEP_DIGEST` / `ACTION_KEEP_SILENT` / `ACTION_IGNORE` 중 하나. `ACTION_IGNORE` 는 vocabulary 일관성을 위해 배선돼 있으나 replacement alert 의 액션 버튼에는 노출되지 않음 — 현재 유일한 trigger 경로는 Detail 화면 확인 다이얼로그 (broadcast 분기는 미래 surfaces 용도 유지).
 2. `SmartNotiNotificationActionReceiver.onReceive` 가 goAsync 로 코루틴 launch:
    1. notificationId, replacementNotificationId extras 파싱
    2. `NotificationRepository.observeAll().first()` 에서 해당 notificationId 찾음
@@ -32,8 +32,10 @@ Digest/Silent replacement 알림 또는 Detail 화면의 "중요로 고정 / Dig
       - sender 존재 → `RuleTypeUi.PERSON`, matchValue = sender
       - sender 없음 → `RuleTypeUi.APP`, matchValue = packageName
       - rule id = `"{type.lowercase()}:{matchValue}"` (동일 키는 upsert 로 덮어씀)
+      - action 이 IGNORE 이면 rule 의 `RuleActionUi` 역시 IGNORE 로 저장됨 — 자동 룰 upsert 계약 유지 (promote / keep 경로와 동일).
    6. `RulesRepository.upsertRule(rule)`
-   7. `notificationManager.cancel(replacementNotificationId)` — replacement 알림 제거 (Detail 경로에선 생략)
+   7. `notificationManager.cancel(replacementNotificationId)` — replacement 알림 제거 (Detail 경로에선 생략; IGNORE 경로는 애초에 replacement 가 없으므로 no-op)
+   8. Detail "무시" 경로 한정: 확정 시 prior `NotificationUiModel` + prior 룰 스냅샷을 `applyIgnoreWithUndo` 가 유지, 3초 "되돌리기" 스낵바 action 탭 시 status / reasonTags / rule 을 원복 (새 룰이면 `deleteRule`, 기존 룰이면 prior action 으로 `upsertRule`). Undo 는 in-memory — 프로세스 재시작 시 영구화.
 3. 이후 같은 sender/앱으로 새 알림이 들어오면 (→ [notification-capture-classify](notification-capture-classify.md)) 룰 매치로 동일 decision 이 자동 적용됨.
 
 ## Exit state
@@ -50,10 +52,12 @@ Digest/Silent replacement 알림 또는 Detail 화면의 "중요로 고정 / Dig
 
 ## Code pointers
 
-- `notification/SmartNotiNotificationActionReceiver`
-- `notification/SmartNotiNotifier#ACTION_*` 상수, `notifier.addAction(...)` 에서 연결
-- `domain/usecase/NotificationFeedbackPolicy` — applyAction + toRule
-- `data/rules/RulesRepository#upsertRule`
+- `notification/SmartNotiNotificationActionReceiver` — broadcast → `RuleActionUi` 매핑 (IGNORE 포함)
+- `notification/SmartNotiNotifier#ACTION_*` 상수 (`ACTION_PROMOTE_TO_PRIORITY` / `ACTION_KEEP_DIGEST` / `ACTION_KEEP_SILENT` / `ACTION_IGNORE`), `notifier.addAction(...)` 에서 연결
+- `domain/usecase/NotificationFeedbackPolicy` — applyAction + toRule (IGNORE 케이스 포함)
+- `ui/screens/detail/NotificationDetailScreen#applyIgnoreWithUndo` — Detail "무시" 확인 + undo 스냅샷 체인
+- `ui/components/IgnoreConfirmationDialog`
+- `data/rules/RulesRepository#upsertRule`, `#deleteRule` (undo 경로)
 - `data/local/NotificationRepository#updateNotification`
 
 ## Tests
@@ -94,3 +98,4 @@ adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY \
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: v1 loop re-verify — Detail 경유 PASS (fresh sender `TestSender_0421_T12`, `person:…` rule ALWAYS_PRIORITY 생성 확인)
 - 2026-04-21: v1 loop re-verify #3 — KEEP_SILENT 분기 PASS (fresh sender `SilentTest_0421_T1`, Detail "조용히 처리" 탭 → Rules 탭 "조용히 1" 카테고리에 person 타입 룰 `person:SilentTest_0421_T1` 생성 + reasonTags 에 "사용자 규칙" 추가 관측). 3개 액션 분기 (ALWAYS_PRIORITY / ALWAYS_DIGEST / KEEP_SILENT) 모두 관측 완료.
+- 2026-04-21: 4번째 feedback 액션 **"무시"** 추가 — Detail 화면에서만 trigger. `IgnoreConfirmationDialog` 확인 → `applyIgnoreWithUndo` 가 `NotificationFeedbackPolicy.applyAction(IGNORE)` + `RulesRepository.upsertRule(RuleActionUi.IGNORE)` + `onBack()` + 3초 "되돌리기" 스낵바 체인을 실행. 자동 룰 upsert 계약은 기존 3개 액션과 동일 (PERSON when sender, APP otherwise). 스냅샷 기반 undo — prior notification / prior rule 복원, 새 룰이면 delete, 기존 룰이면 prior action 으로 upsert. `SmartNotiNotifier.ACTION_IGNORE` broadcast 상수 + `SmartNotiNotificationActionReceiver` 매핑도 추가했으나 replacement alert 에는 IGNORE 버튼을 노출하지 않음 (replacement 자체가 non-IGNORE 결정이라 불가). Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6a (#187 `57df6ac`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).

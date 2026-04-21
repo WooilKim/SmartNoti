@@ -37,15 +37,16 @@ last-verified: 2026-04-21
 8. 내부에서 `NotificationClassifier.classify(input, rules)` 가 분류 결정:
    - 룰 매치 (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 최우선. 매치된 enabled rule 집합은 `RuleConflictResolver.resolve(matched, allRules)` 에 위임 — base 와 해당 base 를 가리키는 override 가 동시에 매치되면 override 가 승리, 단일 tier 안에서는 `allRules` 인덱스 (earlier wins) 로 tie-break. 1-level override 만 탐색.
    - Classifier 가 단일 winning rule 의 id 를 `NotificationClassification.matchedRuleIds` 로 래핑해 반환 → `NotificationCaptureProcessor` 가 decision + matchedRuleIds 를 분리 소비, `NotificationEntityMapper` 가 `ruleHitIds` 컬럼에 comma-separated 로 영속화.
+   - **IGNORE 는 룰 매치 경로에서만 도달 가능.** `RuleActionUi.IGNORE` 가 걸린 rule 이 `RuleConflictResolver` 를 거쳐 최종 winner 가 되면 `NotificationDecision.IGNORE` 가 반환됨. Classifier 의 VIP / 우선순위 키워드 / 반복 / Quiet hours / 기본 SILENT 분기는 **절대 IGNORE 를 만들지 않는다** — 파괴적 결정이므로 사용자가 명시적으로 규칙을 만들었을 때만 적용. `ALWAYS_PRIORITY` override 로 base IGNORE 를 덮는 경로는 `RuleConflictResolver` 계약에 따라 그대로 동작.
    - 그 외 rule miss: VIP 발신자 집합, 우선순위 키워드 집합, 중복 카운트 임계, Quiet hours + 쇼핑앱 등 heuristic.
 9. `NotificationRepository.save(notification, postTime, contentSignature)` → Room `notifications` 테이블에 upsert.
 10. 이어서 source routing 단계 진입 (→ [silent-auto-hide](silent-auto-hide.md), [priority-inbox](priority-inbox.md), digest-suppression).
 
 ## Exit state
 
-- `NotificationEntity` row 한 건이 `status ∈ {PRIORITY, DIGEST, SILENT}` 로 저장됨.
+- `NotificationEntity` row 한 건이 `status ∈ {PRIORITY, DIGEST, SILENT, IGNORE}` 로 저장됨. IGNORE 는 룰 매치 경로에서만 생성되며, 저장 후 기본 뷰 (`observePriority/Digest/Silent`, `toHiddenGroups`) 에서는 필터 아웃된다 (→ [ignored-archive](ignored-archive.md)).
 - `NotificationRepository.observeAll()` 을 구독하는 모든 구성 요소가 새 알림을 즉시 관측 가능.
-- 분류 결과에 따른 후속 routing이 실행됨 (cancel / replacement / keep).
+- 분류 결과에 따른 후속 routing이 실행됨 (cancel / replacement / keep). IGNORE 는 tray cancel 만 수행하고 replacement alert 는 posting 하지 않음 — listener 의 early-return 분기가 책임.
 
 ## Out of scope
 
@@ -108,3 +109,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: `onListenerConnected` 재접속마다 `enqueueReconnectSweep` 가 돌도록 파이프라인 확장. 리스너가 꺼져 있는 동안 tray 에 쌓였다가 살아남은 알림은 `ListenerReconnectActiveNotificationSweepCoordinator` 가 `SweepDedupKey` + `NotificationRepository.existsByContentSignature` 로 dedup 해 `processNotification` 에 재주입. 온보딩 bootstrap 경로는 그대로 유지 (plan `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`, PR #94 / #102 / #104)
 - 2026-04-21: 분류 단계에서 rule 매치가 `RuleConflictResolver` 로 이동 — base rule 과 해당 base 를 가리키는 override rule 이 동시에 매치되면 override 가 승리, 단일 tier 는 `allRules` 인덱스 tie-break (earlier wins). Classifier 는 `NotificationClassification(decision, matchedRuleIds)` 를 반환하고 `NotificationCaptureProcessor` 가 이를 풀어 `NotificationEntityMapper` 경유로 `ruleHitIds` 컬럼에 영속 (PR #146, #149, plan `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase B Task 2 + Phase C Task 2). `last-verified` 는 recipe 재실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-21: journey-tester 재검증 sweep PASS — recipe end-to-end (`cmd notification post … CaptureClassifyTest_0421`) 로 PRIORITY 라우팅 + `사용자 규칙` 태그 관측, 5개 unit test 클래스 (`NotificationClassifierTest`, `RuleConflictResolverTest`, `DuplicateNotificationPolicyTest`, `QuietHoursPolicyTest`, `NotificationCapturePolicyTest`) 총 34건 green. 자세한 증거는 `docs/journeys/README.md` Verification log. DRIFT 없음. 설치된 APK 가 `ruleHitIds` 컬럼 이전 빌드 (`lastUpdateTime=2026-04-21 15:47:57`) 라 live schema 에서 해당 컬럼은 확인 불가 — pre-condition 제약이며 contract 는 code-level test 로 증명.
+- 2026-04-21: 4번째 분류 tier **IGNORE (무시)** 추가 — `NotificationDecision.IGNORE` / `NotificationStatusUi.IGNORE` / `RuleActionUi.IGNORE` 및 Room v8→v9 no-op migration (#178 `6aad9d5`), `NotificationClassifier` 의 `RuleActionUi.IGNORE → NotificationDecision.IGNORE` 매핑 (#179 `5f516d6`). Classifier 의 rule-miss 분기는 IGNORE 를 생성하지 않으며, `ALWAYS_PRIORITY` override 로 base IGNORE 를 덮는 경로는 `RuleConflictResolver` 기존 계약 그대로. Exit state 의 status 집합에 IGNORE 포함. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Tasks 1-3. `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
