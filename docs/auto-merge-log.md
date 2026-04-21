@@ -132,3 +132,5 @@ If a self-merged row caused a regression:
 | 2026-04-21T17:50:13Z | journey-tester | #192 | ignored-archive first verification PASS (fresh APK rebuild); Known gap race crash noted | https://github.com/WooilKim/SmartNoti/actions/runs/24737549200 |
 | 2026-04-21T18:15:00Z | project-manager | #191 | PM T19 chain-audit PR merge (record of #190 audit); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24738114813 |
 | 2026-04-21T18:25:00Z | project-manager | #193 | PM T20 chain-audit PR merge (record of #191 merge + #192 tester self-merge note); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24738356053 |
+| 2026-04-21T18:45:00Z | project-manager | #195 | PM T21 chain-audit PR merge (record of #193 merge + #194 defer); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24738624174 |
+| 2026-04-21T18:45:00Z | project-manager | #194 | gap-planner ignored-archive nav-race plan + Known-gap link annotation; docs-only, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24738470398 |
