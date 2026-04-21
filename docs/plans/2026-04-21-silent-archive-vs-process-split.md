@@ -91,10 +91,10 @@ created: 2026-04-21
 4. **[IN PROGRESS via PR #107]** **Hidden 탭 분리**
    - Compose 세그먼트 탭 추가, 각 탭 LazyColumn.
    - Empty states: "보관 중" 0건일 때, "처리됨" 0건일 때.
-5. **[IN PROGRESS via PR #110]** **요약 알림 카운트 재조정**
+5. **[shipped via #110]** **요약 알림 카운트 재조정**
    - `silentSummaryJob` 에서 count 쿼리를 `silentMode == ARCHIVED` 로 필터.
    - 카피 업데이트.
-6. **저널 문서 / 인박스 UX 저널 갱신**
+6. **[IN PROGRESS via PR #TBD]** **저널 문서 / 인박스 UX 저널 갱신**
    - `docs/journeys/silent-auto-hide.md` / `hidden-inbox.md` 관측 단계 재작성.
    - Verification log 추가 — 보관/처리 분리가 실제로 관측되는지 recipe.
 7. **Visual audit**
