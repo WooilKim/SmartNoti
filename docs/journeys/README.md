@@ -63,6 +63,17 @@
 ## Verification log
 
 
+### 2026-04-22 (ui-ux inspector sweep — IGNORE tier audit, emulator-5554)
+
+| Journey | Severity | Rule violated | Evidence |
+|---|---|---|---|
+| rules-management | CLEAN | — | `RulesScreen` 상단 `무시 1` filter chip + `무시 / 규칙 1개` tier section (IgnoreTestRule) + `RuleRow` 내 "무시" 칩이 border-only neutral gray 로 렌더되어 Linear/Superhuman 톤 계약 일치. Action dropdown 에 `무시 (즉시 삭제)` 선택 칩 (녹색 accent fill) 정상 노출. `/tmp/ui-ignore-rules-scroll3.png` / `/tmp/ui-ignore-rule-edit.png`. |
+| ignored-archive | CLEAN | — | `IgnoredArchiveScreen` header (`아카이브` eyebrow + `무시됨` H1 + 설명) 가 Hidden/Priority 위계와 일치. `보관 중 1건` SmartSurfaceCard + NotificationCard 의 `무시됨` StatusBadge (IgnoreContainer `#141922` / IgnoreOnContainer `#6B7383`) 가 low-emphasis neutral gray 로 계약 준수. 빈 여백이 noisy 하지 않고 calm. `/tmp/ui-ignore-archive.png`. |
+| rules-management (settings card) | CLEAN | — | Settings 의 `무시됨 / 무시된 알림 보기` 카드 — section header + helper text + toggle + `무시됨 아카이브 열기` OutlinedButton 이 curated operator control 패턴 (forms/controls 규칙) 을 따름. `/tmp/ui-ignore-settings3.png`. |
+| notification-detail | MODERATE | tighter spacing rhythm + lists-and-rows tap target clarity | "이 알림 학습시키기" 의 3-버튼 secondary row 에서 `Digest로 보내기` 만 2줄 wrap 되어 버튼 높이가 `조용히 처리` / `무시` 와 불일치. `/tmp/ui-ignore-detail2.png`. Known gap 기록 + 라벨 단축 또는 FlowRow 재고 권장. |
+| notification-detail (dialog) | MINOR | accent restraint | `IgnoreConfirmationDialog` 확정 "무시" 버튼이 primary accent 파랑 — 파괴성 신호가 전적으로 copy 에 의존. 규칙 위반은 아니나 destructive primary tonal variant 도입 여부 제품 결정 필요. `/tmp/ui-ignore-confirm-dialog.png`. |
+
+
 ### 2026-04-22 (journey-tester — digest-inbox fresh APK post-IGNORE first ADB verify PASS, emulator-5554)
 
 | Journey | Result | Notes |
