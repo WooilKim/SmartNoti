@@ -24,5 +24,15 @@ import com.smartnoti.app.domain.model.SilentMode
  */
 internal fun List<NotificationUiModel>.countSilentArchivedForSummary(
     hidePersistentNotifications: Boolean,
-): Int = filterPersistent(hidePersistentNotifications)
-    .count { it.status == NotificationStatusUi.SILENT && it.silentMode == SilentMode.ARCHIVED }
+): Int = filterSilentArchivedForSummary(hidePersistentNotifications).size
+
+/**
+ * Same filter as [countSilentArchivedForSummary] but returns the row list so the listener's
+ * per-sender grouping pipeline (plan `silent-tray-sender-grouping` Task 3) can reuse the
+ * same "보관 중" contract as the root count. The pure [SilentGroupTrayPlanner] then diff's
+ * this list against the previously-posted tray state.
+ */
+internal fun List<NotificationUiModel>.filterSilentArchivedForSummary(
+    hidePersistentNotifications: Boolean,
+): List<NotificationUiModel> = filterPersistent(hidePersistentNotifications)
+    .filter { it.status == NotificationStatusUi.SILENT && it.silentMode == SilentMode.ARCHIVED }

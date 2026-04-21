@@ -2,10 +2,13 @@ package com.smartnoti.app.notification
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.smartnoti.app.data.local.NotificationEntity
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.local.toEntity
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.toDecision
 import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
 import com.smartnoti.app.domain.model.withContext
@@ -97,20 +100,60 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             // filterPersistent is applied so this matches Home's StatPill / Hidden
             // screen header. We repost only on count transitions so a swipe-dismissed
             // summary stays dismissed until the archived count actually moves.
+            //
+            // Task 3 of `silent-tray-sender-grouping` layers a per-sender (fallback:
+            // per-app) group summary surface on top of the legacy root summary. The
+            // pure [SilentGroupTrayPlanner] turns the current list of SILENT ARCHIVED
+            // rows into concrete post/cancel actions, which we dispatch through the
+            // same notifier. Plan Q3-A ("SILENT never occupies tray alone") is kept
+            // because the planner cancels the lone child whenever a group drops below
+            // the 2-row threshold.
             val settingsRepository = SettingsRepository.getInstance(applicationContext)
+            val planner = SilentGroupTrayPlanner()
             var lastCount = -1
+            var trayState = SilentGroupTrayState.EMPTY
             combine(
                 repository.observeAll(),
                 settingsRepository.observeSettings(),
             ) { notifications, settings ->
-                notifications.countSilentArchivedForSummary(
+                val archivedRows = notifications.filterSilentArchivedForSummary(
                     hidePersistentNotifications = settings.hidePersistentNotifications,
                 )
-            }.distinctUntilChanged().collect { count ->
-                if (count == lastCount) return@collect
-                lastCount = count
+                SilentSummarySnapshot(rows = archivedRows, count = archivedRows.size)
+            }.distinctUntilChanged().collect { snapshot ->
+                val rootCountChanged = snapshot.count != lastCount
+                lastCount = snapshot.count
+                val plan = planner.plan(
+                    previousState = trayState,
+                    currentSilent = snapshot.rows,
+                )
+                trayState = plan.nextState
                 withContext(Dispatchers.Main) {
-                    silentSummaryNotifier.post(count)
+                    if (rootCountChanged) {
+                        silentSummaryNotifier.post(snapshot.count)
+                    }
+                    plan.summaryCancels.forEach { key ->
+                        silentSummaryNotifier.cancelGroupSummary(key)
+                    }
+                    plan.childCancels.forEach { cancel ->
+                        silentSummaryNotifier.cancelGroupChild(cancel.notificationId)
+                    }
+                    plan.childPosts.forEach { post ->
+                        val entity = post.entity.toGroupTrayEntity()
+                        silentSummaryNotifier.postGroupChild(
+                            notificationId = post.notificationId,
+                            entity = entity,
+                            key = post.key,
+                        )
+                    }
+                    plan.summaryPosts.forEach { post ->
+                        silentSummaryNotifier.postGroupSummary(
+                            key = post.key,
+                            count = post.count,
+                            preview = post.preview.map { it.toGroupTrayEntity() },
+                            rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+                        )
+                    }
                 }
             }
         }
@@ -361,3 +404,21 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         }
     }
 }
+
+/**
+ * Snapshot emitted by the silent summary flow — bundles the filtered SILENT × ARCHIVED rows
+ * with the derived count so the collector can drive both the legacy root summary count and
+ * the per-sender grouping planner off a single distinctUntilChanged stream.
+ */
+internal data class SilentSummarySnapshot(
+    val rows: List<NotificationUiModel>,
+    val count: Int,
+)
+
+/**
+ * Converts a [NotificationUiModel] into the minimal [NotificationEntity] shape the group
+ * notifier needs to render a child / summary preview. We don't persist through this path,
+ * so [NotificationUiModel.postedAtMillis] is reused directly.
+ */
+internal fun NotificationUiModel.toGroupTrayEntity(): NotificationEntity =
+    toEntity(postedAtMillis = postedAtMillis)
