@@ -6,6 +6,8 @@ import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.SilentMode
+import com.smartnoti.app.domain.model.SilentMode.ARCHIVED
+import com.smartnoti.app.domain.model.SilentMode.PROCESSED
 import com.smartnoti.app.domain.model.postedAtMillisOrNull
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import kotlinx.coroutines.flow.Flow
@@ -238,6 +240,17 @@ fun List<CapturedAppSelectionItem>.toCapturedAppSelectionItems(
     }
 }
 
+private fun matchesSilentModeFilter(
+    rowMode: SilentMode?,
+    filter: SilentMode?,
+): Boolean {
+    return when (filter) {
+        null -> true
+        ARCHIVED -> rowMode == ARCHIVED
+        PROCESSED -> rowMode == PROCESSED || rowMode == null
+    }
+}
+
 fun List<NotificationUiModel>.filterPersistent(hidePersistentNotifications: Boolean): List<NotificationUiModel> {
     return if (hidePersistentNotifications) {
         filterNot(NotificationUiModel::isPersistent)
@@ -279,11 +292,27 @@ fun List<NotificationUiModel>.toDigestGroups(
         .sortedByDescending { it.items.maxOfOrNull(NotificationUiModel::id) }
 }
 
+/**
+ * Group SILENT notifications into per-app [DigestGroupUiModel] cards for the
+ * Hidden 화면.
+ *
+ * When [silentModeFilter] is `null` (default), every SILENT row contributes —
+ * preserves the pre-silent-split behaviour used by single-list callers.
+ *
+ * When [silentModeFilter] is set, the result is scoped to that bucket:
+ * - [SilentMode.ARCHIVED] → only rows whose `silentMode == ARCHIVED`.
+ * - [SilentMode.PROCESSED] → rows whose `silentMode == PROCESSED` **or**
+ *   `silentMode == null`. The null case covers legacy rows saved before the
+ *   `silent-archive-vs-process-split` plan landed; per plan Open question 4
+ *   they are surfaced under the 처리됨 tab so the 보관 중 tab stays clean.
+ */
 fun List<NotificationUiModel>.toHiddenGroups(
     hidePersistentNotifications: Boolean = false,
+    silentModeFilter: SilentMode? = null,
 ): List<DigestGroupUiModel> {
     return filterPersistent(hidePersistentNotifications)
         .filter { it.status == NotificationStatusUi.SILENT }
+        .filter { matchesSilentModeFilter(it.silentMode, silentModeFilter) }
         .groupBy { it.packageName }
         .values
         .map { grouped ->

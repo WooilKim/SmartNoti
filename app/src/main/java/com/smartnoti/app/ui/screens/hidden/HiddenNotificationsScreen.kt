@@ -1,6 +1,9 @@
 package com.smartnoti.app.ui.screens.hidden
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -15,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,10 +27,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartnoti.app.data.local.NotificationRepository
@@ -33,12 +41,23 @@ import com.smartnoti.app.data.local.toHiddenGroups
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.DigestGroupUiModel
+import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.theme.BorderSubtle
 import kotlinx.coroutines.launch
 
+/**
+ * Hidden 화면. SILENT 알림을 **보관 중** / **처리됨** 두 탭으로 분리해 보여준다.
+ *
+ * - 기본 탭: [SilentMode.ARCHIVED] (아직 확인 대기 중인 알림).
+ * - [SilentMode.PROCESSED] 탭은 사용자가 "처리 완료" 로 넘긴 알림 + 구버전 null
+ *   silentMode 을 가진 legacy row 를 포함. (plan Open question 4 마이그레이션 결정)
+ *
+ * 참조: `docs/plans/2026-04-21-silent-archive-vs-process-split.md` Task 4.
+ */
 @Composable
 fun HiddenNotificationsScreen(
     contentPadding: PaddingValues,
@@ -55,17 +74,38 @@ fun HiddenNotificationsScreen(
         repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
     val filteredNotifications by filteredFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val groups = remember(filteredNotifications) {
-        filteredNotifications.toHiddenGroups(hidePersistentNotifications = false)
-    }
-    val totalCount = remember(groups) { groups.sumOf { it.count } }
 
+    val archivedGroups = remember(filteredNotifications) {
+        filteredNotifications.toHiddenGroups(
+            hidePersistentNotifications = false,
+            silentModeFilter = SilentMode.ARCHIVED,
+        )
+    }
+    val processedGroups = remember(filteredNotifications) {
+        filteredNotifications.toHiddenGroups(
+            hidePersistentNotifications = false,
+            silentModeFilter = SilentMode.PROCESSED,
+        )
+    }
+    val archivedCount = remember(archivedGroups) { archivedGroups.sumOf { it.count } }
+    val processedCount = remember(processedGroups) { processedGroups.sumOf { it.count } }
+
+    var selectedTab by rememberSaveable { mutableStateOf(HiddenTab.Archived) }
     var pendingClearAll by remember { mutableStateOf(false) }
+
+    val visibleGroups = when (selectedTab) {
+        HiddenTab.Archived -> archivedGroups
+        HiddenTab.Processed -> processedGroups
+    }
+    val visibleCount = when (selectedTab) {
+        HiddenTab.Archived -> archivedCount
+        HiddenTab.Processed -> processedCount
+    }
 
     if (pendingClearAll) {
         AlertDialog(
             onDismissRequest = { pendingClearAll = false },
-            title = { Text("숨긴 알림 ${totalCount}건을 모두 지울까요?") },
+            title = { Text("숨긴 알림 ${archivedCount + processedCount}건을 모두 지울까요?") },
             text = { Text("SmartNoti 내 기록만 지우는 거라, 시스템 알림센터에는 영향이 없어요. 이후에 같은 앱에서 조용히 분류된 알림이 오면 다시 모여요.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -105,31 +145,42 @@ fun HiddenNotificationsScreen(
                 }
                 ScreenHeader(
                     eyebrow = "숨긴 알림",
-                    title = "숨겨진 알림 ${totalCount}건",
-                    subtitle = "조용히로 분류된 알림을 앱별로 묶어 정리했어요. 그룹 카드에서 모두 복구하거나 모두 지울 수도 있어요.",
+                    title = "보관 ${archivedCount}건 · 처리 ${processedCount}건",
+                    subtitle = "'보관 중' 은 아직 확인하지 않은 알림, '처리됨' 은 이미 훑어본 알림이에요. 탭으로 오가며 정리하세요.",
                     modifier = Modifier
                         .weight(1f)
                         .padding(top = 12.dp),
                 )
             }
         }
-        if (groups.isEmpty()) {
+        item {
+            HiddenTabRow(
+                selected = selectedTab,
+                archivedCount = archivedCount,
+                processedCount = processedCount,
+                onSelected = { selectedTab = it },
+            )
+        }
+        if (visibleGroups.isEmpty()) {
             item {
-                EmptyState(
-                    title = "아직 숨긴 알림이 없어요",
-                    subtitle = "조용히 처리된 알림이 생기면 여기에 모여요",
-                )
+                HiddenTabEmptyState(tab = selectedTab)
             }
         } else {
             item {
                 SmartSurfaceCard {
                     Text(
-                        text = "${groups.size}개 앱에서 ${totalCount}건을 숨겼어요.",
+                        text = when (selectedTab) {
+                            HiddenTab.Archived -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 보관 중이에요."
+                            HiddenTab.Processed -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 처리했어요."
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = "같은 앱의 여러 알림은 한 카드로 모아서 보여줘요. 탭하면 최신 내용을 바로 확인할 수 있어요.",
+                        text = when (selectedTab) {
+                            HiddenTab.Archived -> "같은 앱의 여러 알림은 한 카드로 모아서 보여줘요. 탭하면 최신 내용을 바로 확인할 수 있어요."
+                            HiddenTab.Processed -> "이미 확인했거나 이전 버전에서 넘어온 알림이에요. 필요하면 한 번에 지울 수 있어요."
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -141,7 +192,7 @@ fun HiddenNotificationsScreen(
                     }
                 }
             }
-            items(groups, key = { it.id }) { group ->
+            items(visibleGroups, key = { it.id }) { group ->
                 HiddenGroupCardWithBulkActions(
                     group = group,
                     onNotificationClick = onNotificationClick,
@@ -154,6 +205,97 @@ fun HiddenNotificationsScreen(
                 )
             }
         }
+    }
+}
+
+/** Persistable selection for the Hidden 탭 segmented control. */
+enum class HiddenTab { Archived, Processed }
+
+@Composable
+private fun HiddenTabRow(
+    selected: HiddenTab,
+    archivedCount: Int,
+    processedCount: Int,
+    onSelected: (HiddenTab) -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, BorderSubtle),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            HiddenTabSegment(
+                label = "보관 중",
+                count = archivedCount,
+                isSelected = selected == HiddenTab.Archived,
+                modifier = Modifier.weight(1f),
+                onClick = { onSelected(HiddenTab.Archived) },
+            )
+            HiddenTabSegment(
+                label = "처리됨",
+                count = processedCount,
+                isSelected = selected == HiddenTab.Processed,
+                modifier = Modifier.weight(1f),
+                onClick = { onSelected(HiddenTab.Processed) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HiddenTabSegment(
+    label: String,
+    count: Int,
+    isSelected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(8.dp)
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val labelColor = if (isSelected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(containerColor, shape = shape),
+    ) {
+        TextButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = "$label · ${count}건",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                color = labelColor,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HiddenTabEmptyState(tab: HiddenTab) {
+    when (tab) {
+        HiddenTab.Archived -> EmptyState(
+            title = "보관 중인 알림이 없어요",
+            subtitle = "지금은 모두 처리됐어요. 새로 조용히 분류된 알림이 오면 여기에 먼저 모여요.",
+        )
+        HiddenTab.Processed -> EmptyState(
+            title = "처리된 알림이 없어요",
+            subtitle = "보관 중 알림을 상세에서 '처리 완료로 표시' 하면 이 탭에 쌓여요.",
+        )
     }
 }
 
