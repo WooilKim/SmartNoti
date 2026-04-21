@@ -149,6 +149,32 @@ class NotificationRepositoryTest {
     }
 
     @Test
+    fun source_entry_key_for_id_returns_saved_key_and_null_for_legacy_or_missing() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "silent-with-key",
+                status = NotificationStatusUi.SILENT,
+                silentMode = "ARCHIVED",
+                postedAtMillis = 1_700_002_000_000,
+                sourceEntryKey = "0|com.foo|42|null|10",
+            )
+        )
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "silent-legacy-null-key",
+                status = NotificationStatusUi.SILENT,
+                silentMode = "ARCHIVED",
+                postedAtMillis = 1_700_002_100_000,
+                sourceEntryKey = null,
+            )
+        )
+
+        assertEquals("0|com.foo|42|null|10", repository.sourceEntryKeyForId("silent-with-key"))
+        assertEquals(null, repository.sourceEntryKeyForId("silent-legacy-null-key"))
+        assertEquals(null, repository.sourceEntryKeyForId("does-not-exist"))
+    }
+
+    @Test
     fun silent_mode_column_round_trips_through_dao() = runBlocking {
         database.notificationDao().upsert(
             notificationEntity(
@@ -183,6 +209,7 @@ class NotificationRepositoryTest {
         postedAtMillis: Long = id.split(':').getOrNull(1)?.toLongOrNull() ?: 1_700_000_000_000,
         status: NotificationStatusUi = NotificationStatusUi.DIGEST,
         silentMode: String? = null,
+        sourceEntryKey: String? = null,
     ) = NotificationEntity(
         id = id,
         appName = appName,
@@ -198,5 +225,6 @@ class NotificationRepositoryTest {
         isPersistent = isPersistent,
         contentSignature = listOf(title, body).joinToString(" ").trim(),
         silentMode = silentMode,
+        sourceEntryKey = sourceEntryKey,
     )
 }
