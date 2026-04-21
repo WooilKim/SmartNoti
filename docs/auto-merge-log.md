@@ -97,4 +97,6 @@ If a self-merged row caused a regression:
 | 2026-04-21T07:16:18Z | journey-tester | #135 | hidden-inbox (dual-surface + deep-link filter PASS post #127/#128/#130) | https://github.com/WooilKim/SmartNoti/actions/runs/24709175307 |
 | 2026-04-21T06:52:00Z | journey-tester | #131 | silent-auto-hide SKIP — stale APK (lastUpdateTime 12:42:01) predates Task 2 commit 2298d16 (14:38); no ARCHIVED rows and no smartnoti_silent_group posts observable | https://github.com/WooilKim/SmartNoti/actions/runs/24707782944 |
 | 2026-04-21T10:09:43Z | journey-tester | #154 | persistent-notification-protection (policy-level PASS via PersistentNotificationPolicyTest 7/7) | https://github.com/WooilKim/SmartNoti/actions/runs/24716451963 |
+| 2026-04-21T10:30:00Z | project-manager | #152 | rules-ux-v2 Phase C Task 5 — tier-aware moveRule + drag handle (plan-implementer, tests-first, CI SUCCESS) | https://github.com/WooilKim/SmartNoti/actions/runs/24716120139 |
+| 2026-04-21T10:30:00Z | project-manager | #153 | PM self-audit — pr-review-log +1 row recording #152 defer verdict (CI SUCCESS) | https://github.com/WooilKim/SmartNoti/actions/runs/24716300026 |
 | 2026-04-21T13:24:27Z | journey-tester | #157 | quiet-hours (policy-level PASS via QuietHoursPolicyTest 2/2 + NotificationClassifierTest 19/19) | https://github.com/WooilKim/SmartNoti/actions/runs/24724671251 |
