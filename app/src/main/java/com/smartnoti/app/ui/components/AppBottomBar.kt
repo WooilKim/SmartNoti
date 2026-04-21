@@ -35,7 +35,14 @@ fun AppBottomBar(
         ) {
             items.forEach { item ->
                 NavigationBarItem(
-                    selected = currentRoute == item.route,
+                    // currentRoute is the registered route *pattern* (e.g.
+                    // "rules?highlightRuleId={highlightRuleId}") — when an item
+                    // stores the bare URL ("rules") for navigation, compare
+                    // against the pattern's base segment so the tab still reads
+                    // as selected. Exact match still wins for items without
+                    // query params.
+                    selected = currentRoute == item.route ||
+                        currentRoute?.substringBefore('?') == item.route.substringBefore('?'),
                     onClick = { onNavigate(item.route) },
                     icon = { Icon(item.icon, contentDescription = item.label) },
                     label = { Text(item.label, style = MaterialTheme.typography.labelSmall) },

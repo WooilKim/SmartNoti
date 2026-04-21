@@ -35,11 +35,16 @@ class BottomNavItemsTest {
 
     @Test
     fun bottom_nav_exposes_home_digest_rules_settings_in_order() {
+        // Rules' bottom-nav entry navigates to the bare "rules" URL (not the
+        // pattern with `{highlightRuleId}`) so that nav-compose resolves it to
+        // the unfiltered list via the query param's `null` default. Selection
+        // matching in AppBottomBar compares route prefixes to handle the
+        // pattern/URL mismatch.
         assertEquals(
             listOf(
                 Routes.Home.route,
                 Routes.Digest.route,
-                Routes.Rules.route,
+                Routes.Rules.create(),
                 Routes.Settings.route,
             ),
             bottomNavItems.map { it.route },

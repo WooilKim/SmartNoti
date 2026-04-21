@@ -8,7 +8,27 @@ sealed class Routes(val route: String) {
     data object Home : Routes("home")
     data object Priority : Routes("priority")
     data object Digest : Routes("digest")
-    data object Rules : Routes("rules")
+    data object Rules : Routes("rules?highlightRuleId={highlightRuleId}") {
+        /**
+         * Deep-link into the Rules tab, optionally asking the screen to scroll
+         * to and highlight a specific rule id. Used by the Detail screen's
+         * "적용된 규칙" chips (plan `rules-ux-v2-inbox-restructure` Phase B
+         * Task 3).
+         *
+         * - No arg ⇒ `"rules"`, which matches the route pattern because the
+         *   `highlightRuleId` nav arg declares a `null` default in [AppNavHost].
+         * - Blank strings are treated as absent so an empty query param can't
+         *   ship through and drive the Rules screen to chase a nonexistent id.
+         */
+        fun create(highlightRuleId: String? = null): String {
+            val trimmed = highlightRuleId?.trim().orEmpty()
+            return if (trimmed.isEmpty()) {
+                "rules"
+            } else {
+                "rules?highlightRuleId=${encodeRouteParam(trimmed)}"
+            }
+        }
+    }
     data object Settings : Routes("settings")
     data object Hidden : Routes("hidden?sender={sender}&packageName={packageName}") {
         /**

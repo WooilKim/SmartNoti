@@ -30,9 +30,12 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.RuleActionUi
+import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendationSummaryBuilder
+import com.smartnoti.app.domain.usecase.NotificationDetailReasonSectionBuilder
+import com.smartnoti.app.domain.usecase.NotificationDetailRuleReference
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
@@ -40,6 +43,7 @@ import com.smartnoti.app.notification.MarkSilentProcessedTrayCancelChain
 import com.smartnoti.app.notification.SmartNotiNotificationListenerService
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ReasonChipRow
+import com.smartnoti.app.ui.components.RuleHitChipRow
 import com.smartnoti.app.ui.components.StatusBadge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,6 +76,7 @@ fun NotificationDetailScreen(
     contentPadding: PaddingValues,
     notificationId: String,
     onBack: () -> Unit,
+    onRuleClick: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -80,9 +85,14 @@ fun NotificationDetailScreen(
     val deliveryProfileSummaryBuilder = remember { NotificationDetailDeliveryProfileSummaryBuilder() }
     val onboardingRecommendationSummaryBuilder = remember { NotificationDetailOnboardingRecommendationSummaryBuilder() }
     val sourceSuppressionSummaryBuilder = remember { NotificationDetailSourceSuppressionSummaryBuilder() }
+    val reasonSectionBuilder = remember { NotificationDetailReasonSectionBuilder() }
     val scope = rememberCoroutineScope()
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
+    val rules by rulesRepository.observeRules().collectAsState(initial = emptyList<RuleUiModel>())
+    val reasonSections = remember(notification, rules) {
+        notification?.let { reasonSectionBuilder.build(it, rules) }
+    }
     val deliveryProfileSummary = remember(notification) {
         notification?.let(deliveryProfileSummaryBuilder::build)
     }
@@ -154,20 +164,49 @@ fun NotificationDetailScreen(
                 }
             }
         }
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                androidx.compose.foundation.layout.Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+        val sections = reasonSections
+        val hasReasonContent = sections != null &&
+            (sections.classifierSignals.isNotEmpty() || sections.ruleHits.isNotEmpty())
+        if (hasReasonContent) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
-                    Text(
-                        "왜 이렇게 처리됐나요?",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    ReasonChipRow(notification.reasonTags)
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Text(
+                            "왜 이렇게 처리됐나요?",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        // Phase B Task 3 split: classifier-internal factoids
+                        // (grey, non-interactive) are separate from user-rule
+                        // hits (blue, clickable → Rules deep-link). Either
+                        // sub-section is hidden when its list is empty so a
+                        // passthrough alert doesn't show an empty "적용된 규칙"
+                        // header.
+                        if (sections?.classifierSignals?.isNotEmpty() == true) {
+                            ReasonSubSection(
+                                title = "SmartNoti 가 본 신호",
+                                description = "분류에 참고한 내부 신호예요. 직접 수정할 수는 없어요.",
+                            ) {
+                                ReasonChipRow(sections.classifierSignals)
+                            }
+                        }
+                        if (sections?.ruleHits?.isNotEmpty() == true) {
+                            ReasonSubSection(
+                                title = "적용된 규칙",
+                                description = "내 규칙 탭에서 수정하거나 끌 수 있는 규칙이에요. 탭하면 해당 규칙으로 이동해요.",
+                            ) {
+                                RuleHitChipRow(
+                                    hits = sections.ruleHits,
+                                    onHitClick = { onRuleClick(it.ruleId) },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -377,5 +416,29 @@ fun NotificationDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ReasonSubSection(
+    title: String,
+    description: String,
+    content: @Composable () -> Unit,
+) {
+    androidx.compose.foundation.layout.Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        content()
     }
 }

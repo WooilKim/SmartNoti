@@ -10,8 +10,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
@@ -27,12 +32,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +63,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RulesScreen(contentPadding: PaddingValues) {
+fun RulesScreen(
+    contentPadding: PaddingValues,
+    highlightRuleId: String? = null,
+) {
     val context = LocalContext.current
     val repository = remember(context) { RulesRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
@@ -117,7 +127,35 @@ fun RulesScreen(contentPadding: PaddingValues) {
         showEditor = true
     }
 
+    val listState = rememberLazyListState()
+    var highlightedRuleId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Detail screen's "적용된 규칙" chips deep-link via `highlightRuleId` (plan
+    // `rules-ux-v2-inbox-restructure` Phase B Task 3). We echo it into local
+    // state so the flash fades even if the user stays on the screen, and we
+    // drive one scroll per deep-link arrival.
+    LaunchedEffect(highlightRuleId, rules) {
+        val target = highlightRuleId ?: return@LaunchedEffect
+        val visibleRulesSnapshot = listFilterApplicator.apply(rules, selectedActionFilter)
+        if (visibleRulesSnapshot.none { it.id == target }) {
+            // Filter is hiding the target — drop it so the user sees every rule.
+            selectedActionFilter = null
+        }
+        highlightedRuleId = target
+        val indexInFullList = rules.indexOfFirst { it.id == target }
+        if (indexInFullList >= 0) {
+            // Approximate: header + "직접 규칙 추가" + "활성 규칙" cards = 3 sticky items,
+            // plus one SectionLabel per group that comes before the target. This is
+            // good enough for the "land near the rule" UX without threading
+            // LazyListItemInfo back from each row.
+            runCatching { listState.animateScrollToItem(indexInFullList + 3) }
+        }
+        delay(HIGHLIGHT_FLASH_DURATION_MILLIS)
+        highlightedRuleId = null
+    }
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.padding(contentPadding),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -199,22 +237,44 @@ fun RulesScreen(contentPadding: PaddingValues) {
                 )
             }
             items(group.rules, key = { it.id }) { rule ->
-                RuleRow(
-                    rule = rule,
-                    onCheckedChange = { checked ->
-                        scope.launch { repository.setRuleEnabled(rule.id, checked) }
+                val isHighlighted = rule.id == highlightedRuleId
+                val highlightColor by animateColorAsState(
+                    targetValue = if (isHighlighted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0f)
                     },
-                    onMoveUpClick = {
-                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
-                    },
-                    onMoveDownClick = {
-                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
-                    },
-                    onEditClick = { startEdit(rule) },
-                    onDeleteClick = {
-                        scope.launch { repository.deleteRule(rule.id) }
-                    }
+                    animationSpec = tween(durationMillis = 400),
+                    label = "ruleHighlight",
                 )
+                Column(
+                    modifier = if (isHighlighted) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = highlightColor,
+                            shape = RoundedCornerShape(16.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ) {
+                    RuleRow(
+                        rule = rule,
+                        onCheckedChange = { checked ->
+                            scope.launch { repository.setRuleEnabled(rule.id, checked) }
+                        },
+                        onMoveUpClick = {
+                            scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
+                        },
+                        onMoveDownClick = {
+                            scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
+                        },
+                        onEditClick = { startEdit(rule) },
+                        onDeleteClick = {
+                            scope.launch { repository.deleteRule(rule.id) }
+                        }
+                    )
+                }
             }
         }
     }
@@ -529,3 +589,8 @@ private fun matchLabelFor(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.SCHEDULE -> "시간 조건"
     RuleTypeUi.REPEAT_BUNDLE -> "반복 기준"
 }
+
+// How long the border-flash lingers after a Detail-chip deep-link lands on a
+// rule. Kept short enough that the user's attention snaps to the row without
+// feeling obstructive.
+private const val HIGHLIGHT_FLASH_DURATION_MILLIS = 1800L

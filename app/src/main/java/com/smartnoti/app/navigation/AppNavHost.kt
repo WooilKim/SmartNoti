@@ -214,8 +214,20 @@ fun AppNavHost(
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) }
                 )
             }
-            composable(Routes.Rules.route) {
-                RulesScreen(contentPadding = paddingValues)
+            composable(
+                route = Routes.Rules.route,
+                arguments = listOf(
+                    navArgument("highlightRuleId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) { backStackEntry ->
+                RulesScreen(
+                    contentPadding = paddingValues,
+                    highlightRuleId = backStackEntry.arguments?.getString("highlightRuleId"),
+                )
             }
             composable(Routes.Settings.route) {
                 SettingsScreen(
@@ -257,6 +269,14 @@ fun AppNavHost(
                     contentPadding = paddingValues,
                     notificationId = backStackEntry.arguments?.getString("notificationId").orEmpty(),
                     onBack = { navController.popBackStack() },
+                    onRuleClick = { ruleId ->
+                        // Phase B Task 3: "적용된 규칙" chips deep-link into the
+                        // Rules tab with the tapped rule's id so the screen
+                        // scrolls-to and flashes the matching row.
+                        navController.navigate(Routes.Rules.create(highlightRuleId = ruleId)) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable(
