@@ -42,7 +42,7 @@
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
-| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | — |
+| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-21 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-22 |
 
 ### Rules & onboarding
@@ -61,6 +61,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (journey-tester — ignored-archive first verification PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| ignored-archive | ✅ PASS | Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` 8/8 tasks 머지 직후 신규 journey 의 첫 verification. Fresh APK rebuild (`./gradlew :app:installDebug` JDK `/Applications/Android Studio.app/Contents/jbr/Contents/Home`, `lastUpdateTime=2026-04-21 15:47:57` → 2026-04-22 이후 타임스탬프로 갱신, `installDebug` Task `app:packageDebug` 실행). Recipe end-to-end: (1) Rules 탭 → `새 규칙 추가` → KEYWORD + keyword `IGNOREKEYr` + action `무시 (즉시 삭제)` (selected 칩이 녹색 background 로 하이라이트 — Phase C UI 확인) → `추가` → `활성 규칙 9개` + 새 `무시 1` chip 노출 (Rules 탭 pill 집계 IGNORE 차원 분리 계약 확인). (2) `cmd notification post -S bigtext -t 'IGNOREKEYr in title' IgnoreTest 'IGNOREKEYr 테스트 알림 본문'` → 즉시 `dumpsys notification --noredact` 에서 `IgnoreTest` tag 미존재 (SmartNoti 가 tray 에서 `cancelNotification` 호출한 결과 = IGNORE action = DELETE 계약 확인). (3) Home 탭 → StatPill `즉시 15 / Digest 1 / 조용히 11` (sum 27) + 헤더 `오늘 알림 28개 중 중요한 15개를 먼저 전달했어요` — 총 28 captured 중 IGNORE row 1건은 pill 3-bucket 어디에도 집계 안 됨 (`observePriority/Digest/Silent` 필터 IGNORE 제외 계약 재현). (4) Settings 탭 → 스크롤 다운 → `무시됨 / 무시된 알림 보기` 카드 노출, toggle `무시된 알림 아카이브 표시` OFF → 설명 `켜면 설정 화면에 아카이브 진입 버튼이 나타나요. 알림 분류 동작은 바뀌지 않아요.` + `무시됨 아카이브 열기` 버튼 **부재** (조건부 렌더 확인). (5) toggle ON → 설명 `아래 버튼으로 아카이브 화면을 열 수 있어요.` 로 전환 + `무시됨 아카이브 열기` OutlinedButton 등장 (Settings 카드 내부 inline composition — `IgnoredArchiveSettingsCard` 정확히 render). (6) 버튼 탭 → `IgnoredArchiveScreen` 마운트: eyebrow `아카이브` / title `무시됨` / subtitle `SmartNoti 가 IGNORE 규칙으로 즉시 정리한 알림이에요. 원본 알림센터에서도 사라진 상태예요.` (알림 존재 시 variant) + `SmartSurfaceCard` 헤더 `보관 중 1건` + 서브 `최신 순으로 정렬돼 있어요. 탭하면 상세 화면에서 어떤 규칙이 걸렸는지 확인할 수 있어요.` + `NotificationCard` 1개 (`Shell / IGNOREKEYr / title / 무시됨 badge (neutral gray) / reason chips: 발신자 있음·사용자 규칙·IgnoreTestRule·조용한 시간`). (7) NotificationCard 탭 → `Routes.Detail.create(id)` → `NotificationDetailScreen` 마운트 + `StatusBadge=무시됨` (중립 gray tone) 관측 (notification-detail 교차 계약 확인). (8) toggle OFF 로 되돌림 → 버튼 즉시 사라짐 + 설명 원상복구 (`observeSettings().showIgnoredArchive` 가 `produceState` 로 false emit, `AppNavHost` 조건부 composable 제거). Observable steps 1–7 + Exit state 3조건 전부 일치 = **PASS**. 한 가지 간헐적 race 관측 + Known gap 에 기록: `toggle OFF → ON → 버튼 탭` 을 2초 내에 연속 수행한 첫 시도에서 `IllegalArgumentException: Navigation destination that matches request uri=android-app://androidx.navigation/ignored_archive cannot be found in the navigation graph ComposeNavGraph(0x0) startDestination={Destination(0x78d845ec) route=home}` AndroidRuntime FATAL 로 1회 크래시 → Launcher 로 throwback. 동일 시퀀스를 toggle off→on→tap 으로 재시도 시 재현 안 됨 (`produceState` recomposition 이 `navigate()` 호출 시점에 graph 등록을 완료). 앱 재시작 후 toggle 이 persisted ON 으로 복원된 상태에서는 크래시 재현 안 됨. Race window 가 좁아 사용자 영향 미미하지만 opt-in 첫 순간의 UX 안정성 문제이므로 Known gap + gap-planner 라우팅 후보로 남김. `last-verified` 를 empty → 2026-04-21 로 갱신 (신규 journey 의 첫 verification). |
 
 
 ### 2026-04-22 (journey-tester — insight-drilldown end-to-end PASS, emulator-5554)
