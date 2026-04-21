@@ -135,3 +135,4 @@ If a self-merged row caused a regression:
 | 2026-04-21T18:45:00Z | project-manager | #195 | PM T21 chain-audit PR merge (record of #193 merge + #194 defer); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24738624174 |
 | 2026-04-21T18:45:00Z | project-manager | #194 | gap-planner ignored-archive nav-race plan + Known-gap link annotation; docs-only, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24738470398 |
 | 2026-04-21T19:00:00Z | project-manager | #198 | PM T22 chain-audit PR merge (record of #194 merge + #195 merge + #197 defer); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24739381335 |
+| 2026-04-21T18:58:46Z | journey-tester | #202 | ignored-archive post-#199 Option A verification PASS (3x OFF→ON→tap stress, zero crashes); docs-only, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24740637906 |
