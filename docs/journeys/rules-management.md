@@ -3,7 +3,7 @@ id: rules-management
 title: 규칙 CRUD
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -100,9 +100,11 @@ adb shell cmd notification post -S bigtext -t "은행" OtpTest "인증번호 123
 - 동일 매치값 + 다른 액션 룰이 충돌할 때의 우선순위는 `RuleConflictResolver` 의 "동일 tier 는 `allRules` 인덱스 순 (earlier wins)" 규칙에 따름. UI 에서는 tier 내부 드래그 재배치로만 조정 가능.
 - Override 체인은 1-level 만 지원 (base → override). `C → B → A` 같은 다단 체인은 `RuleListHierarchyBuilder` 가 top-level broken 으로 표시하고 분류기 측에서도 resolver 가 한 단계만 탐색. (plan `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Open question #3).
 - Recipe fragility — baseline 누적 (2026-04-21 cycle): rules-feedback-loop 경로로 upsert 된 `person:*` 룰이 `smartnoti_rules.preferences_pb` 에 영속화되어 이 recipe 의 "활성 규칙 N개" 헤더 baseline 이 cycle 에 따라 증가한다. 검증 시 추가/삭제 delta (N→N+1, N+1→N) 만 관측하고, 절대값(N) 은 테스트 환경 상태에 따라 달라질 수 있다.
+- ADB-only verification 으로는 override pill / nested tree indent / tier-aware drag-reorder 관찰 불가 (2026-04-22 sweep): (a) 현 recipe 가 override 룰을 만들지 않아 DB 에 nested 대상이 없고, (b) `adb shell input text` 가 한글 미지원이라 한글 base (`광고`, `엄마`, `중요 알림` 등) 를 strict-equality 로 override 하는 ASCII 값이 없으며, (c) same-value ASCII 시도 (e.g. `TestSender_0421_T12` → `TestSender_0421_T12`) 는 `RuleOverrideValidator` 의 SELF_REFERENCE 로 정상 reject. Phase C UI 재검증은 instrumentation test (`RulesScreenTest` 혹은 Compose UI test) 또는 사전-seed 된 override 룰이 포함된 fixture 로 이동하는 것이 안정적.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: Rule editor 에 IGNORE (무시) 액션 추가 — dropdown 라벨 "무시 (즉시 삭제)", `RuleListPresentationBuilder` 가 IGNORE 룰이 존재할 때만 overview/filter 세그먼트 노출, `RuleListGroupingBuilder` 가 "무시" 섹션을 tier 스택 최하단에 emit, `RuleRow` 의 action chip 이 IGNORE 에 한해 border-only 중립 회색 톤으로 렌더. 코덱/설명/그룹/프레젠테이션 단위 테스트 보강. IGNORE 룰이 매치된 알림은 `NotificationClassifier` 가 `NotificationDecision.IGNORE` 를 반환 (#179 `5f516d6`), `SmartNotiNotificationListenerService` 가 tray cancel 만 수행하고 replacement alert 는 건너뜀 (#181 `fb532c1`), 기본 뷰는 IGNORE 를 제외하고 Settings opt-in 토글 시에만 [ignored-archive](ignored-archive.md) 에 노출 (#185 `9a5b4b9`). Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Tasks 1-6 (#178 `6aad9d5`, #179 `5f516d6`, #181 `fb532c1`, #183 `9a65992`, #185 `9a5b4b9`, #187 `57df6ac`). `last-verified` 는 ADB 검증 실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-21: Phase C (hierarchical rules v2) 반영 — `RuleUiModel.overrideOf` 필드 추가, `RuleStorageCodec` 8-column 포맷, `RuleOverrideValidator` 가 self-reference / circular chain reject (#148). Rule editor AlertDialog 에 "예외 규칙" 섹션 + base dropdown + `RuleOverrideSupersetValidator` helper text (#151). Rules 탭이 `RuleListHierarchyBuilder` 로 base/override tree 렌더, `RuleRow` 에 `Base` / `Override` / `BrokenOverride` presentation 분기 (#150). Drag-to-reorder 가 `RuleOrdering` 으로 tier-aware swap 만 허용 (#152). 1-level override 체인만 지원 — Known gaps 참고. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase C Task 1/3/4/5. `last-verified` 는 실제 recipe 재실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
+- 2026-04-22: Fresh APK (build 2026-04-22) re-verify on emulator-5554. PASS — recipe 의 키워드 "인증번호" 포스트 → Home StatPill 즉시 카운트 16→17 로 반영 확인. Phase C 관측: 편집 다이얼로그 "예외 규칙" switch 토글 시 base dropdown 이 9개 candidate (`중요 알림`, `프로모션 알림`, `반복 알림`, `엄마`, `TestSender_0421_T11`, `TestSender_0421_T12`, `SilentTest_0421_T1`, `광고`, `IgnoreTestRule`) 를 채워 렌더. Action dropdown 에 IGNORE "무시 (즉시 삭제)" chip 노출, 리스트 상단 filter 에 "무시 1" chip 및 최하단 tier 섹션 "무시 / 규칙 1개" 렌더. 그룹 순서: 즉시 전달 3 → Digest 4 → 조용히 1 → 무시 1 (doc 과 일치). Override pill / nested indent / drag-reorder 는 이번 세션에서 end-to-end exercise 불가 — 현 DB 에 override 룰이 없고, strict-equality 타입 (PERSON/APP/SCHEDULE/REPEAT_BUNDLE) 은 same-value override 시 `RuleOverrideValidator` 가 SELF_REFERENCE 로 reject 되므로 (base.id == draft.id), KEYWORD superset 또는 한글 입력이 가능한 instrumentation 환경에서 재검증 필요. Known gaps 에 observability 제한 기록.
