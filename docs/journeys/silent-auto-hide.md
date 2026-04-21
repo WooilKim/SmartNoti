@@ -3,7 +3,7 @@ id: silent-auto-hide
 title: 조용히 분류된 알림 — ARCHIVED / PROCESSED 하위 상태로 보관/처리
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal

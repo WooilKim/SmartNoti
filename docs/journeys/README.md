@@ -63,6 +63,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — silent-auto-hide fresh APK post-IGNORE re-verify PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | ✅ PASS | Fresh APK (`lastUpdateTime=2026-04-22 03:46:30`, post-IGNORE branch) 에서 group-summary + processed-flip end-to-end 재검증. Recipe: `cmd notification post -S bigtext -t 'Promo' Promo{A,B,C,D} ...` 4건 연속 → classifier 가 첫 SILENT 매칭 이후 반복 알림을 DIGEST 로 강등 (PromoA/B = SILENT+ARCHIVED, PromoC/D = DIGEST) — DB `SELECT id,status,silentMode FROM notifications WHERE title='Promo'` 로 확인. (Step 2) `dumpsys notification --noredact` 에 `pkg=com.android.shell tag=Promo[AB]` 원본 tray 잔존 (ARCHIVED source cancel 건너뜀 확인). (Steps 4–5) `smartnoti_silent_summary` 채널에 `id=23057 actions=1 flags=0x18 vis=SECRET` 로 루트 요약 게시, 새 copy `android.title=보관 중인 조용한 알림 12건` + `android.text=탭: 보관함 열기 · 스와이프: 확인으로 처리` + bigText `조용히로 분류되어 보관 중인 알림이 12건 있어요. 탭하면 '보관 중' 목록을 열고, 옆으로 밀어 없애면 확인한 것으로 처리돼요` 전부 현재 `SilentHiddenSummaryNotifier#post` 계약과 정합 — 직전 SKIP (#273) 의 env-noise (stale APK 구판 copy) 해소. (Steps 6–7) `smartnoti_silent_group` 채널에 `groupKey=smartnoti_silent_group_sender:Promo` summary (`flags=0x218`, title `Promo · 조용히 2건`, InboxStyle `android.textLines=[Promo · 오늘만, Promo · 오늘만]`, `summaryText=SmartNoti · 조용히`) + 2 children (`flags=0x18`) 게시 — N≥2 임계 충족 시 그룹 요약 게시 계약 증명. (Steps 8–9) Deep-link: `am force-stop && am start ... -e DEEP_LINK_ROUTE hidden` → Hidden 화면 `숨긴 알림 / 보관 12건 · 처리 3건 / 보관 중 · 12건 / 처리됨 · 3건 / 1개 앱에서 12건을 보관 중이에요. / Shell 숨긴 알림 12건` 렌더, DB ARCHIVED count = 루트 요약 title count = 화면 헤더 count 삼중 정합. (Step 10) Shell 그룹 카드 헤더 탭 → 펼쳐짐, `최근 묶음 미리보기` + Promo preview rows 노출. Promo preview (540, 1680) 탭 → `NotificationDetailScreen` 진입 (`알림 상세 / Shell / Promo / 조용히 정리 / 조용히 보관 중 / 원본 알림이 아직 알림창에 남아 있어요...`). (Step 11) 스크롤 후 `처리 완료로 표시` 버튼 (bounds [422,1339][659,1388]) 중앙 (540, 1363) 탭 → DB row `PromoB / SILENT / silentMode=ARCHIVED → PROCESSED` + `reasonTags` 에 `사용자 처리` append. (Step 12) Tray 상태: `PromoB` 원본 cancel 확인 (`MarkSilentProcessedTrayCancelChain` 위임 동작), Promo 그룹 summary + 잔존 child 전부 cancel (ARCHIVED 가 1건 = PromoA 만 남아 N<2 임계 미만 → Q3-A planner 가 그룹 해체), 루트 요약 title `보관 중인 조용한 알림 12건 → 11건` 으로 자동 재게시 (count 변화 시만 re-post). Observable steps 1–12 + Exit state (tray ARCHIVED 원본 유지 / 루트 요약 갱신 / 그룹 요약 N≥2 임계 / PROCESSED 전이 tray cancel + count 감소) 전부 충족. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신. |
+
+
 ### 2026-04-21 (journey-tester — priority-inbox fresh APK post-IGNORE first ADB verify PASS, emulator-5554)
 
 | Journey | Result | Notes |
