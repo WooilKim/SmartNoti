@@ -111,6 +111,44 @@ class NotificationRepositoryTest {
     }
 
     @Test
+    fun mark_silent_processed_flips_archived_row_to_processed_and_appends_reason_tag() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "silent-archived-1",
+                status = NotificationStatusUi.SILENT,
+                silentMode = "ARCHIVED",
+                postedAtMillis = 1_700_000_900_000,
+            )
+        )
+
+        val flipped = repository.markSilentProcessed("silent-archived-1")
+
+        assertTrue(flipped)
+        val row = repository.observeAll().first().single { it.id == "silent-archived-1" }
+        assertEquals(NotificationStatusUi.SILENT, row.status)
+        assertEquals(com.smartnoti.app.domain.model.SilentMode.PROCESSED, row.silentMode)
+        assertTrue(row.reasonTags.contains("사용자 처리"))
+    }
+
+    @Test
+    fun mark_silent_processed_is_noop_for_non_silent_or_missing_rows() = runBlocking {
+        database.notificationDao().upsert(
+            notificationEntity(
+                id = "priority-row",
+                status = NotificationStatusUi.PRIORITY,
+                silentMode = null,
+                postedAtMillis = 1_700_001_000_000,
+            )
+        )
+
+        assertEquals(false, repository.markSilentProcessed("priority-row"))
+        assertEquals(false, repository.markSilentProcessed("does-not-exist"))
+
+        val priorityRow = repository.observeAll().first().single { it.id == "priority-row" }
+        assertEquals(NotificationStatusUi.PRIORITY, priorityRow.status)
+    }
+
+    @Test
     fun silent_mode_column_round_trips_through_dao() = runBlocking {
         database.notificationDao().upsert(
             notificationEntity(

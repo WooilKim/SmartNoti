@@ -77,16 +77,17 @@ created: 2026-04-21
 
 ## Tasks
 
-1. **[shipped via PR #91]** **데이터 모델 확장** (tests-first)
+1. **[shipped via #91]** **데이터 모델 확장** (tests-first)
    - `NotificationEntity` 컬럼 추가 + Room 마이그레이션. `NotificationRepositoryTest` 로 신규 필드 round-trip 확인.
    - `SilentMode` enum + UI 모델 필드 추가.
-2. **[IN PROGRESS via PR #100]** **라우팅 정책 분기**
+2. **[shipped via #100]** **라우팅 정책 분기**
    - `SourceNotificationRoutingPolicy.route(SILENT, mode=ARCHIVED)` → cancel=false.
    - `SourceNotificationRoutingPolicyTest` 에 신규 케이스 추가 (SILENT × ARCHIVED / PROCESSED 2×2 매트릭스).
    - 호출부 (`SmartNotiNotificationListenerService`) 는 이번 Task 에서 건드리지 않음 — `silentMode` 기본값 `null` 으로 legacy cancel 동작 유지. 실제 mode 전달은 Task 3 (Detail 전이 경로) 에서 함께 배선.
-3. **전이 경로 구현 (Detail 기반 1차)**
+3. **[IN PROGRESS via PR #103]** **전이 경로 구현 (Detail 기반 1차)**
    - `NotificationFeedbackPolicy` / `NotificationDetailScreen` 에 "처리 완료로 표시" 액션 추가.
    - Repository mutator 구현.
+   - 이번 PR 범위: in-app 상태 flip 까지. tray cancel 은 후속 listener-service 배선 Task 에서 처리.
 4. **Hidden 탭 분리**
    - Compose 세그먼트 탭 추가, 각 탭 LazyColumn.
    - Empty states: "보관 중" 0건일 때, "처리됨" 0건일 때.

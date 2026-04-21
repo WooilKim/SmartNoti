@@ -28,7 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.RuleActionUi
+import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendationSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
@@ -267,6 +269,41 @@ fun NotificationDetailScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
+                    }
+                }
+            }
+        }
+        if (notification.status == NotificationStatusUi.SILENT &&
+            notification.silentMode == SilentMode.ARCHIVED
+        ) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                ) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            "조용히 보관 중",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            "원본 알림이 아직 알림창에 남아 있어요. 확인이 끝났다면 처리 완료로 표시해 알림창에서 치울 수 있어요.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    repository.markSilentProcessed(notification.id)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("처리 완료로 표시")
+                        }
                     }
                 }
             }

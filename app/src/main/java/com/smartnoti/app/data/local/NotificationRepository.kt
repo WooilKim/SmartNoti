@@ -5,7 +5,9 @@ import androidx.room.Room
 import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.model.postedAtMillisOrNull
+import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -113,6 +115,32 @@ class NotificationRepository(
 
     suspend fun deleteSilentByPackage(packageName: String): Int {
         return dao.deleteSilentByPackage(packageName)
+    }
+
+    /**
+     * SILENT_ARCHIVED 행을 SILENT_PROCESSED 로 전이. 이미 PROCESSED 이거나, 대상이 SILENT 가 아니거나,
+     * 행이 존재하지 않으면 no-op (false 반환).
+     *
+     * 반환값 = 실제 행이 바뀌었는지. 호출자는 true 일 때만 tray 원본 알림 cancel 을 이어서 실행해야 한다.
+     */
+    suspend fun markSilentProcessed(notificationId: String): Boolean {
+        val entity = dao.observeAll().first().firstOrNull { it.id == notificationId }
+            ?: return false
+        if (entity.status != NotificationStatusUi.SILENT.name) return false
+        if (entity.silentMode == SilentMode.PROCESSED.name) return false
+        dao.upsert(
+            entity.copy(
+                silentMode = SilentMode.PROCESSED.name,
+                reasonTags = appendReasonTag(entity.reasonTags, NotificationFeedbackPolicy.PROCESSED_REASON_TAG),
+            )
+        )
+        return true
+    }
+
+    private fun appendReasonTag(existing: String, tag: String): String {
+        if (existing.isBlank()) return tag
+        if (existing.split("|").any { it.trim() == tag }) return existing
+        return "$existing|$tag"
     }
 
     suspend fun restoreSilentToPriorityByPackage(packageName: String): Int {
