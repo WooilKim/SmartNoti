@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — rules-feedback-loop broadcast recipe SKIP, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | ⏭️ SKIP | Phase C Task 5 (tier-aware moveRule, drag handle, #152) 이 `RulesRepository` 를 건드렸고, Phase C Task 1 (hierarchical rules data, #148) 이 `upsertRule` 저장 포맷을 8-column 으로 확장했기에 rules-feedback-loop 의 recipe 를 재실행 시도. Recipe B (broadcast 경로) 는 `AndroidManifest.xml` 의 `SmartNotiNotificationActionReceiver android:exported="false"` 때문에 `adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY` (명시적 `-n` 컴포넌트 지정 포함) 가 enqueue 만 되고 receiver `onReceive` 가 실행되지 않아 DB 가 SILENT 그대로 유지 + Rules 탭 baseline 7개 무변동 — 동일 UID 에서만 전달되도록 설계된 receiver 라서 shell 에서 headless 실행 불가. Recipe A (Detail UI 경유) 는 Phase A Task 4 이후 bottom-nav 에서 Hidden 탭이 제거되어 SILENT 분류된 `TestSender_0421_T99` 를 Home passthrough 카드 경유로 열어야 하는데 recipe 본문은 "Home 또는 Hidden 에서 카드 탭" 수준으로만 기술, 실제 네비게이션 단계가 enumerated 돼있지 않아 end-to-end 재현 불가. 두 경로 모두 사전조건을 recipe 본문만으로 충족 못 하므로 SKIP (DRIFT 로 단정하기엔 recipe 가 구형 전제를 따르는 문제이고, 코드 동작이 잘못된 것은 아님). `last-verified` bump 없음. 다음 단계는 recipe 를 (a) exported receiver 대신 app 내부 테스트 hook, 또는 (b) Home passthrough 카드 → Detail 진입 시퀀스를 명문화하는 방향으로 gap-planner 가 손볼 것. |
+
+
 ### 2026-04-21 (journey-tester — quiet-hours policy-level PASS, emulator-5554)
 
 | Journey | Result | Notes |

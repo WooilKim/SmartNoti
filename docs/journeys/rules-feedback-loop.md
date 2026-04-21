@@ -87,6 +87,7 @@ adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY \
 - NotificationFeedbackPolicy 는 KEYWORD / SCHEDULE / REPEAT_BUNDLE 룰은 만들지 않음 (오직 PERSON / APP).
 - Recipe fragility — 잔존 룰 (2026-04-21 cycle): 이 recipe 가 수행한 `upsertRule` 은 `smartnoti_rules.preferences_pb` 에 영속화되어 다음 tick 환경에 남는다. 재현 시 매번 unique sender (예: `TestSender_<date>_T<n>`) 를 쓰거나, recipe 서두에 남겨진 `person:*` 룰을 정리하는 clean-up 단계를 추가해야 후속 priority-inbox / rules-management recipe 의 baseline 을 오염시키지 않는다.
 - Recipe fragility — deep-link cold-start (2026-04-21 관측): Detail 경유 경로(A)는 `am start … -e DEEP_LINK_ROUTE hidden` 으로 시작하는데, `MainActivity` 가 top-most 로 이미 떠있으면 `LaunchedEffect(deepLinkRoute)` 가 재발화하지 않아 Hidden 화면으로 이동하지 않는다. `am force-stop com.smartnoti.app` 후 cold start 필수. 동일 제약이 hidden-inbox / notification-detail recipe 에도 적용됨.
+- Recipe fragility — broadcast path blocked (2026-04-21 verify SKIP): Recipe B 의 `adb shell am broadcast -a com.smartnoti.app.action.PROMOTE_TO_PRIORITY` 는 `AndroidManifest.xml` 의 `SmartNotiNotificationActionReceiver android:exported="false"` 때문에 `-n com.smartnoti.app/.notification.SmartNotiNotificationActionReceiver` 로 component 를 명시해도 enqueue 만 되고 `onReceive` 가 실행되지 않음 (동일 UID 의존). Recipe A (Detail UI) 는 Phase A Task 4 이후 bottom-nav 에서 Hidden 탭이 사라져 SILENT 로 분류된 타겟 알림을 여는 네비게이션 경로가 recipe 에 enumerated 돼있지 않음 (Home passthrough 카드 → Detail 스텝 필요). 다음 drift plan 이 두 경로 중 하나를 명문화하거나 test hook 을 제공해야 함.
 
 ## Change log
 
