@@ -243,7 +243,7 @@ fun AppNavHost(
                 SettingsScreen(
                     contentPadding = paddingValues,
                     onInsightClick = { navController.navigate(it) },
-                    onOpenIgnoredArchive = if (showIgnoredArchive) {
+                    onOpenIgnoredArchive = if (IgnoredArchiveNavGate.isButtonVisible(showIgnoredArchive)) {
                         {
                             navController.navigate(Routes.IgnoredArchive.route) {
                                 launchSingleTop = true
@@ -254,11 +254,11 @@ fun AppNavHost(
                     },
                 )
             }
-            if (showIgnoredArchive) {
-                // Conditional route — absent when the Settings toggle is off,
-                // so the archive is unreachable by any in-app path until the
-                // user opts in (plan `2026-04-21-ignore-tier-fourth-decision`
-                // Task 6).
+            if (IgnoredArchiveNavGate.isRouteRegistered(showIgnoredArchive)) {
+                // Route registration contract lives in [IgnoredArchiveNavGate];
+                // plan `2026-04-22-ignored-archive-first-tap-nav-race` will flip
+                // the gate to unconditional `true` as part of Task 2 so the
+                // first-tap race window disappears.
                 composable(Routes.IgnoredArchive.route) {
                     IgnoredArchiveScreen(
                         contentPadding = paddingValues,
