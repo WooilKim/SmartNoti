@@ -415,6 +415,29 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             service.enqueueOnboardingBootstrapCheck()
             return true
         }
+
+        /**
+         * Ask the currently connected listener service instance (if any) to cancel
+         * the tray entry identified by [key].
+         *
+         * Used by Detail's "처리 완료로 표시" action to chain the original tray
+         * notification removal onto a successful `markSilentProcessed` flip
+         * (plan `silent-archive-drift-fix` Task 3). `cancelNotification(key)`
+         * can only be invoked on a live [NotificationListenerService] instance,
+         * so we dispatch through [activeService]. When the service is not
+         * bound (OS reclaimed it, user toggled access off, etc.) this helper
+         * returns `false` so callers can surface a best-effort outcome to
+         * the UI without mutating DB state.
+         *
+         * The cancel is dispatched on the main dispatcher to match the other
+         * `cancelNotification(key)` call site inside [processNotification].
+         */
+        fun cancelSourceEntryIfConnected(key: String): Boolean {
+            val service = activeService ?: return false
+            return runCatching {
+                service.cancelNotification(key)
+            }.isSuccess
+        }
     }
 }
 

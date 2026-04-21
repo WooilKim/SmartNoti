@@ -69,6 +69,7 @@ class NotificationCaptureProcessor(
             sourceSuppressionState = SourceNotificationSuppressionState.NOT_CONFIGURED,
             postedAtMillis = input.postedAtMillis,
             replacementNotificationIssued = false,
+            sourceEntryKey = input.sourceEntryKey,
         )
     }
 

@@ -22,6 +22,15 @@ data class NotificationUiModel(
     val replacementNotificationIssued: Boolean = false,
     val postedAtMillis: Long = 0L,
     val silentMode: SilentMode? = null,
+    /**
+     * StatusBarNotification key of the tray entry that produced this row, when captured.
+     *
+     * Kept as a persistence-facing hint — the UI does not surface this directly.
+     * Detail's "처리 완료로 표시" action reads it back from the repository to
+     * chain the tray cancel alongside the DB transition (plan
+     * `silent-archive-drift-fix` Task 3).
+     */
+    val sourceEntryKey: String? = null,
 )
 
 enum class NotificationStatusUi {

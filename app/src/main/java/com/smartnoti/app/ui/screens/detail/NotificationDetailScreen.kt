@@ -36,6 +36,8 @@ import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendati
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
+import com.smartnoti.app.notification.MarkSilentProcessedTrayCancelChain
+import com.smartnoti.app.notification.SmartNotiNotificationListenerService
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ReasonChipRow
 import com.smartnoti.app.ui.components.StatusBadge
@@ -297,7 +299,15 @@ fun NotificationDetailScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    repository.markSilentProcessed(notification.id)
+                                    // Chain DB flip → tray cancel. See
+                                    // docs/plans/2026-04-20-silent-archive-drift-fix.md Task 3.
+                                    val chain = MarkSilentProcessedTrayCancelChain(
+                                        markSilentProcessed = repository::markSilentProcessed,
+                                        sourceEntryKeyForId = repository::sourceEntryKeyForId,
+                                        cancelSourceEntryIfConnected = SmartNotiNotificationListenerService
+                                            .Companion::cancelSourceEntryIfConnected,
+                                    )
+                                    chain.run(notification.id)
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),

@@ -3,7 +3,7 @@ package com.smartnoti.app.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-internal const val SMART_NOTI_DATABASE_VERSION = 6
+internal const val SMART_NOTI_DATABASE_VERSION = 7
 
 @Database(
     entities = [NotificationEntity::class],

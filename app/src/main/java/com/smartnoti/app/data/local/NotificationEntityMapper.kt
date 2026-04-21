@@ -33,6 +33,7 @@ fun NotificationUiModel.toEntity(
     sourceSuppressionState = sourceSuppressionState.name,
     replacementNotificationIssued = replacementNotificationIssued,
     silentMode = silentMode?.name,
+    sourceEntryKey = sourceEntryKey,
 )
 
 fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
@@ -57,6 +58,7 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     replacementNotificationIssued = replacementNotificationIssued,
     postedAtMillis = postedAtMillis,
     silentMode = silentMode?.toSilentMode(),
+    sourceEntryKey = sourceEntryKey,
 )
 
 private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {
