@@ -35,7 +35,7 @@
 2. PROTECTED / PERSISTENT 경로 는 기존 동작 유지 — SILENT 이라도 route 가 `silentMode = null` (legacy) 로 호출되거나 아예 protected short-circuit 에 걸려 routing 자체를 skip 해야 함. 테스트로 고정.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.SilentArchivedCapturePathTest"` 로 빨간 상태 확인.
 
-## Task 2: Implement — thread `silentMode` through the capture path
+## Task 2: Implement — thread `silentMode` through the capture path  [IN PROGRESS via PR #125 (bundled with T1)]
 
 **Objective:** Task 1 을 통과시킨다. 신규 SILENT 캡처는 tray 에 남고 DB 에 `silentMode = ARCHIVED` 로 저장.
 

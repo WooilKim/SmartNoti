@@ -24,16 +24,25 @@ import com.smartnoti.app.domain.model.SilentMode
  * - Decision is PRIORITY or DIGEST → `null`. `SilentMode` is only meaningful for SILENT.
  */
 internal object SilentCaptureRoutingSelector {
-    @Suppress("UNUSED_PARAMETER")
     fun silentModeFor(
         decision: NotificationDecision,
         isPersistent: Boolean,
         shouldBypassPersistentHiding: Boolean,
         isProtectedSourceNotification: Boolean,
     ): SilentMode? {
-        // TODO(silent-archive-drift-fix Task 2): return SilentMode.ARCHIVED for the
-        //  fresh-capture SILENT branch. Kept `null` here on purpose so the Task 1
-        //  failing tests in SilentArchivedCapturePathTest pin the drift first.
-        return null
+        // SilentMode is only meaningful for the SILENT decision branch.
+        if (decision != NotificationDecision.SILENT) return null
+        // Protected notifications short-circuit routing upstream and must stay on
+        // legacy null so future refactors that collapse the short-circuit do not
+        // accidentally cancel media / call / foreground-service source notifications.
+        if (isProtectedSourceNotification) return null
+        // Persistent notifications are hidden via the dedicated
+        // `hidePersistentSourceNotification` path and must not participate in the
+        // ARCHIVED split — unless the listener has already opted to bypass the
+        // persistent-hiding branch (e.g. the user configured us to keep a critical
+        // persistent alert out of the tray), in which case the notification is a
+        // fresh capture just like any other SILENT row.
+        if (isPersistent && !shouldBypassPersistentHiding) return null
+        return SilentMode.ARCHIVED
     }
 }
