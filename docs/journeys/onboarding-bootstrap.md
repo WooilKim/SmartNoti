@@ -33,7 +33,8 @@ last-verified: 2026-04-20
    4. `OnboardingActiveNotificationBootstrapCoordinator.requestBootstrapForFirstOnboardingCompletion()` — bootstrap 요청 플래그 영속화 (1회성)
 7. `AppNavHost` 가 Home 라우트로 navigate, `popUpTo(Onboarding) { inclusive = true }`.
 8. `SmartNotiNotificationListenerService.triggerOnboardingBootstrapIfConnected()` 가 즉시 bootstrap 을 시도. 서비스가 아직 바인딩 전이면 다음 `onListenerConnected` 콜백에서 `enqueueOnboardingBootstrapCheck()` 이 처리.
-9. `ActiveStatusBarNotificationBootstrapper.bootstrap(activeNotifications)` 가 현재 tray 에 존재하는 `StatusBarNotification[]` 을 순회하며, SmartNoti 자체 알림을 제외하고 하나씩 `processNotification` 호출 (→ [notification-capture-classify](notification-capture-classify.md)).
+9. `ActiveStatusBarNotificationBootstrapper.bootstrap(activeNotifications)` 가 현재 tray 에 존재하는 `StatusBarNotification[]` 을 순회하며, SmartNoti 자체 알림을 제외하고 하나씩 `processNotification` 호출 (→ [notification-capture-classify](notification-capture-classify.md)). 각 처리 직전에 `reconnectSweepCoordinator.recordProcessedByBootstrap(dedupKeyFor(sbn))` 로 dedup Set 에 먼저 기록 — 같은 reconnect 에서 이어 돌 sweep 이 중복 처리하지 않게 한다.
+10. 같은 `onListenerConnected` 콜백이 bootstrap 뒤에 `enqueueReconnectSweep()` 을 호출. 이 sweep 은 **매 재접속마다** 실행되며, 이미 저장된 알림은 `NotificationRepository.existsByContentSignature` + in-process `SweepDedupKey` Set 으로 skip 하고, 리스너가 꺼져 있는 동안 tray 에 쌓였다가 살아남은 미처리분만 `processNotification` 경로로 재주입한다. 온보딩 bootstrap pending flag 가 아직 raised 이면 sweep 은 no-op (bootstrap 이 첫 번째 pass 를 소유).
 
 ## Exit state
 
@@ -57,10 +58,12 @@ last-verified: 2026-04-20
 - `ui/screens/onboarding/OnboardingQuickStartRuleApplier`
 - `notification/OnboardingActiveNotificationBootstrapCoordinator`
 - `notification/OnboardingActiveNotificationBootstrap` (`ActiveStatusBarNotificationBootstrapper`)
-- `data/settings/SettingsRepository#setOnboardingCompleted`
-- `notification/SmartNotiNotificationListenerService#enqueueOnboardingBootstrapCheck`
+- `notification/ListenerReconnectActiveNotificationSweepCoordinator` — reconnect sweep 파트너, `SweepDedupKey` 기준 dedup
+- `data/settings/SettingsRepository#setOnboardingCompleted`, `#isOnboardingBootstrapPending`
+- `data/local/NotificationRepository#existsByContentSignature` — sweep 의 existsInStore hook
+- `notification/SmartNotiNotificationListenerService#enqueueOnboardingBootstrapCheck`, `#enqueueReconnectSweep`
 
-관련 plan: `docs/plans/2026-04-19-onboarding-active-notification-bootstrap.md`, `docs/plans/2026-04-18-onboarding-quick-start-recommendations.md`, `docs/plans/2026-04-20-onboarding-quick-start-auto-suppression.md`.
+관련 plan: `docs/plans/2026-04-19-onboarding-active-notification-bootstrap.md`, `docs/plans/2026-04-18-onboarding-quick-start-recommendations.md`, `docs/plans/2026-04-20-onboarding-quick-start-auto-suppression.md`, `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`.
 
 ## Tests
 
@@ -68,6 +71,9 @@ last-verified: 2026-04-20
 - `OnboardingQuickStartRuleApplierTest`
 - `OnboardingQuickStartSettingsApplierTest`
 - `OnboardingActiveNotificationBootstrapTest`
+- `ListenerReconnectActiveNotificationSweepTest`
+- `ListenerReconnectSweepRepositoryIntegrationTest`
+- `NotificationRepositoryExistsByContentSignatureTest`
 
 ## Verification recipe
 
@@ -93,9 +99,11 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- Bootstrap 은 첫 완료 시 1회만 실행. 이후 사용자가 앱 데이터를 보존한 채 리스너 권한을 토글해도 재실행되지 않음. → plan: [`docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`](../plans/2026-04-21-listener-reconnect-active-notification-sweep.md)
-- 시스템 tray 가 비어 있는 상태로 온보딩이 완료되면 bootstrap 은 아무 것도 하지 않고 consume 됨.
+- Onboarding bootstrap 플래그 자체는 여전히 1회성 (consume 후 재실행되지 않음). 단, 매 `onListenerConnected` 에서 `enqueueReconnectSweep` 이 함께 돌기 때문에, 사용자가 앱 데이터를 보존한 채 리스너 권한을 토글하면 tray 에 남은 미처리 알림은 sweep 이 소급 캡처한다. 실제 "bootstrap 을 재실행" 하는 것은 아니고 누락 메움만 제공.
+- 시스템 tray 가 비어 있는 상태로 온보딩이 완료되면 bootstrap 은 아무 것도 하지 않고 consume 됨. 이후 sweep 도 tray 가 비어 있는 한 no-op.
+- 리스너가 꺼져 있는 동안 시스템이 이미 dismiss 한 알림은 `activeNotifications` 에 남지 않아 bootstrap / sweep 모두 복구할 수 없음.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: Reconnect sweep 경로 추가 문서화. `onListenerConnected` 가 매번 `enqueueOnboardingBootstrapCheck` → `enqueueReconnectSweep` 순으로 발화하며, bootstrapper 가 처리한 `SweepDedupKey` 를 sweep coordinator 에 기록해 중복 처리를 막는다. 권한 토글 등 일반 재접속에서도 tray 에 남은 미처리 알림이 메꿔진다 (plan `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`, PR #94 / #102 / #104)
