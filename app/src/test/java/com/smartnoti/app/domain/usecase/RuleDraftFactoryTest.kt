@@ -78,4 +78,32 @@ class RuleDraftFactoryTest {
         assertEquals("5", draft.matchValue)
         assertEquals("repeat_bundle:5", draft.id)
     }
+
+    @Test
+    fun override_of_is_threaded_through_to_the_created_rule() {
+        // Plan rules-ux-v2-inbox-restructure Phase C Task 4: rule editor
+        // dialog wires override-of into the factory so override creation
+        // yields the right data shape.
+        val draft = factory.create(
+            title = "광고 예외",
+            matchValue = "광고",
+            type = RuleTypeUi.KEYWORD,
+            action = RuleActionUi.SILENT,
+            overrideOf = "keyword:결제",
+        )
+
+        assertEquals("keyword:결제", draft.overrideOf)
+    }
+
+    @Test
+    fun override_of_defaults_to_null_for_base_rules() {
+        val draft = factory.create(
+            title = "기본 규칙",
+            matchValue = "결제",
+            type = RuleTypeUi.KEYWORD,
+            action = RuleActionUi.ALWAYS_PRIORITY,
+        )
+
+        assertEquals(null, draft.overrideOf)
+    }
 }

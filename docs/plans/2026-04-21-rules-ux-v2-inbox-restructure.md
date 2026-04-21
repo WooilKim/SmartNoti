@@ -142,14 +142,15 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
    - 매치 시: base rule + override candidates 모두 수집 → 가장 specific override (더 많은 조건 매치) → tie 는 priority → base 로 fallback.
    - 테스트: 사용자 예 (`결제 → PRIORITY`, `결제+광고 → SILENT`) 재현.
    - 실제 구현: `NotificationClassifier.findMatchingRule` 이 flat `firstOrNull` 대신 `filter { enabled && matches }` → `RuleConflictResolver.resolve(matched, rules)` 에 위임. 매치 로직은 순수 predicate 로 분리 (`matches(rule, input, content)`). 동일 tier 타이-브레이크 (earlier wins) 는 resolver 가 `allRules` 인덱스로 계속 담당 — 기존 `earlier_matching_rule_wins_when_multiple_rules_match` 회귀 없음. 생성자에 `ruleConflictResolver` DI 파라미터 추가 (default 인스턴스, 기존 호출부는 그대로). 신규 behavioral 테스트 5건 (payment+ad 사용자 예, order-invariance, base-only, override-only, disabled-override) 으로 override 우선순위가 `NotificationClassifier` 입력 → output 레벨에서 관측됨을 확인.
-3. **Rules 탭 UI — 계층 시각화** [IN PROGRESS via PR #150]
+3. **Rules 탭 UI — 계층 시각화** [shipped via #150]
    - `RuleListPresentationBuilder` 가 flat list 를 tree 로 변환 (base rule + nested overrides).
    - `RuleRow` 렌더 시 indent + "이 규칙의 예외" 라벨.
    - Override 가 깨진 상태 (base 삭제됨 등) 의 visual warning.
    - 실제 구현: 새 use case `RuleListHierarchyBuilder` 가 `visibleRules` + `allRules` 를 받아 `List<RuleListNode>` (base + nested override children + broken overrides) 를 반환. 1-level chain 만 지원 (Open question #3) — `C → B → A` 처럼 base 가 자기도 override 인 경우, self-reference, 삭제된 base 는 top-level 에서 `RuleOverrideBrokenReason` 으로 표시. `RulesScreen` 이 그룹별로 tree 를 평탄화해 depth-based indent (16dp per level) 적용. `RuleRow` 에 optional `RuleRowPresentation` 파라미터 추가 — `Base` / `Override(baseTitle)` / `BrokenOverride(reasonMessage)` 세 가지. Override 는 primary tint 의 pill 라벨 "이 규칙의 예외 · {base 이름}" 로 렌더, broken 은 error tint 로 동일 슬롯에 경고 문구. 기존 호출부는 `Base` default 로 동작 변경 없음. Tree-building 은 `RuleListHierarchyBuilderTest` 로 8개 케이스 (정렬 보존, 여러 override 순서, 고아 override, 2-level 체인 거부, base 필터 숨김 시 child 유지, override 필터 숨김 시 base 고아 없음, self-reference) 커버. `allRules` 를 filter 통과 전 리스트로 따로 받는 이유는 filter 가 base 만 숨겼을 때 child 를 broken 으로 잘못 분류하지 않기 위해서.
-4. **Rule editor dialog — override 만들기**
+4. **Rule editor dialog — override 만들기** [IN PROGRESS via PR #151]
    - 규칙 편집 AlertDialog 에 "기존 규칙의 예외로 만들기" 스위치 + "어느 규칙의 예외인가요?" dropdown.
    - 선택 시 매치 조건은 base 의 superset 이어야 함 (validator 가 경고).
+   - 실제 구현: 두 순수-함수 헬퍼 신규 — `RuleEditorOverrideOptionsBuilder` 가 dropdown candidate 리스트 (override 가 아닌 rule + 편집 중인 rule 제외) 를, `RuleOverrideSupersetValidator` 가 draft 의 match condition 이 base 의 superset 인지 판정 (KEYWORD 는 token 포함, 그 외는 strict equality; BASE_MISSING / TYPE_MISMATCH / KEYWORD_NOT_SUPERSET / VALUE_MISMATCH reason 반환). 둘 다 단위 테스트 선행. `RuleDraftFactory.create()` 에 `overrideOf: String? = null` 파라미터 추가 (빈 문자열은 null 로 정규화). `RulesScreen` AlertDialog 에 새 섹션 — `SectionLabel("예외 규칙")` + "기존 규칙의 예외로 만들기" `Switch` + (switch ON 일 때) `AssistChip` 기반 base dropdown + superset 위반 시 error-tint helper text. candidate 가 없으면 switch 자체가 disabled. 저장 시 switch OFF → `overrideOf = null`, switch ON + base 선택 → draftFactory 로 전달. 기존 `RulesRepository.upsertRule` 는 그대로 — Phase C Task 1 의 `RuleOverrideValidator` 가 circular reference 를 이미 걸러냄.
 5. **Drag-to-reorder priority**
    - 동일 tier 의 rule 들을 드래그로 재배치. `RulesRepository.moveRule` 은 이미 존재, extend to override-aware.
 6. **Journey 문서 갱신**
