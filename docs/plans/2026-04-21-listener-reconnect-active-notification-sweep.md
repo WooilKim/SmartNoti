@@ -59,7 +59,7 @@ created: 2026-04-21
 4. 온보딩 bootstrap 요청 플래그가 펜딩인 상태에서 reconnect 가 발생하면 **bootstrap 경로가 먼저 consume** 되고 reconnect sweep 은 그때 이미 처리된 건은 중복 처리하지 않음.
 5. 빠른 연속 reconnect (e.g. 500ms 이내 두 번) 에서 sweep 이 두 번 돌더라도 동일 알림은 한 번만 처리됨 (dedup 키로 커버).
 
-### Task 2: Dedup 전략 + sweep coordinator 구현 [IN PROGRESS via PR #TBD]
+### Task 2: Dedup 전략 + sweep coordinator 구현 [IN PROGRESS via PR #102]
 
 **Objective:** reconnect sweep 의 정식 진입 경로 생성.
 
