@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — hidden-inbox dual-surface + deep-link filter PASS after #127/#128/#130, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | ✅ PASS | Fresh APK (post #128/#127/#130) 재검증. Recipe cold-start: `am force-stop com.smartnoti.app && am start -n com.smartnoti.app/.MainActivity -e com.smartnoti.app.extra.DEEP_LINK_ROUTE hidden`. (Exp 1) Hidden 화면 렌더 — 탑바 `숨긴 알림`, ScreenHeader title `보관 1건 · 처리 4건`, subtitle `'보관 중' 은 아직 확인하지 않은 알림, '처리됨' 은 이미 훑어본 알림이에요. 탭으로 오가며 정리하세요.`, `HiddenTabRow` 두 세그먼트 `보관 중 · 1건` / `처리됨 · 4건` 모두 노출, 기본 선택 탭 = Archived (summary `1개 앱에서 1건을 보관 중이에요.` 렌더). (Exp 3) 탭별 count 가 silentMode 필터에 정합: DB `SELECT status, silentMode, isPersistent, COUNT(*) FROM notifications WHERE status='SILENT' GROUP BY ...` → `SILENT\|ARCHIVED\|0\|1 (com.android.shell/Promo), SILENT\|PROCESSED\|0\|1 (com.android.shell/Promo), SILENT\|NULL\|0\|3 (com.android.shell/Player), SILENT\|NULL\|1\|1 (android/Serial console enabled)`. `hidePersistentNotifications=true` 기본값이 persistent 1건을 필터 → Archived 탭 = 1건 (Promo), Processed 탭 = 4건 (PROCESSED 1 + legacy null 3, 모두 Shell) 로 계약 (doc step 4 + legacy null→PROCESSED 매핑) 정합. 처리됨 탭 탭 (786,580) 후 subtitle `1개 앱에서 4건을 처리했어요.` + `이미 확인했거나 이전 버전에서 넘어온 알림이에요.` bodycopy 확인. (Exp 2) Deep-link `sender` 쿼리 필터: `am start -e DEEP_LINK_ROUTE hidden -e DEEP_LINK_SENDER Promo` cold-start → `HiddenDeepLinkFilterResolver.resolve(sender=Promo) = SilentGroupKey.Sender("Promo")` → `LaunchedEffect(initialFilter)` 가 `selectedTab = Archived` 강제, `highlightedGroupId` 가 매칭 그룹 id 로 resolve (Shell/Promo 그룹이 ARCHIVED 탭에 존재) → `animateScrollToItem` + `highlightBorder` 렌더 경로 실행. UI 확인: Archived 탭 자동 선택 + Shell 그룹 카드 단독 노출 (summary `1개 앱에서 1건을 보관 중이에요.`). PROCESSED-only sender (`-e DEEP_LINK_SENDER Player`) cold-start → 계약대로 Archived 탭 강제, Player 그룹은 ARCHIVED 에 없으므로 highlight 없음 (doc: "PROCESSED items won't have a matching group summary in the tray by construction"). Observable steps 1–8 (mount → observeSettings/observeAllFiltered → toHiddenGroups(ARCHIVED/PROCESSED) → ScreenHeader + HiddenTabRow → 탭별 summary card) + Trigger 3경로 중 루트 요약 + 그룹 summary deep-link 2경로 모두 검증. DRIFT 없음 — Change log `2026-04-21 tray 그룹 summary deep-link 필터 지원` + `보관 중/처리됨 탭 분리` 계약이 사용자 관측에서 증명됨. `last-verified: 2026-04-21` 유지. |
+
+
 ### 2026-04-21 (journey-tester — silent-auto-hide group-summary PASS after fresh APK, emulator-5554)
 
 | Journey | Result | Notes |
