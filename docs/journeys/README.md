@@ -42,7 +42,7 @@
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
-| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-21 |
+| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-22 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-22 |
 
 ### Rules & onboarding
@@ -61,6 +61,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — ignored-archive first-tap nav-race post-fix PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| ignored-archive | ✅ PASS | Post-merge verification of PR #199 (plan `docs/plans/2026-04-22-ignored-archive-first-tap-nav-race.md` Tasks 1+2, Option A: `Routes.IgnoredArchive` 를 `AppNavHost` 에 상시 등록). Fresh APK rebuild + reinstall (`./gradlew :app:installDebug` → `lastUpdateTime=2026-04-22 03:46:30` on emulator-5554). Focus: 직전 sweep (2026-04-21) 에서 기록된 race — toggle OFF→ON 직후 2초 내 "무시됨 아카이브 열기" 탭 시 `FATAL AndroidRuntime ... IllegalArgumentException: Navigation destination that matches request uri=android-app://androidx.navigation/ignored_archive cannot be found in the navigation graph` 가 발생하던 증상. 재현 시도 3회: (iter 1) Settings → toggle 탭 (927,1129) 한 번으로 OFF → 즉시 재탭으로 ON → "무시됨 아카이브 열기" (540,1287) 탭 → `IgnoredArchiveScreen` 마운트 (`eyebrow 아카이브 / title 무시됨 / SmartSurfaceCard 보관 중 1건 / NotificationCard = Shell / IGNOREKEYr / title / 무시됨 badge / reason chips 발신자 있음·사용자 규칙·IgnoreTestRule·조용한 시간`). 크래시 0건, `AndroidRuntime E` 필터 비어있음. (iter 2) back-nav → Settings 로 돌아와 archive section 가시 상태에서 toggle (927,1976) 2회 연속 탭 → button (540,2095) 탭 → 동일하게 archive 화면 정상 진입. (iter 3) back-nav → Settings → 동일 시퀀스 → archive 진입 성공. 3회 iter 전체에 걸쳐 `logcat -s AndroidRuntime:E` + `grep -iE "FATAL\|IllegalArg\|navigation destination"` 매치 0건. Option A 계약 ("button visible ⇒ route registered" 가 단일 읽기 지점으로 고정, `IgnoredArchiveNavGate.isRouteRegistered` 이 unconditional `true`) 증명. 관측 결과 직전 sweep 의 race 보고 해소 확인. 부수 관측: 극단적으로 빠른 OFF→ON→탭 batch (`adb shell "input tap A && input tap A && input tap B"`) 에서는 두 번째 toggle 의 recomposition 이 button 의 `onClick` lambda 를 null→valid 로 전환하는 사이에 button 탭이 noop 되는 경우가 한 번 관측됨 — 재탭으로 즉시 정상 진입, 크래시 없음. 이는 race 의 crash-mode 가 UX-benign no-op 으로 degrade 된 것. Known gap 에 기록. `last-verified` 2026-04-21 → 2026-04-22 갱신. |
 
 
 ### 2026-04-21 (journey-tester — notification-detail IGNORE button + dialog + undo PASS, emulator-5554)
