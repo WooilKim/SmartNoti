@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import com.smartnoti.app.ui.screens.detail.InsightDrillDownScreen
 import com.smartnoti.app.ui.screens.detail.NotificationDetailScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreen
+import com.smartnoti.app.ui.screens.hidden.HiddenDeepLinkFilterResolver
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.home.HomeScreen
 import com.smartnoti.app.ui.screens.onboarding.OnboardingScreen
@@ -216,11 +217,30 @@ fun AppNavHost(
                     onInsightClick = { navController.navigate(it) },
                 )
             }
-            composable(Routes.Hidden.route) {
+            composable(
+                route = Routes.Hidden.route,
+                arguments = listOf(
+                    navArgument("sender") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("packageName") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                )
+            ) { backStackEntry ->
+                val initialFilter = HiddenDeepLinkFilterResolver.resolve(
+                    sender = backStackEntry.arguments?.getString("sender"),
+                    packageName = backStackEntry.arguments?.getString("packageName"),
+                )
                 HiddenNotificationsScreen(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onBack = { navController.popBackStack() },
+                    initialFilter = initialFilter,
                 )
             }
             composable(

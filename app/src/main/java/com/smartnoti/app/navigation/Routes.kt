@@ -10,7 +10,34 @@ sealed class Routes(val route: String) {
     data object Digest : Routes("digest")
     data object Rules : Routes("rules")
     data object Settings : Routes("settings")
-    data object Hidden : Routes("hidden")
+    data object Hidden : Routes("hidden?sender={sender}&packageName={packageName}") {
+        /**
+         * Build a Hidden-screen destination URL.
+         *
+         * - No args ⇒ `"hidden"`, which matches the route pattern because both `{sender}`
+         *   and `{packageName}` nav args declare defaults of `null` in [AppNavHost].
+         * - `sender` wins over `packageName` when both are supplied — same precedence as
+         *   [com.smartnoti.app.domain.usecase.SilentGroupKey], so callers can't smuggle a
+         *   "sender + app" combined filter that the screen wouldn't know how to honour.
+         * - Blank strings are treated as absent so a percent-encoded space cannot ship
+         *   through as a filter the Hidden screen can never satisfy.
+         *
+         * Invoked by the tray group-summary contentIntent
+         * (`SilentHiddenSummaryNotifier.createGroupContentIntent`) via [MainActivity]'s
+         * deep-link extraction.
+         */
+        fun create(sender: String? = null, packageName: String? = null): String {
+            val trimmedSender = sender?.trim().orEmpty()
+            val trimmedPackage = packageName?.trim().orEmpty()
+            return when {
+                trimmedSender.isNotEmpty() ->
+                    "hidden?sender=${encodeRouteParam(trimmedSender)}"
+                trimmedPackage.isNotEmpty() ->
+                    "hidden?packageName=${encodeRouteParam(trimmedPackage)}"
+                else -> "hidden"
+            }
+        }
+    }
     data object Detail : Routes("detail/{notificationId}") {
         fun create(notificationId: String): String = "detail/${encodeRouteParam(notificationId)}"
     }

@@ -1,7 +1,9 @@
 package com.smartnoti.app.ui.screens.hidden
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -23,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +46,7 @@ import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.domain.model.SilentMode
+import com.smartnoti.app.domain.usecase.SilentGroupKey
 import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -63,6 +68,7 @@ fun HiddenNotificationsScreen(
     contentPadding: PaddingValues,
     onNotificationClick: (String) -> Unit,
     onBack: () -> Unit,
+    initialFilter: SilentGroupKey? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -93,6 +99,15 @@ fun HiddenNotificationsScreen(
     var selectedTab by rememberSaveable { mutableStateOf(HiddenTab.Archived) }
     var pendingClearAll by remember { mutableStateOf(false) }
 
+    // Deep-link filter arriving from the tray group summary snaps the user back to the
+    // ARCHIVED tab (that's where sender/app groups live; PROCESSED items won't have a
+    // matching group summary in the tray by construction).
+    LaunchedEffect(initialFilter) {
+        if (initialFilter != null) {
+            selectedTab = HiddenTab.Archived
+        }
+    }
+
     val visibleGroups = when (selectedTab) {
         HiddenTab.Archived -> archivedGroups
         HiddenTab.Processed -> processedGroups
@@ -100,6 +115,32 @@ fun HiddenNotificationsScreen(
     val visibleCount = when (selectedTab) {
         HiddenTab.Archived -> archivedCount
         HiddenTab.Processed -> processedCount
+    }
+
+    val highlightedGroupId = remember(initialFilter, visibleGroups) {
+        initialFilter?.let { filter ->
+            visibleGroups.firstOrNull { group ->
+                HiddenDeepLinkFilterResolver.matchesGroup(
+                    filter = filter,
+                    groupPackageName = group.items.firstOrNull()?.packageName.orEmpty(),
+                    senders = group.items.map { it.sender },
+                )
+            }?.id
+        }
+    }
+
+    val listState = rememberLazyListState()
+    // Scroll to the deep-linked group once it materialises in the list. Uses group id as
+    // the key so re-composition after the repository stream flips initial empty → non-empty
+    // still triggers exactly one scroll.
+    LaunchedEffect(highlightedGroupId, visibleGroups) {
+        val targetId = highlightedGroupId ?: return@LaunchedEffect
+        val indexInVisible = visibleGroups.indexOfFirst { it.id == targetId }
+        if (indexInVisible < 0) return@LaunchedEffect
+        // Leading items (header row + tab row + summary card) occupy the first 3 slots when
+        // the list is non-empty; target index in LazyColumn = 3 + indexInVisible.
+        val leadingItems = 3
+        listState.animateScrollToItem(leadingItems + indexInVisible)
     }
 
     if (pendingClearAll) {
@@ -124,6 +165,7 @@ fun HiddenNotificationsScreen(
     }
 
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding),
@@ -195,6 +237,7 @@ fun HiddenNotificationsScreen(
             items(visibleGroups, key = { it.id }) { group ->
                 HiddenGroupCardWithBulkActions(
                     group = group,
+                    isHighlighted = group.id == highlightedGroupId,
                     onNotificationClick = onNotificationClick,
                     onRestoreAll = {
                         scope.launch { repository.restoreSilentToPriorityByPackage(group.items.first().packageName) }
@@ -302,32 +345,52 @@ private fun HiddenTabEmptyState(tab: HiddenTab) {
 @Composable
 private fun HiddenGroupCardWithBulkActions(
     group: DigestGroupUiModel,
+    isHighlighted: Boolean,
     onNotificationClick: (String) -> Unit,
     onRestoreAll: () -> Unit,
     onDeleteAll: () -> Unit,
 ) {
-    DigestGroupCard(
-        model = group,
-        onNotificationClick = onNotificationClick,
-        collapsible = true,
-        bulkActions = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                OutlinedButton(
-                    onClick = onRestoreAll,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("모두 중요로 복구")
-                }
-                OutlinedButton(
-                    onClick = onDeleteAll,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("모두 지우기")
-                }
-            }
+    val highlightBorder by animateColorAsState(
+        targetValue = if (isHighlighted) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            androidx.compose.ui.graphics.Color.Transparent
         },
+        label = "hiddenGroupHighlightBorder",
     )
+    val highlightModifier = if (isHighlighted) {
+        Modifier.border(
+            width = 1.5.dp,
+            color = highlightBorder,
+            shape = RoundedCornerShape(16.dp),
+        )
+    } else {
+        Modifier
+    }
+    Box(modifier = highlightModifier) {
+        DigestGroupCard(
+            model = group,
+            onNotificationClick = onNotificationClick,
+            collapsible = true,
+            bulkActions = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onRestoreAll,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("모두 중요로 복구")
+                    }
+                    OutlinedButton(
+                        onClick = onDeleteAll,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("모두 지우기")
+                    }
+                }
+            },
+        )
+    }
 }
