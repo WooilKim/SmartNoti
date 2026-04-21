@@ -35,8 +35,9 @@ last-verified: 2026-04-21
 6. `DuplicateNotificationPolicy` + `LiveDuplicateCountTracker` 로 최근 동일 content signature 발생 횟수 집계.
 7. `CapturedNotificationInput` 을 조립해 `NotificationCaptureProcessor.process(input, rules, settings)` 호출.
 8. 내부에서 `NotificationClassifier.classify(input, rules)` 가 분류 결정:
-   - 룰 매치 (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 최우선
-   - 그 외: VIP 발신자 집합, 우선순위 키워드 집합, 중복 카운트 임계, Quiet hours + 쇼핑앱 등 heuristic
+   - 룰 매치 (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 최우선. 매치된 enabled rule 집합은 `RuleConflictResolver.resolve(matched, allRules)` 에 위임 — base 와 해당 base 를 가리키는 override 가 동시에 매치되면 override 가 승리, 단일 tier 안에서는 `allRules` 인덱스 (earlier wins) 로 tie-break. 1-level override 만 탐색.
+   - Classifier 가 단일 winning rule 의 id 를 `NotificationClassification.matchedRuleIds` 로 래핑해 반환 → `NotificationCaptureProcessor` 가 decision + matchedRuleIds 를 분리 소비, `NotificationEntityMapper` 가 `ruleHitIds` 컬럼에 comma-separated 로 영속화.
+   - 그 외 rule miss: VIP 발신자 집합, 우선순위 키워드 집합, 중복 카운트 임계, Quiet hours + 쇼핑앱 등 heuristic.
 9. `NotificationRepository.save(notification, postTime, contentSignature)` → Room `notifications` 테이블에 upsert.
 10. 이어서 source routing 단계 진입 (→ [silent-auto-hide](silent-auto-hide.md), [priority-inbox](priority-inbox.md), digest-suppression).
 
@@ -62,8 +63,10 @@ last-verified: 2026-04-21
   `SweepDedupKey(packageName, contentSignature, postTimeMillis)` 로 in-process
   Set + `NotificationRepository.existsByContentSignature` 조합 dedup
 - `SmartNotiNotificationListenerService#processNotification` — pipeline
-- `domain/usecase/NotificationCaptureProcessor` — input → decision
-- `domain/usecase/NotificationClassifier` — 분류 규칙 본체 (VIP/키워드/shopping 상수도 이곳 생성자에 주입)
+- `domain/usecase/NotificationCaptureProcessor` — input → decision + matchedRuleIds
+- `domain/usecase/NotificationClassifier` — 분류 규칙 본체 (VIP/키워드/shopping 상수도 이곳 생성자에 주입), `RuleConflictResolver` 로 rule 매치 위임
+- `domain/usecase/RuleConflictResolver` — base/override 우선순위 + tier 내 tie-break
+- `domain/model/NotificationClassification` — decision + matchedRuleIds wrapper
 - `domain/usecase/DuplicateNotificationPolicy`, `LiveDuplicateCountTracker`
 - `domain/usecase/PersistentNotificationPolicy`
 - `data/local/NotificationRepository#save`
@@ -103,3 +106,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: v1 loop re-verification sweep — PRIORITY 키워드 posting 이 Home StatPill 까지 end-to-end 반영됨 확인 (자세한 증거는 `docs/journeys/README.md` Verification log)
 - 2026-04-21: `onListenerConnected` 재접속마다 `enqueueReconnectSweep` 가 돌도록 파이프라인 확장. 리스너가 꺼져 있는 동안 tray 에 쌓였다가 살아남은 알림은 `ListenerReconnectActiveNotificationSweepCoordinator` 가 `SweepDedupKey` + `NotificationRepository.existsByContentSignature` 로 dedup 해 `processNotification` 에 재주입. 온보딩 bootstrap 경로는 그대로 유지 (plan `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`, PR #94 / #102 / #104)
+- 2026-04-21: 분류 단계에서 rule 매치가 `RuleConflictResolver` 로 이동 — base rule 과 해당 base 를 가리키는 override rule 이 동시에 매치되면 override 가 승리, 단일 tier 는 `allRules` 인덱스 tie-break (earlier wins). Classifier 는 `NotificationClassification(decision, matchedRuleIds)` 를 반환하고 `NotificationCaptureProcessor` 가 이를 풀어 `NotificationEntityMapper` 경유로 `ruleHitIds` 컬럼에 영속 (PR #146, #149, plan `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase B Task 2 + Phase C Task 2). `last-verified` 는 recipe 재실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
