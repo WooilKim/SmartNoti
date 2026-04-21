@@ -16,9 +16,10 @@ SILENT 로 분류된 알림을 **보관 중** (`SilentMode.ARCHIVED`) / **처리
 
 ## Trigger
 
-- `Routes.Hidden` 으로 navigate. 진입 경로 두 가지:
-  - `SilentHiddenSummaryNotifier` 의 **루트** 보관 요약 `contentIntent` / action button → 필터 없음 (전체 보관 목록).
-  - 같은 notifier 의 **그룹 summary** `contentIntent` (sender / app 단위) → `sender` 또는 `packageName` 쿼리가 실린 `Routes.Hidden.create(...)` URL 로 진입 → Archived 탭을 강제 선택하고 해당 그룹을 스크롤 + 하이라이트. `MainActivity#extractDeepLinkRoute` 가 `EXTRA_DEEP_LINK_SENDER` / `EXTRA_DEEP_LINK_PACKAGE_NAME` 를 읽어 URL 로 재구성.
+- `Routes.Hidden` 으로 navigate. 진입 경로는 세 가지:
+  - `SilentHiddenSummaryNotifier` 의 **루트** 보관 요약 (`smartnoti_silent_summary` 채널) `contentIntent` / `"숨겨진 알림 보기"` action → `DEEP_LINK_ROUTE = "hidden"` 만 전달, 필터 없음 (전체 보관 목록 + 기본 "보관 중" 탭).
+  - 같은 notifier 의 **그룹 summary** (`smartnoti_silent_group` 채널, sender 또는 app 단위) `contentIntent` → `DEEP_LINK_ROUTE = "hidden"` + `DEEP_LINK_SENDER` 또는 `DEEP_LINK_PACKAGE_NAME` extra 전달. `MainActivity#extractDeepLinkRoute` 가 두 extra 를 읽어 `Routes.Hidden.create(sender = ..., packageName = ...)` URL 로 재구성 → `AppNavHost` 가 해당 쿼리로 composable 진입.
+  - Android SystemUI 가 같은 `setGroup` 태그의 children 을 tray 안에서 펼쳐주는 경로는 `Routes.Hidden` 을 거치지 않고 tray 상에서 완결된다 (→ [silent-auto-hide](silent-auto-hide.md) step 8). Hidden 화면으로 들어오는 경로는 summary 탭일 때만.
 - (향후 Settings 의 숨긴 알림 바로가기 등 확장 여지)
 
 ## Observable steps
@@ -123,3 +124,4 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 2026-04-21: **보관 중 / 처리됨 탭 분리** — `HiddenTab` 세그먼트 + `toHiddenGroups(silentModeFilter = ...)` 기반 탭별 리스트, 탭별 empty state, 헤더 count 이원화. legacy `silentMode == null` row 는 "처리됨" 으로 매핑해 기존 사용자의 빈 "보관 중" 탭 혼동 방지 (plan Task 4, PR #107).
 - 2026-04-21: Observable steps / Exit state / Code pointers 를 탭 분리 구조로 재작성. 관련 plan: `docs/plans/2026-04-21-silent-archive-vs-process-split.md` Task 6.
 - 2026-04-21: tray 그룹 summary deep-link 필터 지원 — `Routes.Hidden` 에 `sender` / `packageName` 쿼리 추가, `HiddenNotificationsScreen` 이 `initialFilter` 로 Archived 탭 자동 선택 + 해당 그룹 스크롤/하이라이트. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 4.
+- 2026-04-21: Trigger 섹션을 세 가지 진입 경로 (루트 요약 · 그룹 summary 딥링크 · Android SystemUI 의 in-tray children 펼침) 로 정리하고, 그룹 summary 경로가 `DEEP_LINK_SENDER` / `DEEP_LINK_PACKAGE_NAME` extra 를 어떻게 `Routes.Hidden.create(...)` URL 로 재구성하는지 명시. silent-auto-hide 의 재작성된 Observable steps 5~9 와 용어/채널명 정렬. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 5.
