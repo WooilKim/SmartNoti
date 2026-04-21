@@ -96,7 +96,7 @@ created: 2026-04-21
 4. Replacement notification 게시 경로 (`postReplacementNotification` 등) 는 IGNORE 에서 호출되지 않음을 보장 (if-guard 또는 when 분기).
 5. 테스트: IGNORE → (persist=true, replacement=false, sourceCancel=true).
 
-## Task 5: Rule editor UI — add IGNORE action
+## Task 5: Rule editor UI — add IGNORE action [IN PROGRESS via PR #N]
 
 **Objective:** 사용자가 IGNORE 를 룰 액션으로 선택할 수 있게.
 

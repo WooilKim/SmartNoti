@@ -66,6 +66,51 @@ class RuleRowDescriptionBuilderTest {
     }
 
     @Test
+    fun ignore_keyword_rule_description_uses_destructive_copy() {
+        // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 step 4 — the
+        // primary sentence must make the destructive outcome (tray cancel +
+        // app-wide hide) legible to the user at a glance.
+        val description = builder.build(
+            RuleUiModel(
+                id = "keyword:광고",
+                title = "광고 키워드",
+                subtitle = "무시 (즉시 삭제)",
+                type = RuleTypeUi.KEYWORD,
+                action = RuleActionUi.IGNORE,
+                enabled = true,
+                matchValue = "광고",
+            ),
+        )
+
+        assertEquals(
+            "'광고'가 들어오면 알림센터에서 즉시 삭제하고 앱에서도 숨겨요",
+            description.primaryText,
+        )
+        assertEquals("키워드 기준", description.secondaryText)
+    }
+
+    @Test
+    fun ignore_app_rule_description_keeps_package_secondary_text() {
+        val description = builder.build(
+            RuleUiModel(
+                id = "app:com.ads.example",
+                title = "광고 앱",
+                subtitle = "무시 (즉시 삭제)",
+                type = RuleTypeUi.APP,
+                action = RuleActionUi.IGNORE,
+                enabled = true,
+                matchValue = "com.ads.example",
+            ),
+        )
+
+        assertEquals(
+            "광고 앱 알림은 알림센터에서 즉시 삭제하고 앱에서도 숨겨요",
+            description.primaryText,
+        )
+        assertEquals("패키지 · com.ads.example", description.secondaryText)
+    }
+
+    @Test
     fun repeat_bundle_rule_description_explains_threshold() {
         val description = builder.build(
             RuleUiModel(
