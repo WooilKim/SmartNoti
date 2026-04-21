@@ -96,7 +96,7 @@ created: 2026-04-21
      - 동일 sender 로 여러 packageName → 하나의 `Sender` 키
      - 동일 packageName 으로 여러 sender → 각기 다른 `Sender` 키
 
-2. **Notifier 확장 — 그룹 summary + child channel**
+2. **Notifier 확장 — 그룹 summary + child channel** [IN PROGRESS via PR #116]
    - `SmartNotiNotifier.kt` 에 새 채널 상수 `CHANNEL_SILENT_GROUP = "smartnoti_silent_group"`, IMPORTANCE_MIN, 그룹 children 용.
    - `SilentHiddenSummaryNotifier.kt` 를 확장:
      - `postGroupSummary(key: SilentGroupKey, count: Int, preview: List<NotificationEntity>, rootDeepLink: String)` — 그룹 summary notification 을 key-specific notification id 로 post. `setGroup("smartnoti_silent_group_" + key.stableHash())`, `setGroupSummary(true)`.
