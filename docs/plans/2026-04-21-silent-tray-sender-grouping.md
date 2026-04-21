@@ -104,7 +104,7 @@ created: 2026-04-21
      - `postGroupChild(notificationId: Long, entity: NotificationEntity, key: SilentGroupKey)` — SmartNoti replacement notification with same group key, IMPORTANCE_MIN channel. contentIntent → Detail 화면.
    - 테스트: Robolectric 또는 실기기 ADB 검증 (현재 infra 제약 — plan-implementer 가 ADB 경로로 대체 가능, #89 precedent).
 
-3. **Listener service 파이프라인 변경**
+3. **Listener service 파이프라인 변경** [IN PROGRESS via PR #122]
    - `silentSummaryJob` 의 collect 를 `(count) -> Unit` 에서 `(allSilent: List<NotificationEntity>) -> Unit` 로 확장.
    - 그룹핑: `allSilent.groupBy { SilentNotificationGroupingPolicy.groupKeyFor(it) }`.
    - 각 그룹에 대해:

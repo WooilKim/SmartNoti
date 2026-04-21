@@ -159,6 +159,16 @@ class SilentHiddenSummaryNotifier(
     }
 
     /**
+     * Cancels a previously-posted group child notification keyed on the same `notificationId`
+     * that was passed to [postGroupChild]. Paired with [cancelGroupSummary] so the listener's
+     * tray-grouping pipeline (plan Task 3) can retract an entire group when it drops to a
+     * singleton or disappears.
+     */
+    fun cancelGroupChild(notificationId: Long) {
+        notificationManager.cancel(groupChildNotificationId(notificationId))
+    }
+
+    /**
      * Posts a per-child Silent notification belonging to [key]'s group. The child shares the
      * same `setGroup(groupTagFor(key))` as the summary, so the Android UI (SystemUI / shade)
      * stacks them under a single header that the user must explicitly expand.
