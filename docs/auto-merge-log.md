@@ -119,3 +119,5 @@ If a self-merged row caused a regression:
 | 2026-04-21T15:51:00Z | project-manager | #171 | journey-tester audit backfill for #170 (notification-detail PASS, docs-only append, rebased twice onto main with chronological conflict resolve, CI SUCCESS run 24732043145) | https://github.com/WooilKim/SmartNoti/actions/runs/24732043145 |
 | 2026-04-21T16:32:00Z | project-manager | #179 | plan-implementer Task 3 classifier routes RuleActionUi.IGNORE; tests-first, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24733701380 |
 | 2026-04-21T16:32:30Z | project-manager | #180 | PM self-audit — historical defer row for #179, docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24733830652 |
+| 2026-04-21T17:06:00Z | project-manager | #183 | plan-implementer Task 5 rule editor IGNORE UI + journey sync, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24734649225 |
+| 2026-04-21T17:06:30Z | project-manager | #184 | PM T17 chain-audit rows for #181 #182 #183, docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24734826300 |
