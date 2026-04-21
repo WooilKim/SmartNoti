@@ -132,15 +132,16 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 
 ## Phase C — Tasks (Hierarchical rules)
 
-1. **Data model 확장 (tests-first)** [IN PROGRESS via PR #148]
+1. **Data model 확장 (tests-first)** [shipped via #148]
    - `RuleUiModel.overrideOf: String?` 필드.
    - `RulesRepository` upsert 시 circular reference 감지 (A → B → A 는 reject, 에러 로그).
    - `RuleConflictResolverTest` 신규: 동일 tier 충돌 시 priority 필드 (또는 rule 순서) 기준 선택 테스트.
    - 실제 구현: `RuleUiModel` 에 nullable `overrideOf` 추가 (default null — 기존 호출부 영향 없음). `RuleStorageCodec` 를 8-column 포맷으로 확장, `\u0000` sentinel 로 null 을 표현 + legacy 7-column 라인은 `overrideOf = null` 로 tolerate. `RuleOverrideValidator` (순수 함수, pure Kotlin) 가 self-reference / cycle 을 감지 → `RulesRepository.upsertRule` 가 `Log.e` 찍고 persist 없이 return. `RuleConflictResolver` 신규 use case: `matched` + `allRules` 받아 (1) base 와 override 가 모두 matched 면 override 승, (2) 동일 tier 는 `allRules` 인덱스 (순서 = priority) 로 tie-break. 단일 매치/0매치 short-circuit. Classifier 재작성은 Phase C Task 2 에서 이어감.
-2. **Classifier override 처리**
+2. **Classifier override 처리** [IN PROGRESS via PR #149]
    - `findMatchingRule` 재작성: flat loop 대신 tier-aware traversal.
    - 매치 시: base rule + override candidates 모두 수집 → 가장 specific override (더 많은 조건 매치) → tie 는 priority → base 로 fallback.
    - 테스트: 사용자 예 (`결제 → PRIORITY`, `결제+광고 → SILENT`) 재현.
+   - 실제 구현: `NotificationClassifier.findMatchingRule` 이 flat `firstOrNull` 대신 `filter { enabled && matches }` → `RuleConflictResolver.resolve(matched, rules)` 에 위임. 매치 로직은 순수 predicate 로 분리 (`matches(rule, input, content)`). 동일 tier 타이-브레이크 (earlier wins) 는 resolver 가 `allRules` 인덱스로 계속 담당 — 기존 `earlier_matching_rule_wins_when_multiple_rules_match` 회귀 없음. 생성자에 `ruleConflictResolver` DI 파라미터 추가 (default 인스턴스, 기존 호출부는 그대로). 신규 behavioral 테스트 5건 (payment+ad 사용자 예, order-invariance, base-only, override-only, disabled-override) 으로 override 우선순위가 `NotificationClassifier` 입력 → output 레벨에서 관측됨을 확인.
 3. **Rules 탭 UI — 계층 시각화**
    - `RuleListPresentationBuilder` 가 flat list 를 tree 로 변환 (base rule + nested overrides).
    - `RuleRow` 렌더 시 indent + "이 규칙의 예외" 라벨.
