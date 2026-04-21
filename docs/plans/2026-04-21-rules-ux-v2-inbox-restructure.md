@@ -137,15 +137,16 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
    - `RulesRepository` upsert 시 circular reference 감지 (A → B → A 는 reject, 에러 로그).
    - `RuleConflictResolverTest` 신규: 동일 tier 충돌 시 priority 필드 (또는 rule 순서) 기준 선택 테스트.
    - 실제 구현: `RuleUiModel` 에 nullable `overrideOf` 추가 (default null — 기존 호출부 영향 없음). `RuleStorageCodec` 를 8-column 포맷으로 확장, `\u0000` sentinel 로 null 을 표현 + legacy 7-column 라인은 `overrideOf = null` 로 tolerate. `RuleOverrideValidator` (순수 함수, pure Kotlin) 가 self-reference / cycle 을 감지 → `RulesRepository.upsertRule` 가 `Log.e` 찍고 persist 없이 return. `RuleConflictResolver` 신규 use case: `matched` + `allRules` 받아 (1) base 와 override 가 모두 matched 면 override 승, (2) 동일 tier 는 `allRules` 인덱스 (순서 = priority) 로 tie-break. 단일 매치/0매치 short-circuit. Classifier 재작성은 Phase C Task 2 에서 이어감.
-2. **Classifier override 처리** [IN PROGRESS via PR #149]
+2. **Classifier override 처리** [shipped via #149]
    - `findMatchingRule` 재작성: flat loop 대신 tier-aware traversal.
    - 매치 시: base rule + override candidates 모두 수집 → 가장 specific override (더 많은 조건 매치) → tie 는 priority → base 로 fallback.
    - 테스트: 사용자 예 (`결제 → PRIORITY`, `결제+광고 → SILENT`) 재현.
    - 실제 구현: `NotificationClassifier.findMatchingRule` 이 flat `firstOrNull` 대신 `filter { enabled && matches }` → `RuleConflictResolver.resolve(matched, rules)` 에 위임. 매치 로직은 순수 predicate 로 분리 (`matches(rule, input, content)`). 동일 tier 타이-브레이크 (earlier wins) 는 resolver 가 `allRules` 인덱스로 계속 담당 — 기존 `earlier_matching_rule_wins_when_multiple_rules_match` 회귀 없음. 생성자에 `ruleConflictResolver` DI 파라미터 추가 (default 인스턴스, 기존 호출부는 그대로). 신규 behavioral 테스트 5건 (payment+ad 사용자 예, order-invariance, base-only, override-only, disabled-override) 으로 override 우선순위가 `NotificationClassifier` 입력 → output 레벨에서 관측됨을 확인.
-3. **Rules 탭 UI — 계층 시각화**
+3. **Rules 탭 UI — 계층 시각화** [IN PROGRESS via PR #150]
    - `RuleListPresentationBuilder` 가 flat list 를 tree 로 변환 (base rule + nested overrides).
    - `RuleRow` 렌더 시 indent + "이 규칙의 예외" 라벨.
    - Override 가 깨진 상태 (base 삭제됨 등) 의 visual warning.
+   - 실제 구현: 새 use case `RuleListHierarchyBuilder` 가 `visibleRules` + `allRules` 를 받아 `List<RuleListNode>` (base + nested override children + broken overrides) 를 반환. 1-level chain 만 지원 (Open question #3) — `C → B → A` 처럼 base 가 자기도 override 인 경우, self-reference, 삭제된 base 는 top-level 에서 `RuleOverrideBrokenReason` 으로 표시. `RulesScreen` 이 그룹별로 tree 를 평탄화해 depth-based indent (16dp per level) 적용. `RuleRow` 에 optional `RuleRowPresentation` 파라미터 추가 — `Base` / `Override(baseTitle)` / `BrokenOverride(reasonMessage)` 세 가지. Override 는 primary tint 의 pill 라벨 "이 규칙의 예외 · {base 이름}" 로 렌더, broken 은 error tint 로 동일 슬롯에 경고 문구. 기존 호출부는 `Base` default 로 동작 변경 없음. Tree-building 은 `RuleListHierarchyBuilderTest` 로 8개 케이스 (정렬 보존, 여러 override 순서, 고아 override, 2-level 체인 거부, base 필터 숨김 시 child 유지, override 필터 숨김 시 base 고아 없음, self-reference) 커버. `allRules` 를 filter 통과 전 리스트로 따로 받는 이유는 filter 가 base 만 숨겼을 때 child 를 broken 으로 잘못 분류하지 않기 위해서.
 4. **Rule editor dialog — override 만들기**
    - 규칙 편집 AlertDialog 에 "기존 규칙의 예외로 만들기" 스위치 + "어느 규칙의 예외인가요?" dropdown.
    - 선택 시 매치 조건은 base 의 superset 이어야 함 (validator 가 경고).
