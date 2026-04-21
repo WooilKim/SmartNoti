@@ -11,6 +11,7 @@ class NotificationClassifier(
     private val vipSenders: Set<String>,
     private val priorityKeywords: Set<String>,
     private val shoppingPackages: Set<String>,
+    private val ruleConflictResolver: RuleConflictResolver = RuleConflictResolver(),
 ) {
     fun classify(
         input: ClassificationInput,
@@ -43,25 +44,42 @@ class NotificationClassifier(
         return NotificationClassification(NotificationDecision.SILENT)
     }
 
+    /**
+     * Picks the user rule that applies to [input], delegating conflict
+     * resolution to [RuleConflictResolver].
+     *
+     * Plan `rules-ux-v2-inbox-restructure` Phase C Task 2: the flat
+     * first-match-wins loop was replaced with a collect-all-matches pass +
+     * resolver call so that when a base rule AND its override both fire the
+     * override wins. Same-tier ties still break by list order (the resolver
+     * consults [rules] directly).
+     */
     private fun findMatchingRule(
         input: ClassificationInput,
         rules: List<RuleUiModel>,
     ): RuleUiModel? {
         val content = listOf(input.title, input.body).joinToString(" ")
-        return rules.firstOrNull { rule ->
-            rule.enabled && when (rule.type) {
-                RuleTypeUi.PERSON -> !input.sender.isNullOrBlank() && input.sender.equals(rule.matchValue, ignoreCase = true)
-                RuleTypeUi.APP -> input.packageName.equals(rule.matchValue, ignoreCase = true)
-                RuleTypeUi.KEYWORD -> rule.matchValue
-                    .split(',')
-                    .map { it.trim() }
-                    .filter { it.isNotBlank() }
-                    .any { keyword -> content.contains(keyword, ignoreCase = true) }
-                RuleTypeUi.SCHEDULE -> input.hourOfDay != null && matchesSchedule(rule.matchValue, input.hourOfDay)
-                RuleTypeUi.REPEAT_BUNDLE -> matchesRepeatBundleThreshold(rule.matchValue, input.duplicateCountInWindow)
-            }
-        }
+        val matched = rules.filter { rule -> rule.enabled && matches(rule, input, content) }
+        return ruleConflictResolver.resolve(matched = matched, allRules = rules)
     }
+
+    private fun matches(rule: RuleUiModel, input: ClassificationInput, content: String): Boolean =
+        when (rule.type) {
+            RuleTypeUi.PERSON -> !input.sender.isNullOrBlank() &&
+                input.sender.equals(rule.matchValue, ignoreCase = true)
+            RuleTypeUi.APP -> input.packageName.equals(rule.matchValue, ignoreCase = true)
+            RuleTypeUi.KEYWORD -> rule.matchValue
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .any { keyword -> content.contains(keyword, ignoreCase = true) }
+            RuleTypeUi.SCHEDULE -> input.hourOfDay != null &&
+                matchesSchedule(rule.matchValue, input.hourOfDay)
+            RuleTypeUi.REPEAT_BUNDLE -> matchesRepeatBundleThreshold(
+                rule.matchValue,
+                input.duplicateCountInWindow,
+            )
+        }
 
     private fun matchesSchedule(schedule: String, hourOfDay: Int): Boolean {
         val parts = schedule.split('-')
