@@ -113,7 +113,7 @@ created: 2026-04-21
      - count==1 → summary cancel + (옵션 Q3-A) child cancel (기존 단일-요약 flow 의 "N건" 축소 재현).
    - child 게시 여부: SILENT route 에서 기존 `cancelNotification(sbn.key)` 이후 `notifier.postGroupChild(...)` 추가. (ARCHIVED 전용 플래그는 #50 에 의존하지 않고, 이 plan 자체에서는 "SILENT 면 항상 child 게시" 로 시작 — 후속 plan 에서 ARCHIVED 조건 분기.)
 
-4. **Hidden 화면 deep-link 필터**
+4. **Hidden 화면 deep-link 필터** [IN PROGRESS via PR #127]
    - `Routes.Hidden` 에 optional query param `sender: String?` / `packageName: String?` 추가 (둘 다 nullable, 둘 중 하나만 지정).
    - `AppNavHost` 의 `composable(Routes.Hidden)` 에서 query param 파싱 → `HiddenNotificationsScreen(initialFilter: SilentGroupKey?)`.
    - `HiddenNotificationsScreen` 내부 LazyColumn 은 기존 그룹 리스트 렌더 + `initialFilter` 가 있으면 해당 그룹만 스크롤/하이라이트.
