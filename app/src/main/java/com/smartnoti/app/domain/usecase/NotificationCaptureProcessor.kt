@@ -21,7 +21,7 @@ class NotificationCaptureProcessor(
         rules: List<RuleUiModel> = emptyList(),
         settings: SmartNotiSettings,
     ): NotificationUiModel {
-        val decision = classifier.classify(
+        val classification = classifier.classify(
             com.smartnoti.app.domain.model.ClassificationInput(
                 sender = input.sender,
                 packageName = input.packageName,
@@ -33,6 +33,7 @@ class NotificationCaptureProcessor(
             ),
             rules = rules,
         )
+        val decision = classification.decision
         val deliveryProfile = deliveryProfilePolicy.resolve(
             decision = decision,
             settings = settings,
@@ -70,6 +71,7 @@ class NotificationCaptureProcessor(
             postedAtMillis = input.postedAtMillis,
             replacementNotificationIssued = false,
             sourceEntryKey = input.sourceEntryKey,
+            matchedRuleIds = classification.matchedRuleIds,
         )
     }
 

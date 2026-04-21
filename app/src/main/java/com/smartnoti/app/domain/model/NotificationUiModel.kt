@@ -31,6 +31,19 @@ data class NotificationUiModel(
      * `silent-archive-drift-fix` Task 3).
      */
     val sourceEntryKey: String? = null,
+    /**
+     * Ordered list of user rule ids that fired during classification for this
+     * notification. Empty when the decision came from a classifier-internal
+     * signal (VIP sender, priority keyword, quiet-hours shopping, repeat
+     * burst) rather than a user rule (plan `rules-ux-v2-inbox-restructure`
+     * Phase B Task 2).
+     *
+     * Persisted via [com.smartnoti.app.data.local.NotificationEntity.ruleHitIds]
+     * as a comma-separated string. Surfaced in Phase B Task 3's Detail UI as
+     * the "적용된 규칙" sub-section, distinct from the free-form [reasonTags]
+     * classifier-signal chips.
+     */
+    val matchedRuleIds: List<String> = emptyList(),
 )
 
 enum class NotificationStatusUi {

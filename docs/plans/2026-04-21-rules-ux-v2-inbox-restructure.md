@@ -112,13 +112,14 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 
 ## Phase B — Tasks (Reason-tag traceability)
 
-1. **Room 스키마 확장 (tests-first)** [IN PROGRESS via PR #145]
+1. **Room 스키마 확장 (tests-first)** [shipped via #145]
    - `NotificationEntity` 에 `ruleHitIds: String?` 추가. SCHEMA_VERSION 7→8. Nullable 이라 기존 row 영향 없음.
    - `NotificationRepositoryTest` 에서 round-trip 확인.
-2. **Classifier 결과 확장**
+2. **Classifier 결과 확장** [IN PROGRESS via PR #X]
    - `NotificationDecision` 에 `matchedRuleIds: List<String>` 필드 추가 (이전엔 단순 enum).
    - `classify()` 가 rule hit 시 그 rule id 를 함께 반환.
    - 기존 classifier signal 은 별도 `reasonSignals: List<String>` 로 유지.
+   - 실제 구현: 새 wrapper `NotificationClassification(decision, matchedRuleIds)` 를 도입하고 `NotificationClassifier.classify()` 가 그것을 반환. `NotificationDecision` 은 enum 그대로 유지 — 라우팅/상태 전이는 영향 없음. `NotificationCaptureProcessor` 가 wrapper 를 풀어 decision 을 delivery-profile 로 전달하고 `matchedRuleIds` 를 `NotificationUiModel` 로 threading. `NotificationEntityMapper` 가 `matchedRuleIds` 를 Phase B Task 1 의 `ruleHitIds` 컬럼으로 comma-separated 로 persist. 기존 free-form `reasonTags` 는 그대로 유지 (Task 3 에서 Detail UI 가 두 섹션으로 분리할 때 소비).
 3. **Detail UI 분리**
    - "왜 이렇게 처리됐나요?" 섹션 아래에 두 서브섹션:
      - **SmartNoti 가 본 신호** — classifier signals (기존 회색 chip, 클릭 불가)
