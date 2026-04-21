@@ -80,7 +80,7 @@ created: 2026-04-21
 1. **[shipped via PR #91]** **데이터 모델 확장** (tests-first)
    - `NotificationEntity` 컬럼 추가 + Room 마이그레이션. `NotificationRepositoryTest` 로 신규 필드 round-trip 확인.
    - `SilentMode` enum + UI 모델 필드 추가.
-2. **[IN PROGRESS via PR #TBD]** **라우팅 정책 분기**
+2. **[IN PROGRESS via PR #100]** **라우팅 정책 분기**
    - `SourceNotificationRoutingPolicy.route(SILENT, mode=ARCHIVED)` → cancel=false.
    - `SourceNotificationRoutingPolicyTest` 에 신규 케이스 추가 (SILENT × ARCHIVED / PROCESSED 2×2 매트릭스).
    - 호출부 (`SmartNotiNotificationListenerService`) 는 이번 Task 에서 건드리지 않음 — `silentMode` 기본값 `null` 으로 legacy cancel 동작 유지. 실제 mode 전달은 Task 3 (Detail 전이 경로) 에서 함께 배선.
