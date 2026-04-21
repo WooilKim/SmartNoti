@@ -305,6 +305,11 @@ private fun actionLabel(action: RuleActionUi): String = when (action) {
     RuleActionUi.DIGEST -> "Digest"
     RuleActionUi.SILENT -> "조용히"
     RuleActionUi.CONTEXTUAL -> "상황별"
+    // Final copy landed in Task 5 of plan
+    // `2026-04-21-ignore-tier-fourth-decision`; Task 2 uses the short label
+    // so existing rule rows render without crashes if a test fixture
+    // includes an IGNORE rule.
+    RuleActionUi.IGNORE -> "무시"
 }
 
 @Composable

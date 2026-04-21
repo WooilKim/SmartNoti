@@ -33,4 +33,14 @@ enum class RuleActionUi {
     DIGEST,
     SILENT,
     CONTEXTUAL,
+
+    /**
+     * Delete-level rule action added by plan
+     * `2026-04-21-ignore-tier-fourth-decision` Task 2. Rules carrying this
+     * action route matched notifications to [NotificationDecision.IGNORE] —
+     * the classifier wiring lands in Task 3, the editor UI in Task 5, and the
+     * Detail feedback button in Task 6a. Task 2 only introduces the enum
+     * value and its Room persistence round-trip.
+     */
+    IGNORE,
 }

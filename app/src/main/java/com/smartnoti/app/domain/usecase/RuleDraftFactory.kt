@@ -60,5 +60,9 @@ class RuleDraftFactory {
         RuleActionUi.DIGEST -> "Digest로 묶기"
         RuleActionUi.SILENT -> "조용히 정리"
         RuleActionUi.CONTEXTUAL -> "상황에 따라 자동 분류"
+        // Copy finalized in Task 5 of plan
+        // `2026-04-21-ignore-tier-fourth-decision`. Stub text keeps drafts
+        // valid until the rule editor surfaces IGNORE to users.
+        RuleActionUi.IGNORE -> "무시 (즉시 삭제)"
     }
 }

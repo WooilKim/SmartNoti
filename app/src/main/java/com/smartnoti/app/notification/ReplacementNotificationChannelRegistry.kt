@@ -67,20 +67,28 @@ internal object ReplacementNotificationChannelRegistry {
 
     private fun supportedProfilesFor(decision: NotificationDecision): List<DeliveryProfile> {
         val defaults = DeliveryProfile.defaultsFor(decision)
+        // IGNORE never posts replacement alerts (plan
+        // `2026-04-21-ignore-tier-fourth-decision` Task 4 early-return), so
+        // no channel needs to be registered. The early exit keeps the `when`
+        // blocks below tight around the three publicly surfaced tiers.
+        if (decision == NotificationDecision.IGNORE) return emptyList()
         val alertLevels = when (decision) {
             NotificationDecision.PRIORITY -> listOf(AlertLevel.LOUD, AlertLevel.SOFT, AlertLevel.QUIET)
             NotificationDecision.DIGEST -> listOf(AlertLevel.SOFT, AlertLevel.QUIET, AlertLevel.NONE)
             NotificationDecision.SILENT -> listOf(AlertLevel.QUIET, AlertLevel.NONE)
+            NotificationDecision.IGNORE -> emptyList()
         }
         val vibrationModes = when (decision) {
             NotificationDecision.PRIORITY -> listOf(VibrationMode.STRONG, VibrationMode.LIGHT, VibrationMode.OFF)
             NotificationDecision.DIGEST -> listOf(VibrationMode.LIGHT, VibrationMode.OFF)
             NotificationDecision.SILENT -> listOf(VibrationMode.OFF)
+            NotificationDecision.IGNORE -> emptyList()
         }
         val headsUpOptions = when (decision) {
             NotificationDecision.PRIORITY -> listOf(true, false)
             NotificationDecision.DIGEST,
             NotificationDecision.SILENT,
+            NotificationDecision.IGNORE,
             -> listOf(false)
         }
         val lockScreenModes = when (decision) {
@@ -91,6 +99,7 @@ internal object ReplacementNotificationChannelRegistry {
             )
             NotificationDecision.DIGEST,
             NotificationDecision.SILENT,
+            NotificationDecision.IGNORE,
             -> listOf(
                 LockScreenVisibilityMode.PRIVATE,
                 LockScreenVisibilityMode.SECRET,
@@ -197,6 +206,18 @@ internal object ReplacementNotificationChannelRegistry {
                 AlertLevel.SOFT,
                 -> error("Silent delivery profile must be sanitized before channel resolution")
             }
+
+            // IGNORE never reaches this point — Task 4 of plan
+            // `2026-04-21-ignore-tier-fourth-decision` adds an early-return in
+            // the notifier before channel resolution. If it ever does, treat
+            // it as "never alert" (importance MIN, no sound / heads-up).
+            NotificationDecision.IGNORE -> ChannelBehavior(
+                importance = NotificationManager.IMPORTANCE_MIN,
+                compatPriority = NotificationCompat.PRIORITY_MIN,
+                soundEnabled = false,
+                headsUpAllowed = false,
+                vibrationPattern = emptyList(),
+            )
         }
     }
 

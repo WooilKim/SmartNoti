@@ -659,6 +659,9 @@ private fun actionLabel(action: RuleActionUi): String = when (action) {
     RuleActionUi.DIGEST -> "Digest"
     RuleActionUi.SILENT -> "조용히"
     RuleActionUi.CONTEXTUAL -> "상황별"
+    // Task 5 of plan `2026-04-21-ignore-tier-fourth-decision` finalizes the
+    // editor copy. Short label keeps existing surfaces readable.
+    RuleActionUi.IGNORE -> "무시"
 }
 
 private fun matchLabelFor(type: RuleTypeUi): String = when (type) {

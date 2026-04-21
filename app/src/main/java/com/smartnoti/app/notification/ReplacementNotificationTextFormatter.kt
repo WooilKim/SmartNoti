@@ -13,6 +13,10 @@ internal object ReplacementNotificationTextFormatter {
             NotificationDecision.DIGEST -> "원본 알림 숨김을 시도하고 Digest에 모아뒀어요"
             NotificationDecision.SILENT -> "원본 알림 숨김을 시도하고 조용히 보관했어요"
             NotificationDecision.PRIORITY -> "원본 알림을 바로 확인할 수 있게 유지했어요"
+            // IGNORE never posts a replacement notification (Task 4 of plan
+            // `2026-04-21-ignore-tier-fourth-decision`), so this formatter
+            // never runs for IGNORE rows. Defensive copy in case it does.
+            NotificationDecision.IGNORE -> "사용자 규칙에 따라 무시 처리했어요"
         }
         val highlightedReasons = highlightReasons(reasonTags)
 

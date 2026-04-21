@@ -76,6 +76,12 @@ class PassthroughReviewReclassifyDispatcher(
         RuleActionUi.DIGEST -> NotificationStatusUi.DIGEST
         RuleActionUi.SILENT -> NotificationStatusUi.SILENT
         RuleActionUi.CONTEXTUAL -> null
+        // IGNORE reclassification from the Passthrough review flow is not in
+        // scope for Task 2 of plan `2026-04-21-ignore-tier-fourth-decision`.
+        // Mapping to IGNORE keeps the plumbing consistent with the classifier;
+        // Task 6a will decide whether the review surface offers an IGNORE
+        // button or hides it.
+        RuleActionUi.IGNORE -> NotificationStatusUi.IGNORE
     }
 }
 

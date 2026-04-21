@@ -105,5 +105,11 @@ class NotificationClassifier(
         RuleActionUi.DIGEST -> NotificationDecision.DIGEST
         RuleActionUi.SILENT -> NotificationDecision.SILENT
         RuleActionUi.CONTEXTUAL -> NotificationDecision.SILENT
+        // Rule-driven IGNORE routing — introduced by plan
+        // `2026-04-21-ignore-tier-fourth-decision`. Task 2 registers the
+        // mapping here so the enum plumbing is complete; Task 3 adds the
+        // dedicated classifier tests (override interactions, no auto-promotion)
+        // and any cascade refinements.
+        RuleActionUi.IGNORE -> NotificationDecision.IGNORE
     }
 }

@@ -4,6 +4,17 @@ enum class NotificationDecision {
     PRIORITY,
     DIGEST,
     SILENT,
+
+    /**
+     * Rule-driven delete-level classification added by plan
+     * `2026-04-21-ignore-tier-fourth-decision`. The classifier only reaches
+     * this tier when a user rule with [com.smartnoti.app.domain.model.RuleActionUi.IGNORE]
+     * matches — there is no automatic promotion. Downstream effects (tray
+     * cancel without replacement alert, default-view filtering, opt-in
+     * archive) land in Tasks 3–6 of that plan; Task 2 only guarantees the
+     * enum value exists and round-trips through persistence.
+     */
+    IGNORE,
 }
 
 /**

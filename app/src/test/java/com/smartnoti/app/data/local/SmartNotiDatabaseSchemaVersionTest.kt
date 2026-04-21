@@ -8,12 +8,14 @@ class SmartNotiDatabaseSchemaVersionTest {
 
     @Test
     fun database_version_matches_silent_archive_split_schema_change() {
-        // Bumped to 8 for the ruleHitIds column added by
-        // docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md Phase B Task 1
-        // so the Detail UI can split classifier signals from rule hits in
-        // Phase B Task 3. Previous bumps: 7 for sourceEntryKey (plan
-        // `silent-archive-drift-fix` Task 3).
-        assertEquals(8, SMART_NOTI_DATABASE_VERSION)
+        // Bumped to 9 for the IGNORE enum value added by
+        // docs/plans/2026-04-21-ignore-tier-fourth-decision.md Task 2 — the
+        // `status` column is free-form string so there is no table schema
+        // diff, but the version bump + explicit no-op MIGRATION_8_9 records
+        // the enum-set expansion in history. Previous bumps: 8 for
+        // ruleHitIds (rules-ux-v2-inbox-restructure Phase B Task 1),
+        // 7 for sourceEntryKey (silent-archive-drift-fix Task 3).
+        assertEquals(9, SMART_NOTI_DATABASE_VERSION)
         assertTrue(NotificationEntity::class.java.declaredFields.any { it.name == "isPersistent" })
         assertTrue(NotificationEntity::class.java.declaredFields.any { it.name == "deliveryChannelKey" })
         assertTrue(NotificationEntity::class.java.declaredFields.any { it.name == "alertLevel" })

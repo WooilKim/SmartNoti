@@ -50,4 +50,12 @@ enum class NotificationStatusUi {
     PRIORITY,
     DIGEST,
     SILENT,
+
+    /**
+     * Persisted storage counterpart of [com.smartnoti.app.domain.model.NotificationDecision.IGNORE]
+     * added by plan `2026-04-21-ignore-tier-fourth-decision` Task 2. Rows with
+     * this status are kept in the DB for audit / weekly insights but filtered
+     * out of the default Home / Priority / Digest / Hidden views (Task 6).
+     */
+    IGNORE,
 }

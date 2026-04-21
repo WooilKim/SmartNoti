@@ -58,6 +58,10 @@ class NotificationFeedbackPolicy {
         RuleActionUi.DIGEST -> NotificationStatusUi.DIGEST
         RuleActionUi.SILENT -> NotificationStatusUi.SILENT
         RuleActionUi.CONTEXTUAL -> currentStatus
+        // Detail "무시" feedback button wiring lands in Task 6a of plan
+        // `2026-04-21-ignore-tier-fourth-decision`; Task 2 only keeps the
+        // enum `when` exhaustive so the build stays green.
+        RuleActionUi.IGNORE -> NotificationStatusUi.IGNORE
     }
 
     private fun RuleActionUi.toSubtitle(): String = when (this) {
@@ -65,6 +69,7 @@ class NotificationFeedbackPolicy {
         RuleActionUi.DIGEST -> "Digest로 묶기"
         RuleActionUi.SILENT -> "조용히 정리"
         RuleActionUi.CONTEXTUAL -> "상황에 따라 자동 분류"
+        RuleActionUi.IGNORE -> "무시 (즉시 삭제)"
     }
 
     companion object {

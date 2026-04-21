@@ -59,6 +59,17 @@ class DeliveryProfilePolicy {
                 headsUpEnabled = settings.silentHeadsUpEnabled,
                 lockScreenVisibility = settings.silentLockScreenVisibility,
             )
+            // IGNORE (plan 2026-04-21-ignore-tier-fourth-decision Task 2):
+            // IGNORE never posts a replacement notification (Task 4
+            // early-return), so this profile is never actually consumed. Reuse
+            // silent settings so any stray lookup produces the quietest legal
+            // profile instead of throwing.
+            NotificationDecision.IGNORE -> DecisionSettings(
+                alertLevel = settings.silentAlertLevel,
+                vibrationMode = settings.silentVibrationMode,
+                headsUpEnabled = false,
+                lockScreenVisibility = settings.silentLockScreenVisibility,
+            )
         }
 
         return defaults.copy(
