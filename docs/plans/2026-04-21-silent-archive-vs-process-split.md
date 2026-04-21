@@ -77,7 +77,7 @@ created: 2026-04-21
 
 ## Tasks
 
-1. **데이터 모델 확장** (tests-first)
+1. **[IN PROGRESS via PR #91]** **데이터 모델 확장** (tests-first)
    - `NotificationEntity` 컬럼 추가 + Room 마이그레이션. `NotificationRepositoryTest` 로 신규 필드 round-trip 확인.
    - `SilentMode` enum + UI 모델 필드 추가.
 2. **라우팅 정책 분기**

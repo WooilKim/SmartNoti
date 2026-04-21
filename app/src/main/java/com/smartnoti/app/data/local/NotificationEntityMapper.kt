@@ -4,6 +4,7 @@ import com.smartnoti.app.domain.model.AlertLevel
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.VibrationMode
 
@@ -31,6 +32,7 @@ fun NotificationUiModel.toEntity(
     lockScreenVisibility = lockScreenVisibility.name,
     sourceSuppressionState = sourceSuppressionState.name,
     replacementNotificationIssued = replacementNotificationIssued,
+    silentMode = silentMode?.name,
 )
 
 fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
@@ -54,6 +56,7 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     sourceSuppressionState = sourceSuppressionState.toSourceNotificationSuppressionState(),
     replacementNotificationIssued = replacementNotificationIssued,
     postedAtMillis = postedAtMillis,
+    silentMode = silentMode?.toSilentMode(),
 )
 
 private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {
@@ -79,4 +82,10 @@ private fun String.toLockScreenVisibility(): LockScreenVisibilityMode {
 private fun String.toSourceNotificationSuppressionState(): SourceNotificationSuppressionState {
     return runCatching { enumValueOf<SourceNotificationSuppressionState>(trim().uppercase()) }
         .getOrDefault(SourceNotificationSuppressionState.NOT_CONFIGURED)
+}
+
+private fun String.toSilentMode(): SilentMode? {
+    val raw = trim()
+    if (raw.isEmpty()) return null
+    return runCatching { enumValueOf<SilentMode>(raw.uppercase()) }.getOrNull()
 }

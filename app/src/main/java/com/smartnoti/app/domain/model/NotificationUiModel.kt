@@ -21,6 +21,7 @@ data class NotificationUiModel(
     val sourceSuppressionState: SourceNotificationSuppressionState = SourceNotificationSuppressionState.NOT_CONFIGURED,
     val replacementNotificationIssued: Boolean = false,
     val postedAtMillis: Long = 0L,
+    val silentMode: SilentMode? = null,
 )
 
 enum class NotificationStatusUi {
