@@ -23,7 +23,7 @@ related-journey: ignored-archive
 
 ---
 
-## Task 1: Add failing test that pins the race
+## Task 1: Add failing test that pins the race [IN PROGRESS via PR #199]
 
 **Objective:** toggle OFF→ON 직후 같은 composition 에서 버튼 탭 시 `navigate(Routes.IgnoredArchive.route)` 가 안전해야 한다는 계약을 테스트로 고정.
 
