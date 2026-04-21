@@ -33,7 +33,7 @@ created: 2026-04-21
 
 ---
 
-## Task 1: Failing tests for 4-tier enum + round-trip [IN PROGRESS via PR pending]
+## Task 1: Failing tests for 4-tier enum + round-trip [IN PROGRESS via PR #178]
 
 **Objective:** IGNORE 를 도입하기 전에 enum 확장과 Room string round-trip 을 테스트로 고정.
 
