@@ -23,7 +23,7 @@
 
 ---
 
-## Task 1: Failing test — listener passes `silentMode = ARCHIVED` on SILENT routing
+## Task 1: Failing test — listener passes `silentMode = ARCHIVED` on SILENT routing  [IN PROGRESS via PR #125]
 
 **Objective:** 드리프트를 테스트로 고정. `SmartNotiNotificationListenerService.processNotification` 이 SILENT decision 에 대해 `SourceNotificationRoutingPolicy.route` 를 `silentMode = SilentMode.ARCHIVED` 로 호출하는지 검증.
 
