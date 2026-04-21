@@ -22,7 +22,7 @@ last-verified: 2026-04-21
 
 1. `HomeScreen` 이 repository/settings/RulesRepository 구독 시작.
 2. 상단 `ScreenHeader` — "SmartNoti" + "중요한 알림만 먼저 보여드리고 있어요".
-3. `StatPill` — `즉시 N / Digest N / 조용히 N` 컬러칩 (분류 카운트 live).
+3. `StatPill` — `즉시 N / Digest N / 조용히 N` 컬러칩 (분류 카운트 live). IGNORE 는 기본 뷰에서 제외되므로 StatPill 및 아래의 최근 알림 리스트, QuickActionCard, Insight/Timeline 집계 어느 지점에도 포함되지 않음 — 오직 Settings 의 opt-in 토글을 켠 뒤 [ignored-archive](ignored-archive.md) 화면에서만 노출 (단, weekly/daily insights 의 "조용히 정리" 요약에는 별도 `ignoredCount` 스트림으로 집계된다).
 4. `HomePassthroughReviewCard` — PRIORITY 카운트를 받아 "SmartNoti 가 건드리지 않은 알림 N건" + "이 판단이 맞는지 검토하고 필요하면 규칙으로 만들 수 있어요" + "검토하기" 액션 라벨로 렌더. 카운트 0 일 때는 "검토 대기 알림 없음" 의 empty-state 카피로 전환. 카드 전체를 탭하면 `onPriorityClick` → `Routes.Priority.route` 로 이동 (검토 화면, → [priority-inbox](priority-inbox.md)). Rules UX v2 Phase A 이후 Priority 가 BottomNav 에서 제거되면서, 이 카드가 검토 화면으로 진입하는 유일한 UI 엔트리 포인트.
 5. `HomeNotificationAccessCard` — `HomeNotificationAccessSummaryBuilder` 결과로 리스너 연결 상태 + 최근 캡처 현황.
 6. `QuickActionCard` × 2 — "중요 알림 지금 봐야 할 알림 N개" / "정리함 묶인 알림 N개" ("열기" 탭 시 각 탭으로 이동). 중요 알림 카드 역시 검토 화면으로 연결됨 (passthrough review card 와 동일 route).
@@ -81,3 +81,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: Rules UX v2 Phase A shipped (PR #140/#141/#142/#143). Home 에 `HomePassthroughReviewCard` 가 StatPill 아래에 마운트되어 PRIORITY count 를 표시하고 탭 시 검토 화면으로 이동. Priority 는 더 이상 BottomNav 탭이 아니며, 이 카드가 검토 화면 유일한 UI 엔트리. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase A
+- 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Home 의 기본 뷰에서 제외되도록 배선 — StatPill / 최근 알림 리스트 / QuickActionCard / Insight/Timeline 집계 모두 `observePriority` · `observeDigest` · `observeAllFiltered` 를 사용하므로 `status=IGNORE` row 는 자동 필터 아웃. `SuppressionInsightsBuilder` / `InsightDrillDownSummaryBuilder` 는 `ignoredCount` 를 별도 스트림으로 계산해 DIGEST/SILENT 와 분리 집계 (#185 `9a5b4b9`, plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6). IGNORE row 는 [ignored-archive](ignored-archive.md) 에서만 노출. `last-verified` 는 ADB 검증 전까지 bump 하지 않음.

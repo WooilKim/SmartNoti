@@ -30,6 +30,7 @@ SILENT 로 분류된 알림을 **보관 중** (`SilentMode.ARCHIVED`) / **처리
 4. 구독 결과 `filteredNotifications` 에 `toHiddenGroups(hidePersistentNotifications = false, silentModeFilter = ...)` 를 두 번 적용해 탭별 그룹을 만든다:
    - `silentModeFilter = SilentMode.ARCHIVED` → 보관 중 탭 그룹 (`archivedGroups`)
    - `silentModeFilter = SilentMode.PROCESSED` → 처리됨 탭 그룹 (`processedGroups`). `toHiddenGroups` 규약상 `silentMode == null` legacy row 도 이 필터에 포함된다 (마이그레이션 결정).
+   - IGNORE row 는 `toHiddenGroups` 가 `status == SILENT` 로 선필터하므로 두 탭 어느 쪽에도 포함되지 않음 — 오직 [ignored-archive](ignored-archive.md) 에서만 노출.
 5. 탭 상태는 `rememberSaveable { HiddenTab.Archived }` — 기본은 "보관 중".
 6. 상단 영역:
    - 뒤로가기 `IconButton`
@@ -125,3 +126,4 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 2026-04-21: tray 그룹 summary deep-link 필터 지원 — `Routes.Hidden` 에 `sender` / `packageName` 쿼리 추가, `HiddenNotificationsScreen` 이 `initialFilter` 로 Archived 탭 자동 선택 + 해당 그룹 스크롤/하이라이트. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 4.
 - 2026-04-21: Trigger 섹션을 세 가지 진입 경로 (루트 요약 · 그룹 summary 딥링크 · Android SystemUI 의 in-tray children 펼침) 로 정리하고, 그룹 summary 경로가 `DEEP_LINK_SENDER` / `DEEP_LINK_PACKAGE_NAME` extra 를 어떻게 `Routes.Hidden.create(...)` URL 로 재구성하는지 명시. silent-auto-hide 의 재작성된 Observable steps 5~9 와 용어/채널명 정렬. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 5.
 - 2026-04-21: **"보관 중" 탭이 실제로 채워지기 시작 (drift fix)** — listener 가 신규 SILENT 캡처 시 `silentMode = ARCHIVED` 로 저장하도록 배선되어 (PR #125) Hidden "보관 중" 탭이 기본 경로에서 채워진다. Detail "처리 완료로 표시" 는 DB flip 에 더해 tray 원본 cancel 까지 연계되어 (PR #126) 사용자 체감 "처리 = tray 에서 사라짐" 과 일치. Known gap "Capture 경로의 ARCHIVED 기본값 미배선 여파" 해소. 관련 plan: `docs/plans/2026-04-20-silent-archive-drift-fix.md` Task 1–3.
+- 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Hidden 의 보관/처리 두 탭에서 모두 제외됨을 명시 — `toHiddenGroups` 가 이미 `status == SILENT` 로 선필터하므로 자동 배제, IGNORE row 는 [ignored-archive](ignored-archive.md) 전용. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
