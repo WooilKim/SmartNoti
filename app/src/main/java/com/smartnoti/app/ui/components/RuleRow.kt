@@ -2,14 +2,18 @@ package com.smartnoti.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
@@ -26,6 +30,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.RuleActionUi
@@ -112,8 +120,17 @@ fun RuleRow(
             HorizontalDivider(color = BorderSubtle.copy(alpha = 0.9f))
             Row(
                 horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                // Drag handle. Long-press + vertical drag repeatedly invokes
+                // the same move callbacks as the arrow buttons, so storage
+                // stays tier-aware (plan rules-ux-v2-inbox-restructure Phase
+                // C Task 5 — see `moveRule` in RulesRepository).
+                RuleRowDragHandle(
+                    onMoveUp = onMoveUpClick,
+                    onMoveDown = onMoveDownClick,
+                )
                 CompactIconButton(onClick = onMoveUpClick) {
                     Icon(
                         Icons.Outlined.KeyboardArrowUp,
@@ -213,6 +230,67 @@ private fun CompactIconButton(
         content()
     }
 }
+
+/**
+ * Long-press-and-drag handle for tier-aware reordering (plan
+ * `rules-ux-v2-inbox-restructure` Phase C Task 5). The handle runs the same
+ * `onMoveUp` / `onMoveDown` callbacks as the arrow buttons, which in turn hit
+ * `RulesRepository.moveRule` — so tier guards live in one place and drag can
+ * never split a base from its overrides or reparent an override into another
+ * base's group.
+ *
+ * Gesture model:
+ *  - Long-press to start (gives haptic-adjacent feel, avoids competing with
+ *    LazyColumn scroll).
+ *  - Each [DRAG_STEP_DP] of vertical travel triggers one move in the
+ *    corresponding direction — cumulative drags ratchet the row through the
+ *    list tier-by-tier.
+ */
+@Composable
+private fun RuleRowDragHandle(
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    val density = LocalDensity.current
+    val stepPx = with(density) { DRAG_STEP_DP.dp.toPx() }
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .semantics { contentDescription = "드래그해서 순서 바꾸기" }
+            .pointerInput(onMoveUp, onMoveDown) {
+                var accumulated = 0f
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { accumulated = 0f },
+                    onDragEnd = { accumulated = 0f },
+                    onDragCancel = { accumulated = 0f },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        accumulated += dragAmount.y
+                        while (accumulated <= -stepPx) {
+                            onMoveUp()
+                            accumulated += stepPx
+                        }
+                        while (accumulated >= stepPx) {
+                            onMoveDown()
+                            accumulated -= stepPx
+                        }
+                    },
+                )
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Outlined.DragHandle,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+// Each full-step vertical drag swaps the row with its same-tier neighbor.
+// 48dp roughly matches a card's vertical rhythm — small enough for precise
+// control, large enough that accidental jitter doesn't ratchet.
+private const val DRAG_STEP_DP = 48
 
 private fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.PERSON -> "사람"
