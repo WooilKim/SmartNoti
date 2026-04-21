@@ -86,8 +86,10 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - 재분류 시 토스트/확인 UI 없음 (상태만 바뀌어 UX 가 조용함).
 - Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Rules 탭으로 수동 이동 필요.
+- 2026-04-21 (journey-tester): Verification recipe step 3 ("다음 동일 signature 알림을 보내 자동 Priority 로 분류되는지 확인") 이 테스트용 sender 로 `"광고"` 를 제안 — 이 값은 온보딩이 기본 주입하는 KEYWORD 룰 (`광고,프로모션,쿠폰,세일,특가,이벤트,혜택 → DIGEST`) 의 매치 대상과 겹쳐 `RuleConflictResolver` 가 PERSON-ALWAYS_PRIORITY 대신 KEYWORD-DIGEST 로 라우팅하므로 step 3 만 단독으로 보면 기대와 달라 보인다. PERSON 분기 자체는 중립 sender (e.g. `TestSender_0421_T12`) 로 검증 시 정상 동작하므로 contract 문제 아님 — recipe 문구를 중립 sender 기반으로 바꾸는 편이 후속 재현성 향상에 도움. (Phase B `ruleHitIds` 를 활용한 "적용된 규칙" 섹션 전용 관측으로 확장되면 자연스레 해소될 가능성 있음.)
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: v1 loop re-verification (emulator-5554) — Digest 카드 탭 경로로 Observable steps 1~5 전부 관측, 액션 버튼 3종 존재 확인
+- 2026-04-21: journey-tester end-to-end re-verify (emulator-5554, APK `lastUpdateTime=2026-04-21 15:47:57`) — `cmd notification post -S bigtext -t '광고' DetailTest_0421 '오늘의 이벤트 테스트'` → DIGEST 분류 → Digest 탭 → 프리뷰 row 탭 → Detail 진입. Observable steps 1–4 의 모든 섹션 (알림 요약 / `StatusBadge=Digest` / "왜 이렇게 처리됐나요?" + 5개 chip / 온보딩 추천 카드 / 전달 모드 5개 라벨 / 원본 상태+대체 알림 / "이 알림 학습시키기" 3 버튼) 전부 렌더 확인. "중요로 고정" 탭 → DB row `status=PRIORITY` 로 업데이트, `RulesRepository` 에 `person:광고|광고|항상 바로 보기|PERSON|ALWAYS_PRIORITY` 신규 upsert (Observable step 5.i–iv 증명). PERSON→ALWAYS_PRIORITY 자동 적용은 별도 sender (`TestSender_0421_T12`) 로 확인 — 동일 sender 재-post 시 `reasonTags` 에 sender 레이블 + "사용자 규칙" 태그 + `status=PRIORITY` 반영. DRIFT 없음.
