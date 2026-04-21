@@ -54,6 +54,7 @@ import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import com.smartnoti.app.ui.components.RuleRow
+import com.smartnoti.app.ui.components.RuleRowPresentation
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
@@ -78,6 +79,7 @@ fun RulesScreen(
     val listPresentationBuilder = remember { RuleListPresentationBuilder() }
     val listFilterApplicator = remember { RuleListFilterApplicator() }
     val listGroupingBuilder = remember { RuleListGroupingBuilder() }
+    val listHierarchyBuilder = remember { RuleListHierarchyBuilder() }
     val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -236,7 +238,20 @@ fun RulesScreen(
                     subtitle = group.subtitle,
                 )
             }
-            items(group.rules, key = { it.id }) { rule ->
+            // Tree-per-group: base rules keep their override children nested
+            // with an indent + "이 규칙의 예외" banner (Phase C Task 3).
+            val hierarchy = listHierarchyBuilder.build(
+                visibleRules = group.rules,
+                allRules = rules,
+            )
+            val flattenedNodes = hierarchy.flatMap { node ->
+                listOf(node to 0) + node.children.map { child -> child to 1 }
+            }
+            items(
+                items = flattenedNodes,
+                key = { (node, _) -> node.rule.id },
+            ) { (node, depth) ->
+                val rule = node.rule
                 val isHighlighted = rule.id == highlightedRuleId
                 val highlightColor by animateColorAsState(
                     targetValue = if (isHighlighted) {
@@ -247,16 +262,24 @@ fun RulesScreen(
                     animationSpec = tween(durationMillis = 400),
                     label = "ruleHighlight",
                 )
+                val baseTitle = (node.overrideState as? RuleOverrideState.Override)
+                    ?.baseRuleId
+                    ?.let { baseId -> rules.firstOrNull { it.id == baseId }?.title }
+                val presentation = ruleRowPresentationFor(node = node, baseTitle = baseTitle)
                 Column(
-                    modifier = if (isHighlighted) {
-                        Modifier.border(
-                            width = 2.dp,
-                            color = highlightColor,
-                            shape = RoundedCornerShape(16.dp),
-                        )
-                    } else {
-                        Modifier
-                    },
+                    modifier = Modifier
+                        .padding(start = (depth * 16).dp)
+                        .let { mod ->
+                            if (isHighlighted) {
+                                mod.border(
+                                    width = 2.dp,
+                                    color = highlightColor,
+                                    shape = RoundedCornerShape(16.dp),
+                                )
+                            } else {
+                                mod
+                            }
+                        },
                 ) {
                     RuleRow(
                         rule = rule,
@@ -272,7 +295,8 @@ fun RulesScreen(
                         onEditClick = { startEdit(rule) },
                         onDeleteClick = {
                             scope.launch { repository.deleteRule(rule.id) }
-                        }
+                        },
+                        presentation = presentation,
                     )
                 }
             }
@@ -594,3 +618,26 @@ private fun matchLabelFor(type: RuleTypeUi): String = when (type) {
 // rule. Kept short enough that the user's attention snaps to the row without
 // feeling obstructive.
 private const val HIGHLIGHT_FLASH_DURATION_MILLIS = 1800L
+
+private fun ruleRowPresentationFor(
+    node: RuleListNode,
+    baseTitle: String?,
+): RuleRowPresentation {
+    val broken = node.brokenReason
+    if (broken != null) {
+        return RuleRowPresentation.BrokenOverride(
+            reasonMessage = when (broken) {
+                RuleOverrideBrokenReason.SelfReference ->
+                    "이 규칙은 자기 자신을 예외로 지정해 동작하지 않아요."
+                is RuleOverrideBrokenReason.BaseMissing ->
+                    "기준이 되는 규칙이 삭제돼 예외가 동작하지 않아요."
+                is RuleOverrideBrokenReason.BaseIsOverride ->
+                    "다른 예외의 예외로 지정돼 있어 동작하지 않아요."
+            },
+        )
+    }
+    return when (node.overrideState) {
+        RuleOverrideState.Base -> RuleRowPresentation.Base
+        is RuleOverrideState.Override -> RuleRowPresentation.Override(baseTitle = baseTitle)
+    }
+}

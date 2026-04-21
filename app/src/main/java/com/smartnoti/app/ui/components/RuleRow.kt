@@ -33,6 +33,18 @@ import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.ui.theme.BorderSubtle
 
+/**
+ * Presentation flavor for [RuleRow]. Defaults to [Base]; Phase C hierarchical
+ * rendering passes [Override] for nested child rows and [BrokenOverride] when
+ * the base can't be resolved (see plan `rules-ux-v2-inbox-restructure` Phase C
+ * Task 3).
+ */
+sealed interface RuleRowPresentation {
+    data object Base : RuleRowPresentation
+    data class Override(val baseTitle: String?) : RuleRowPresentation
+    data class BrokenOverride(val reasonMessage: String) : RuleRowPresentation
+}
+
 @Composable
 fun RuleRow(
     rule: RuleUiModel,
@@ -41,6 +53,7 @@ fun RuleRow(
     onMoveDownClick: () -> Unit = {},
     onEditClick: () -> Unit = {},
     onDeleteClick: () -> Unit = {},
+    presentation: RuleRowPresentation = RuleRowPresentation.Base,
 ) {
     val description = rememberRuleRowDescription(rule)
     Card(
@@ -54,6 +67,7 @@ fun RuleRow(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            RuleRowPresentationBanner(presentation = presentation)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -129,6 +143,45 @@ fun RuleRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RuleRowPresentationBanner(presentation: RuleRowPresentation) {
+    when (presentation) {
+        RuleRowPresentation.Base -> Unit
+        is RuleRowPresentation.Override -> {
+            val baseSuffix = presentation.baseTitle
+                ?.takeIf { it.isNotBlank() }
+                ?.let { " · $it" }
+                .orEmpty()
+            Text(
+                text = "이 규칙의 예외$baseSuffix",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(999.dp),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
+        is RuleRowPresentation.BrokenOverride -> {
+            Text(
+                text = presentation.reasonMessage,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(999.dp),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
         }
     }
 }
