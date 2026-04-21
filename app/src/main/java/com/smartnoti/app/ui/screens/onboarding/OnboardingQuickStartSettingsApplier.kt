@@ -115,6 +115,7 @@ class OnboardingQuickStartSettingsApplier(
                 NotificationDecision.PRIORITY -> null
                 NotificationDecision.DIGEST,
                 NotificationDecision.SILENT,
+                NotificationDecision.IGNORE,
                 -> notification.packageName.takeIf(String::isNotBlank)
             }
         }

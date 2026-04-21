@@ -45,7 +45,7 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     title = title,
     body = body,
     receivedAtLabel = "방금",
-    status = NotificationStatusUi.valueOf(status),
+    status = status.toNotificationStatusUi(),
     reasonTags = reasonTags.takeIf { it.isNotBlank() }?.split("|") ?: emptyList(),
     score = score,
     isBundled = isBundled,
@@ -66,6 +66,25 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
         ?.filter(String::isNotEmpty)
         ?: emptyList(),
 )
+
+/**
+ * Parses the persisted `status` column into [NotificationStatusUi] with a
+ * defensive SILENT fallback.
+ *
+ * Rationale (plan `2026-04-21-ignore-tier-fourth-decision` Task 2): the
+ * column is a free-form string and the enum set now includes `IGNORE`. A
+ * future tier expansion on a newer build writing into a DB that is later
+ * opened by an older build (e.g. downgrade debug install) would previously
+ * throw `IllegalArgumentException` on `valueOf` and crash the repository.
+ * Falling back to `SILENT` keeps the row visible in the Hidden tab rather
+ * than losing it — SILENT is the quietest existing tier that still surfaces
+ * the row, which matches the "no data loss, degrade to the least intrusive
+ * bucket" contract.
+ */
+private fun String.toNotificationStatusUi(): NotificationStatusUi {
+    return runCatching { enumValueOf<NotificationStatusUi>(trim()) }
+        .getOrDefault(NotificationStatusUi.SILENT)
+}
 
 private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {
     "LOUD", "HIGH" -> AlertLevel.LOUD

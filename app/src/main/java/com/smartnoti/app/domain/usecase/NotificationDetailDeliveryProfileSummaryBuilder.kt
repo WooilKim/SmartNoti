@@ -33,6 +33,13 @@ class NotificationDetailDeliveryProfileSummaryBuilder {
                 com.smartnoti.app.domain.model.NotificationDecision.SILENT -> {
                     "사용자 방해를 줄이기 위해 조용히 보관하고 필요할 때만 열어볼 수 있게 했어요."
                 }
+                // IGNORE (plan 2026-04-21-ignore-tier-fourth-decision Task 2):
+                // reachable only from the opt-in "무시된 알림 보기" archive view
+                // added in Task 6. Detail surfacing for archived IGNORE rows
+                // still needs a user-facing overview string.
+                com.smartnoti.app.domain.model.NotificationDecision.IGNORE -> {
+                    "사용자가 무시(삭제)로 지정한 알림이에요. 기본 뷰에는 나타나지 않고 감사용으로만 보관해요."
+                }
             },
         )
     }

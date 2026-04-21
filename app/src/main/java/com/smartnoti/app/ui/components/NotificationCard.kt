@@ -34,6 +34,11 @@ fun NotificationCard(
         NotificationStatusUi.PRIORITY -> PriorityContainer.copy(alpha = 0.42f) to PriorityOnContainer.copy(alpha = 0.35f)
         NotificationStatusUi.DIGEST -> DigestContainer.copy(alpha = 0.34f) to DigestOnContainer.copy(alpha = 0.28f)
         NotificationStatusUi.SILENT -> SilentContainer.copy(alpha = 0.92f) to SilentOnContainer.copy(alpha = 0.22f)
+        // IGNORE rows only surface in the opt-in archive view (Task 6 of plan
+        // `2026-04-21-ignore-tier-fourth-decision`). Reuse the SILENT palette
+        // at a lower opacity for now — the finalized neutral-gray token lands
+        // with the archive screen UI in Task 6.
+        NotificationStatusUi.IGNORE -> SilentContainer.copy(alpha = 0.60f) to SilentOnContainer.copy(alpha = 0.18f)
     }
 
     Card(

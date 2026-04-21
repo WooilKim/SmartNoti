@@ -17,6 +17,12 @@ object NotificationSuppressionPolicy {
             NotificationDecision.DIGEST,
             NotificationDecision.SILENT,
             -> true
+            // Task 4 of plan `2026-04-21-ignore-tier-fourth-decision` will add
+            // an unconditional tray-cancel for IGNORE (bypassing the
+            // suppressDigestAndSilent / suppressedApps gates). Task 2 only
+            // mirrors the SILENT behaviour here so exhaustiveness holds; the
+            // Task 4 refactor will split IGNORE into its own early branch.
+            NotificationDecision.IGNORE -> true
         }
     }
 }

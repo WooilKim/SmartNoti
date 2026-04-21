@@ -58,6 +58,12 @@ data class DeliveryProfile(
             NotificationDecision.PRIORITY -> priorityDefaults()
             NotificationDecision.DIGEST -> digestDefaults()
             NotificationDecision.SILENT -> silentDefaults()
+            // IGNORE (plan 2026-04-21-ignore-tier-fourth-decision Task 2): no
+            // replacement notification is posted for IGNORE decisions (Task 4
+            // early-returns before profile is applied). Silent defaults are
+            // the quietest legal fallback should any caller still look up a
+            // profile for an IGNORE row (e.g. Detail summary of archived row).
+            NotificationDecision.IGNORE -> silentDefaults()
         }
 
         fun priorityDefaults(): DeliveryProfile = DeliveryProfile(

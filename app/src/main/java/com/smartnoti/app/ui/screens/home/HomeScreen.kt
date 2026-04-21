@@ -274,6 +274,12 @@ internal data class HomeNotificationCounts(
                     NotificationStatusUi.PRIORITY -> priority += 1
                     NotificationStatusUi.DIGEST -> digest += 1
                     NotificationStatusUi.SILENT -> silent += 1
+                    // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6
+                    // filters IGNORE rows out of Home's source collection, so
+                    // this branch should not run in practice. It exists only
+                    // to keep the `when` exhaustive; IGNORE rows do not
+                    // contribute to the Home hero counts.
+                    NotificationStatusUi.IGNORE -> Unit
                 }
             }
 

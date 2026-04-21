@@ -34,6 +34,13 @@ class SmartNotiNotifier(
         deliveryProfile: DeliveryProfile = DeliveryProfile.defaultsFor(decision),
     ) {
         if (decision == NotificationDecision.PRIORITY) return
+        // IGNORE early-return — plan `2026-04-21-ignore-tier-fourth-decision`
+        // Task 2 seeds the guard here; Task 4 expands it into the full early
+        // path in [SmartNotiNotificationListenerService] (persist + tray
+        // cancel + no replacement alert). For Task 2 we simply refuse to
+        // post a replacement notification to keep the build green without
+        // materializing any user-visible IGNORE behaviour yet.
+        if (decision == NotificationDecision.IGNORE) return
         ensureChannels()
         val sanitizedProfile = deliveryProfile.sanitizedForDecision(decision)
         val channelSpec = ReplacementNotificationChannelRegistry.resolve(
@@ -44,6 +51,7 @@ class SmartNotiNotifier(
             NotificationDecision.DIGEST -> "Digest"
             NotificationDecision.SILENT -> "Silent"
             NotificationDecision.PRIORITY -> return
+            NotificationDecision.IGNORE -> return
         }
         val contentTitle = title.ifBlank { body.ifBlank { "$appName 알림" } }
         val contentText = ReplacementNotificationTextFormatter.explanationText(
@@ -199,6 +207,11 @@ class SmartNotiNotifier(
             label = ACTION_LABEL_KEEP_SILENT,
             action = RuleAction.SILENT,
         )
+        // No replacement alert is ever posted for IGNORE, so no "keep"
+        // quick-action is needed. Plan `2026-04-21-ignore-tier-fourth-decision`
+        // Task 2 — the wiring is finalized alongside the Detail feedback
+        // button in Task 6a.
+        NotificationDecision.IGNORE -> null
     }
 
     private fun feedbackRequestCode(notificationId: String, action: RuleAction): Int {

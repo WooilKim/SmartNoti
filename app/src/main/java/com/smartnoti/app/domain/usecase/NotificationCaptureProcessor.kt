@@ -116,6 +116,11 @@ class NotificationCaptureProcessor(
                 NotificationDecision.PRIORITY -> "즉시 확인"
                 NotificationDecision.DIGEST -> "나중에 정리"
                 NotificationDecision.SILENT -> "조용히 처리"
+                // IGNORE rows always carry a "사용자 규칙" reason tag from the
+                // rule-driven classifier hit (Task 3), so this fallback branch
+                // is effectively unreachable. Kept for exhaustiveness — plan
+                // `2026-04-21-ignore-tier-fourth-decision` Task 2.
+                NotificationDecision.IGNORE -> "무시"
             }
         }
 

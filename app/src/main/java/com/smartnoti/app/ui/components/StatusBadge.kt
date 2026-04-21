@@ -23,6 +23,10 @@ fun StatusBadge(status: NotificationStatusUi) {
         NotificationStatusUi.PRIORITY -> Triple("즉시 전달", PriorityContainer, PriorityOnContainer)
         NotificationStatusUi.DIGEST -> Triple("Digest", DigestContainer, DigestOnContainer)
         NotificationStatusUi.SILENT -> Triple("조용히 정리", SilentContainer, SilentOnContainer)
+        // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6 finalizes the
+        // neutral-gray token. Task 2 reuses the SILENT palette so the badge
+        // renders if an IGNORE row ever reaches a shared list surface.
+        NotificationStatusUi.IGNORE -> Triple("무시", SilentContainer, SilentOnContainer)
     }
     ContextBadge(
         label = label,

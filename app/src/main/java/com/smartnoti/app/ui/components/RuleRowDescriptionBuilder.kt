@@ -51,6 +51,9 @@ class RuleRowDescriptionBuilder {
         RuleActionUi.DIGEST -> "Digest로 묶어요"
         RuleActionUi.SILENT -> "조용히 정리해요"
         RuleActionUi.CONTEXTUAL -> "상황에 따라 자동 분류해요"
+        // Final copy landed in Task 5 of plan
+        // `2026-04-21-ignore-tier-fourth-decision`.
+        RuleActionUi.IGNORE -> "알림센터에서 즉시 삭제하고 앱에서도 숨겨요"
     }
 
     private fun String.toKeywordDisplay(): String = split(',').joinToString(", ") { it.trim() }

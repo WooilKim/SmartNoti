@@ -32,6 +32,9 @@ class RuleListGroupingBuilder {
         RuleActionUi.DIGEST -> "Digest"
         RuleActionUi.SILENT -> "조용히"
         RuleActionUi.CONTEXTUAL -> "상황별"
+        // Final group ordering + copy are finalized in Task 5 of plan
+        // `2026-04-21-ignore-tier-fourth-decision`.
+        RuleActionUi.IGNORE -> "무시"
     }
 
     companion object {
@@ -40,6 +43,11 @@ class RuleListGroupingBuilder {
             RuleActionUi.DIGEST,
             RuleActionUi.SILENT,
             RuleActionUi.CONTEXTUAL,
+            // IGNORE group is registered here so existing IGNORE rules surface
+            // in the list; the editor dropdown + rule-creation entry point
+            // arrive in Task 5 of plan
+            // `2026-04-21-ignore-tier-fourth-decision`.
+            RuleActionUi.IGNORE,
         )
     }
 }

@@ -42,6 +42,15 @@ internal object SourceNotificationRoutingPolicy {
                     notifyReplacementNotification = false,
                 )
             }
+            // IGNORE — plan `2026-04-21-ignore-tier-fourth-decision` Task 4
+            // will formalize the behaviour: cancel the source tray entry
+            // unconditionally (user asked to delete), never post a
+            // replacement alert. Task 2 only lines up the routing here so
+            // exhaustiveness holds.
+            NotificationDecision.IGNORE -> SourceNotificationRouting(
+                cancelSourceNotification = true,
+                notifyReplacementNotification = false,
+            )
         }
     }
 }

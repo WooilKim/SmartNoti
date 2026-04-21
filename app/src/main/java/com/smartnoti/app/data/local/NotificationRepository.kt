@@ -212,7 +212,10 @@ class NotificationRepository(
                 context,
                 SmartNotiDatabase::class.java,
                 "smartnoti.db",
-            ).fallbackToDestructiveMigration().build()
+            )
+                .addMigrations(MIGRATION_8_9)
+                .fallbackToDestructiveMigration()
+                .build()
             return NotificationRepository(db.notificationDao())
         }
     }
