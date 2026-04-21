@@ -19,6 +19,17 @@ enum class RuleMoveDirection {
     DOWN,
 }
 
+/**
+ * Reorder [ruleId] within its tier.
+ *
+ * Plan `rules-ux-v2-inbox-restructure` Phase C Task 5. A "tier" is defined as
+ * the set of rules sharing the same [RuleUiModel.overrideOf] value — base rules
+ * swap only with other bases, and overrides swap only with siblings of the same
+ * base. Cross-tier neighbors are skipped so drag-to-reorder never promotes or
+ * demotes a rule between base and override. Iteration order inside the tier is
+ * preserved so `RuleConflictResolver` tie-break (earlier = higher priority)
+ * stays meaningful after a swap.
+ */
 fun moveRule(
     rules: List<RuleUiModel>,
     ruleId: String,
@@ -27,16 +38,32 @@ fun moveRule(
     val currentIndex = rules.indexOfFirst { it.id == ruleId }
     if (currentIndex == -1) return rules
 
-    val targetIndex = when (direction) {
-        RuleMoveDirection.UP -> currentIndex - 1
-        RuleMoveDirection.DOWN -> currentIndex + 1
+    val currentRule = rules[currentIndex]
+    val tierKey = currentRule.overrideOf
+    val step = when (direction) {
+        RuleMoveDirection.UP -> -1
+        RuleMoveDirection.DOWN -> 1
     }
-    if (targetIndex !in rules.indices) return rules
 
-    val mutable = rules.toMutableList()
-    val item = mutable.removeAt(currentIndex)
-    mutable.add(targetIndex, item)
-    return mutable.toList()
+    // Walk outwards in the requested direction, skipping non-tier rows. The
+    // first same-tier rule we hit is our swap partner; if none exists, the
+    // move is a no-op.
+    var scan = currentIndex + step
+    while (scan in rules.indices) {
+        if (rules[scan].overrideOf == tierKey) {
+            val mutable = rules.toMutableList()
+            val item = mutable.removeAt(currentIndex)
+            // After removing at [currentIndex], the partner sitting at [scan]
+            // has shifted by -1 when scan > currentIndex. Inserting at [scan]
+            // therefore places the item right after the partner when moving
+            // DOWN, and right at the partner's position (displacing it by +1)
+            // when moving UP — a clean swap in both directions.
+            mutable.add(scan, item)
+            return mutable.toList()
+        }
+        scan += step
+    }
+    return rules
 }
 
 fun resolveStoredRules(encodedPayload: String?): List<RuleUiModel> {
