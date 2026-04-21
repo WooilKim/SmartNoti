@@ -63,6 +63,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — home-overview fresh APK post-IGNORE re-verify PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-overview | ✅ PASS | Target: `home-overview` 는 직전 insight-drilldown tick 이 flag 한 "Phase A/B/C + IGNORE 배선 fresh APK 에서 재검증 필요" 후보 중 하나. 설치 APK `lastUpdateTime=2026-04-22 03:46:30` (IGNORE tier 포함 빌드). Recipe: (1) `cmd notification post -S bigtext -t '엄마' HomeMom_0422 '전화 좀'` / `-t 'Coupang' HomeDeal_0422 '오늘의 딜'` / `-t '광고' HomePromo_0422 '30% 할인'` 3건 포스팅. (2) `am force-stop && am start MainActivity` cold-start. Observable steps 1–11 전부 사용자 관측 일치: ScreenHeader `SmartNoti / 중요한 알림만 먼저 보여드리고 있어요` + summary `오늘 알림 36개 중 중요한 17개를 먼저 전달했어요` + StatPill `즉시 17 / Digest 4 / 조용히 14` + HomePassthroughReviewCard (`검토 대기 17` chip + `SmartNoti 가 건드리지 않은 알림 17건` + `이 판단이 맞는지 검토하고 필요하면 규칙으로 만들 수 있어요` + `검토하기` 액션) + HomeNotificationAccessCard (`실제 알림 상태 / 연결됨 / 실제 알림이 연결되어 있어요 / 최근 실제 알림 36개가 Home에 반영됐어요 · 즉시 17개 · Digest 4개 · 조용히 14개로 분류됐어요.` + `설정에서 연결 상태 보기`) + QuickActionCard × 2 (`중요 알림 / 지금 봐야 할 알림 17개 / 열기` + `정리함 / 묶인 알림 4개 / 열기`) + QuickStartAppliedCard (`추천 3개 적용됨 / 빠른 시작 추천이 적용되어 있어요`). 스크롤 다운 후 InsightCard (`Shell 알림 18개가 가장 많이 정리됐고, 주된 이유는 '조용한 시간'` + reason chips `조용한 시간 · 18건 / 사용자 규칙 · 3건 / 프로모션 알림 · 2건`), TimelineCard (`최근 흐름 / 최근 3시간 / 최근 24시간 / 최근 3시간 기준 6개의 알림이 정리됐어요` + bucket rows `흐름 · 2시간 전` / `1시간 전` / `피크 · 방금 전`), 최근 알림 리스트 (`방금 정리된 알림 / Shell / 광고 / 30% / Digest / 발신자 있음 · 사용자 규칙 · 프로모션 알림 · 온보딩 추천`). BottomNav 4탭 (`홈 / 정리함 / 규칙 / 설정`) 관측 = Phase A 이후 Priority 탭 제거 상태 그대로 (docstep 4 "카드가 검토 화면 유일한 UI 엔트리" 계약). **IGNORE 필터 계약 증명**: DB `SELECT status, COUNT(*)` = `DIGEST 4 / IGNORE 1 / PRIORITY 17 / SILENT 15` (총 37). Home header 의 `오늘 알림 36개` = 37 - 1 IGNORE = 36 (observable step 3 의 "IGNORE 는 기본 뷰에서 제외" 계약 일치). StatPill sum `17+4+14=35` = 36 - 1 persistent SILENT (hidePersistentNotifications=true 기본값이 `android / Serial console enabled` 류 1건 필터, 기존 hidden-inbox 계약과 동일). Exit state (한 스크롤로 전체 상태 파악 + 카드/칩 탭으로 다음 journey 진입 가능) 충족. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신. Known gaps 변경 없음. |
+
+
 ### 2026-04-21 (journey-tester — hidden-inbox ADB recipe on fresh APK post-IGNORE PASS, emulator-5554)
 
 | Journey | Result | Notes |
