@@ -90,7 +90,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현 — 복구가 필요하면 Detail 로 가서 "중요로 고정" / "Digest로 보내기" / "조용히 처리" 중 하나를 눌러야 함.
 - IGNORE row 의 retention 정책 미구현 — 물리 삭제 / 오래된 row 자동 정리는 후속. Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` out-of-scope.
 - Weekly insights 에서 IGNORE 카운트가 DIGEST / SILENT 와 별도 스트림으로 노출되는지 (Insights builder contract) 는 test-level 로만 검증되고, 화면 레이블이 실제로 "삭제 N건" 같은 copy 로 분리되어 보이는지는 아직 미검증 — Task 8 verification 에서 확인 필요.
-- 2026-04-21 verification 중 "토글 OFF→ON 직후 같은 composition 에서 `무시됨 아카이브 열기` 버튼 탭" 시 navigation 그래프에 아직 route 가 등록되기 전에 `navigate()` 가 호출되어 `IllegalArgumentException: Navigation destination that matches request uri=android-app://androidx.navigation/ignored_archive cannot be found` 로 한 번 크래시함. 두 번째 시도 (토글 OFF→ON 재탭) 부터는 재현되지 않았고, 앱 재시작 후 toggle 이 이미 ON 상태에서 탭하는 경로는 항상 정상. `AppNavHost` 의 `produceState` recomposition lag 으로 보이며, race window 가 좁아 재현이 들쭉날쭉함. 사용자 입장에서는 첫 opt-in 순간에 드물게 강제종료로 보일 수 있음 — gap-planner 라우팅 후보.
+- 2026-04-21 verification 중 "토글 OFF→ON 직후 같은 composition 에서 `무시됨 아카이브 열기` 버튼 탭" 시 navigation 그래프에 아직 route 가 등록되기 전에 `navigate()` 가 호출되어 `IllegalArgumentException: Navigation destination that matches request uri=android-app://androidx.navigation/ignored_archive cannot be found` 로 한 번 크래시함. 두 번째 시도 (토글 OFF→ON 재탭) 부터는 재현되지 않았고, 앱 재시작 후 toggle 이 이미 ON 상태에서 탭하는 경로는 항상 정상. `AppNavHost` 의 `produceState` recomposition lag 으로 보이며, race window 가 좁아 재현이 들쭉날쭉함. 사용자 입장에서는 첫 opt-in 순간에 드물게 강제종료로 보일 수 있음 — gap-planner 라우팅 후보. → plan: `docs/plans/2026-04-22-ignored-archive-first-tap-nav-race.md`
 
 ## Change log
 
