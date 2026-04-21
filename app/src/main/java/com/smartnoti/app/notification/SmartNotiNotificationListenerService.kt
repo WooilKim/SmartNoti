@@ -8,7 +8,9 @@ import com.smartnoti.app.data.local.toEntity
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationUiModel
+import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.toDecision
 import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
 import com.smartnoti.app.domain.model.withContext
@@ -246,6 +248,32 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
         val decision = baseNotification.status.toDecision()
         val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
+
+        // IGNORE early-return — plan `2026-04-21-ignore-tier-fourth-decision`
+        // Task 4. The user has declared (via a RuleActionUi.IGNORE rule) that
+        // this notification is trash: delete from the source tray, never post
+        // a replacement alert, but still persist the DB row so audit /
+        // recovery / weekly-insights can see it existed. We short-circuit
+        // BEFORE the DIGEST/SILENT auto-expand, silent-mode, and
+        // suppression-state machinery because none of those user-visible
+        // surfaces apply to an IGNORE row. Default-view filtering keeps it
+        // out of Home / Hidden / Digest / Priority (Task 6). The tray cancel
+        // still runs unconditionally — the gating here matches
+        // [NotificationSuppressionPolicy.shouldSuppressSourceNotification]
+        // returning true for IGNORE regardless of the opt-in flags.
+        if (decision == NotificationDecision.IGNORE) {
+            withContext(Dispatchers.Main) {
+                cancelNotification(sbn.key)
+            }
+            val ignoredNotification = baseNotification.copy(
+                sourceSuppressionState = SourceNotificationSuppressionState.CANCEL_ATTEMPTED,
+                replacementNotificationIssued = false,
+                isPersistent = isPersistent,
+            )
+            repository.save(ignoredNotification, sbn.postTime, contentSignature)
+            return
+        }
+
         val shouldHidePersistentSourceNotification =
             (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
         val isProtectedSourceNotification = ProtectedSourceNotificationDetector.isProtected(
