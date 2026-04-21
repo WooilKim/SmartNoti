@@ -242,6 +242,76 @@ class NotificationEntityMapperTest {
     }
 
     @Test
+    fun matched_rule_ids_round_trip_as_comma_separated_string() {
+        val model = NotificationUiModel(
+            id = "com.kakao.talk:1700000700",
+            appName = "카카오톡",
+            packageName = "com.kakao.talk",
+            sender = "고객",
+            title = "고객",
+            body = "오늘 회의 시간 확인 부탁드려요",
+            receivedAtLabel = "방금",
+            status = NotificationStatusUi.PRIORITY,
+            reasonTags = listOf("사용자 규칙", "고객"),
+            matchedRuleIds = listOf("r-vip-customer", "r-keyword-urgent"),
+        )
+
+        val entity = model.toEntity(postedAtMillis = 1_700_000_700_000)
+
+        assertEquals("r-vip-customer,r-keyword-urgent", entity.ruleHitIds)
+
+        val roundTrip = entity.toUiModel()
+        assertEquals(listOf("r-vip-customer", "r-keyword-urgent"), roundTrip.matchedRuleIds)
+    }
+
+    @Test
+    fun empty_matched_rule_ids_persist_as_null_and_round_trip_to_empty_list() {
+        val model = NotificationUiModel(
+            id = "com.news.app:1700000800",
+            appName = "뉴스",
+            packageName = "com.news.app",
+            sender = null,
+            title = "속보",
+            body = "중요한 뉴스",
+            receivedAtLabel = "방금",
+            status = NotificationStatusUi.SILENT,
+            reasonTags = emptyList(),
+            matchedRuleIds = emptyList(),
+        )
+
+        val entity = model.toEntity(postedAtMillis = 1_700_000_800_000)
+
+        assertNull(entity.ruleHitIds)
+
+        val roundTrip = entity.toUiModel()
+        assertEquals(emptyList<String>(), roundTrip.matchedRuleIds)
+    }
+
+    @Test
+    fun legacy_entity_with_null_rule_hit_ids_maps_to_empty_matched_rule_ids() {
+        val entity = NotificationEntity(
+            id = "legacy-no-rule-hits",
+            appName = "앱",
+            packageName = "com.example.app",
+            sender = null,
+            title = "알림",
+            body = "내용",
+            postedAtMillis = 1_700_000_900_000,
+            status = NotificationStatusUi.SILENT.name,
+            reasonTags = "",
+            score = null,
+            isBundled = false,
+            isPersistent = false,
+            contentSignature = "알림 내용",
+            // ruleHitIds defaults to null (schema v7 row).
+        )
+
+        val model = entity.toUiModel()
+
+        assertEquals(emptyList<String>(), model.matchedRuleIds)
+    }
+
+    @Test
     fun content_signature_round_trip_is_preserved() {
         val model = NotificationUiModel(
             id = "com.news.app:1700000100",

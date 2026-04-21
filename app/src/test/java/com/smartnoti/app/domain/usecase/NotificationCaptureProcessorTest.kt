@@ -27,6 +27,59 @@ class NotificationCaptureProcessorTest {
     )
 
     @Test
+    fun matched_user_rule_id_is_threaded_through_to_ui_model() {
+        val result = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.kakao.talk",
+                appName = "카카오톡",
+                sender = "고객",
+                title = "고객",
+                body = "긴급 회의 일정 확인",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 0,
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-vip-person",
+                    title = "고객",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.PERSON,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "고객",
+                )
+            ),
+            settings = SmartNotiSettings(),
+        )
+
+        assertEquals(listOf("r-vip-person"), result.matchedRuleIds)
+    }
+
+    @Test
+    fun matched_rule_ids_empty_when_classifier_falls_back_to_internal_signal() {
+        // No user rule matches; VIP sender promotes to PRIORITY via classifier
+        // signal. matchedRuleIds must remain empty so the Detail UI can
+        // separate "SmartNoti 가 본 신호" from "적용된 규칙".
+        val result = processor.process(
+            input = CapturedNotificationInput(
+                packageName = "com.kakao.talk",
+                appName = "카카오톡",
+                sender = "엄마",
+                title = "엄마",
+                body = "오늘 저녁 몇 시에 와?",
+                postedAtMillis = 1_700_000_000_000,
+                quietHours = false,
+                duplicateCountInWindow = 0,
+            ),
+            settings = SmartNotiSettings(),
+        )
+
+        assertEquals(NotificationStatusUi.PRIORITY, result.status)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
+    }
+
+    @Test
     fun matched_user_rule_becomes_priority_with_rule_reason_tag() {
         val result = processor.process(
             input = CapturedNotificationInput(

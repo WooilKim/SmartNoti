@@ -110,7 +110,7 @@ class OnboardingQuickStartSettingsApplier(
                     hourOfDay = DEFAULT_CLASSIFICATION_HOUR,
                 ),
                 rules = mergedRules,
-            )
+            ).decision
             when (decision) {
                 NotificationDecision.PRIORITY -> null
                 NotificationDecision.DIGEST,

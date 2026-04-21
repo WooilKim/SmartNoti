@@ -38,7 +38,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.DIGEST, result)
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+        assertEquals(listOf("r-schedule"), result.matchedRuleIds)
     }
 
     @Test
@@ -63,7 +64,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.SILENT, result)
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(listOf("r-night"), result.matchedRuleIds)
     }
 
     @Test
@@ -98,7 +100,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.DIGEST, result)
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+        assertEquals(listOf("r-digest"), result.matchedRuleIds)
     }
 
     @Test
@@ -122,7 +125,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.PRIORITY, result)
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(listOf("r1"), result.matchedRuleIds)
     }
 
     @Test
@@ -146,7 +150,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.PRIORITY, result)
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(listOf("r-keywords"), result.matchedRuleIds)
     }
 
     @Test
@@ -169,7 +174,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.SILENT, result)
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
     @Test
@@ -182,7 +188,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.PRIORITY, result)
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
     @Test
@@ -194,7 +201,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.PRIORITY, result)
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
     @Test
@@ -207,7 +215,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.DIGEST, result)
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
     @Test
@@ -220,7 +229,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.DIGEST, result)
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
     @Test
@@ -244,7 +254,8 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.PRIORITY, result)
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(listOf("r-repeat-priority"), result.matchedRuleIds)
     }
 
     @Test
@@ -256,6 +267,61 @@ class NotificationClassifierTest {
             )
         )
 
-        assertEquals(NotificationDecision.SILENT, result)
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
+    }
+
+    @Test
+    fun matched_rule_id_is_reported_even_when_classifier_signal_would_also_fire() {
+        // VIP sender would otherwise promote to PRIORITY on its own, but a
+        // matching user rule still takes precedence and its id is returned.
+        val result = classifier.classify(
+            input = ClassificationInput(
+                sender = "엄마",
+                packageName = "com.kakao.talk",
+                body = "오늘 저녁 몇 시에 와?",
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-person-mom",
+                    title = "엄마",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.PERSON,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "엄마",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+        assertEquals(listOf("r-person-mom"), result.matchedRuleIds)
+    }
+
+    @Test
+    fun no_rule_match_returns_empty_matched_rule_ids_when_rules_are_defined() {
+        // A rule is present but does not match. matchedRuleIds must be empty,
+        // so downstream persistence (ruleHitIds) does not conflate classifier
+        // signals with rule hits.
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.social.app",
+                body = "새로운 좋아요가 도착했어요",
+            ),
+            rules = listOf(
+                RuleUiModel(
+                    id = "r-unmatched",
+                    title = "업무 키워드",
+                    subtitle = "항상 바로 보기",
+                    type = RuleTypeUi.KEYWORD,
+                    action = RuleActionUi.ALWAYS_PRIORITY,
+                    enabled = true,
+                    matchValue = "배포,장애",
+                )
+            )
+        )
+
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 }

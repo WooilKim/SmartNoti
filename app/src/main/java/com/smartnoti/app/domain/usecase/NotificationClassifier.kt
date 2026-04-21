@@ -1,6 +1,7 @@
 package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.ClassificationInput
+import com.smartnoti.app.domain.model.NotificationClassification
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
@@ -14,29 +15,32 @@ class NotificationClassifier(
     fun classify(
         input: ClassificationInput,
         rules: List<RuleUiModel> = emptyList(),
-    ): NotificationDecision {
+    ): NotificationClassification {
         findMatchingRule(input, rules)?.let { rule ->
-            return rule.action.toDecision()
+            return NotificationClassification(
+                decision = rule.action.toDecision(),
+                matchedRuleIds = listOf(rule.id),
+            )
         }
 
         if (input.sender != null && input.sender in vipSenders) {
-            return NotificationDecision.PRIORITY
+            return NotificationClassification(NotificationDecision.PRIORITY)
         }
 
         val content = listOf(input.title, input.body).joinToString(" ")
         if (priorityKeywords.any { keyword -> content.contains(keyword, ignoreCase = true) }) {
-            return NotificationDecision.PRIORITY
+            return NotificationClassification(NotificationDecision.PRIORITY)
         }
 
         if (input.packageName in shoppingPackages && input.quietHours) {
-            return NotificationDecision.DIGEST
+            return NotificationClassification(NotificationDecision.DIGEST)
         }
 
         if (input.duplicateCountInWindow >= 3) {
-            return NotificationDecision.DIGEST
+            return NotificationClassification(NotificationDecision.DIGEST)
         }
 
-        return NotificationDecision.SILENT
+        return NotificationClassification(NotificationDecision.SILENT)
     }
 
     private fun findMatchingRule(

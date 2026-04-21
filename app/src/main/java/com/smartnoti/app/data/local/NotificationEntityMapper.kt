@@ -34,6 +34,7 @@ fun NotificationUiModel.toEntity(
     replacementNotificationIssued = replacementNotificationIssued,
     silentMode = silentMode?.name,
     sourceEntryKey = sourceEntryKey,
+    ruleHitIds = matchedRuleIds.takeIf { it.isNotEmpty() }?.joinToString(","),
 )
 
 fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
@@ -59,6 +60,11 @@ fun NotificationEntity.toUiModel(): NotificationUiModel = NotificationUiModel(
     postedAtMillis = postedAtMillis,
     silentMode = silentMode?.toSilentMode(),
     sourceEntryKey = sourceEntryKey,
+    matchedRuleIds = ruleHitIds
+        ?.split(',')
+        ?.map(String::trim)
+        ?.filter(String::isNotEmpty)
+        ?: emptyList(),
 )
 
 private fun String.toAlertLevel(): AlertLevel = when (trim().uppercase()) {
