@@ -30,6 +30,20 @@ class NotificationRepository(
         notifications.filterPersistent(hidePersistentNotifications)
     }
 
+    /**
+     * Returns IGNORE-status rows sorted newest-first — the feed for the
+     * opt-in 무시됨 아카이브 screen (plan
+     * `2026-04-21-ignore-tier-fourth-decision` Task 6). All other default
+     * inbox flows (`observePriority` / `observeDigest` / `observeDigestGroups`
+     * / `toHiddenGroups`) filter IGNORE out, so this is the sole surface path
+     * to IGNORE rows.
+     */
+    fun observeIgnoredArchive(): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
+        notifications
+            .filter { it.status == NotificationStatusUi.IGNORE }
+            .sortedByDescending { it.postedAtMillis }
+    }
+
     fun observePriority(): Flow<List<NotificationUiModel>> = observeAll().map { notifications ->
         notifications.toPriorityNotifications(hidePersistentNotifications = false)
     }

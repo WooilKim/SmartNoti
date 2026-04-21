@@ -44,6 +44,7 @@ class SettingsRepository private constructor(
                 hidePersistentNotifications = prefs[HIDE_PERSISTENT_NOTIFICATIONS] ?: defaults.hidePersistentNotifications,
                 hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
                 protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
+                showIgnoredArchive = prefs[SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
             )
         }
     }
@@ -119,6 +120,20 @@ class SettingsRepository private constructor(
     suspend fun setProtectCriticalPersistentNotifications(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] = enabled
+        }
+    }
+
+    /**
+     * Opt-in toggle for the 무시됨 아카이브 screen (plan
+     * `2026-04-21-ignore-tier-fourth-decision` Task 6). Default OFF: when
+     * false, the archive route is absent from the nav graph entirely so
+     * IGNORE rows stay invisible. Turning it on adds a conditional nav entry
+     * in Settings; it does not alter the classifier or the repository write
+     * path — IGNORE rows are always persisted.
+     */
+    suspend fun setShowIgnoredArchive(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[SHOW_IGNORED_ARCHIVE] = enabled
         }
     }
 
@@ -233,6 +248,7 @@ class SettingsRepository private constructor(
         private val HIDE_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_notifications")
         private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
         private val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("protect_critical_persistent_notifications")
+        private val SHOW_IGNORED_ARCHIVE = booleanPreferencesKey("show_ignored_archive")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         private val ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING =
             booleanPreferencesKey("onboarding_active_notification_bootstrap_pending")

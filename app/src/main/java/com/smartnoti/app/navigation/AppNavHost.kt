@@ -35,6 +35,7 @@ import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenDeepLinkFilterResolver
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.home.HomeScreen
+import com.smartnoti.app.ui.screens.ignored.IgnoredArchiveScreen
 import com.smartnoti.app.ui.screens.onboarding.OnboardingScreen
 import com.smartnoti.app.ui.screens.priority.PriorityScreen
 import com.smartnoti.app.ui.screens.rules.RulesScreen
@@ -64,6 +65,15 @@ fun AppNavHost(
                 .background(MaterialTheme.colorScheme.background)
         )
         return
+    }
+
+    // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: the 무시됨 아카이브
+    // route is only registered in the nav graph when the opt-in toggle is on.
+    // We observe a minimal flat Boolean here so the nav host re-composes when
+    // the user flips the toggle in Settings; callers that need full settings
+    // state still read SettingsRepository.observeSettings() directly.
+    val showIgnoredArchive: Boolean by produceState(initialValue = false, settings) {
+        settings.observeSettings().collect { value = it.showIgnoredArchive }
     }
 
     val navController = rememberNavController()
@@ -233,7 +243,28 @@ fun AppNavHost(
                 SettingsScreen(
                     contentPadding = paddingValues,
                     onInsightClick = { navController.navigate(it) },
+                    onOpenIgnoredArchive = if (showIgnoredArchive) {
+                        {
+                            navController.navigate(Routes.IgnoredArchive.route) {
+                                launchSingleTop = true
+                            }
+                        }
+                    } else {
+                        null
+                    },
                 )
+            }
+            if (showIgnoredArchive) {
+                // Conditional route — absent when the Settings toggle is off,
+                // so the archive is unreachable by any in-app path until the
+                // user opts in (plan `2026-04-21-ignore-tier-fourth-decision`
+                // Task 6).
+                composable(Routes.IgnoredArchive.route) {
+                    IgnoredArchiveScreen(
+                        contentPadding = paddingValues,
+                        onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    )
+                }
             }
             composable(
                 route = Routes.Hidden.route,

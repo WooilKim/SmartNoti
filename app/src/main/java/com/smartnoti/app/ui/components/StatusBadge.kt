@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.ui.theme.DigestContainer
 import com.smartnoti.app.ui.theme.DigestOnContainer
+import com.smartnoti.app.ui.theme.IgnoreContainer
+import com.smartnoti.app.ui.theme.IgnoreOnContainer
 import com.smartnoti.app.ui.theme.PriorityContainer
 import com.smartnoti.app.ui.theme.PriorityOnContainer
 import com.smartnoti.app.ui.theme.SilentContainer
@@ -23,10 +25,11 @@ fun StatusBadge(status: NotificationStatusUi) {
         NotificationStatusUi.PRIORITY -> Triple("즉시 전달", PriorityContainer, PriorityOnContainer)
         NotificationStatusUi.DIGEST -> Triple("Digest", DigestContainer, DigestOnContainer)
         NotificationStatusUi.SILENT -> Triple("조용히 정리", SilentContainer, SilentOnContainer)
-        // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6 finalizes the
-        // neutral-gray token. Task 2 reuses the SILENT palette so the badge
-        // renders if an IGNORE row ever reaches a shared list surface.
-        NotificationStatusUi.IGNORE -> Triple("무시", SilentContainer, SilentOnContainer)
+        // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: IGNORE uses a
+        // dedicated neutral-gray token (distinct from SILENT blue-gray) so the
+        // opt-in archive row communicates "suppressed further than SILENT"
+        // without introducing a new accent colour.
+        NotificationStatusUi.IGNORE -> Triple("무시됨", IgnoreContainer, IgnoreOnContainer)
     }
     ContextBadge(
         label = label,

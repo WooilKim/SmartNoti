@@ -80,6 +80,12 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     contentPadding: PaddingValues,
     onInsightClick: (String) -> Unit,
+    // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: non-null only
+    // when the `showIgnoredArchive` toggle is on — Settings surfaces the
+    // archive entry row conditionally on this callback. AppNavHost owns the
+    // route registration so this screen does not depend on nav routes
+    // directly.
+    onOpenIgnoredArchive: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
@@ -234,12 +240,57 @@ fun SettingsScreen(
             )
         }
         item {
+            IgnoredArchiveSettingsCard(
+                showIgnoredArchive = settings.showIgnoredArchive,
+                onShowIgnoredArchiveChange = { enabled ->
+                    scope.launch { repository.setShowIgnoredArchive(enabled) }
+                },
+                onOpenIgnoredArchive = onOpenIgnoredArchive,
+            )
+        }
+        item {
             NotificationAccessCard(
                 summary = notificationAccessSummary,
                 onOpenSettings = {
                     openNotificationAccessSettings(context)
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun IgnoredArchiveSettingsCard(
+    showIgnoredArchive: Boolean,
+    onShowIgnoredArchiveChange: (Boolean) -> Unit,
+    onOpenIgnoredArchive: (() -> Unit)? = null,
+) {
+    // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6. The toggle is the
+    // sole way for users to surface IGNORE rows — rows are persisted
+    // regardless, but the archive screen is only reachable when this is on.
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        SettingsCardHeader(
+            eyebrow = "무시됨",
+            title = "무시된 알림 보기",
+            subtitle = "IGNORE 규칙으로 즉시 정리한 알림은 기본 뷰에서 제외돼요. 필요할 때만 켜서 아카이브를 확인하세요.",
+        )
+        SettingsToggleRow(
+            title = "무시된 알림 아카이브 표시",
+            checked = showIgnoredArchive,
+            onCheckedChange = onShowIgnoredArchiveChange,
+            subtitle = if (showIgnoredArchive) {
+                "아래 버튼으로 아카이브 화면을 열 수 있어요."
+            } else {
+                "켜면 설정 화면에 아카이브 진입 버튼이 나타나요. 알림 분류 동작은 바뀌지 않아요."
+            },
+        )
+        if (showIgnoredArchive && onOpenIgnoredArchive != null) {
+            OutlinedButton(
+                onClick = onOpenIgnoredArchive,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("무시됨 아카이브 열기")
+            }
         }
     }
 }
