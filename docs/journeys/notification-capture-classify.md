@@ -22,6 +22,12 @@ last-verified: 2026-04-21
 ## Observable steps
 
 1. `SmartNotiNotificationListenerService.onNotificationPosted(sbn)` 수신.
+   (대체 경로: 리스너가 방금 bind 되었다면 `onListenerConnected` 가 먼저 발화해
+   `enqueueOnboardingBootstrapCheck` 뒤에 `enqueueReconnectSweep` 을 돌린다.
+   sweep 은 `activeNotifications` 중 이미 `NotificationRepository` 에 저장된
+   `(packageName, contentSignature, postTime)` 를 skip 하고 나머지를 아래
+   `processNotification` 경로로 재주입한다. 자세한 계약은
+   [onboarding-bootstrap](onboarding-bootstrap.md) 참고.)
 2. `processNotification(sbn)`이 serviceScope(IO dispatcher)에서 launch 됨.
 3. Extras 에서 `EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_CONVERSATION_TITLE` 을 꺼내 title / body / sender 복원. PackageManager 로 appName 조회.
 4. `RulesRepository.currentRules()` / `SettingsRepository.observeSettings().first()` 로 현재 룰/설정 스냅샷 확보.
@@ -50,6 +56,11 @@ last-verified: 2026-04-21
 ## Code pointers
 
 - `SmartNotiNotificationListenerService#onNotificationPosted` — entry
+- `SmartNotiNotificationListenerService#enqueueReconnectSweep` — 매 reconnect 시
+  활성 알림 tray 재-스윕 트리거 (온보딩 bootstrap 이 pending 이면 대기)
+- `notification/ListenerReconnectActiveNotificationSweepCoordinator` —
+  `SweepDedupKey(packageName, contentSignature, postTimeMillis)` 로 in-process
+  Set + `NotificationRepository.existsByContentSignature` 조합 dedup
 - `SmartNotiNotificationListenerService#processNotification` — pipeline
 - `domain/usecase/NotificationCaptureProcessor` — input → decision
 - `domain/usecase/NotificationClassifier` — 분류 규칙 본체 (VIP/키워드/shopping 상수도 이곳 생성자에 주입)
@@ -82,10 +93,13 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- 서비스가 disconnect 된 동안 게시된 알림은 놓칠 수 있음. 최초 온보딩에 한해 [onboarding-bootstrap](onboarding-bootstrap.md) 이 `activeNotifications` 로 보완.
-- 일반 재접속(예: 권한 토글) 시점의 누락은 현재 보완 경로 없음. → plan: [`docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`](../plans/2026-04-21-listener-reconnect-active-notification-sweep.md)
+- 서비스가 disconnect 된 동안 시스템이 이미 dismiss 한 알림은 `activeNotifications`
+  에 없으므로 SmartNoti 가 복구할 수 없음. 리스너가 재접속 시점에 tray 에 남아 있는
+  알림만 [onboarding-bootstrap](onboarding-bootstrap.md) bootstrap + reconnect sweep
+  이 소급 캡처.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: v1 loop re-verification sweep — PRIORITY 키워드 posting 이 Home StatPill 까지 end-to-end 반영됨 확인 (자세한 증거는 `docs/journeys/README.md` Verification log)
+- 2026-04-21: `onListenerConnected` 재접속마다 `enqueueReconnectSweep` 가 돌도록 파이프라인 확장. 리스너가 꺼져 있는 동안 tray 에 쌓였다가 살아남은 알림은 `ListenerReconnectActiveNotificationSweepCoordinator` 가 `SweepDedupKey` + `NotificationRepository.existsByContentSignature` 로 dedup 해 `processNotification` 에 재주입. 온보딩 bootstrap 경로는 그대로 유지 (plan `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`, PR #94 / #102 / #104)

@@ -82,7 +82,7 @@ created: 2026-04-21
 1. 온보딩 bootstrap 이 실행되는 reconnect 에서는 sweep 을 **즉시** 실행하지 않고, bootstrap 완료 후 1회만 실행 (또는 bootstrap 이 처리한 집합을 sweep 이 dedup 로 자동 skip).
 2. 단위 테스트에서 시나리오 커버 (Task 1 의 케이스 4).
 
-### Task 4: Journey 문서 갱신
+### Task 4: Journey 문서 갱신 [IN PROGRESS via PR #TBD]
 
 **Files:**
 - `docs/journeys/notification-capture-classify.md` — Known gaps 의 "일반 재접속 … 보완 경로 없음" 불릿을 "→ plan: 2026-04-21-listener-reconnect-active-notification-sweep" 링크로 추가 (원문은 유지), 구현 후 Change log 에 날짜 + 요약.
