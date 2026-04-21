@@ -16,7 +16,10 @@ SILENT 로 분류된 알림을 **보관 중** (`SilentMode.ARCHIVED`) / **처리
 
 ## Trigger
 
-- `Routes.Hidden` 으로 navigate. 현재 유일한 경로는 `SilentHiddenSummaryNotifier` 의 `contentIntent` / action button. (향후 Settings 의 숨긴 알림 바로가기 등 확장 여지)
+- `Routes.Hidden` 으로 navigate. 진입 경로 두 가지:
+  - `SilentHiddenSummaryNotifier` 의 **루트** 보관 요약 `contentIntent` / action button → 필터 없음 (전체 보관 목록).
+  - 같은 notifier 의 **그룹 summary** `contentIntent` (sender / app 단위) → `sender` 또는 `packageName` 쿼리가 실린 `Routes.Hidden.create(...)` URL 로 진입 → Archived 탭을 강제 선택하고 해당 그룹을 스크롤 + 하이라이트. `MainActivity#extractDeepLinkRoute` 가 `EXTRA_DEEP_LINK_SENDER` / `EXTRA_DEEP_LINK_PACKAGE_NAME` 를 읽어 URL 로 재구성.
+- (향후 Settings 의 숨긴 알림 바로가기 등 확장 여지)
 
 ## Observable steps
 
@@ -63,8 +66,9 @@ SILENT 로 분류된 알림을 **보관 중** (`SilentMode.ARCHIVED`) / **처리
 - `data/local/NotificationRepository#deleteAllSilent`, `deleteSilentByPackage`, `restoreSilentToPriorityByPackage` — 대량 처리 (두 탭 공통)
 - `data/local/NotificationDao#deleteAllSilent`, `deleteSilentByPackage` — SQL 기반 삭제
 - `domain/model/SilentMode` — ARCHIVED / PROCESSED enum
-- `navigation/Routes#Hidden`
-- `navigation/AppNavHost` — Hidden composable 등록 + deep-link LaunchedEffect
+- `navigation/Routes#Hidden` — `sender` / `packageName` optional query param + `create(...)` builder
+- `navigation/AppNavHost` — Hidden composable 등록 (navArgs w/ nullable defaults) + deep-link LaunchedEffect
+- `ui/screens/hidden/HiddenDeepLinkFilterResolver` — query param → `SilentGroupKey?` + 그룹 매칭 규칙
 - `domain/model/NotificationId#buildNotificationId` — `sourceEntryKey` 있을 때 timestamp 제외해 같은 알림 slot 이 upsert 로 collapse
 
 ## Tests
@@ -118,3 +122,4 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 2026-04-21: 앱별 그룹 카드 기본 collapsed. `DigestGroupCard` 에 `collapsible` + `bulkActions` slot 추가 (DigestScreen 은 기본값으로 무변경). 헤더 탭으로 expand/collapse, chevron rotate + `AnimatedVisibility` 로 preview + bulk action row 동시 토글. 그룹별 expanded state 는 `rememberSaveable(groupId)` 로 유지. 관련 plan: `docs/plans/2026-04-20-hidden-inbox-collapsible-groups.md`.
 - 2026-04-21: **보관 중 / 처리됨 탭 분리** — `HiddenTab` 세그먼트 + `toHiddenGroups(silentModeFilter = ...)` 기반 탭별 리스트, 탭별 empty state, 헤더 count 이원화. legacy `silentMode == null` row 는 "처리됨" 으로 매핑해 기존 사용자의 빈 "보관 중" 탭 혼동 방지 (plan Task 4, PR #107).
 - 2026-04-21: Observable steps / Exit state / Code pointers 를 탭 분리 구조로 재작성. 관련 plan: `docs/plans/2026-04-21-silent-archive-vs-process-split.md` Task 6.
+- 2026-04-21: tray 그룹 summary deep-link 필터 지원 — `Routes.Hidden` 에 `sender` / `packageName` 쿼리 추가, `HiddenNotificationsScreen` 이 `initialFilter` 로 Archived 탭 자동 선택 + 해당 그룹 스크롤/하이라이트. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 4.

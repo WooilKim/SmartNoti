@@ -74,4 +74,77 @@ class HiddenDeepLinkFilterResolverTest {
     fun resolve_returns_null_when_package_is_blank_and_sender_is_null() {
         assertNull(HiddenDeepLinkFilterResolver.resolve(sender = null, packageName = "   "))
     }
+
+    // --- matchesGroup: decides whether a given hidden-inbox group is the target of the
+    // --- deep-link filter. Because Hidden groups are keyed by packageName but the filter
+    // --- may be Sender, we need per-item sender inspection.
+
+    @Test
+    fun matches_group_when_filter_is_null_returns_false() {
+        // A null filter means "no target group" — caller (screen) should skip highlighting.
+        assertEquals(
+            false,
+            HiddenDeepLinkFilterResolver.matchesGroup(
+                filter = null,
+                groupPackageName = "com.kakao.talk",
+                senders = listOf("엄마"),
+            ),
+        )
+    }
+
+    @Test
+    fun matches_group_on_app_filter_compares_package_name() {
+        assertEquals(
+            true,
+            HiddenDeepLinkFilterResolver.matchesGroup(
+                filter = SilentGroupKey.App("com.kakao.talk"),
+                groupPackageName = "com.kakao.talk",
+                senders = emptyList(),
+            ),
+        )
+        assertEquals(
+            false,
+            HiddenDeepLinkFilterResolver.matchesGroup(
+                filter = SilentGroupKey.App("com.kakao.talk"),
+                groupPackageName = "com.example.other",
+                senders = listOf("엄마"),
+            ),
+        )
+    }
+
+    @Test
+    fun matches_group_on_sender_filter_matches_any_item_sender() {
+        assertEquals(
+            true,
+            HiddenDeepLinkFilterResolver.matchesGroup(
+                filter = SilentGroupKey.Sender("엄마"),
+                groupPackageName = "com.kakao.talk",
+                senders = listOf("친구", "엄마", null),
+            ),
+        )
+    }
+
+    @Test
+    fun matches_group_on_sender_filter_trims_senders_before_compare() {
+        assertEquals(
+            true,
+            HiddenDeepLinkFilterResolver.matchesGroup(
+                filter = SilentGroupKey.Sender("엄마"),
+                groupPackageName = "com.kakao.talk",
+                senders = listOf("  엄마 "),
+            ),
+        )
+    }
+
+    @Test
+    fun matches_group_on_sender_filter_returns_false_when_no_item_sender_matches() {
+        assertEquals(
+            false,
+            HiddenDeepLinkFilterResolver.matchesGroup(
+                filter = SilentGroupKey.Sender("엄마"),
+                groupPackageName = "com.kakao.talk",
+                senders = listOf("친구", null, ""),
+            ),
+        )
+    }
 }
