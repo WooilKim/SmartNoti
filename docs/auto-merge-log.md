@@ -127,3 +127,4 @@ If a self-merged row caused a regression:
 | 2026-04-21T17:06:30Z | project-manager | #184 | PM T17 chain-audit rows for #181/#182/#183, docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24734826300 |
 | 2026-04-21T17:08:43Z | project-manager | #185 | plan-implementer Task 6 inbox filter + IGNORE archive screen + insights split; tests-first (repo, insights, summary), CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24735349365 |
 | 2026-04-21T17:20:00Z | project-manager | #187 | plan-implementer Task 6a Detail "무시" button + dialog + undo + ACTION_IGNORE broadcast; tests-first, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24735802883
+| 2026-04-21T17:30:00Z | project-manager | #188 | PM T18 chain-audit for #183-#187 (replaces #186); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24736031890 |
