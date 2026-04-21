@@ -138,7 +138,7 @@ created: 2026-04-21
 5. StatusBadge — IGNORE 브랜치 추가 시 style 은 neutral gray (low opacity, border-only 고려).
 6. Insights builder 테스트 보강 — DIGEST/SILENT/IGNORE 카운트 분리 집계 검증.
 
-## Task 6a: Detail "무시" feedback button + undo
+## Task 6a: Detail "무시" feedback button + undo [IN PROGRESS via PR #187]
 
 **Objective:** Detail 화면에 네 번째 피드백 버튼 "무시" 를 추가. 파괴적 액션이므로 확인 다이얼로그 + undo snackbar 필수.
 

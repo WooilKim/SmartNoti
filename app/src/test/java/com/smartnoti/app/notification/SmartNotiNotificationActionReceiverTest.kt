@@ -46,4 +46,32 @@ class SmartNotiNotificationActionReceiverTest {
 
         org.junit.Assert.assertNotEquals(promote, keepDigest)
     }
+
+    // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a — the Detail screen's
+    // "무시" button wires into a broadcast path alongside the existing three
+    // feedback actions. Replacement alerts don't expose an IGNORE button (alerts
+    // only appear for DIGEST/SILENT), but the constant is still part of the
+    // broadcast vocabulary and must be namespaced + stable-hashed like its
+    // siblings so the receiver can resolve it.
+    @Test
+    fun ignore_action_constant_is_namespaced() {
+        assertEquals(
+            "com.smartnoti.app.action.IGNORE",
+            SmartNotiNotifier.ACTION_IGNORE,
+        )
+    }
+
+    @Test
+    fun feedback_request_code_differs_for_ignore_vs_other_actions() {
+        val ignore = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_IGNORE,
+        )
+        val silent = SmartNotiNotifier.feedbackRequestCodeForTest(
+            notificationId = "notification-1",
+            action = SmartNotiNotifier.ACTION_KEEP_SILENT,
+        )
+
+        org.junit.Assert.assertNotEquals(ignore, silent)
+    }
 }

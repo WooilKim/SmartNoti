@@ -1,8 +1,10 @@
 package com.smartnoti.app.ui.screens.detail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,13 +17,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SilentMode
@@ -42,6 +51,7 @@ import com.smartnoti.app.domain.usecase.shouldShowDetailCard
 import com.smartnoti.app.notification.MarkSilentProcessedTrayCancelChain
 import com.smartnoti.app.notification.SmartNotiNotificationListenerService
 import com.smartnoti.app.ui.components.EmptyState
+import com.smartnoti.app.ui.components.IgnoreConfirmationDialog
 import com.smartnoti.app.ui.components.ReasonChipRow
 import com.smartnoti.app.ui.components.RuleHitChipRow
 import com.smartnoti.app.ui.components.StatusBadge
@@ -90,6 +100,12 @@ fun NotificationDetailScreen(
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
     val rules by rulesRepository.observeRules().collectAsState(initial = emptyList<RuleUiModel>())
+    // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a: destructive "무시"
+    // flow needs a confirm dialog + 3-sec undo snackbar. State is scoped to
+    // this screen so dismissing/navigating away drops the undo window (the
+    // flag-off rehydration is intentional — see plan Risks).
+    var showIgnoreDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
     val reasonSections = remember(notification, rules) {
         notification?.let { reasonSectionBuilder.build(it, rules) }
     }
@@ -129,6 +145,7 @@ fun NotificationDetailScreen(
         return
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(
         modifier = Modifier.padding(contentPadding),
         contentPadding = PaddingValues(16.dp),
@@ -412,9 +429,98 @@ fun NotificationDetailScreen(
                         ) {
                             Text("조용히 처리")
                         }
+                        // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a —
+                        // "무시" sits to the right of "조용히 처리" so the feedback
+                        // row reads least-destructive → most-destructive. Tap
+                        // opens a confirmation dialog; the dialog's confirm path
+                        // handles the DB flip, rule upsert, back-nav, and undo
+                        // snackbar.
+                        OutlinedButton(
+                            onClick = { showIgnoreDialog = true },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("무시")
+                        }
                     }
                 }
             }
+        }
+    }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(contentPadding)
+                .padding(16.dp),
+        ) { data ->
+            Snackbar(snackbarData = data)
+        }
+    }
+
+    if (showIgnoreDialog) {
+        IgnoreConfirmationDialog(
+            onConfirm = {
+                showIgnoreDialog = false
+                scope.launch {
+                    applyIgnoreWithUndo(
+                        feedbackPolicy = feedbackPolicy,
+                        repository = repository,
+                        rulesRepository = rulesRepository,
+                        notification = notification,
+                        existingRules = rules,
+                        snackbarHostState = snackbarHostState,
+                    )
+                    onBack()
+                }
+            },
+            onDismiss = { showIgnoreDialog = false },
+        )
+    }
+}
+
+/**
+ * Applies IGNORE to [notification], upserts a matching IGNORE rule, and shows a
+ * 3-second undo snackbar. Undo restores the prior notification state and either
+ * deletes the newly-created rule or restores the previous rule action (for the
+ * case where a rule for this sender/app already existed before).
+ *
+ * Kept separate from the Composable so the mutation path is readable and so the
+ * "rollback on undo" snapshot is explicit. The undo window is in-memory only;
+ * process restart finalizes the IGNORE (see plan Risks).
+ */
+private suspend fun applyIgnoreWithUndo(
+    feedbackPolicy: NotificationFeedbackPolicy,
+    repository: NotificationRepository,
+    rulesRepository: RulesRepository,
+    notification: NotificationUiModel,
+    existingRules: List<RuleUiModel>,
+    snackbarHostState: SnackbarHostState,
+) {
+    val priorNotification = notification
+    val ignoreRule = feedbackPolicy.toRule(notification, RuleActionUi.IGNORE)
+    // Match on the same (id || (type, matchValue)) rule identity RulesRepository
+    // uses for upsert collisions — otherwise we'd miss an existing rule that
+    // was stored under a different id.
+    val priorRule = existingRules.firstOrNull { existing ->
+        existing.id == ignoreRule.id ||
+            (existing.type == ignoreRule.type && existing.matchValue == ignoreRule.matchValue)
+    }
+
+    val updated = feedbackPolicy.applyAction(notification, RuleActionUi.IGNORE)
+    repository.updateNotification(updated)
+    rulesRepository.upsertRule(ignoreRule)
+
+    val result = snackbarHostState.showSnackbar(
+        message = "무시됨. 되돌리려면 탭",
+        actionLabel = "되돌리기",
+        withDismissAction = false,
+    )
+    if (result == SnackbarResult.ActionPerformed) {
+        repository.updateNotification(priorNotification)
+        if (priorRule != null) {
+            rulesRepository.upsertRule(priorRule)
+        } else {
+            rulesRepository.deleteRule(ignoreRule.id)
         }
     }
 }

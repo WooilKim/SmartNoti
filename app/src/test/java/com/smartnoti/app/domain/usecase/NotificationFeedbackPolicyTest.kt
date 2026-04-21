@@ -89,6 +89,44 @@ class NotificationFeedbackPolicyTest {
         assertNull(result.silentMode)
     }
 
+    // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a — Detail "무시" button
+    // must flip status to IGNORE, stamp the user-rule reason tag, and upsert a
+    // matching IGNORE rule so the sender/app is auto-filtered next time.
+    @Test
+    fun ignore_feedback_sets_status_to_ignore_and_stamps_user_rule_tag() {
+        val updated = policy.applyAction(
+            notification = sampleNotification(),
+            action = RuleActionUi.IGNORE,
+        )
+
+        assertEquals(NotificationStatusUi.IGNORE, updated.status)
+        assertTrue(updated.reasonTags.contains("사용자 규칙"))
+    }
+
+    @Test
+    fun ignore_feedback_with_sender_upserts_person_ignore_rule() {
+        val rule = policy.toRule(
+            notification = sampleNotification(sender = "광고봇"),
+            action = RuleActionUi.IGNORE,
+        )
+
+        assertEquals(RuleTypeUi.PERSON, rule.type)
+        assertEquals("광고봇", rule.matchValue)
+        assertEquals(RuleActionUi.IGNORE, rule.action)
+    }
+
+    @Test
+    fun ignore_feedback_without_sender_upserts_app_ignore_rule() {
+        val rule = policy.toRule(
+            notification = sampleNotification(sender = null),
+            action = RuleActionUi.IGNORE,
+        )
+
+        assertEquals(RuleTypeUi.APP, rule.type)
+        assertEquals("com.news.app", rule.matchValue)
+        assertEquals(RuleActionUi.IGNORE, rule.action)
+    }
+
     private fun sampleNotification(sender: String? = "엄마") = NotificationUiModel(
         id = "n1",
         appName = "카카오톡",

@@ -63,6 +63,16 @@ private enum class NotificationFeedbackAction(
         intentAction = SmartNotiNotifier.ACTION_KEEP_SILENT,
         ruleAction = RuleActionUi.SILENT,
     ),
+    // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a — IGNORE is handled
+    // just like the other three feedback actions: flip DB status + upsert a
+    // matching rule. Replacement alerts never expose this button (alerts are
+    // only posted for DIGEST/SILENT decisions), so this path is normally
+    // reached from the Detail screen's confirmation dialog — see
+    // NotificationDetailScreen.
+    IGNORE(
+        intentAction = SmartNotiNotifier.ACTION_IGNORE,
+        ruleAction = RuleActionUi.IGNORE,
+    ),
 }
 
 private fun String?.toFeedbackAction(): NotificationFeedbackAction? {
