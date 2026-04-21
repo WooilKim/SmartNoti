@@ -5,6 +5,7 @@ import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.model.SilentMode
 
 class NotificationFeedbackPolicy {
     fun applyAction(
@@ -14,6 +15,21 @@ class NotificationFeedbackPolicy {
         return notification.copy(
             status = action.toStatus(notification.status),
             reasonTags = (notification.reasonTags + "사용자 규칙").distinct(),
+        )
+    }
+
+    /**
+     * "조용히 보관" 상태의 알림을 "조용히 처리됨" 으로 전이한다.
+     *
+     * SILENT 가 아니면 no-op (원본 인스턴스 반환).
+     * 이미 PROCESSED 면 idempotent — tag 가 중복 추가되지 않는다.
+     * 호출자는 이후 repository 에 persist 한 뒤 tray 원본 알림 cancel 을 수행해야 한다.
+     */
+    fun markSilentProcessed(notification: NotificationUiModel): NotificationUiModel {
+        if (notification.status != NotificationStatusUi.SILENT) return notification
+        return notification.copy(
+            silentMode = SilentMode.PROCESSED,
+            reasonTags = (notification.reasonTags + PROCESSED_REASON_TAG).distinct(),
         )
     }
 
@@ -49,5 +65,9 @@ class NotificationFeedbackPolicy {
         RuleActionUi.DIGEST -> "Digest로 묶기"
         RuleActionUi.SILENT -> "조용히 정리"
         RuleActionUi.CONTEXTUAL -> "상황에 따라 자동 분류"
+    }
+
+    companion object {
+        const val PROCESSED_REASON_TAG = "사용자 처리"
     }
 }
