@@ -21,14 +21,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -80,6 +85,8 @@ fun RulesScreen(
     val listFilterApplicator = remember { RuleListFilterApplicator() }
     val listGroupingBuilder = remember { RuleListGroupingBuilder() }
     val listHierarchyBuilder = remember { RuleListHierarchyBuilder() }
+    val overrideOptionsBuilder = remember { RuleEditorOverrideOptionsBuilder() }
+    val overrideSupersetValidator = remember { RuleOverrideSupersetValidator() }
     val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -103,6 +110,9 @@ fun RulesScreen(
     var draftAction by remember { mutableStateOf(RuleActionUi.ALWAYS_PRIORITY) }
     var scheduleStartHour by remember { mutableStateOf("9") }
     var scheduleEndHour by remember { mutableStateOf("18") }
+    // Phase C Task 4: "기존 규칙의 예외로 만들기" switch + dropdown state.
+    var draftOverrideEnabled by remember { mutableStateOf(false) }
+    var draftOverrideOf by remember { mutableStateOf<String?>(null) }
 
     fun startCreate() {
         editingRule = null
@@ -112,6 +122,8 @@ fun RulesScreen(
         draftAction = RuleActionUi.ALWAYS_PRIORITY
         scheduleStartHour = "9"
         scheduleEndHour = "18"
+        draftOverrideEnabled = false
+        draftOverrideOf = null
         showEditor = true
     }
 
@@ -126,6 +138,8 @@ fun RulesScreen(
             scheduleStartHour = parts.getOrNull(0).orEmpty().ifBlank { "9" }
             scheduleEndHour = parts.getOrNull(1).orEmpty().ifBlank { "18" }
         }
+        draftOverrideEnabled = rule.overrideOf != null
+        draftOverrideOf = rule.overrideOf
         showEditor = true
     }
 
@@ -428,6 +442,46 @@ fun RulesScreen(
                         label = { actionLabel(it) },
                         onSelect = { draftAction = it },
                     )
+                    // Plan rules-ux-v2-inbox-restructure Phase C Task 4. The
+                    // override section is collapsed by default so the common
+                    // "add a plain rule" flow stays uncluttered; it expands
+                    // into a base-rule dropdown + superset warning when the
+                    // switch is on.
+                    val overrideCandidates = remember(rules, editingRule?.id) {
+                        overrideOptionsBuilder.build(
+                            allRules = rules,
+                            editingRuleId = editingRule?.id,
+                        )
+                    }
+                    RuleOverrideEditorSection(
+                        overrideEnabled = draftOverrideEnabled,
+                        onOverrideEnabledChange = { next ->
+                            draftOverrideEnabled = next
+                            if (!next) draftOverrideOf = null
+                        },
+                        candidates = overrideCandidates,
+                        selectedBaseId = draftOverrideOf,
+                        onBaseSelected = { draftOverrideOf = it },
+                        supersetWarningMessage = run {
+                            if (!draftOverrideEnabled || draftOverrideOf == null) return@run null
+                            val previewMatchValue = if (draftType == RuleTypeUi.SCHEDULE) {
+                                "${scheduleStartHour.ifBlank { "9" }}-${scheduleEndHour.ifBlank { "18" }}"
+                            } else {
+                                draftMatchValue
+                            }
+                            val preview = ruleFactory.create(
+                                title = draftTitle.ifBlank { "draft" },
+                                matchValue = previewMatchValue,
+                                type = draftType,
+                                action = draftAction,
+                                existingId = editingRule?.id,
+                                overrideOf = draftOverrideOf,
+                            )
+                            val verdict = overrideSupersetValidator.validate(preview, rules)
+                            (verdict as? RuleOverrideSupersetValidator.Verdict.Warning)
+                                ?.let { supersetWarningMessage(it.reason) }
+                        },
+                    )
                 }
             },
             confirmButton = {
@@ -445,6 +499,7 @@ fun RulesScreen(
                             action = draftAction,
                             existingId = editingRule?.id,
                             enabled = editingRule?.enabled ?: true,
+                            overrideOf = draftOverrideOf.takeIf { draftOverrideEnabled },
                         )
                         scope.launch { repository.upsertRule(newRule) }
                         showEditor = false
@@ -618,6 +673,117 @@ private fun matchLabelFor(type: RuleTypeUi): String = when (type) {
 // rule. Kept short enough that the user's attention snaps to the row without
 // feeling obstructive.
 private const val HIGHLIGHT_FLASH_DURATION_MILLIS = 1800L
+
+@Composable
+private fun RuleOverrideEditorSection(
+    overrideEnabled: Boolean,
+    onOverrideEnabledChange: (Boolean) -> Unit,
+    candidates: List<RuleUiModel>,
+    selectedBaseId: String?,
+    onBaseSelected: (String?) -> Unit,
+    supersetWarningMessage: String?,
+) {
+    // Plan rules-ux-v2-inbox-restructure Phase C Task 4: "기존 규칙의 예외로
+    // 만들기" toggle + base-rule dropdown. The section renders as a section
+    // label + switch row, and only mounts the dropdown when the switch is on
+    // so the dialog doesn't feel crowded for plain-rule creation.
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel(
+            title = "예외 규칙",
+            subtitle = "다른 규칙이 먼저 적용되어도 이 규칙이 우선하도록 예외로 설정할 수 있어요.",
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "기존 규칙의 예외로 만들기",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Switch(
+                checked = overrideEnabled,
+                onCheckedChange = onOverrideEnabledChange,
+                enabled = candidates.isNotEmpty() || overrideEnabled,
+            )
+        }
+        if (overrideEnabled) {
+            if (candidates.isEmpty()) {
+                Text(
+                    text = "예외로 지정할 기준 규칙이 없어요. 먼저 기본 규칙을 만들어 보세요.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                RuleOverrideBaseDropdown(
+                    candidates = candidates,
+                    selectedBaseId = selectedBaseId,
+                    onBaseSelected = onBaseSelected,
+                )
+            }
+            if (supersetWarningMessage != null) {
+                Text(
+                    text = supersetWarningMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RuleOverrideBaseDropdown(
+    candidates: List<RuleUiModel>,
+    selectedBaseId: String?,
+    onBaseSelected: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedTitle = candidates.firstOrNull { it.id == selectedBaseId }?.title
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = "어느 규칙의 예외인가요?",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        AssistChip(
+            onClick = { expanded = true },
+            label = {
+                Text(selectedTitle ?: "규칙 선택")
+            },
+            colors = AssistChipDefaults.assistChipColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            candidates.forEach { candidate ->
+                DropdownMenuItem(
+                    text = { Text(candidate.title) },
+                    onClick = {
+                        onBaseSelected(candidate.id)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+private fun supersetWarningMessage(reason: RuleOverrideSupersetValidator.Reason): String = when (reason) {
+    RuleOverrideSupersetValidator.Reason.BASE_MISSING ->
+        "기준 규칙을 찾을 수 없어요. 삭제됐거나 아직 저장되지 않은 규칙일 수 있어요."
+    RuleOverrideSupersetValidator.Reason.TYPE_MISMATCH ->
+        "기준 규칙과 타입이 달라요. 같은 타입으로 맞추면 더 정확하게 동작해요."
+    RuleOverrideSupersetValidator.Reason.KEYWORD_NOT_SUPERSET ->
+        "기준 규칙의 키워드를 모두 포함해야 예외가 정상적으로 동작해요."
+    RuleOverrideSupersetValidator.Reason.VALUE_MISMATCH ->
+        "기준 규칙과 조건 값이 달라서 예외가 적용되지 않을 수 있어요."
+}
 
 private fun ruleRowPresentationFor(
     node: RuleListNode,

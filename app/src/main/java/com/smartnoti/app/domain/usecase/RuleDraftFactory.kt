@@ -12,9 +12,14 @@ class RuleDraftFactory {
         action: RuleActionUi,
         enabled: Boolean = true,
         existingId: String? = null,
+        overrideOf: String? = null,
     ): RuleUiModel {
         val normalizedTitle = title.trim()
         val normalizedMatchValue = normalizeMatchValue(type, matchValue)
+        // Plan rules-ux-v2-inbox-restructure Phase C Task 4: blank overrideOf
+        // strings collapse to null so the dropdown's "(선택)" placeholder
+        // doesn't sneak an invalid foreign key into storage.
+        val normalizedOverrideOf = overrideOf?.takeIf { it.isNotBlank() }
         return RuleUiModel(
             id = existingId ?: "${type.name.lowercase()}:$normalizedMatchValue",
             title = normalizedTitle,
@@ -23,6 +28,7 @@ class RuleDraftFactory {
             action = action,
             enabled = enabled,
             matchValue = normalizedMatchValue,
+            overrideOf = normalizedOverrideOf,
         )
     }
 
