@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — silent-auto-hide group-summary re-verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | ⏭️ SKIP | 설치된 APK (`lastUpdateTime=2026-04-21 12:42:01`) 가 `silent-archive-drift-fix` Task 2 (`2298d16`, 2026-04-21 14:38 KST) 가 landing 되기 전에 빌드/설치되어 있음. 즉 listener 의 `SilentCaptureRoutingSelector.silentModeFor(...)` → `SourceNotificationRoutingPolicy.route(..., silentMode=ARCHIVED)` 배선 + `baseNotification.copy(silentMode = capturedSilentMode ?: ...)` 저장 경로가 설치된 바이너리에 포함되지 않음. 실증: fresh SILENT 3건 `cmd notification post -S bigtext -t 'Promo' Promo{A,B,C} '...'` 로 포스팅 → tray 원본 전부 사라짐 (`grep Promo$ /dumpsys` hit 0), DB row 저장은 되지만 `SELECT id, status, silentMode FROM notifications WHERE id LIKE '%Promo%'` 결과 세 건 모두 `SILENT / silentMode=NULL` (ARCHIVED 아님). 이어서 `grep -c smartnoti_silent_group` = 0 — `SilentGroupTrayPlanner` 가 `filterSilentArchivedForSummary` 로 ARCHIVED rows 를 받지 못해 그룹 summary/child posts 가 하나도 발생하지 않음. 루트 요약 (`smartnoti_silent_summary`) 만 post 됨. 이 상태에서 journey 의 Observable steps 3/6/7/8 (ARCHIVED DB persist + planner 그룹 집계 + `smartnoti_silent_group` 채널 게시 + `DEEP_LINK_SENDER` deep-link) 을 사용자 관측으로 검증 불가. Contract drift 아님 — 소스 (`SmartNotiNotificationListenerService.kt:275-280, 339`, `SilentCaptureRoutingSelector.kt`) 는 올바름. 릴리즈 APK rebuild + install 후 재검증 필요. journey-tester scope 상 rebuild 는 수행하지 않음 (agent rule "돌릴 recipe 의 pre-condition 이 맞지 않으면 SKIP"). `last-verified` 는 2026-04-21 그대로 유지 — 이 SKIP 은 env noise 이고 문서 갱신 대상 아님. |
+
+
 ### 2026-04-21 (v1 loop tick — hidden-inbox re-verify post-#89 collapsible contract, emulator-5554)
 
 | Journey | Result | Notes |
