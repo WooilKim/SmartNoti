@@ -24,7 +24,7 @@
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-21 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-21 |
-| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-20 |
+| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-21 |
 
 ### Source notification routing (시스템 tray 조작)
 | ID | Title | Status | Last verified |
@@ -60,6 +60,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-21 (journey-tester — quiet-hours policy-level PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | ✅ PASS | 가장 오래된 `last-verified=2026-04-20` journey. `./gradlew :app:testDebugUnitTest --tests QuietHoursPolicyTest --tests NotificationClassifierTest` → `BUILD SUCCESSFUL`, XML `tests=2 skipped=0 failures=0 errors=0` + `tests=19 skipped=0 failures=0 errors=0` (같은 시간대 분기, overnight 분기, `shopping_app_during_quiet_hours_goes_to_digest` 포함). Code pointer 재확인: `NotificationClassifier.kt:36` 이 `input.packageName in shoppingPackages && input.quietHours` → `NotificationDecision.DIGEST` 로 Observable step 3 와 exact 일치, `NotificationCaptureProcessor.kt:98-99` 의 `tags += "조용한 시간"` 경로 보존, `SettingsRepository.currentNotificationContext` 이 `QuietHoursPolicy(startHour, endHour)` 주입 그대로. Live DB 관측 (`run-as com.smartnoti.app sqlite3 smartnoti.db 'SELECT DISTINCT reasonTags FROM notifications;'`) = `조용한 시간` tag 부재 — emulator 시각 22:18 KST 가 default `[23,7)` 범위 밖이라 계약 일치. Recipe 의 end-to-end 부분은 `cmd notification post --pkg` 가 지원되지 않아 `com.coupang.mobile` 경로를 에뮬레이터에서 재현 불가 — doc recipe 가 이를 명시하고 policy unit test 를 primary 수단으로 제시. DRIFT 없음. `last-verified` 를 2026-04-20 → 2026-04-21 갱신. |
 
 
 ### 2026-04-21 (journey-tester — persistent-notification-protection policy-level PASS, emulator-5554)

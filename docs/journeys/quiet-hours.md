@@ -3,7 +3,7 @@ id: quiet-hours
 title: 조용한 시간
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-20
+last-verified: 2026-04-21
 ---
 
 ## Goal
@@ -77,3 +77,4 @@ last-verified: 2026-04-20
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-21: Policy-level verification re-run (`QuietHoursPolicyTest` 2/2 + `NotificationClassifierTest` 19/19 PASS, 포함 `shopping_app_during_quiet_hours_goes_to_digest`). `NotificationClassifier.kt:36` 분기 + `NotificationCaptureProcessor.buildReasonTags` 의 `조용한 시간` 태그 경로가 doc Observable step 3 과 exact 일치. Live DB 관측 (`run-as com.smartnoti.app sqlite3 smartnoti.db 'SELECT DISTINCT reasonTags FROM notifications;'`) 에 `조용한 시간` tag 부재는 emulator 시각 22:18 KST 가 default `[23,7)` 범위 밖이라 계약 일치. DRIFT 없음. `last-verified` 를 2026-04-20 → 2026-04-21 갱신.
