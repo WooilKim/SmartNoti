@@ -115,12 +115,12 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 1. **Room 스키마 확장 (tests-first)** [shipped via #145]
    - `NotificationEntity` 에 `ruleHitIds: String?` 추가. SCHEMA_VERSION 7→8. Nullable 이라 기존 row 영향 없음.
    - `NotificationRepositoryTest` 에서 round-trip 확인.
-2. **Classifier 결과 확장** [IN PROGRESS via PR #146]
+2. **Classifier 결과 확장** [shipped via #146]
    - `NotificationDecision` 에 `matchedRuleIds: List<String>` 필드 추가 (이전엔 단순 enum).
    - `classify()` 가 rule hit 시 그 rule id 를 함께 반환.
    - 기존 classifier signal 은 별도 `reasonSignals: List<String>` 로 유지.
    - 실제 구현: 새 wrapper `NotificationClassification(decision, matchedRuleIds)` 를 도입하고 `NotificationClassifier.classify()` 가 그것을 반환. `NotificationDecision` 은 enum 그대로 유지 — 라우팅/상태 전이는 영향 없음. `NotificationCaptureProcessor` 가 wrapper 를 풀어 decision 을 delivery-profile 로 전달하고 `matchedRuleIds` 를 `NotificationUiModel` 로 threading. `NotificationEntityMapper` 가 `matchedRuleIds` 를 Phase B Task 1 의 `ruleHitIds` 컬럼으로 comma-separated 로 persist. 기존 free-form `reasonTags` 는 그대로 유지 (Task 3 에서 Detail UI 가 두 섹션으로 분리할 때 소비).
-3. **Detail UI 분리** [IN PROGRESS via PR #147]
+3. **Detail UI 분리** [shipped via #147]
    - "왜 이렇게 처리됐나요?" 섹션 아래에 두 서브섹션:
      - **SmartNoti 가 본 신호** — classifier signals (기존 회색 chip, 클릭 불가)
      - **적용된 규칙** — rule hits (파란색 chip, 클릭 시 Rules 탭 → 해당 규칙 하이라이트)
@@ -132,10 +132,11 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 
 ## Phase C — Tasks (Hierarchical rules)
 
-1. **Data model 확장 (tests-first)**
+1. **Data model 확장 (tests-first)** [IN PROGRESS via PR #TBD]
    - `RuleUiModel.overrideOf: String?` 필드.
    - `RulesRepository` upsert 시 circular reference 감지 (A → B → A 는 reject, 에러 로그).
    - `RuleConflictResolverTest` 신규: 동일 tier 충돌 시 priority 필드 (또는 rule 순서) 기준 선택 테스트.
+   - 실제 구현: `RuleUiModel` 에 nullable `overrideOf` 추가 (default null — 기존 호출부 영향 없음). `RuleStorageCodec` 를 8-column 포맷으로 확장, `\u0000` sentinel 로 null 을 표현 + legacy 7-column 라인은 `overrideOf = null` 로 tolerate. `RuleOverrideValidator` (순수 함수, pure Kotlin) 가 self-reference / cycle 을 감지 → `RulesRepository.upsertRule` 가 `Log.e` 찍고 persist 없이 return. `RuleConflictResolver` 신규 use case: `matched` + `allRules` 받아 (1) base 와 override 가 모두 matched 면 override 승, (2) 동일 tier 는 `allRules` 인덱스 (순서 = priority) 로 tie-break. 단일 매치/0매치 short-circuit. Classifier 재작성은 Phase C Task 2 에서 이어감.
 2. **Classifier override 처리**
    - `findMatchingRule` 재작성: flat loop 대신 tier-aware traversal.
    - 매치 시: base rule + override candidates 모두 수집 → 가장 specific override (더 많은 조건 매치) → tie 는 priority → base 로 fallback.

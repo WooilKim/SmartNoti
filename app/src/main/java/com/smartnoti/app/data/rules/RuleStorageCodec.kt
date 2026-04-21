@@ -8,6 +8,13 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 object RuleStorageCodec {
+    /**
+     * Sentinel written to the storage cell when `overrideOf` is null. We need a
+     * sentinel (rather than an empty string) so that a decoded 8-column line
+     * can distinguish "override missing" from any other empty-string field.
+     */
+    private const val NULL_OVERRIDE_OF = "\u0000"
+
     fun encode(rules: List<RuleUiModel>): String {
         return rules.joinToString("\n") { rule ->
             listOf(
@@ -18,6 +25,7 @@ object RuleStorageCodec {
                 rule.action.name,
                 rule.enabled.toString(),
                 rule.matchValue,
+                rule.overrideOf ?: NULL_OVERRIDE_OF,
             ).joinToString("|") { value -> value.escape() }
         }
     }
@@ -31,6 +39,10 @@ object RuleStorageCodec {
                 val parts = line.split("|").map { it.unescape() }
                 if (parts.size < 7) return@mapNotNull null
 
+                val overrideOf = parts.getOrNull(7)?.let { raw ->
+                    if (raw == NULL_OVERRIDE_OF || raw.isEmpty()) null else raw
+                }
+
                 RuleUiModel(
                     id = parts[0],
                     title = parts[1],
@@ -39,6 +51,7 @@ object RuleStorageCodec {
                     action = RuleActionUi.valueOf(parts[4]),
                     enabled = parts[5].toBoolean(),
                     matchValue = parts[6],
+                    overrideOf = overrideOf,
                 )
             }
             .toList()

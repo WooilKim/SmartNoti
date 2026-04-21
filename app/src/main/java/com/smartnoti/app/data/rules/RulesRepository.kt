@@ -1,6 +1,7 @@
 package com.smartnoti.app.data.rules
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -55,6 +56,7 @@ fun resolveConfiguredRules(encodedPayload: String?): List<RuleUiModel> {
 
 class RulesRepository private constructor(
     private val context: Context,
+    private val overrideValidator: RuleOverrideValidator = RuleOverrideValidator(),
 ) {
     fun observeRules(): Flow<List<RuleUiModel>> {
         return context.rulesDataStore.data.map { prefs ->
@@ -81,12 +83,25 @@ class RulesRepository private constructor(
         val index = existing.indexOfFirst {
             it.id == rule.id || (it.type == rule.type && it.matchValue == rule.matchValue)
         }
-        if (index >= 0) {
-            existing[index] = rule.copy(id = existing[index].id)
-        } else {
-            existing += rule
+        val incoming = if (index >= 0) rule.copy(id = existing[index].id) else rule
+
+        when (val verdict = overrideValidator.validate(incoming, existing)) {
+            is RuleOverrideValidator.Result.Rejected -> {
+                // Plan rules-ux-v2-inbox-restructure Phase C Task 1: circular
+                // override references are dropped on the floor with an error
+                // log rather than corrupting the persisted graph.
+                Log.e(TAG, "Rejected override upsert for ${incoming.id}: ${verdict.reason}")
+                return
+            }
+            is RuleOverrideValidator.Result.Accepted -> {
+                if (index >= 0) {
+                    existing[index] = verdict.rule
+                } else {
+                    existing += verdict.rule
+                }
+                persist(existing)
+            }
         }
-        persist(existing)
     }
 
     suspend fun replaceAllRules(rules: List<RuleUiModel>) {
@@ -108,6 +123,7 @@ class RulesRepository private constructor(
     }
 
     companion object {
+        private const val TAG = "RulesRepository"
         private val RULES = stringPreferencesKey("rules_payload")
 
         @Volatile private var instance: RulesRepository? = null
