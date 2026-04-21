@@ -111,3 +111,4 @@ If a self-merged row caused a regression:
 | 2026-04-21T14:37:07Z | project-manager | #162 | journey-tester audit backfill for #161 (rules-feedback-loop SKIP, rebased onto main with chronological conflict resolve, CI SUCCESS) | https://github.com/WooilKim/SmartNoti/actions/runs/24728292073 |
 | 2026-04-21T14:45:00Z | project-manager | #163 | PM T14 sweep audit (+4 auto-merge + 5 pr-review rows for #156/#158/#159/#160/#162, rebased onto main, CI SUCCESS) | https://github.com/WooilKim/SmartNoti/actions/runs/24728554256 |
 | 2026-04-21T14:50:00Z | project-manager | #166 | PM T15 sweep audit (+2 pr-review rows for #162/#163 request-changes, rebased onto main, CI SUCCESS) | https://github.com/WooilKim/SmartNoti/actions/runs/24728888696 |
+| 2026-04-21T16:00:00Z | project-manager | #169 | PM T16 chain-audit for T14 sweep merges (#162/#163/#166/#168, +4 auto-merge + 4 pr-review rows), CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24729207625 |
