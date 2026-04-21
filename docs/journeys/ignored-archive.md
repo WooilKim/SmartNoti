@@ -3,7 +3,7 @@ id: ignored-archive
 title: 무시됨 아카이브 (opt-in IGNORE 뷰)
 status: shipped
 owner: @wooilkim
-last-verified:
+last-verified: 2026-04-21
 ---
 
 ## Goal
@@ -90,7 +90,9 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현 — 복구가 필요하면 Detail 로 가서 "중요로 고정" / "Digest로 보내기" / "조용히 처리" 중 하나를 눌러야 함.
 - IGNORE row 의 retention 정책 미구현 — 물리 삭제 / 오래된 row 자동 정리는 후속. Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` out-of-scope.
 - Weekly insights 에서 IGNORE 카운트가 DIGEST / SILENT 와 별도 스트림으로 노출되는지 (Insights builder contract) 는 test-level 로만 검증되고, 화면 레이블이 실제로 "삭제 N건" 같은 copy 로 분리되어 보이는지는 아직 미검증 — Task 8 verification 에서 확인 필요.
+- 2026-04-21 verification 중 "토글 OFF→ON 직후 같은 composition 에서 `무시됨 아카이브 열기` 버튼 탭" 시 navigation 그래프에 아직 route 가 등록되기 전에 `navigate()` 가 호출되어 `IllegalArgumentException: Navigation destination that matches request uri=android-app://androidx.navigation/ignored_archive cannot be found` 로 한 번 크래시함. 두 번째 시도 (토글 OFF→ON 재탭) 부터는 재현되지 않았고, 앱 재시작 후 toggle 이 이미 ON 상태에서 탭하는 경로는 항상 정상. `AppNavHost` 의 `produceState` recomposition lag 으로 보이며, race window 가 좁아 재현이 들쭉날쭉함. 사용자 입장에서는 첫 opt-in 순간에 드물게 강제종료로 보일 수 있음 — gap-planner 라우팅 후보.
 
 ## Change log
 
 - 2026-04-21: 신규 문서화 — plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`) 구현 결과물. Settings 토글 + `AppNavHost` 조건부 route + `IgnoredArchiveScreen` + `NotificationRepository.observeIgnoredArchive()` 가 함께 shipped. Detail "무시" 피드백 버튼 (#187 `57df6ac`, Task 6a) 과 직결 — IGNORE 결정의 두 진입 경로 (룰 직접 생성 / Detail 피드백) 가 모두 이 화면으로 수렴. `last-verified` 는 실제 recipe 실행 전까지 비워둠 (per `.claude/rules/docs-sync.md`).
+- 2026-04-21: 첫 verification sweep 실행 — 키워드 IGNORE 룰 생성 → 매칭 알림 포스팅 → tray 즉시 제거, Home StatPill 불포함 (28 captured vs 27 classified), Settings 토글 ON→버튼 노출→아카이브 진입→`보관 중 1건` + NotificationCard 렌더 + 카드 탭 시 Detail `무시됨` 뱃지 정상 관측. PASS. 단, Known gaps 에 toggle-ON 직후 즉시 탭 시 한 차례 크래시 관측 기록 (race-condition, 재현 안정성 낮음).
