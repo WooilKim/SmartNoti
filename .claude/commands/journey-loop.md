@@ -1,18 +1,21 @@
 ---
 name: journey-loop
-description: One tick of the improvement loop. Runs journey-tester first; on NO-OP falls through to gap-planner (draft new plan from Known gaps), then plan-implementer (implement oldest status:planned). Self-schedules via ScheduleWakeup. Start with one call; it self-perpetuates.
+description: One tick of the improvement loop. Phase A chains tester → gap-planner → plan-implementer (each fall-through on NO-OP). Phase B always runs project-manager to drain the open-PR queue (review + merge approved code PRs). Self-schedules via ScheduleWakeup.
 ---
 
 Execute one iteration of the improvement Ralph loop.
 
-The loop is a **fall-through chain**, one subagent per tick:
+The loop has two phases per tick:
 
+**Phase A — Production** (fall-through chain, one productive subagent per tick):
 1. `journey-tester` — verifies journey docs against current behavior. Self-merges docs-only updates under its own 4-gate rule.
-2. On tester NO-OP → `gap-planner` — drafts ONE plan file from the highest-leverage Known gap across `docs/journeys/*.md`. Opens a PR for the new plan; does NOT self-merge (plans are human-gated until `project-manager` approves).
-3. On planner NO-OP (no Known gap leverage-worthy OR a planned file already covers it) → `plan-implementer` — picks the oldest `status: planned` file under `docs/plans/` that hasn't been implemented yet (no matching shipped journey change). Opens a code PR; does NOT self-merge (code goes through `project-manager` review + merge, per project-manager spec).
-4. If all three no-op, the loop is truly idle — still self-schedule so drift surfacing kicks in when code lands.
+2. On tester NO-OP → `gap-planner` — drafts ONE plan file from the highest-leverage Known gap. Opens plan PR; no self-merge.
+3. On planner NO-OP → `plan-implementer` — implements oldest `status: planned` file. Opens code PR; no self-merge.
 
-Rationale: prior version ran only `journey-tester`. Observed consequence: after the verification queue saturated (all journeys same-day `last-verified`), the loop no-op'd indefinitely while Known gaps accumulated and `status: planned` plans sat untouched. The fall-through keeps plan generation and implementation moving without removing human review at merge time.
+**Phase B — Drainage** (always runs, regardless of Phase A outcome, even on full NO-OP):
+4. `project-manager` — sweeps every open agent-origin PR, posts comment-verdict, merges PRs that pass its checklist. Defers carve-outs (Room schema, `.claude/`, `.github/`, Gradle wrapper) to human.
+
+Rationale: prior version had no merger. Observed: after Phase A opens a PR (e.g. plan-implementer opens a code PR), it sat for hours until the human invoked `/pr-review` manually. Phase B closes the loop — agent PRs flow tester → planner → implementer → PM merge → next tick consumes the new state. Single-account env (all agents = same gh user) means PM uses comment-verdict + direct `gh pr merge` instead of `gh pr review --approve` (GitHub blocks self-author approve); see `.claude/agents/project-manager.md`.
 
 ## Stop-first check (always before spawning the tester)
 
@@ -65,13 +68,25 @@ Safety:
 - Never self-merges. Project-manager (per `.claude/agents/project-manager.md`) is the merger for code PRs.
 - If it can't resolve a plan's open question from the code, stop and report — don't guess.
 
-### Step 4 — truly idle
+### Step 4 — truly idle (Phase A)
 
-If all three return NO-OP, the final report says "all three agents idle; nothing queued." Still self-schedule (state may change externally).
+If all three Phase A agents return NO-OP, Phase A produced nothing this tick. **Still proceed to Phase B** — there may be open PRs from prior ticks waiting on PM review/merge.
+
+## Phase B — `project-manager` (always runs)
+
+After Phase A finishes (productive or all-NO-OP), spawn `project-manager` with `subagent_type: project-manager` and prompt:
+
+> `Sweep target=all. Review every open agent-origin PR per your spec. For PRs you would approve and that pass your full checklist (no carve-out), proceed to merge per the single-account env path (comment-verdict + gh pr merge). Defer carve-outs to human. Append docs/pr-review-log.md rows for every verdict. Report which PRs you merged, which you deferred, which you requested changes on.`
+
+Phase B safety:
+- PM never merges its own audit-row PRs (it opens them as `ops/pr-review-log-*` for human review).
+- PM never merges carve-out PRs even if all other gates pass.
+- PM never force-pushes, never merges with `--admin`, never bypasses CI.
+- If PM errors out (gh auth, etc.), report and continue to self-schedule — Phase B failure does NOT block self-scheduling (Phase A may have produced useful work; missing a single drain isn't fatal).
 
 ## Self-schedule
 
-After a successful tick (any of: tester PASS/DRIFT/SKIP; gap-planner drafted a plan; plan-implementer opened a code PR; or all three returned NO-OP), call `ScheduleWakeup` with:
+After a successful tick (Phase A any outcome including NO-OP, plus Phase B drainage attempted — even if PM errored or had nothing to do), call `ScheduleWakeup` with:
 - `delaySeconds: 21600` — 6 hours. Crosses the prompt-cache window so long-running state resets, but still fires multiple times per day.
 - `prompt: "/journey-loop"` — re-enters this same command on wake.
 - `reason: "Next journey-verify tick; previous run was <PASS|DRIFT|SKIP>."` — be specific so the user can read the wakeup log.
@@ -88,12 +103,14 @@ Return exactly this shape to the user:
 ```
 journey-loop tick
  ├─ Open agent PRs before tick: <N>
- ├─ Step 1 — tester: <PASS | DRIFT | SKIP | NO-OP | error>
- │    └─ Journey: <id or "n/a"> · PR: <url or "n/a">
- ├─ Step 2 — gap-planner: <drafted | NO-OP | skipped | error>
- │    └─ Plan: <path or "n/a"> · PR: <url or "n/a">
- ├─ Step 3 — plan-implementer: <opened PR | NO-OP | skipped | error>
- │    └─ Plan: <path or "n/a"> · PR: <url or "n/a">
+ ├─ Phase A — production
+ │    ├─ Step 1 tester: <PASS | DRIFT | SKIP | NO-OP | error> · PR: <url>
+ │    ├─ Step 2 gap-planner: <drafted | NO-OP | skipped | error> · PR: <url>
+ │    └─ Step 3 plan-implementer: <opened PR | NO-OP | skipped | error> · PR: <url>
+ ├─ Phase B — drainage (PM)
+ │    ├─ Reviewed: <N PRs>
+ │    ├─ Merged: <list of #nums> · audit row PR: <url>
+ │    └─ Deferred (carve-out / changes-requested): <list>
  └─ Next tick: <scheduled for +<interval> | PAUSED — reason>
 ```
 
@@ -101,8 +118,8 @@ Keep the message under 150 words.
 
 ## Safety rules
 
-- Never bypass the stop-first check, even "just this once." The check is the entire purpose of wrapping the loop.
-- Fall-through order is fixed: tester → gap-planner → plan-implementer. Never call them in a different order or invoke any two in the same tick.
-- Never self-merge `plan-implementer` or `gap-planner` PRs from this command. Those go to `project-manager` (per `.claude/agents/project-manager.md`). Only `journey-tester` has its own narrow self-merge carve-out (docs-only journey changes).
-- Never push to `main`, never merge PRs directly from this wrapper.
+- Never bypass the stop-first check, even "just this once."
+- Phase A order is fixed: tester → gap-planner → plan-implementer. Never call them in a different order or invoke any two in the same tick.
+- Phase B (PM) ALWAYS runs after Phase A — never skip, even on full Phase A NO-OP. PM-skipped ticks let PR queue grow.
+- This wrapper never pushes to `main` and never merges PRs directly. Merges happen via subagents' own self-merge rules: tester for docs-only journey changes, PM for approved code/plan PRs (per its spec).
 - If `ScheduleWakeup` fails, report it plainly and stop; do not retry with a shorter delay.

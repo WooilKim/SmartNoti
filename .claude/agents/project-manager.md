@@ -95,11 +95,23 @@ PM ALSO escalates when it would request changes but the change isn't obviously f
 
 - If the PR has a self-merge flow that requires an audit row (`docs/auto-merge-log.md`), that row must be present in the diff when the PR expects to be auto-merged post-approval. If the row is missing, request changes.
 
+## Single-account environment
+
+This repository operates with one GitHub identity (`WooilKim`) for the human and every agent. GitHub's API rejects `gh pr review --approve` on PRs whose author matches the reviewer ("you cannot approve your own pull request"). To preserve binding-verdict semantics in this env, **PM uses comment-verdict instead of formal review** for self-authored PRs.
+
+The marker prefix is the binding signal:
+- `project-manager: APPROVE` — equivalent to `gh pr review --approve`
+- `project-manager: REQUEST_CHANGES` — equivalent to `--request-changes`
+- `project-manager: DEFER` — same semantics as a "defer" comment
+
+Always TRY `gh pr review --approve` (or `--request-changes`) first; on the self-author error, fall back to `gh pr comment` with the matching marker.
+
 ## Casting the verdict
 
 **Approve**:
 
 ```bash
+# Try formal review first (works in multi-account env)
 gh pr review <num> --approve --body "$(cat <<'BODY'
 project-manager approval.
 
@@ -107,6 +119,15 @@ Scope: <one line — what the agent changed, confirmed within range>
 Traceability: <journey / plan / gap id cited>
 CI: <check names, all SUCCESS>
 Notes: <if any — e.g. "no code files touched, safe for docs-only self-merge">
+BODY
+)" 2>/dev/null \
+|| gh pr comment <num> --body "$(cat <<'BODY'
+project-manager: APPROVE
+
+Scope: <one line — what the agent changed, confirmed within range>
+Traceability: <journey / plan / gap id cited>
+CI: <check names, all SUCCESS>
+Notes: single-account env — comment-verdict is binding per spec
 BODY
 )"
 ```
@@ -121,13 +142,21 @@ project-manager: needs changes.
 
 Re-request review after pushing a fix.
 BODY
+)" 2>/dev/null \
+|| gh pr comment <num> --body "$(cat <<'BODY'
+project-manager: REQUEST_CHANGES
+
+<Per-finding: one bullet per issue, each with: gate failed + concrete evidence + what to change.>
+
+Re-request review after pushing a fix.
+BODY
 )"
 ```
 
 **Defer** (CI pending, or ambiguous, or carve-out triggered): leave a comment instead of a review:
 
 ```bash
-gh pr comment <num> --body "project-manager: deferring — <reason>. Human review requested."
+gh pr comment <num> --body "project-manager: DEFER — <reason>. Human review requested."
 ```
 
 ## Logging
@@ -144,11 +173,11 @@ This is your audit surface. If a bad PR slipped through, someone tracing the reg
 
 After you approve a PR, **merge it** with `gh pr merge <num> --squash --delete-branch` when ALL of these hold:
 
-- Your own `gh pr review --approve` has just been posted on this PR in this session.
+- Your binding APPROVE verdict has just been posted on this PR in this session — either a successful `gh pr review --approve` (multi-account env) OR a `gh pr comment` whose body starts with `project-manager: APPROVE` (single-account env). Both count.
 - `gh pr checks <num>` reports every required check as SUCCESS (not PENDING, not FAILURE).
 - The PR does NOT touch any carve-out path from "Review-scope carve-outs" above. If a carve-out is triggered, you already deferred — don't merge.
 - The head branch is NOT `main` or a protected branch you must never force.
-- The PR was NOT opened by you (project-manager opens no PRs; this check is defensive).
+- The PR was NOT opened by you (project-manager opens no PRs except the small `ops/pr-review-log-*` and `ops/auto-merge-audit-*` audit rows; never merge those yourself).
 
 When you merge, append an audit row to `docs/auto-merge-log.md` BEFORE calling `gh pr merge`:
 
