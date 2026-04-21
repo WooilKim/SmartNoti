@@ -84,6 +84,34 @@ class SuppressionInsightsBuilderTest {
     }
 
     @Test
+    fun counts_ignore_rows_as_a_separate_stream_from_digest_and_silent() {
+        // Plan `2026-04-21-ignore-tier-fourth-decision` Task 6: IGNORE is no
+        // longer merged into the "조용히 처리" (DIGEST+SILENT) bucket — callers
+        // read `ignoredCount` separately so the Settings summary can render
+        // "정리 N + 삭제 M".
+        val summary = builder.build(
+            capturedApps = listOf(
+                capturedApp(packageName = "com.ads.app", appName = "광고", notificationCount = 6),
+            ),
+            notifications = listOf(
+                notification(id = "1", packageName = "com.ads.app", appName = "광고", status = NotificationStatusUi.DIGEST),
+                notification(id = "2", packageName = "com.ads.app", appName = "광고", status = NotificationStatusUi.SILENT),
+                notification(id = "3", packageName = "com.ads.app", appName = "광고", status = NotificationStatusUi.IGNORE),
+                notification(id = "4", packageName = "com.ads.app", appName = "광고", status = NotificationStatusUi.IGNORE),
+                notification(id = "5", packageName = "com.ads.app", appName = "광고", status = NotificationStatusUi.IGNORE),
+                notification(id = "6", packageName = "com.ads.app", appName = "광고", status = NotificationStatusUi.PRIORITY),
+            ),
+            suppressedPackages = setOf("com.ads.app"),
+        )
+
+        val insight = summary.appInsights.single()
+        assertEquals(2, insight.filteredCount) // DIGEST + SILENT only
+        assertEquals(3, insight.ignoredCount)
+        assertEquals(5, summary.selectedIgnoredCount + summary.selectedFilteredCount)
+        assertEquals(3, summary.selectedIgnoredCount)
+    }
+
+    @Test
     fun excludes_unsuppressed_apps_from_selected_breakdown_inputs() {
         val summary = builder.build(
             capturedApps = listOf(
