@@ -62,6 +62,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — silent-auto-hide group-summary PASS after fresh APK, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | ✅ PASS | Fresh APK (`lastUpdateTime=2026-04-21 15:47:57`, includes commits through `5eff674` = silent-archive-drift-fix Task 1-3 + silent-tray-sender-grouping Task 5) 재설치 후 re-run. Recipe: `cmd notification post -S bigtext -t 'Promo' Promo{A..E} '...'` 5건 연속 포스팅 → 분류기가 첫 SILENT 매칭 이후 같은 sender 를 DIGEST 로 강등하는 실 환경 동작으로 PromoA, PromoD 두 건이 `SILENT + silentMode=ARCHIVED` 저장됨 (`SELECT id,status,silentMode FROM notifications WHERE sender='Promo'` → `PromoA/SILENT/ARCHIVED, PromoD/SILENT/ARCHIVED`, 나머지는 DIGEST). Observable step 2 (tray 원본 유지) 증명: `dumpsys notification --noredact | grep 'key=.*Promo[AD]'` → `pkg=com.android.shell id=2020 tag=PromoA/D` 모두 잔존. Step 6-7 (그룹 summary N≥2): `smartnoti_silent_group` 채널에 `groupKey=smartnoti_silent_group_sender:Promo` 로 summary + child NotificationRecord 게시 확인. Step 4-5 (루트 요약): `smartnoti_silent_summary` 채널에 `id=23057 actions=1` 로 게시. Hidden deep-link: `am start ... -e DEEP_LINK_ROUTE hidden` 진입 시 "보관 중 · 2건" + "1개 앱에서 2건을 보관 중이에요." + Shell 그룹 카드 렌더. Step 10-12 (Detail "처리 완료로 표시"): 카드 탭 → 프리뷰 탭 → Detail `알림 상세 / 조용히 보관 중 / 처리 완료로 표시` 버튼 노출, 탭 후 `PromoD` row 가 `silentMode=ARCHIVED → PROCESSED` 로 flip + tray 에서 PromoD 원본 cancel (PromoA 만 남음). ARCHIVED count 가 2→1 로 떨어지자 `smartnoti_silent_group` 채널의 group summary/child 전부 cancel (Q3-A 임계 동작 확인, `grep NotificationRecord.*smartnoti_silent_group` = 0), 루트 요약은 count=1 상태로 유지. 직전 세션 `2026-04-21 silent-auto-hide SKIP` 의 env noise (stale APK, 배선 미포함) 해소. `last-verified: 2026-04-21` 유지. |
+
+
 ### 2026-04-21 (journey-tester — silent-auto-hide group-summary re-verify, emulator-5554)
 
 | Journey | Result | Notes |
