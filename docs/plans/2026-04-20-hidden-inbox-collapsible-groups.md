@@ -1,10 +1,11 @@
 ---
 id: hidden-inbox-collapsible-groups
 title: 숨긴 알림 인박스 — 앱별 그룹 접기/펼치기
-status: planned
+status: shipped
 owner: @wooilkim
 journey: hidden-inbox
 created: 2026-04-20
+superseded-by: ../journeys/hidden-inbox.md
 ---
 
 ## Motivation
