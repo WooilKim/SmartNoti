@@ -87,3 +87,7 @@ If a self-merged row caused a regression:
 | 2026-04-21T01:53:26Z | project-manager | #89 | collapsible Hidden-inbox groups (plan-implementer) | https://github.com/WooilKim/SmartNoti/pull/89/checks |
 | 2026-04-21T01:53:43Z | project-manager | #91 | silent-split task 1 (SilentMode enum + nullable column, v5→6) | https://github.com/WooilKim/SmartNoti/pull/91/checks |
 | 2026-04-21T01:53:52Z | project-manager | #92 | pr-review-log audit rows for #88–#91 (PM own) | https://github.com/WooilKim/SmartNoti/pull/92/checks |
+| 2026-04-21T03:53:03Z | project-manager | #107 | silent-split Task 4 — split Hidden into 보관/처리 tabs (backfill) | https://github.com/WooilKim/SmartNoti/actions/runs/24703096616 |
+| 2026-04-21T03:52:51Z | project-manager | #108 | ops: add loop-monitor agent spec (docs-only, backfill) | https://github.com/WooilKim/SmartNoti/pull/108/checks |
+| 2026-04-21T03:59:05Z | project-manager | #109 | ops(orchestrator): add Agent tool to loop-orchestrator spec (docs-only, backfill) | https://github.com/WooilKim/SmartNoti/actions/runs/24703251629 |
+| 2026-04-21T04:14:45Z | project-manager | #110 | silent-archive T5 — SilentArchivedSummaryCount helper + notifier rename (backfill) | https://github.com/WooilKim/SmartNoti/actions/runs/24703677983 |
