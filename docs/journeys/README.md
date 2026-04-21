@@ -63,6 +63,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — digest-suppression fresh APK post-IGNORE re-verify PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | ✅ PASS | Target: 직전 ticks 가 `home-overview` / `rules-management` / `notification-capture-classify` / `notification-detail` / `ignored-archive` / `hidden-inbox` 를 fresh APK (`lastUpdateTime=2026-04-22 03:46:30`, post-IGNORE 빌드) 에서 재검증한 반면 `digest-suppression` 는 2026-04-21 의 re-verify #2 이후 post-IGNORE APK 에서 미검증. DataStore dump 확인: `suppress_source_for_digest_and_silent` 플래그 + `suppressed_source_apps` 리스트에 `com.android.shell` + `com.smartnoti.testnotifier` 영속 — opt-in 사전조건 충족 (cold-start 없이 실행 가능). Recipe 전체 실행: (1) `for i in 1 2 3; cmd notification post -S bigtext -t 'Promo' SuppTest${i}_0421v '같은 광고 텍스트'` 3회 포스팅. (2) `dumpsys notification --noredact | grep SuppTest` → **매치 0건** = 원본이 shell 패키지 tray 에서 제거됨 (Observable step 4 `cancelNotification(sbn.key)` 증명). (3) Replacement 관측: 2건의 `pkg=com.smartnoti.app` NotificationRecord 가 `channel=smartnoti_replacement_digest_default_light_private_noheadsup` + `flags=0x18 (FLAG_AUTO_CANCEL\|FLAG_ONLY_ALERT_ONCE)` + `category=status` + `actions=3` + `android.title=String (Promo)` + `android.subText=String (Shell • Digest)` + 별도 group summary 1건 `key=...|ranker_group|` `flags=0x710 (GROUP_SUMMARY)` 로 렌더 (Observable steps 5.a-d 전부 사용자 관측 일치 — 채널/제목/subText/액션 3개 계약). `ReplacementNotificationIds.idFor` 가 notificationId 포함 (2026-04-20 change log) 으로 `id=-639811959` 와 `id=247691722` 서로 다른 2건이 공존 = 같은 앱 서로 다른 내용이 덮어쓰지 않음 재현. (4) DB 쿼리 `SELECT id, status, replacementNotificationIssued, reasonTags FROM notifications WHERE id LIKE '%SuppTest%0421v'` = 3행 `status=DIGEST`, `replacementNotificationIssued=1`, `reasonTags=발신자 있음\|사용자 규칙\|프로모션 알림\|온보딩 추천\|조용한 시간` (SuppTest3 는 `반복 알림` 추가 — DuplicateNotificationPolicy 가 3번째 게시를 `반복 알림` reason 으로 표시하지만 classifier 는 여전히 DIGEST 라우팅 유지, 계약 일치). Exit state 3조건 전부 충족: (a) tray 원본 제거 확인, (b) replacement 잔존 (autoCancel), (c) DB `status=DIGEST` + `replacementNotificationIssued=true`. Observable step 6-7 (액션 탭 feedback + contentIntent 로 Detail 이동) 은 recipe 본문이 명시적으로 요구하지 않아 이번 sweep 에서는 직접 탭하지 않음 — 액션 pending-intent 는 `actions=3` 으로 인코딩 확인 (바이너리 존재 증명). DRIFT 없음. `last-verified: 2026-04-21` 유지 (오늘 자로 이미 최신). Known gaps 변경 없음 — 문서의 auto-expansion 재등록 gap 은 이번 관측에서 재현되지 않음 (opt-in 이 이미 켜져 있어 expansion 자체가 발생하지 않는 상태). IGNORE tier 도입 이후 DIGEST 라우팅에 regression 없음을 증명. |
+
+
 ### 2026-04-22 (journey-tester — home-overview fresh APK post-IGNORE re-verify PASS, emulator-5554)
 
 | Journey | Result | Notes |
