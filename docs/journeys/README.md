@@ -63,6 +63,13 @@
 ## Verification log
 
 
+### 2026-04-21 (journey-tester — notification-detail IGNORE button + dialog + undo PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | ✅ PASS | Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` 8/8 tasks post-merge (#189 + #192) end-to-end re-verify of NEW "무시" button path. Fresh APK `lastUpdateTime=2026-04-22 02:35:44` on emulator-5554. Recipe: (1) `cmd notification post -S bigtext -t '광고' IgnoreBtnTest '무시 버튼 Detail 테스트'` → DIGEST 분류 (DB `id=com.android.shell:2020:IgnoreBtnTest, status=DIGEST, sender=광고`). (2) 홈 → 정리함 탭 → 프리뷰 row (`광고 / 무시 버튼 Detail 테스트`) 탭 → `NotificationDetailScreen` 마운트. (3) 스크롤 → "이 알림 학습시키기" 카드에 4 버튼 `중요로 고정 (540,1982)` / `Digest로 보내기 (236,2101)` / `조용히 처리 (539,2101)` / `무시 (843,2102)` — least→most destructive 순서 계약 확인 (Observable step 4 갱신본). (4) `무시` 탭 → `IgnoreConfirmationDialog` 렌더: 제목 `이 알림을 무시할까요?` + 본문 `이 알림을 무시하면 앱에서도 삭제됩니다. 되돌리려면 설정 > 무시된 알림 보기.` + `취소` / `무시` 액션 (Observable step 5.i 일치). (5) 다이얼로그 `무시` 확정 → Detail pop → 정리함 배경 복귀 + 스낵바 `무시됨. 되돌리려면 탭` + action `되돌리기` 렌더 (`applyIgnoreWithUndo` → `onBack()` 체인 증명). DB row `status=IGNORE` flip + rules datastore 에 신규 `person:광고\|광고\|무시 (즉시 삭제)\|PERSON\|IGNORE\|true\|광고` upsert 확인 (`applyAction(IGNORE)` + `upsertRule(IGNORE)` 증명). (6) `되돌리기` 탭 → DB row `status=DIGEST` 복원 + rule 은 prior `person:광고\|...\|ALWAYS_PRIORITY` 로 복원 (**새 룰이 아니었으므로 delete 대신 prior action upsert** — Observable step 5.ii "기존 룰이면 prior action 으로 upsert" 경로 정확히 증명. 기존 `person:광고→ALWAYS_PRIORITY` 룰이 이전 tick 에서 유지되어 있었기 때문에 이 분기가 자연스럽게 커버됨). Observable steps 4–5 IGNORE 분기 전부 일치 + Exit state 3조건 충족. DRIFT 없음. `last-verified` 는 2026-04-21 유지 (이미 오늘자). IGNORE 플로우가 Home StatPill 제외, Digest 인박스 제외, Settings 토글 OFF 기본 계약을 유지하면서도 Detail 화면에서는 full render + destructive action + undo 3 초 창을 정확히 제공함을 재확인 — #189 + #192 머지 후 회귀 없음. |
+
+
 ### 2026-04-21 (journey-tester — ignored-archive first verification PASS, emulator-5554)
 
 | Journey | Result | Notes |
