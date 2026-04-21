@@ -59,6 +59,7 @@ import com.smartnoti.app.onboarding.OnboardingPermissions
 import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
 import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.EmptyState
+import com.smartnoti.app.ui.components.HomePassthroughReviewCard
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.QuickActionCard
 import com.smartnoti.app.ui.theme.DigestContainer
@@ -179,6 +180,12 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+        item {
+            HomePassthroughReviewCard(
+                count = priorityCount,
+                onReviewClick = onPriorityClick,
+            )
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
