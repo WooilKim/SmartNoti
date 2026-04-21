@@ -81,6 +81,9 @@ If a self-merged row caused a regression:
 | 2026-04-21T01:53:43Z | project-manager | #91 | silent-split task 1 (SilentMode enum + nullable column, v5→6) | https://github.com/WooilKim/SmartNoti/pull/91/checks |
 | 2026-04-21T01:53:52Z | project-manager | #92 | pr-review-log audit rows for #88–#91 (PM own) | https://github.com/WooilKim/SmartNoti/pull/92/checks |
 | 2026-04-21T02:10:00Z | journey-tester | #97 | hidden-inbox re-verify vs #89 collapsible contract | https://github.com/WooilKim/SmartNoti/pull/97/checks |
+| 2026-04-21T03:32:30Z | project-manager | #105 | silent-tray-sender-grouping Task 1 — SilentNotificationGroupingPolicy (pure additive) | https://github.com/WooilKim/SmartNoti/pull/105/checks |
+| 2026-04-21T03:32:45Z | project-manager | #104 | listener-reconnect-sweep Task 3 — listener wiring + DAO exists-by-content-signature | https://github.com/WooilKim/SmartNoti/pull/104/checks |
+| 2026-04-21T03:33:00Z | project-manager | #103 | silent-split Task 3 — Detail "처리 완료로 표시" button + markSilentProcessed | https://github.com/WooilKim/SmartNoti/pull/103/checks |
 | 2026-04-21T01:53:26Z | project-manager | #89 | collapsible Hidden-inbox groups (plan-implementer) | https://github.com/WooilKim/SmartNoti/pull/89/checks |
 | 2026-04-21T01:53:43Z | project-manager | #91 | silent-split task 1 (SilentMode enum + nullable column, v5→6) | https://github.com/WooilKim/SmartNoti/pull/91/checks |
 | 2026-04-21T01:53:52Z | project-manager | #92 | pr-review-log audit rows for #88–#91 (PM own) | https://github.com/WooilKim/SmartNoti/pull/92/checks |
