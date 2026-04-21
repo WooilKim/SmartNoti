@@ -3,7 +3,7 @@ id: notification-capture-classify
 title: 알림 캡처 및 분류
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -110,3 +110,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: 분류 단계에서 rule 매치가 `RuleConflictResolver` 로 이동 — base rule 과 해당 base 를 가리키는 override rule 이 동시에 매치되면 override 가 승리, 단일 tier 는 `allRules` 인덱스 tie-break (earlier wins). Classifier 는 `NotificationClassification(decision, matchedRuleIds)` 를 반환하고 `NotificationCaptureProcessor` 가 이를 풀어 `NotificationEntityMapper` 경유로 `ruleHitIds` 컬럼에 영속 (PR #146, #149, plan `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase B Task 2 + Phase C Task 2). `last-verified` 는 recipe 재실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-21: journey-tester 재검증 sweep PASS — recipe end-to-end (`cmd notification post … CaptureClassifyTest_0421`) 로 PRIORITY 라우팅 + `사용자 규칙` 태그 관측, 5개 unit test 클래스 (`NotificationClassifierTest`, `RuleConflictResolverTest`, `DuplicateNotificationPolicyTest`, `QuietHoursPolicyTest`, `NotificationCapturePolicyTest`) 총 34건 green. 자세한 증거는 `docs/journeys/README.md` Verification log. DRIFT 없음. 설치된 APK 가 `ruleHitIds` 컬럼 이전 빌드 (`lastUpdateTime=2026-04-21 15:47:57`) 라 live schema 에서 해당 컬럼은 확인 불가 — pre-condition 제약이며 contract 는 code-level test 로 증명.
 - 2026-04-21: 4번째 분류 tier **IGNORE (무시)** 추가 — `NotificationDecision.IGNORE` / `NotificationStatusUi.IGNORE` / `RuleActionUi.IGNORE` 및 Room v8→v9 no-op migration (#178 `6aad9d5`), `NotificationClassifier` 의 `RuleActionUi.IGNORE → NotificationDecision.IGNORE` 매핑 (#179 `5f516d6`). Classifier 의 rule-miss 분기는 IGNORE 를 생성하지 않으며, `ALWAYS_PRIORITY` override 로 base IGNORE 를 덮는 경로는 `RuleConflictResolver` 기존 계약 그대로. Exit state 의 status 집합에 IGNORE 포함. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Tasks 1-3. `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
+- 2026-04-22: journey-tester 재검증 sweep PASS (fresh APK `lastUpdateTime=2026-04-22 03:46:30`). IGNORE 분류 path end-to-end 최초 관측 — `keyword:IGNOREKEYr` IGNORE 룰 존재 상태에서 `cmd notification post -t 'IGNOREKEYr in title' IgnoreCaptureTest_0421` 포스팅 → DB row `status=IGNORE, reasonTags=발신자 있음|사용자 규칙|IgnoreTestRule|조용한 시간, ruleHitIds=keyword:IGNOREKEYr` 저장 + tray cancel 확인. PRIORITY 경로 + rule-miss SILENT 경로도 대조 재현. Home StatPill 이 IGNORE 1건을 3-bucket (`즉시 16 / Digest 2 / 조용히 12 = 30`) 에서 필터 아웃, total captured 31 과 차이 1 발생 — Exit state 의 "기본 뷰에서 필터 아웃" 계약 증명. `ruleHitIds` live schema 관측 재확인 (23-column v9). DRIFT 없음. 자세한 증거는 `docs/journeys/README.md` Verification log.

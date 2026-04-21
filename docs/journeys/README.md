@@ -22,7 +22,7 @@
 ### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-21 |
+| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-22 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-21 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-21 |
 
@@ -61,6 +61,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — notification-capture-classify IGNORE path end-to-end PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | ✅ PASS | Fresh APK `lastUpdateTime=2026-04-22 03:46:30` (post-Phase-B/C + IGNORE-tier + nav-race fix) 에서 IGNORE 분류 path end-to-end 최초 라이브 관측. 선행 확인: live Room schema v9 = 23 columns (`ruleHitIds TEXT` 포함) + DataStore 내 `keyword:IGNOREKEYr|IgnoreTestRule|무시 (즉시 삭제)|KEYWORD|IGNORE|true|IGNOREKEYr` 룰 persisted. Recipe end-to-end (3 경로 교차 검증): (1) **PRIORITY**: `cmd notification post -t 'Bank' BankAuthCapture_0421 '인증번호 123456을 입력하세요'` → DB row `status=PRIORITY, reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|조용한 시간\|중요 키워드, ruleHitIds=keyword:인증번호,결제,배송,출발`. KEYWORD rule 매치 + `ruleHitIds` 영속 확인 (PR #145 Phase B Task 1 실제 바이너리 동작). (2) **IGNORE (신규 path, 이 sweep 의 main target)**: `cmd notification post -S bigtext -t 'IGNOREKEYr in title' IgnoreCaptureTest_0421 'IGNOREKEYr 본문 테스트 캡처'` → DB row `status=IGNORE, reasonTags=발신자 있음\|사용자 규칙\|IgnoreTestRule\|조용한 시간, ruleHitIds=keyword:IGNOREKEYr` 저장 + `dumpsys notification --noredact` 에서 해당 sbn 부재 (tray cancel 수행 확인 = IGNORE 의 DELETE 계약, Exit state 3번째 조건 "tray cancel 만 수행" 증명). Observable step 8 세 번째 bullet ("IGNORE 는 룰 매치 경로에서만 도달 가능, `RuleActionUi.IGNORE`→`NotificationDecision.IGNORE`") 증명. (3) **Rule-miss SILENT (대조군)**: `cmd notification post -t 'RandomSender_0421' NoMatchTest_0421 'randomcontent body'` → DB row `status=SILENT, reasonTags=발신자 있음\|조용한 시간, ruleHitIds=(empty)`. Classifier 의 rule-miss 분기가 IGNORE 를 생성하지 않음 확인 (Observable step 8 "Classifier 의 VIP / 우선순위 키워드 / 반복 / Quiet hours / 기본 SILENT 분기는 절대 IGNORE 를 만들지 않는다" 증명). 앱 UI 교차 확인: cold-start MainActivity → Home StatPill `즉시 16 / Digest 2 / 조용히 12` (sum=30) + 헤더 `오늘 알림 31개 중…` — 총 captured 31건 중 IGNORE 1건이 3-bucket (Priority/Digest/Silent) 어디에도 집계되지 않음 = Exit state "기본 뷰에서 필터 아웃" 계약 재현. `observePriority/Digest/Silent` 및 `toHiddenGroups` 의 IGNORE 필터 (PR #182 이후) 가 binary 레벨에서도 동작. DB `SELECT status, COUNT(*) GROUP BY status` = `DIGEST 2 / IGNORE 1 / PRIORITY 16 / SILENT 13` — 4-tier 구분 persistent. Observable steps 1–10 + Exit state (`status ∈ {PRIORITY,DIGEST,SILENT,IGNORE}` + IGNORE 는 tray cancel only + 기본 뷰 필터 아웃) 전부 사용자 관측에서 증명. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신. Known gap 변경 없음. 이전 sweep 의 pre-condition 제약 ("APK 가 Phase B/C 이전 빌드라 `ruleHitIds` 컬럼 binary 재현 불가") 은 이번 fresh APK 에서 **해소 확인**. |
 
 
 ### 2026-04-22 (journey-tester — ignored-archive first-tap nav-race post-fix PASS, emulator-5554)
