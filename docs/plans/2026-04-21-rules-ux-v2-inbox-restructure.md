@@ -154,7 +154,7 @@ UI 는 둘 다 동일한 chip 으로 렌더. 사용자가 "발신자 있음" 을
 5. **Drag-to-reorder priority** [IN PROGRESS via PR #152]
    - 동일 tier 의 rule 들을 드래그로 재배치. `RulesRepository.moveRule` 은 이미 존재, extend to override-aware.
    - 실제 구현: `moveRule(rules, ruleId, direction)` 가 타겟 rule 의 `overrideOf` 값을 tier key 로 삼아, 같은 tier key 를 가진 가장 가까운 이웃 (UP 은 currentIndex 이전, DOWN 은 이후) 까지 non-tier rows 를 skip 하며 탐색 → 찾으면 swap, 없으면 no-op. `RuleConflictResolver` 의 tie-break 이 "earlier = higher priority" 이므로 tier 내부 순서는 그대로 의미를 유지 (base 들은 base 들끼리, override 들은 같은 base 를 공유하는 sibling 끼리만 우선순위 변경). Tests-first: `RuleOrderingTest` 에 6 케이스 추가 — (a) UP 이 override row 를 건너뛰고 base 끼리 swap, (b) DOWN base 가 intervening override 를 건너뛰고 다음 base 너머로 이동, (c) 같은 base 를 공유하는 override sibling 끼리 swap, (d) override 가 다른 base group 의 rule 과는 절대 swap 안 함, (e) 첫 base 의 UP 은 no-op, (f) 존재하지 않는 ruleId 는 no-op. UI 쪽은 `RuleRow` 에 `DragHandle` 아이콘 버튼 추가 — `detectDragGesturesAfterLongPress` 로 long-press + vertical drag 을 잡고, 48dp step 마다 기존 `onMoveUp` / `onMoveDown` 콜백을 호출해 `RulesRepository.moveRule` 을 통해 tier 가드가 한 곳에서만 동작하도록 통일. 기존 arrow 버튼은 접근성 fallback 으로 유지.
-6. **Journey 문서 갱신**
+6. **Journey 문서 갱신** [IN PROGRESS via PR #TBD]
    - `rules-management.md` Observable steps 에 override UX 추가. Change log.
    - `notification-capture-classify.md` Observable steps 의 분류 순서에 override 단계 추가.
 
