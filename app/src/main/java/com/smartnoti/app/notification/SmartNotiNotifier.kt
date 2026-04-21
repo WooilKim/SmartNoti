@@ -148,7 +148,10 @@ class SmartNotiNotifier(
             }
             manager.createNotificationChannel(channel)
         }
+
+        ensureSilentGroupChannelOn(manager)
     }
+
 
     private fun createContentIntent(
         notificationId: String,
@@ -214,6 +217,46 @@ class SmartNotiNotifier(
         const val EXTRA_PARENT_ROUTE = "com.smartnoti.app.extra.PARENT_ROUTE"
         const val EXTRA_REPLACEMENT_NOTIFICATION_ID = "com.smartnoti.app.extra.REPLACEMENT_NOTIFICATION_ID"
         const val EXTRA_DEEP_LINK_ROUTE = "com.smartnoti.app.extra.DEEP_LINK_ROUTE"
+
+        /**
+         * Channel that hosts Silent **group summaries** and their **children** in the system
+         * tray. `IMPORTANCE_MIN` so children arriving after we've already classified them as
+         * SILENT never surface a heads-up or sound — they exist only so Android's group-collapse
+         * affordance (tap the summary to expand children) can show the user which senders have
+         * pending 조용히 items.
+         *
+         * Introduced by `silent-tray-sender-grouping` Task 2.
+         */
+        const val CHANNEL_SILENT_GROUP = "smartnoti_silent_group"
+
+        /**
+         * Ensures the [CHANNEL_SILENT_GROUP] channel exists without requiring a full
+         * [SmartNotiNotifier] instance. Reused by [SilentHiddenSummaryNotifier] so the tray
+         * grouping pipeline can create the channel lazily on first post, matching Android's
+         * "first create channel, then notify()" contract.
+         */
+        fun ensureSilentGroupChannel(context: Context) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+            val manager = context.getSystemService(NotificationManager::class.java) ?: return
+            ensureSilentGroupChannelOn(manager)
+        }
+
+        private fun ensureSilentGroupChannelOn(manager: NotificationManager) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+            if (manager.getNotificationChannel(CHANNEL_SILENT_GROUP) != null) return
+            val channel = NotificationChannel(
+                CHANNEL_SILENT_GROUP,
+                "SmartNoti 조용히 그룹",
+                NotificationManager.IMPORTANCE_MIN,
+            ).apply {
+                description = "조용히로 분류된 알림을 발신자·앱 단위로 묶어 보여주는 채널입니다."
+                setShowBadge(false)
+                enableVibration(false)
+                setSound(null, null)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_SECRET
+            }
+            manager.createNotificationChannel(channel)
+        }
 
         internal fun feedbackRequestCodeForTest(notificationId: String, action: String): Int {
             return (notificationId.hashCode() * 31) + action.hashCode()
