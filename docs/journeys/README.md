@@ -39,7 +39,7 @@
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-21 |
-| [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-21 |
+| [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-22 |
@@ -61,6 +61,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — digest-inbox fresh APK post-IGNORE first ADB verify PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-inbox | ✅ PASS | First ADB verification on post-IGNORE fresh APK (`lastUpdateTime=2026-04-22 03:46:30`) — 직전 tick 이 `last-verified` bump 를 ADB 검증까지 보류해두었던 항목. Recipe: `for i in 1..4; do cmd notification post -S bigtext -t 'Coupang' Deal$i '오늘의 딜 ${i}건'; done` 4건 연속 → duplicate-suppression 이 Deal1/2=SILENT, Deal3/4=DIGEST 로 처리 (DB `SELECT id,title,status,packageName FROM notifications WHERE title='Coupang'` 재확인). (Step 1) BottomNav `정리함` 탭 (407,2274) 탭 → Digest composable 렌더. (Steps 2–3) 기존 누적 DIGEST 11건 (Promo/광고/Player/엄마/Coupang 등) 전부 `packageName=com.android.shell` 단일 그룹으로 병합 — `observeDigestGroupsFiltered` + `toDigestGroups` 의 packageName grouping 계약 증명. (Step 4) `DigestGroupCard` 렌더: eyebrow `Shell` + count badge `11건` + 요약 `Shell 관련 알림 11건` + `최근 묶음 미리보기` 섹션 + `탭하면 원본 알림 상세를 확인할 수 있어요` 서브카피 + NotificationCard preview rows (`Shell / Coupang / 오늘의 / Digest / 발신자 있음 · 조용한 시간 · 반복 알림`) — summary copy `{app} 관련 알림 {N}건` format 과 정합. (Step 5) Coupang preview (540,1270) 탭 → `NotificationDetailScreen` 마운트 (top bar `알림 상세` + `Shell / Coupang / 오늘의 / Digest / 왜 이렇게 처리됐나요? / SmartNoti 가 본 신호 / 발신자 있음 · 조용한 시간 / 적용된 규칙 / 반복 알림 / 전달 모드 · Digest 묶음 전달 / 소리 · 조용히 표시 / Heads-up · 꺼짐 / 잠금화면 · 내용 일부만 표시`) — Routes.Detail.create(id) 경로 확인. Observable steps 1–5 + Exit state (앱별 DIGEST 묶음 렌더링 / packageName 그룹핑 계약) 전부 일치. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신. |
 
 
 ### 2026-04-22 (journey-tester — silent-auto-hide fresh APK post-IGNORE re-verify PASS, emulator-5554)

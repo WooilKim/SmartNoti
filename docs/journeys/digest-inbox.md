@@ -3,7 +3,7 @@ id: digest-inbox
 title: 정리함 인박스
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -80,3 +80,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Digest 기본 뷰에서 제외됨을 명시 — `observeDigestGroupsFiltered` 는 `status == DIGEST` 로만 필터하므로 IGNORE row 는 자동 배제, [ignored-archive](ignored-archive.md) 화면에서만 노출. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
+- 2026-04-22: Fresh APK (`lastUpdateTime=2026-04-22 03:46:30`, post-IGNORE) ADB end-to-end 검증 — Observable steps 1–5 + Exit state 전부 일치. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신.
