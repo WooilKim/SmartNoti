@@ -311,6 +311,45 @@ class NotificationEntityMapperTest {
         assertEquals(emptyList<String>(), model.matchedRuleIds)
     }
 
+    /**
+     * Task 1 (RED phase) of plan `2026-04-21-ignore-tier-fourth-decision`.
+     *
+     * Locks in that a `NotificationUiModel` with `status = IGNORE` round-trips
+     * through [toEntity] / [toUiModel] without lossy coercion. Uses
+     * `enumValueOf` with the literal string "IGNORE" so this file compiles
+     * today (keeps `assembleDebug` green); at runtime the lookup throws
+     * `IllegalArgumentException` until Task 2 adds the enum value. That is the
+     * intended RED state.
+     *
+     * Task 2 adds `NotificationStatusUi.IGNORE`; this test flips green without
+     * edits here.
+     */
+    @Test
+    fun ignore_status_round_trips_through_entity_and_back() {
+        val ignoreStatus = enumValueOf<NotificationStatusUi>("IGNORE")
+
+        val model = NotificationUiModel(
+            id = "com.adtech.spammer:1700001000",
+            appName = "광고앱",
+            packageName = "com.adtech.spammer",
+            sender = null,
+            title = "한정 할인",
+            body = "오늘만 90% 할인!",
+            receivedAtLabel = "방금",
+            status = ignoreStatus,
+            reasonTags = listOf("사용자 규칙", "광고"),
+        )
+
+        val entity = model.toEntity(postedAtMillis = 1_700_001_000_000)
+
+        assertEquals("IGNORE", entity.status)
+
+        val roundTrip = entity.toUiModel()
+        assertEquals(ignoreStatus, roundTrip.status)
+        assertEquals("IGNORE", roundTrip.status.name)
+        assertEquals(model.reasonTags, roundTrip.reasonTags)
+    }
+
     @Test
     fun content_signature_round_trip_is_preserved() {
         val model = NotificationUiModel(
