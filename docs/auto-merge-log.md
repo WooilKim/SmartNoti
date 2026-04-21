@@ -128,4 +128,5 @@ If a self-merged row caused a regression:
 | 2026-04-21T17:08:43Z | project-manager | #185 | plan-implementer Task 6 inbox filter + IGNORE archive screen + insights split; tests-first (repo, insights, summary), CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24735349365 |
 | 2026-04-21T17:20:00Z | project-manager | #187 | plan-implementer Task 6a Detail "무시" button + dialog + undo + ACTION_IGNORE broadcast; tests-first, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24735802883
 | 2026-04-21T17:30:00Z | project-manager | #188 | PM T18 chain-audit for #183-#187 (replaces #186); docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24736031890 |
+| 2026-04-21T17:40:00Z | project-manager | #190 | PM T19 chain-audit for #188 merge + #189 defer; docs-only append, CI SUCCESS | https://github.com/WooilKim/SmartNoti/actions/runs/24736730702 |
 | 2026-04-21T17:50:13Z | journey-tester | #192 | ignored-archive first verification PASS (fresh APK rebuild); Known gap race crash noted | https://github.com/WooilKim/SmartNoti/actions/runs/24737549200 |
