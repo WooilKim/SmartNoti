@@ -172,3 +172,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-21T00:00:00Z | #248 | gap-planner | DEFER | CI pending |
 | 2026-04-22T06:34:59Z | #248 | gap-planner | approve+merge | CategoryEditor save wiring plan; CI green; docs-only |
 | 2026-04-22T06:54:54Z | #249 | plan-implementer | APPROVE | CategoryEditor save-race fix; CI green; 300-line test file; journey+plan synced |
+| 2026-04-22T06:54:59Z | #250 | gap-planner | DEFER | CI pending (Unit tests + debug APK); docs-only plan for launch crash |
