@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+superseded-by: docs/journeys/categories-management.md
+shipped-via: "#254"
 ---
 
 # 분류 탭 Empty State — Inline CTA + FAB 가시성 회복
