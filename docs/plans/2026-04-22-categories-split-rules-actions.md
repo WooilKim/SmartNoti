@@ -121,8 +121,10 @@ created: 2026-04-22
 
 **Steps:**
 1. Category 의 specificity = max(member Rule specificity). Rule 과 달리 Category 자체는 app pin 여부가 있으므로 `appPackageName != null` 이면 bonus.
-2. 동일 specificity 면 Category id 사전순 또는 생성 시각 최신 우선 (제품 결정 필요 — Risks 참조).
-3. 테스트로 tie-break 엣지 케이스 (동일 specificity, IGNORE vs SILENT 충돌 등) 고정.
+2. 동일 specificity 면 **사용자가 분류 탭에서 drag-reorder 로 지정한 `order` 가 낮은(= 위쪽에 있는) Category 가 이긴다**. (사용자 결정 2026-04-22: 명시적 priority 가 예측 가능성이 높고, Phase C 의 `RulesRepository.moveRule` tier-aware 인프라 재사용 가능.)
+3. Category 모델에 `order: Int` 필드 추가 (분류 탭 상단 = 높은 priority). 마이그레이션/자동 생성 시 초기 `order = max(existing) + 1` (뒤에 append).
+4. `CategoriesRepository.moveCategory(categoryId, direction)` — Phase C 의 tier-aware `moveRule` 과 동일한 스왑 로직 (직접 이웃과 교환).
+5. 테스트로 tie-break 엣지 케이스 (동일 specificity + 다른 order, IGNORE vs SILENT 충돌, drag-reorder 로 결과가 뒤집히는지) 고정.
 
 ### Task 7: Notifier + NotificationFeedbackPolicy 가 Category.action 을 읽도록 rewire
 
@@ -257,7 +259,7 @@ created: 2026-04-22
 - **Classifier hot path regression:** Phase P2 는 가장 위험. Phase P1 마무리 후 `ClassifyNotificationUseCase` 전체 케이스 테이블을 Category 기반으로 먼저 녹색 만들고, **그 다음에** old path 제거. 한 PR 에 mixed 하지 않기.
 - **IGNORE 연속성:** IGNORE 플랜이 이미 shipped (8/8) 되어 기존 IGNORE Rule 이 존재. 마이그레이션에서 IGNORE Category 로 옮기고, `IgnoredArchiveScreen` 이 Category.action == IGNORE 로 필터링하도록 변경. 변경 전/후로 IGNORE 건수가 동일해야 함 — verification recipe 필수.
 - **Rules 탭 제거 UX:** 사용자가 "Rules 어디감?" 되기 쉬움. Settings 서브메뉴 진입점 + 1회 안내 modal 로 완화하되, 초기 공개 후 사용자 피드백에 따라 단축 진입점(Settings 상단 고정) 재검토.
-- **Specificity tie-break (open question):** 동일 specificity 의 Category 가 충돌할 때 기준 — "생성 시각 최신 우선" vs "사용자가 Category detail 에서 우선순위 수동 지정" 중 어느 쪽인가? **Task 6 시작 전에 사용자 판단 필요.** 기본은 "최근 생성 우선" 으로 가되 사용자 피드백 위에서 재검토.
+- **Specificity tie-break — 결정됨 (2026-04-22):** 동일 specificity 의 Category 충돌 시 **사용자가 분류 탭에서 drag-reorder 로 지정한 `order` 우선**. 이유: 명시적·예측 가능 + Phase C 의 tier-aware `moveRule` 인프라 재사용 가능. Task 6 에 반영됨. "나중에 우선순위 바꾸는 UX" 는 Category detail 에서 drag handle 로 통일.
 - **이름 충돌:** Category 이름은 사용자 자유 입력. 동일 이름 허용/금지? 현재는 허용 (id 가 primary key).
 - **"새 앱 유도 카드" 스팸 가능성:** 앱을 많이 쓰는 사용자에게 카드가 계속 노출되면 피로. N ≥ 3 + 최근 7일 내 notification 이 있는 앱 + 사용자가 "나중에" 를 선택하면 24시간 snooze — 세부 튜닝은 Task 10 에서.
 
