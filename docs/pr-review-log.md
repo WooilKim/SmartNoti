@@ -159,3 +159,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T03:00:28Z | #241 | plan-implementer | DEFER | Task 12 journey doc overhaul; CI pending; ordering dep on #240 cleared (merged fd224fd); re-check next sweep |
 | 2026-04-22T03:05:13Z | #241 | plan-implementer | APPROVE+MERGE | Task 12 journey docs; 14 files in-range; CI green; merged 2de2620 |
 | 2026-04-22T03:05:21Z | #242 | gap-planner | DEFER | CI pending (Unit tests + debug APK); docs-only plan file; will retry next sweep |
+| 2026-04-21T10:50:00Z | #242 | gap-planner | APPROVE | docs-only plan for Categories runtime wiring fix; CI green |
