@@ -25,7 +25,7 @@ status: planned
 
 ---
 
-## Task 1: Failing unit test for debug-inject override
+## Task 1: Failing unit test for debug-inject override [IN PROGRESS via PR #273]
 
 **Objective:** marker 가 있으면 classifier 결과를 덮어쓰고, 없으면 그대로 통과시키는 계약을 단위 테스트로 고정.
 
@@ -43,7 +43,7 @@ status: planned
 3. 테스트는 현재 구현 부재 상태에서 빨간불이어야 함.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.DebugClassificationOverrideTest"` 로 실패 확인.
 
-## Task 2: Implement the override policy
+## Task 2: Implement the override policy [IN PROGRESS via PR #273]
 
 **Objective:** Task 1 테스트를 초록으로.
 
@@ -56,7 +56,7 @@ status: planned
 3. `reasonTags` 를 `listOf("디버그 주입")` 하드코딩 (i18n 은 verification marker 라 무관).
 4. 전체 테스트 실행 — 기존 분류 테스트 깨지는 것 없는지 확인.
 
-## Task 3: Wire into processNotification behind BuildConfig.DEBUG
+## Task 3: Wire into processNotification behind BuildConfig.DEBUG [IN PROGRESS via PR #273]
 
 **Objective:** listener 가 실제 알림을 처리할 때 marker 가 있으면 classifier 결과를 override.
 
@@ -69,7 +69,7 @@ status: planned
 2. release build 에서는 `BuildConfig.DEBUG == false` 로 상수 폴딩되어 override 호출 자체가 dead code — R8 이 제거.
 3. 빌드 확인: `./gradlew :app:assembleDebug`, `./gradlew :app:assembleRelease` 둘 다 성공.
 
-## Task 4: Update priority-inbox verification recipe
+## Task 4: Update priority-inbox verification recipe [IN PROGRESS via PR #273]
 
 **Objective:** recipe 가 더 이상 user rule 누적에 취약하지 않도록 marker 기반으로 재작성.
 
@@ -89,7 +89,7 @@ status: planned
 2. 나머지 step (tray 원본 유지 확인, Home 카드 진입, 인라인 재분류) 은 그대로.
 3. Known gap 원문 ("2026-04-22: 위 fragility 가 ...") 은 절대 수정하지 않고, 그 아래 줄에 `→ plan: docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md` 만 추가.
 
-## Task 5: Journey Change log + sync across related journeys
+## Task 5: Journey Change log + sync across related journeys [IN PROGRESS via PR #273]
 
 **Objective:** 다른 journey 가 이 hook 의 존재를 알고 오남용하지 않게.
 
@@ -97,7 +97,7 @@ status: planned
 - `docs/journeys/priority-inbox.md` — Change log 에 2026-04-22 entry: "Debug-only `FORCE_STATUS` extras marker 추가 (BuildConfig.DEBUG 하에서만 classifier 결과 override). Recipe 를 이 marker 기반으로 재작성해 누적 user rule 의 영향을 받지 않게 함. Plan: docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md". `last-verified` 는 ADB 검증 완료 후 bump.
 - `docs/journeys/notification-capture-classify.md` — Known gaps 또는 Code pointers 에 짧게 "debug-only classifier override (`DebugClassificationOverride`, BuildConfig.DEBUG 한정) 존재" 한 줄 추가.
 
-## Task 6: End-to-end ADB verification + last-verified bump
+## Task 6: End-to-end ADB verification + last-verified bump [IN PROGRESS via PR #273]
 
 **Objective:** 실제 emulator 에서 recipe 가 SKIP 없이 PASS 하는지 관측.
 
@@ -124,7 +124,7 @@ python3 -c "import sqlite3; c=sqlite3.connect('/tmp/check.db').cursor(); \
 ```
 결과가 맞으면 `docs/journeys/priority-inbox.md` 의 `last-verified:` 를 오늘 날짜로 bump + Change log 에 "v1 loop tick re-verify (PASS via debug-inject marker)" 라인 추가.
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [IN PROGRESS via PR #273]
 
 - `./gradlew :app:testDebugUnitTest` 전체 PASS.
 - `./gradlew :app:assembleRelease` PASS (dead-code stripping 동작).

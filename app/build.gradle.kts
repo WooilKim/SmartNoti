@@ -40,6 +40,13 @@ android {
     }
     buildFeatures {
         compose = true
+        // Enabled so `BuildConfig.DEBUG` is emitted into the app's
+        // generated BuildConfig class. Used by
+        // `notification/DebugClassificationOverride` to gate the
+        // debug-only classifier override so release builds dead-strip
+        // the extras marker read (plan
+        // `docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md`).
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            DebugInjectNotificationReceiver — debug APK only.
+
+            Accepts an `am broadcast` from the journey-tester priority-inbox
+            recipe and posts a real Notification whose `extras` bundle carries
+            the `com.smartnoti.debug.FORCE_STATUS` sentinel. The listener's
+            standard `onNotificationPosted` pipeline then picks it up and the
+            `DebugClassificationOverride` resolver pins the classification
+            regardless of accumulated user rules on the emulator.
+
+            This receiver lives under `app/src/debug/`, so it is never merged
+            into release APKs (plan
+            `docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md`).
+        -->
+        <receiver
+            android:name=".debug.DebugInjectNotificationReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.smartnoti.debug.INJECT_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>
