@@ -162,3 +162,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T01:06:42Z | project-manager | #235 | PM T35 audit PR for #233 merge + #234 escalate; docs-only append on ops branch, CI Unit tests + debug APK SUCCESS run 24754540191, MERGEABLE/CLEAN; squash-merged 6676fe15 | https://github.com/WooilKim/SmartNoti/actions/runs/24754540191 |
 | 2026-04-22T01:47:14Z | project-manager | #236 | Categories P1 Tasks 1-4 bundle (Category model + repo + migration + Rule.action removal) | https://github.com/WooilKim/SmartNoti/actions/runs/24755652739 |
 | 2026-04-22T02:19:43Z | project-manager | #239 | P2 Tasks 5+6+7 classifier rewire to Category.action | https://github.com/WooilKim/SmartNoti/actions/runs/24756683183 |
+| 2026-04-22T02:20:44Z | project-manager | #238 | P3 Tasks 8+9 분류 primary tab + editor scaffold | https://github.com/WooilKim/SmartNoti/actions/runs/24756368071 |
