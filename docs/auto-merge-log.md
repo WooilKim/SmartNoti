@@ -179,3 +179,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T08:37:51Z | project-manager | #253 | gap-planner plan: categories empty-state inline CTA | https://github.com/WooilKim/SmartNoti/actions/runs/24768271644 |
 | 2026-04-22T08:41:33Z | project-manager | #254 | Categories FAB visibility + empty-state inline CTA | https://github.com/WooilKim/SmartNoti/actions/runs/24768625424 |
 | 2026-04-22T09:25:00Z | journey-tester | #255 | categories-management | https://github.com/WooilKim/SmartNoti/actions/runs/24770454840 |
+| 2026-04-22T10:35:24Z | journey-tester | #256 | inbox-unified | https://github.com/WooilKim/SmartNoti/actions/runs/24773503110/job/72485742562 |
