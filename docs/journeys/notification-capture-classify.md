@@ -30,10 +30,10 @@ last-verified: 2026-04-22
    [onboarding-bootstrap](onboarding-bootstrap.md) 참고.)
 2. `processNotification(sbn)`이 serviceScope(IO dispatcher)에서 launch 됨.
 3. Extras 에서 `EXTRA_TITLE`, `EXTRA_TEXT`, `EXTRA_CONVERSATION_TITLE` 을 꺼내 title / body / sender 복원. PackageManager 로 appName 조회.
-4. `RulesRepository.currentRules()` / `SettingsRepository.observeSettings().first()` 로 현재 룰/설정 스냅샷 확보.
+4. `NotificationProcessingCoordinator.process(input)` 에 위임 — coordinator 는 `RulesRepository.currentRules()` + **`CategoriesRepository.currentCategories()`** + `SettingsRepository.observeSettings().first()` 세 스냅샷을 동일 call site 에서 읽는다 (2026-04-22 plan `categories-runtime-wiring-fix` Task 4). Categories 가 더 이상 공란으로 분류기에 들어가지 않음 — classifier 가 실제 production 경로에서 `Category.action` 을 적용할 수 있다.
 5. `PersistentNotificationPolicy.shouldTreatAsPersistent(isOngoing, isClearable)` 로 persistent 여부 판단.
 6. `DuplicateNotificationPolicy` + `LiveDuplicateCountTracker` 로 최근 동일 content signature 발생 횟수 집계.
-7. `CapturedNotificationInput` 을 조립해 `NotificationCaptureProcessor.process(input, rules, settings)` 호출.
+7. `CapturedNotificationInput` 을 조립해 `NotificationCaptureProcessor.process(input, rules, categories, settings)` 호출.
 8. 내부에서 `NotificationClassifier.classify(input, rules, categories)` 가 분류 결정:
    - 룰 매치 (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 최우선. 매치된 enabled rule 집합은 override collapse (Phase C) 를 거쳐 `matchedRuleIds` 로 축약.
    - **Decision cascade (Phase P2, plan `2026-04-22-categories-split-rules-actions.md`):**
@@ -71,7 +71,8 @@ last-verified: 2026-04-22
 - `notification/ListenerReconnectActiveNotificationSweepCoordinator` —
   `SweepDedupKey(packageName, contentSignature, postTimeMillis)` 로 in-process
   Set + `NotificationRepository.existsByContentSignature` 조합 dedup
-- `SmartNotiNotificationListenerService#processNotification` — pipeline
+- `SmartNotiNotificationListenerService#processNotification` — pipeline, `NotificationProcessingCoordinator` 에 위임
+- `notification/NotificationProcessingCoordinator` — Rules + Categories + Settings 세 스냅샷을 동일 call site 에서 주입하는 pure Kotlin seam (plan `categories-runtime-wiring-fix` Task 4, #245)
 - `domain/usecase/NotificationCaptureProcessor` — input → decision + matchedRuleIds, `categories: List<Category>` 파라미터 수용 (Phase P2)
 - `domain/usecase/NotificationClassifier` — 분류 규칙 본체 (VIP/키워드/shopping 상수도 이곳 생성자에 주입), rule 매치 후 Category lift + `CategoryConflictResolver` 위임
 - `domain/usecase/CategoryConflictResolver` — app-pin 보너스 + rule-type 사다리 + `order` 드래그 tie-break
@@ -89,6 +90,7 @@ last-verified: 2026-04-22
 - `DuplicateNotificationPolicyTest`
 - `QuietHoursPolicyTest`
 - `NotificationCapturePolicyTest`
+- `SmartNotiNotificationListenerServiceCategoryInjectionTest` — listener (coordinator seam 경유) 가 Categories 를 classifier 로 실제로 전달하는지
 
 ## Verification recipe
 
@@ -111,7 +113,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
   에 없으므로 SmartNoti 가 복구할 수 없음. 리스너가 재접속 시점에 tray 에 남아 있는
   알림만 [onboarding-bootstrap](onboarding-bootstrap.md) bootstrap + reconnect sweep
   이 소급 캡처.
-- `SmartNotiNotificationListenerService#processNotification` 은 현재 `categoriesRepository.currentCategories()` 를 **호출하지 않고** `processor.process(input, rules, settings)` 로 categories 를 공란으로 넘김 (Phase P2 Task 7 의 "Notifier rewire" 는 `CategoryAction.toDecision()` 매핑까지만 shipped, listener 의 스냅샷 loading 은 후속). 결과적으로 매치된 Rule 이 어느 Category 에도 속하지 않게 되어 classifier 는 **"orphan → SILENT"** fallback 으로 라우팅된다. 마이그레이션으로 1:1 Category 가 자동 생성되고 RulesScreen upsert 가 Category 도 upsert 하지만, listener 가 그 Category 를 읽지 않는 한 hot path 상 Category.action 이 실제로 적용되지 않음. 후속 drift plan 이 listener 에 `categoriesRepository.currentCategories()` 를 주입하고 recipe 로 end-to-end 검증해야 함.
+- (resolved 2026-04-22, plan `categories-runtime-wiring-fix` Task 4 / #245) Listener 가 `categoriesRepository.currentCategories()` 를 읽지 않아 classifier 가 "orphan → SILENT" fallback 으로 빠지던 drift — `NotificationProcessingCoordinator` 가 Rules + Categories + Settings 세 스냅샷을 동일 call site 에서 주입하도록 수정돼 해소. journey-tester 가 recipe 재실행해 `last-verified` 를 갱신하면 최종 확인.
 
 ## Change log
 
@@ -123,3 +125,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: 4번째 분류 tier **IGNORE (무시)** 추가 — `NotificationDecision.IGNORE` / `NotificationStatusUi.IGNORE` / `RuleActionUi.IGNORE` 및 Room v8→v9 no-op migration (#178 `6aad9d5`), `NotificationClassifier` 의 `RuleActionUi.IGNORE → NotificationDecision.IGNORE` 매핑 (#179 `5f516d6`). Classifier 의 rule-miss 분기는 IGNORE 를 생성하지 않으며, `ALWAYS_PRIORITY` override 로 base IGNORE 를 덮는 경로는 `RuleConflictResolver` 기존 계약 그대로. Exit state 의 status 집합에 IGNORE 포함. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Tasks 1-3. `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-22: journey-tester 재검증 sweep PASS (fresh APK `lastUpdateTime=2026-04-22 03:46:30`). IGNORE 분류 path end-to-end 최초 관측 — `keyword:IGNOREKEYr` IGNORE 룰 존재 상태에서 `cmd notification post -t 'IGNOREKEYr in title' IgnoreCaptureTest_0421` 포스팅 → DB row `status=IGNORE, reasonTags=발신자 있음|사용자 규칙|IgnoreTestRule|조용한 시간, ruleHitIds=keyword:IGNOREKEYr` 저장 + tray cancel 확인. PRIORITY 경로 + rule-miss SILENT 경로도 대조 재현. Home StatPill 이 IGNORE 1건을 3-bucket (`즉시 16 / Digest 2 / 조용히 12 = 30`) 에서 필터 아웃, total captured 31 과 차이 1 발생 — Exit state 의 "기본 뷰에서 필터 아웃" 계약 증명. `ruleHitIds` live schema 관측 재확인 (23-column v9). DRIFT 없음. 자세한 증거는 `docs/journeys/README.md` Verification log.
 - 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — Rule 모델에서 `action` 필드 제거 (Phase P1 Task 4), 액션은 Category 가 소유. Classifier cascade 는 "Rule 매치 → matched rules 를 소유한 Category 집합 → `CategoryConflictResolver` (app-pin 보너스 + rule-type 사다리 + `order` 드래그 tie-break) → winning Category.action → NotificationDecision". IGNORE 는 Category.action = IGNORE 경로에서만 도달. Rule orphan (어느 Category 에도 소속되지 않은 Rule 매치) 은 SILENT 로 안전 fallback. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Tasks 1-4 (#236), Phase P2 Tasks 5-7 (#239). `last-verified` 는 변경 없음 (Phase P2 이후 recipe 재실행 미수행; Known gap 참고 — listener 가 categories 스냅샷을 아직 주입하지 않아 실제 production 경로에서는 Category.action 적용 전). journey-tester 가 listener 주입 상태 확인 후 `last-verified` 갱신.
+- 2026-04-22: **Listener 의 Categories 주입 drift 해소** — `SmartNotiNotificationListenerService.processNotification` 이 새 `NotificationProcessingCoordinator` 에 위임하도록 리팩터. Coordinator 가 `rulesRepository.currentRules()` + `categoriesRepository.currentCategories()` + `settingsRepository.observeSettings().first()` 세 스냅샷을 동일 call site 에서 읽어 `NotificationCaptureProcessor.process(input, rules, categories, settings)` 에 전달. 이전까지 categories 가 공란으로 내려가 "orphan → SILENT" fallback 으로 라우팅되던 hot path 는 이제 실제 `Category.action` 을 적용. `SmartNotiNotificationListenerServiceCategoryInjectionTest` 로 계약 고정. Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Task 4 (#245), Task 7 (this PR). `last-verified` 는 journey-tester 의 ADB sweep 에서 end-to-end 재검증 완료 후 갱신.

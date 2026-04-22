@@ -1,7 +1,8 @@
 ---
-status: in-progress
+status: shipped
 created: 2026-04-22
 updated: 2026-04-22
+superseded-by: ../journeys/rules-feedback-loop.md
 ---
 
 # Categories Runtime Wiring Fix — Detail "분류 변경" Redesign + Listener Injection + Rule Delete Cascade
@@ -140,7 +141,7 @@ updated: 2026-04-22
 2. `./gradlew :app:assembleDebug :app:testDebugUnitTest` — green.
 3. Manual smoke: replacement alert from silent-suppression has no action buttons, only tap-to-open Detail.
 
-## Task 7: Journey doc overhaul
+## Task 7: Journey doc overhaul [IN PROGRESS via PR #TBD]
 
 **Objective:** Sync journeys to the new flow and close the three Known-gap bullets.
 
@@ -199,3 +200,12 @@ updated: 2026-04-22
 - [rules-management](../journeys/rules-management.md) — Drift 3 (rule-delete cascade) resolved.
 
 Shipping this plan replaces the two retained Known-gap bullets (drifts #1 and #3) with Change log entries, and retires drift #2 by deleting its code path entirely.
+
+---
+
+## Change log
+
+- 2026-04-22: Plan drafted with 4-button detail + Categories auto-generation approach. Superseded same-day by #244 rewrite.
+- 2026-04-22: Plan rewritten around "분류 변경" single-CTA + `CategoryAssignBottomSheet` redesign. Detail 4-button grid + IgnoreConfirmationDialog + undo snackbar removed; Tasks 1-6 scope set (#244, `a5325f7`).
+- 2026-04-22: Tasks 1-6 shipped via PR #245 — Task 1 RED tests, Task 2 Detail UI redesign + bottom sheet + editor prefill, Task 3 `AssignNotificationToCategoryUseCase` + `NotificationRuleDerivation`, Task 4 Listener injection via `NotificationProcessingCoordinator` seam, Task 5 Rule-delete cascade via `CategoriesRepository.onRuleDeleted` + `RuleDeletedCascade` pure helper, Task 6 dead-code cleanup (`SmartNotiNotificationActionReceiver` + manifest `<receiver>` entry + `ACTION_*` constants + `IgnoreConfirmationDialog` composable + undo snackbar).
+- 2026-04-22: Task 7 — journey doc overhaul (`rules-feedback-loop.md` rewritten around "분류 변경" spine, `notification-detail.md` CTA section updated + replacement alert note, `notification-capture-classify.md` listener injection drift resolved in Change log, `rules-management.md` rule-delete cascade Known-gap resolved in Change log, `ignored-archive.md` Detail "무시" 버튼 제거 반영). Plan frontmatter → `status: shipped` + `superseded-by: rules-feedback-loop.md`.
