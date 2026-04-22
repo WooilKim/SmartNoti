@@ -34,14 +34,14 @@ created: 2026-04-22
 
 ## Phase P1 — Data model + migration
 
-### Task 1: Failing tests for Category model + round-trip + Rule-without-action contract
+### Task 1: Failing tests for Category model + round-trip + Rule-without-action contract `[IN PROGRESS via PR TBD]`
 
 **Objective:** 새 모델 계약과 마이그레이션 parity 를 테스트로 먼저 고정.
 
 **Files:**
 - 신규: `app/src/test/java/com/smartnoti/app/domain/model/CategoryTest.kt`
 - 신규: `app/src/test/java/com/smartnoti/app/data/categories/CategoriesRepositoryTest.kt`
-- 신규: `app/src/test/java/com/smartnoti/app/data/rules/RuleMigrationToCategoryTest.kt`
+- 신규: `app/src/test/java/com/smartnoti/app/domain/usecase/CategoryTieBreakTest.kt` *(drag-reorder tie-break pinned in RED; migration parity test deferred to Task 3 RED)*
 
 **Steps:**
 1. `CategoryTest` — `Category` 가 필수 필드 (`id`, `name`, `ruleIds`, `action`) 와 선택 필드 (`appPackageName`) 를 갖고, action enum 이 PRIORITY/DIGEST/SILENT/IGNORE 4개로 제한되는지.
