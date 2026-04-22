@@ -156,3 +156,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T02:20:56Z | #238 | plan-implementer | APPROVE+MERGE | P3 Tasks 8+9 분류 UI scaffold; CI green; clean post-#239 |
 | 2026-04-22T02:35:23Z | #240 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) |
 | 2026-04-22T03:00:16Z | #240 | plan-implementer | APPROVE | P3 Tasks 10+11 Home uncategorized card + 4-tab nav; CI green; tests-first honored; merged |
+| 2026-04-22T03:00:28Z | #241 | plan-implementer | DEFER | Task 12 journey doc overhaul; CI pending; ordering dep on #240 cleared (merged fd224fd); re-check next sweep |
