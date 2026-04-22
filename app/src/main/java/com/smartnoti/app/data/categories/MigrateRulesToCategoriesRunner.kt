@@ -55,9 +55,14 @@ class MigrateRulesToCategoriesRunner(
     companion object {
         fun create(context: Context): MigrateRulesToCategoriesRunner {
             val appContext = context.applicationContext
-            val legacyReader = LegacyRuleActionReader(appContext)
+            // Reuse the single `smartnoti_rules` DataStore owned by
+            // `RulesRepository` to avoid the duplicate-delegate launch
+            // crash. Plan
+            // `docs/plans/2026-04-22-rules-datastore-dedup-fix.md` Task 2.
+            val rulesRepository = RulesRepository.getInstance(appContext)
+            val legacyReader = LegacyRuleActionReader(rulesRepository.dataStore)
             return MigrateRulesToCategoriesRunner(
-                rulesRepository = RulesRepository.getInstance(appContext),
+                rulesRepository = rulesRepository,
                 categoriesRepository = CategoriesRepository.getInstance(appContext),
                 settingsRepository = SettingsRepository.getInstance(appContext),
                 legacyActionsLoader = { legacyReader.readRuleActions() },

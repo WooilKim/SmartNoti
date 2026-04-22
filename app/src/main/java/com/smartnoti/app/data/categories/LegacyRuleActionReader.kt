@@ -1,18 +1,12 @@
 package com.smartnoti.app.data.categories
 
-import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.smartnoti.app.domain.model.RuleActionUi
 import kotlinx.coroutines.flow.first
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-
-// Parallel DataStore handle that points at the SAME `smartnoti_rules` file
-// [com.smartnoti.app.data.rules.RulesRepository] uses. Declared separately
-// here because `preferencesDataStore` is per-file-per-module and we need a
-// second reader for the one-shot legacy-action scan below.
-private val Context.legacyRulesDataStore by preferencesDataStore(name = "smartnoti_rules")
 
 /**
  * One-shot reader for the pre-P1 Rule payload that still has an `action`
@@ -22,16 +16,25 @@ private val Context.legacyRulesDataStore by preferencesDataStore(name = "smartno
  * recover the legacy action so it can populate `Category.action` before
  * the 7-column codec rewrites (and loses) it.
  *
+ * The reader takes its `DataStore<Preferences>` via constructor injection
+ * rather than declaring its own `preferencesDataStore("smartnoti_rules")`
+ * delegate — AndroidX enforces one delegate per file and a parallel
+ * declaration crashed the app on launch with
+ * `IllegalStateException: There are multiple DataStores active for the
+ * same file`. `RulesRepository.dataStore` is now the single owner; this
+ * class reads through it. Plan
+ * `docs/plans/2026-04-22-rules-datastore-dedup-fix.md`.
+ *
  * Returns `ruleId -> RuleActionUi` for every decodable legacy row. Rows
  * that already use the new 7-column shape produce no entry — they were
  * written post-migration and their action should be read from the
  * Category graph instead. Unknown action names fall through silently (no
  * crash) so unexpected upgrade payloads are tolerated.
  */
-class LegacyRuleActionReader(private val context: Context) {
+class LegacyRuleActionReader(private val dataStore: DataStore<Preferences>) {
 
     suspend fun readRuleActions(): Map<String, RuleActionUi> {
-        val raw = context.legacyRulesDataStore.data.first()[RULES_KEY] ?: return emptyMap()
+        val raw = dataStore.data.first()[RULES_KEY] ?: return emptyMap()
         return parse(raw)
     }
 
