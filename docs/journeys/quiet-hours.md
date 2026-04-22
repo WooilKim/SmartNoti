@@ -3,7 +3,7 @@ id: quiet-hours
 title: 조용한 시간
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -78,3 +78,4 @@ last-verified: 2026-04-21
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: Policy-level verification re-run (`QuietHoursPolicyTest` 2/2 + `NotificationClassifierTest` 19/19 PASS, 포함 `shopping_app_during_quiet_hours_goes_to_digest`). `NotificationClassifier.kt:36` 분기 + `NotificationCaptureProcessor.buildReasonTags` 의 `조용한 시간` 태그 경로가 doc Observable step 3 과 exact 일치. Live DB 관측 (`run-as com.smartnoti.app sqlite3 smartnoti.db 'SELECT DISTINCT reasonTags FROM notifications;'`) 에 `조용한 시간` tag 부재는 emulator 시각 22:18 KST 가 default `[23,7)` 범위 밖이라 계약 일치. DRIFT 없음. `last-verified` 를 2026-04-20 → 2026-04-21 갱신.
+- 2026-04-22: Static-source + live-DB sweep. JDK 미설치로 unit test 실행 불가 → `NotificationClassifier.kt:90` (`if (input.packageName in shoppingPackages && input.quietHours) return DIGEST`) 와 `QuietHoursPolicy.kt:7-15` (same-day / overnight 분기) 가 Observable steps 1-3 과 일치함을 소스 수준에서 재확인. emulator 현재 시각 00:34 KST → default `[23,7)` 범위 안. `run-as com.smartnoti.app sqlite3 smartnoti.db 'SELECT DISTINCT reasonTags FROM notifications;'` 결과에 실제로 `조용한 시간` tag 가 살아 있는 row 존재 (분류 파이프라인이 quiet-hours 분기를 실제로 발화 중). `SettingsRepository.kt:57-60` 가 `quietHoursEnabled` + `QuietHoursPolicy(startHour,endHour)` 를 묶어 `currentNotificationContext` 로 주입하는 경로도 doc Code pointers 와 일치. DRIFT 없음. `last-verified` 를 2026-04-21 → 2026-04-22 갱신.
