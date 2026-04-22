@@ -190,6 +190,33 @@ class SettingsRepository private constructor(
         }.first()
     }
 
+    /**
+     * First-launch-post-upgrade gate for the Rules → Categories migration
+     * pass (plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
+     * Phase P1 Task 3). False until the migration has successfully run at
+     * least once; once flipped, the [com.smartnoti.app.data.categories.RuleToCategoryMigration]
+     * caller short-circuits and never scans again.
+     *
+     * The flag complements the idempotent `cat-from-rule-<ruleId>` id scheme
+     * — even if a crash tore down the app mid-migration we would re-run
+     * safely, but this flag avoids the repeated scan on every cold start.
+     */
+    fun observeRulesToCategoriesMigrated(): Flow<Boolean> {
+        return context.dataStore.data.map { prefs ->
+            prefs[RULES_TO_CATEGORIES_MIGRATED] ?: false
+        }
+    }
+
+    suspend fun isRulesToCategoriesMigrated(): Boolean {
+        return observeRulesToCategoriesMigrated().first()
+    }
+
+    suspend fun setRulesToCategoriesMigrated(migrated: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[RULES_TO_CATEGORIES_MIGRATED] = migrated
+        }
+    }
+
     suspend fun consumeOnboardingActiveNotificationBootstrapRequest(): Boolean {
         var consumed = false
         context.dataStore.edit { prefs ->
@@ -254,6 +281,8 @@ class SettingsRepository private constructor(
             booleanPreferencesKey("onboarding_active_notification_bootstrap_pending")
         private val ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_COMPLETED =
             booleanPreferencesKey("onboarding_active_notification_bootstrap_completed")
+        private val RULES_TO_CATEGORIES_MIGRATED =
+            booleanPreferencesKey("rules_to_categories_migrated")
 
         @Volatile private var instance: SettingsRepository? = null
 

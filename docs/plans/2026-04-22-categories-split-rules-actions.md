@@ -63,7 +63,7 @@ created: 2026-04-22
 2. DataStore 기반 repository — key `categories_json_v1`. 쓰기/읽기/observe(Flow) API.
 3. Rule 의 action 필드에 `@Deprecated("Moved to Category.action")` 추가.
 
-### Task 3: Auto-migration on first launch post-upgrade
+### Task 3: Auto-migration on first launch post-upgrade `[IN PROGRESS via PR #236]`
 
 **Objective:** 기존 사용자의 Rule 들을 손실 없이 Category 로 옮긴다.
 
@@ -78,7 +78,7 @@ created: 2026-04-22
 3. 완료 후 flag = true. 도중 crash 시 다음 실행에서 재시도 가능 (idempotent).
 4. 테스트: 마이그레이션 두 번 돌려도 Category 가 중복 생성되지 않는지.
 
-### Task 4: Remove action field from Rule + Room schema v9 → v10
+### Task 4: Remove action field from Rule + Room schema v9 → v10 `[IN PROGRESS via PR #236]`
 
 **Objective:** Rule 이 순수 조건 매처가 됨. 코드 전역의 `rule.action` 참조 제거.
 

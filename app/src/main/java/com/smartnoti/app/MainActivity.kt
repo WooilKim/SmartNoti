@@ -2,9 +2,15 @@ package com.smartnoti.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.lifecycleScope
+import com.smartnoti.app.data.categories.CategoriesRepository
+import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
+import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.navigation.AppNavHost
 import com.smartnoti.app.navigation.ReplacementNotificationEntry
 import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
@@ -12,6 +18,7 @@ import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.notification.SilentHiddenSummaryNotifier
 import com.smartnoti.app.notification.SmartNotiNotifier
 import com.smartnoti.app.ui.theme.SmartNotiTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val pendingNotificationEntry = mutableStateOf<ReplacementNotificationEntry?>(null)
@@ -21,6 +28,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         pendingNotificationEntry.value = intent?.extractReplacementNotificationEntry()
         pendingDeepLinkRoute.value = intent?.extractDeepLinkRoute()
+        runRulesToCategoriesMigration()
         setContent {
             SmartNotiTheme {
                 AppNavHost(
@@ -38,6 +46,32 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         pendingNotificationEntry.value = intent.extractReplacementNotificationEntry()
         pendingDeepLinkRoute.value = intent.extractDeepLinkRoute()
+    }
+
+    /**
+     * First-launch-post-upgrade hook for plan
+     * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Task 3.
+     *
+     * Fires every cold start but short-circuits cheaply once
+     * `SettingsRepository.rulesToCategoriesMigrated` is true. Runs on the
+     * Activity's lifecycle scope so it cannot leak past the process and uses
+     * the shared repository singletons so the Category list observable by
+     * the rest of the app sees the migrated state within one DataStore
+     * edit cycle.
+     */
+    private fun runRulesToCategoriesMigration() {
+        val appContext = applicationContext
+        val runner = MigrateRulesToCategoriesRunner(
+            rulesRepository = RulesRepository.getInstance(appContext),
+            categoriesRepository = CategoriesRepository.getInstance(appContext),
+            settingsRepository = SettingsRepository.getInstance(appContext),
+        )
+        lifecycleScope.launch {
+            runCatching { runner.run() }
+                .onFailure { error ->
+                    Log.e(TAG, "Rules -> Categories migration failed", error)
+                }
+        }
     }
 
     private fun Intent.extractReplacementNotificationEntry(): ReplacementNotificationEntry? {
@@ -66,5 +100,9 @@ class MainActivity : ComponentActivity() {
             )
             else -> null
         }
+    }
+
+    private companion object {
+        private const val TAG = "MainActivity"
     }
 }
