@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — onboarding-bootstrap end-to-end PASS post pm-clear, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| onboarding-bootstrap | PASS | Sanctioned `pm clear com.smartnoti.app`, pre-seeded 2 tray notifications via `cmd notification post`, launched MainActivity → OnboardingScreen rendered in PERMISSIONS state ("시작하려면 권한을 허용해 주세요"). Granted listener via `cmd notification allow_listener` + POST_NOTIFICATIONS via `pm grant`; relaunch flipped CTA to "빠른 시작 추천 보기" with both rows showing "허용됨" (steps 1-4). Tapped CTA → QUICK_START state with PROMO_QUIETING preselected (steps 5-6). Tapped "이대로 시작할게요" → navigated to Home with bottom-nav (홈/정리함/분류/설정), onboarding popped (step 7). Bootstrap classified all 50 tray notifications: home shows "오늘 알림 50개", reasons "온보딩 추천 · 19건" + "사용자 규칙 · 19건" + "조용한 시간 · 49건" — confirms quick-start preset rules + bootstrap pipeline both fired (steps 8-9). `am force-stop` + relaunch kept count at 50 (no re-bootstrap, exit-state plag consumed). Sample2 ("인증번호") didn't promote to Priority but expected — IMPORTANT_PRIORITY preset wasn't selected. `last-verified` 2026-04-21 → 2026-04-22. |
+
+
 ### 2026-04-22 (journey-tester — quiet-hours static-source + live-DB sweep PASS, emulator-5554)
 
 | Journey | Result | Notes |

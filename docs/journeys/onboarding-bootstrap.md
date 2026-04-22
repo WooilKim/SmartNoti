@@ -3,7 +3,7 @@ id: onboarding-bootstrap
 title: 첫 온보딩 및 기존 알림 부트스트랩
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
