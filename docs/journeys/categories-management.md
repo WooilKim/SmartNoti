@@ -3,7 +3,7 @@ id: categories-management
 title: 분류 (Category) CRUD + drag-reorder + 액션 선택
 status: shipped
 owner: @wooilkim
-last-verified:
+last-verified: 2026-04-22
 ---
 
 ## Goal
