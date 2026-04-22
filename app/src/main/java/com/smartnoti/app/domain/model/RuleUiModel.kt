@@ -14,6 +14,7 @@ data class RuleUiModel(
     val title: String,
     val subtitle: String,
     val type: RuleTypeUi,
+    @Deprecated("Moved to Category.action. Removed in Phase P1 Task 4 of plan docs/plans/2026-04-22-categories-split-rules-actions.md.")
     val action: RuleActionUi,
     val enabled: Boolean,
     val matchValue: String = "",

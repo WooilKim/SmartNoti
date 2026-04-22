@@ -49,7 +49,7 @@ created: 2026-04-22
 3. `RuleMigrationToCategoryTest` — 입력 `List<Rule (with action)>`, 출력 `List<Category>` 가 1:1, `ruleIds == [rule.id]`, `action` 상속, `name == rule.matchValue`, IGNORE 도 그대로 옮겨지는지.
 4. `./gradlew :app:testDebugUnitTest` 실패 확인.
 
-### Task 2: Add Category domain model + CategoriesRepository (Rule.action deprecated but retained)
+### Task 2: Add Category domain model + CategoriesRepository (Rule.action deprecated but retained) `[IN PROGRESS via PR #236]`
 
 **Objective:** Task 1 초록. 단 이 단계에서는 Rule 의 `action` 필드를 `@Deprecated` 로만 표기, 실제 제거는 Task 4 에서.
 
