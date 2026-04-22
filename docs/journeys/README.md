@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — digest-suppression SKIP recipe blocked by NMS per-package quota, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | ⏭️ SKIP | Settings → "Digest·조용히 알림의 원본 숨기기" 토글 ON → DataStore 에 `suppress_source_for_digest_and_silent` key persisted 확인. SmartNoti `POST_NOTIFICATION` appop 이 `ignore` 상태였어서 `cmd appops set com.smartnoti.app POST_NOTIFICATION allow` 로 grant 후 `for i in 4 5 6; do cmd notification post -S bigtext -t 'Promo' "SuppTest$i" '같은 광고 텍스트'; done` 및 unique 본문 (`DigSupp7..9`) 두 차례 시도 — 두 batch 모두 `pkg=com.smartnoti.app` 신규 NotificationRecord 0건, 정리함 `Digest · 3건` 카운트 증가 없음, DataStore `suppressed_source_apps` key 미생성. logcat root cause: `NotificationService: Package has already posted or enqueued 50 notifications. Not showing more. package=com.android.shell` — `cmd notification post` 가 항상 `com.android.shell` 패키지로 enqueue 되는데 NMS per-package 50건 제한이 누적된 stale 테스트 알림으로 포화 상태. Recipe step 2 의 발사 알림이 NMS 단계에서 drop 되어 SmartNoti listener 까지 도달하지 못함. Stale shell 알림 mass-cancel 은 다른 verification state 영향이라 sandbox 차단 — 안전상 시도 안 함. `last-verified` 변경 없음. Suggested follow-up: recipe 가 (a) 수동 알림 shade clear 또는 (b) `cmd notification post` 대신 `com.smartnoti.testnotifier` (별도 quota 보유) 경유 헬퍼를 명시하도록 hardening (gap-planner 후보). |
+
+
 ### 2026-04-22 (journey-tester — duplicate-suppression PASS, emulator-5554)
 
 | Journey | Result | Notes |
