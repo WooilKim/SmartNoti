@@ -26,7 +26,7 @@ last-verified:
    - `RulesRepository.observeRules()` — 편집기에서 Rule 멀티셀렉트용
    - `NotificationRepository.observeCapturedAppsFiltered(...)` — 앱 피커 제안용
    - `SettingsRepository.observeSettings()` — persistent 필터 설정
-2. 상단 `ScreenHeader` ("분류") + 신규 생성 FAB (`ExtendedFloatingActionButton`, "분류 만들기").
+2. 상단 `ScreenHeader` ("분류") + 신규 생성 FAB (`ExtendedFloatingActionButton`, "**새 분류 만들기**"). FAB 는 로컬 `Scaffold` 의 `floatingActionButton` 슬롯을 통해 배치돼 AppBottomBar 위로 떠오른다 (`Box(fillMaxSize())` 에 올리면 부모 `contentPadding` 을 소비하지 못해 네비바 뒤로 가려지던 regression 이 2026-04-22 에 고쳐짐). 분류가 0개인 empty state 에서는 `EmptyState` 본문 아래에 같은 라벨의 **inline CTA** (`FilledTonalButton`) 가 추가로 렌더돼 신규 사용자가 시선 흐름(Header → EmptyState 카피) 그대로 탭 한 번에 editor 로 진입할 수 있다. FAB 와 inline CTA 는 모두 `CategoriesEmptyStateAction.LABEL` 단일 상수를 참조해 카피가 드리프트하지 않는다.
 3. LazyColumn 으로 각 Category row 렌더:
    - 이름
    - app 핀이면 앱 뱃지 (`appPackageName != null` → 앱 라벨)
@@ -62,7 +62,9 @@ last-verified:
 
 ## Code pointers
 
-- `ui/screens/categories/CategoriesScreen` — 목록 + FAB + detail/editor 호스팅
+- `ui/screens/categories/CategoriesScreen` — 목록 + FAB + detail/editor 호스팅. 로컬 `Scaffold(floatingActionButton = ...)` 슬롯으로 FAB 배치 (AppBottomBar inset 자동 회피).
+- `ui/screens/categories/CategoriesEmptyStateAction` — FAB/EmptyState CTA 공용 라벨 상수 (`"새 분류 만들기"`)
+- `ui/components/EmptyState` — `action: (@Composable () -> Unit)?` 옵셔널 슬롯 (`subtitle` 아래 inline CTA 렌더)
 - `ui/screens/categories/CategoryDetailScreen` — Category 요약 + 소속 Rule 리스트 + 편집/삭제
 - `ui/screens/categories/CategoryEditorScreen` — AlertDialog 에디터 (신규/편집 공용)
 - `ui/screens/categories/CategoryEditorDraftValidator` — 이름 + Rule 최소 1개 검증
@@ -110,3 +112,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Change log
 
 - 2026-04-22: 신규 문서화 — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Tasks 8 + 9 (#238) 구현 결과물. `CategoriesScreen` + `CategoryDetailScreen` + `CategoryEditorScreen` + `CategoryEditorDraftValidator` shipped. `CategoriesRepository` (DataStore `smartnoti_categories`) + `CategoryConflictResolver` + `RuleToCategoryMigration` 은 Phase P1/P2 에서 선행 shipped (#236 / #239). BottomNav "분류" 탭은 Task 11 (#240) 에서 추가. `last-verified` 는 journey-tester 가 ADB recipe 를 실행해 확정할 때까지 비워둠 (per `.claude/rules/docs-sync.md`).
+- 2026-04-22: FAB 가시성 regression 수정 + empty-state inline CTA 추가 — plan `docs/plans/2026-04-22-categories-empty-state-inline-cta.md`. `CategoriesScreen` 의 `Box(fillMaxSize())` 루트가 부모 Scaffold `contentPadding` 을 소비하지 않아 FAB 가 AppBottomBar 뒤로 가려지던 문제를, 로컬 `Scaffold(floatingActionButton = ...)` 로 리팩토링해 해결. 같은 변경에서 `EmptyState` 에 옵셔널 `action` 슬롯 추가 + `CategoriesScreen` 의 empty 상태 본문 아래에 `"새 분류 만들기"` inline CTA 주입. FAB / CTA / editor 어휘를 모두 `CategoriesEmptyStateAction.LABEL = "새 분류 만들기"` 로 통일. (PR 링크는 머지 시 채움.)
