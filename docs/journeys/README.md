@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — quiet-hours static-source + live-DB sweep PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | PASS | JDK 미설치로 unit 테스트 실행 불가 → 소스 수준 + live DB 로 verify. `NotificationClassifier.kt:90` 의 `if (input.packageName in shoppingPackages && input.quietHours) return DIGEST` 분기와 `QuietHoursPolicy.kt:7-15` (same-day / overnight) 가 Observable steps 1-3 와 정확히 일치. emulator 시각 00:34 KST → default `[23,7)` 안. `run-as com.smartnoti.app sqlite3 smartnoti.db 'SELECT DISTINCT reasonTags FROM notifications LIMIT 20;'` 결과에 `발신자 있음\|조용한 시간` row 가 실제로 존재 → quiet-hours 분기가 production 알림 stream 에서 발화 확인. `SettingsRepository.kt:57-60` 의 `quietHoursPolicy = QuietHoursPolicy(startHour=settings.quietHoursStartHour, endHour=settings.quietHoursEndHour)` 주입 경로도 doc Code pointers 와 일치. DRIFT 없음. `last-verified` 2026-04-21 → 2026-04-22. |
+
+
 ### 2026-04-22 (journey-tester — protected-source-notifications PASS, emulator-5554)
 
 | Journey | Result | Notes |
