@@ -163,3 +163,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T01:47:14Z | project-manager | #236 | Categories P1 Tasks 1-4 bundle (Category model + repo + migration + Rule.action removal) | https://github.com/WooilKim/SmartNoti/actions/runs/24755652739 |
 | 2026-04-22T02:19:43Z | project-manager | #239 | P2 Tasks 5+6+7 classifier rewire to Category.action | https://github.com/WooilKim/SmartNoti/actions/runs/24756683183 |
 | 2026-04-22T02:20:44Z | project-manager | #238 | P3 Tasks 8+9 분류 primary tab + editor scaffold | https://github.com/WooilKim/SmartNoti/actions/runs/24756368071 |
+| 2026-04-22T03:00:01Z | project-manager | #240 | P3 Tasks 10+11 — Home uncategorized prompt card + 4-tab BottomNav (plan-implementer) | https://github.com/WooilKim/SmartNoti/actions/runs/24757166657 |
