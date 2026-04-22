@@ -167,3 +167,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T03:04:48Z | project-manager | #241 | Task 12 journey doc overhaul (3 new + 2 deprecated + 7 updated + plan→shipped) | https://github.com/WooilKim/SmartNoti/actions/runs/24757803198 |
 | 2026-04-21T10:50:30Z | project-manager | #242 | Categories runtime wiring fix plan (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24757929588 |
 | 2026-04-22T03:41:35Z | project-manager | #244 | Rewrite Categories runtime wiring plan around 분류 변경 sheet | https://github.com/WooilKim/SmartNoti/actions/runs/24758628595 |
+| 2026-04-22T05:21:38Z | project-manager | #245 | Tasks 1-6 categories-runtime-wiring-fix — assign flow code + tests | https://github.com/WooilKim/SmartNoti/actions/runs/24761131264 |
