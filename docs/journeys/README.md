@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — protected-source-notifications PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| protected-source-notifications | PASS | Recipe A (MediaStyle synthetic). `adb shell cmd notification post -S media -t "Player" MediaTest "미디어 스타일 테스트"` posted a `category=transport` notification from `com.android.shell`. Post-enqueue `dumpsys notification --noredact` still shows `NotificationRecord ... key=0|com.android.shell|2020|MediaTest|2000 ... category=transport` present in the list — SmartNoti listener did not `cancelNotification` it, which matches Observable steps 3–4 (routing overrides force `cancelSourceNotification=false / notifyReplacementNotification=false`). Category-path protection intact. Recipes B (YouTube Music FG service + mediaSession extra) and C (direct `FLAG_FOREGROUND_SERVICE` post) remain SKIP per doc — require real app / not postable via `cmd notification`. `last-verified` bumped 2026-04-21 → 2026-04-22. |
+
+
 ### 2026-04-22 (journey-tester — persistent-notification-protection PASS, JVM unit suite)
 
 | Journey | Result | Notes |
