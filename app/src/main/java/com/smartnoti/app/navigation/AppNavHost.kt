@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import com.smartnoti.app.ui.screens.detail.InsightDrillDownScreen
 import com.smartnoti.app.ui.screens.detail.NotificationDetailScreen
+import com.smartnoti.app.ui.screens.categories.CategoriesScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenDeepLinkFilterResolver
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
@@ -237,6 +238,12 @@ fun AppNavHost(
                 RulesScreen(
                     contentPadding = paddingValues,
                     highlightRuleId = backStackEntry.arguments?.getString("highlightRuleId"),
+                )
+            }
+            // 분류 (Categories) primary tab — plan Phase P3 Task 8.
+            composable(Routes.Categories.route) {
+                CategoriesScreen(
+                    contentPadding = paddingValues,
                 )
             }
             composable(Routes.Settings.route) {

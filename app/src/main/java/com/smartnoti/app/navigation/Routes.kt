@@ -29,6 +29,14 @@ sealed class Routes(val route: String) {
             }
         }
     }
+    /**
+     * 분류 (Categories) primary tab — plan
+     * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3
+     * Task 8. The list + editor live on this route; the Task 11 bottom-nav
+     * reshape (removing Rules in favour of a 4-tab layout) is tracked
+     * separately.
+     */
+    data object Categories : Routes("categories")
     data object Settings : Routes("settings")
     data object Hidden : Routes("hidden?sender={sender}&packageName={packageName}") {
         /**
