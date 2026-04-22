@@ -182,3 +182,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T10:35:24Z | journey-tester | #256 | inbox-unified | https://github.com/WooilKim/SmartNoti/actions/runs/24773503110/job/72485742562 |
 | 2026-04-22T11:47:07Z | journey-tester | #257 | priority-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/24776352828 |
 | 2026-04-22T12:59:58Z | journey-tester | #259 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24779437119 |
+| 2026-04-22T13:01:03Z | project-manager | #258 | plan-shipped frontmatter flip (categories empty-state CTA) | https://github.com/WooilKim/SmartNoti/actions/runs/24778113552 |
