@@ -29,3 +29,5 @@ Columns:
 | Date (UTC) | Mode | Healthy | Quiet | Noisy | Blocking | Meta findings | Plans drafted | Recommendation |
 |---|---|---|---|---|---|---|---|---|
 | 2026-04-20T13:06:39Z | analyze | 1 | 8 | 0 | 0 | cold-start: 8/9 agents QUIET (인프라 완료 직후 실사용 전), PM 이 self-merge 경로로 우회되어 review gate 아직 검증 안 됨 | 0 | no action — baseline snapshot, 다음 retrospective 는 1주 실사용 후 |
+| 2026-04-21T21:40:00Z | analyze | 4 | 3 | 0 | 1 | BLOCKING: per-sweep PM audit PRs serialize on shared log files → ~10 rebases this session; REDUNDANT: audit PRs themselves need audits (chain-audit); OVERLAPPING GATES: PM sandbox warnings vs v3 carve-out drift | 0 | investigate audit-log serialization; candidate meta-plans drafted next tick |
+| 2026-04-21T22:15:00Z | propose audit-log-churn | 4 | 3 | 0 | 1 | BLOCKING (carry-over from 2026-04-21T21:40Z): audit-log serialization confirmed — PM per-sweep audit PRs drive the churn; 20+ audit-only PRs in 30-day window | 1 (MP-1 audit-log direct-append) | meta-plan opened: docs/plans/2026-04-21-meta-audit-log-direct-append.md (PM carve-out → human review) |
