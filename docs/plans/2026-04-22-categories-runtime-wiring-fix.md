@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-04-22
 updated: 2026-04-22
 ---
@@ -33,7 +33,7 @@ updated: 2026-04-22
 
 ---
 
-## Task 1: Failing tests for the new flow + two retained drifts
+## Task 1: Failing tests for the new flow + two retained drifts [IN PROGRESS via PR #245]
 
 **Objective:** Pin the new assign-flow contracts and the two retained drifts as red tests before touching production code.
 
@@ -51,7 +51,7 @@ updated: 2026-04-22
 5. **Rule-delete cascade test:** pre-seed Rules `[r1, r2]` and Categories `[catA(ruleIds=[r1]), catB(ruleIds=[r1, r2])]`. Call `RulesRepository.deleteRule("r1")`. Assert Rules = `[r2]`, `catA.ruleIds == []`, `catB.ruleIds == [r2]`, and no Category is deleted (empty `ruleIds` preserved).
 6. `./gradlew :app:testDebugUnitTest` — all five tests red.
 
-## Task 2: Detail UI — remove 4 buttons, add "분류 변경" + bottom sheet
+## Task 2: Detail UI — remove 4 buttons, add "분류 변경" + bottom sheet [IN PROGRESS via PR #245]
 
 **Objective:** Delete the 4-button grid and its reducers; introduce a single CTA that opens `CategoryAssignBottomSheet`.
 
@@ -70,7 +70,7 @@ updated: 2026-04-22
 4. Delete `IgnoreConfirmationDialog.kt` + references. Delete undo-snackbar logic tied to the removed "무시" action.
 5. Turn Task 1 prefill test green.
 
-## Task 3: Domain — assign-to-Category use case + auto-rule derivation
+## Task 3: Domain — assign-to-Category use case + auto-rule derivation [IN PROGRESS via PR #245]
 
 **Objective:** Turn Task 1 steps 1–3 green.
 
@@ -86,7 +86,7 @@ updated: 2026-04-22
 3. Implement `buildPrefillForNewCategory`: derive rule; return `CategoryEditorPrefill(name=rule.title, appPackageName=if(rule.type==APP) notification.packageName else null, pendingRule=rule, defaultAction=PRIORITY)`.
 4. Wire viewmodel callbacks. Turn Task 1 tests 1–3 green.
 
-## Task 4: Listener injection (drift #1)
+## Task 4: Listener injection (drift #1) [IN PROGRESS via PR #245]
 
 **Objective:** Turn Task 1 step 4 green.
 
@@ -99,7 +99,7 @@ updated: 2026-04-22
 2. If the service is hard to unit-test directly, extract a thin `NotificationProcessingCoordinator` seam (≤ 20 LOC) so the test can target plain Kotlin. If larger, split into its own task.
 3. Turn Task 1 step 4 green.
 
-## Task 5: Rule-delete cascade (drift #3)
+## Task 5: Rule-delete cascade (drift #3) [IN PROGRESS via PR #245]
 
 **Objective:** Turn Task 1 step 5 green.
 
@@ -114,7 +114,18 @@ updated: 2026-04-22
 3. If a cycle appears, add `RuleDeletionObserver`.
 4. Turn Task 1 step 5 green.
 
-## Task 6: Cleanup — delete dead code
+## Task 6: Cleanup — delete dead code [IN PROGRESS via PR #245]
+
+> **Collateral carve-out, 2026-04-22:** `NotificationFeedbackPolicy.applyAction`
+> / `toRule` are still used by the live `PassthroughReviewReclassifyDispatcher`
+> (Priority screen inline reclassify from `rules-ux-v2-inbox-restructure`
+> Phase A Task 3). Deleting them was out of scope for this plan (not in the
+> Out list, not in any other plan's Task list, and would have broken that
+> feature). The methods stay; every Detail-side caller is removed. The
+> `CategoryFeedbackResult` stub referenced in the plan never materialized in
+> code, so there was nothing to delete there. `markSilentProcessed` +
+> `PROCESSED_REASON_TAG` are preserved (used by `silent-archive-drift-fix`).
+
 
 **Objective:** Remove every piece the redesign made obsolete. No behavior change; pure deletion.
 
@@ -171,8 +182,9 @@ updated: 2026-04-22
 ## Risks / open questions
 
 - **Dependency direction RulesRepository ↔ CategoriesRepository:** direct injection is preferred; the `RuleDeletionObserver` interface is the fallback if a cycle appears.
-- **Replacement-alert UX after action buttons are gone:** today's replacement alert depended on the four buttons for quick actions. With only tap-to-open Detail remaining, users must take one extra step to re-classify. This is an intentional trade — verify in `notification-replacement-alert` journey recipe post-ship that tap-through still feels acceptable.
+- **(a) Replacement-alert UX after action buttons are gone — RESOLVED 2026-04-22:** action buttons on the replacement alert are **removed entirely**. Tap on the alert opens Detail, and Detail's "분류 변경" sheet is where the user reclassifies. No quick-action buttons on the replacement alert at all. Re-verify `notification-replacement-alert` journey recipe post-ship; the extra tap is accepted as an intentional trade.
 - **Prefill serialization across navigation:** `CategoryEditorPrefill` must survive process death. Use saved-state handle or nav arguments keyed by a short-lived id in a one-shot `PrefillStore`. Implementation task decides which is cleaner for the current nav graph.
+- **(b) CategoryEditor prefill default action — RESOLVED 2026-04-22:** the "새 분류 만들기" default action is **dynamic-opposite** relative to the current notification's Category action (if it has one). Mapping: current action DIGEST → default PRIORITY, SILENT → default PRIORITY, IGNORE → default PRIORITY, and current PRIORITY → default DIGEST. When the notification has no owning Category (classifier fell back to a default decision), use PRIORITY. The user can still change it in the editor.
 - **Deterministic rule id collisions across users of the same Category:** two different notifications sharing the same sender/package will produce the same rule id. Assigning either to the same Category is idempotent (good). Assigning each to different Categories creates two Categories both listing the same rule id — classifier resolves by `order`, so user-set ordering governs. Documented expectation, not a bug.
 - **Listener test seam:** `SmartNotiNotificationListenerService` is an Android service — hard to unit-test directly. A ≤ 20-LOC extract is fine; anything larger splits into its own task.
 - **CategoryEditor prefill invariants:** if the user cancels the editor, no Rule should have been written. Use case must only persist on editor-save, not on open.

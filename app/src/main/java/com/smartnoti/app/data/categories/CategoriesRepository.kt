@@ -103,6 +103,41 @@ class CategoriesRepository private constructor(
     }
 
     /**
+     * Append [ruleId] to [categoryId]'s `ruleIds`, deduping on insert.
+     *
+     * Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 3 — the
+     * "분류 변경 → 기존 분류에 포함" flow calls this after upserting the
+     * derived Rule. If the Category does not exist, the call is a no-op
+     * (deleted Categories should not resurrect via a stale assign).
+     * Other fields (`name`, `action`, `order`, `appPackageName`) are
+     * untouched.
+     */
+    suspend fun appendRuleIdToCategory(categoryId: String, ruleId: String) {
+        val existing = currentCategories().toMutableList()
+        val index = existing.indexOfFirst { it.id == categoryId }
+        if (index < 0) return
+        val current = existing[index]
+        if (ruleId in current.ruleIds) return
+        existing[index] = current.copy(ruleIds = current.ruleIds + ruleId)
+        persist(existing)
+    }
+
+    /**
+     * Rewrite every Category to drop [ruleId] from its `ruleIds`, persisting
+     * the result. Preserves Categories that become rule-less so the user can
+     * open the editor and re-wire them instead of being silently orphaned.
+     *
+     * Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 5 — called from
+     * `RulesRepository.deleteRule` cascade.
+     */
+    suspend fun onRuleDeleted(ruleId: String) {
+        val current = currentCategories()
+        val cascaded = applyRuleDeletedCascade(current, ruleId)
+        if (cascaded == current) return
+        persist(cascaded)
+    }
+
+    /**
      * Swap [categoryId] with its direct neighbor. After the swap the stored
      * `order` field on every Category is rewritten to match the new list
      * index, so a later read reflects the drag in both the flat list order

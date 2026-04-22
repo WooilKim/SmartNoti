@@ -36,9 +36,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.CapturedAppSelectionItem
+import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.usecase.CategoryEditorPrefill
 import kotlinx.coroutines.launch
 
 /**
@@ -71,9 +73,11 @@ fun CategoryEditorScreen(
     onDismiss: () -> Unit,
     onSaved: (String) -> Unit,
     onDelete: (String) -> Unit,
+    prefill: CategoryEditorPrefill? = null,
 ) {
     val context = LocalContext.current
     val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
+    val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val scope = rememberCoroutineScope()
     val validator = remember { CategoryEditorDraftValidator() }
 
@@ -84,17 +88,30 @@ fun CategoryEditorScreen(
         }
     }
 
-    var draftName by remember(editingCategory) {
-        mutableStateOf(editingCategory?.name.orEmpty())
+    // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 2: when
+    // opened from Detail's "새 분류 만들기" the editor is seeded from a
+    // [CategoryEditorPrefill]. Only the new-Category flow accepts
+    // prefill (editing an existing Category keeps its stored fields).
+    val effectivePrefill = if (editingCategory == null) prefill else null
+
+    var draftName by remember(editingCategory, effectivePrefill) {
+        mutableStateOf(editingCategory?.name ?: effectivePrefill?.name.orEmpty())
     }
-    var draftAppPackage by remember(editingCategory) {
-        mutableStateOf(editingCategory?.appPackageName)
+    var draftAppPackage by remember(editingCategory, effectivePrefill) {
+        mutableStateOf(editingCategory?.appPackageName ?: effectivePrefill?.appPackageName)
     }
-    var draftSelectedRuleIds by remember(editingCategory) {
-        mutableStateOf(editingCategory?.ruleIds?.toSet() ?: emptySet())
+    var draftSelectedRuleIds by remember(editingCategory, effectivePrefill) {
+        val ids = editingCategory?.ruleIds?.toSet()
+            ?: effectivePrefill?.pendingRule?.let { setOf(it.id) }
+            ?: emptySet()
+        mutableStateOf(ids)
     }
-    var draftAction by remember(editingCategory) {
-        mutableStateOf(editingCategory?.action ?: CategoryAction.PRIORITY)
+    var draftAction by remember(editingCategory, effectivePrefill) {
+        mutableStateOf(
+            editingCategory?.action
+                ?: effectivePrefill?.defaultAction
+                ?: CategoryAction.PRIORITY,
+        )
     }
 
     var actionMenuExpanded by remember { mutableStateOf(false) }
@@ -216,7 +233,20 @@ fun CategoryEditorScreen(
                         "소속 규칙 (최소 1개)",
                         style = MaterialTheme.typography.labelMedium,
                     )
-                    if (rules.isEmpty()) {
+                    // When opened from Detail's "새 분류 만들기" the prefill
+                    // pendingRule may not yet exist in the persisted rules
+                    // list. Merge it into the displayed rules so the user
+                    // sees it pre-selected. Save-path upserts it alongside
+                    // the new Category.
+                    val displayedRules = remember(rules, effectivePrefill) {
+                        val pending = effectivePrefill?.pendingRule
+                        if (pending != null && rules.none { it.id == pending.id }) {
+                            listOf(pending) + rules
+                        } else {
+                            rules
+                        }
+                    }
+                    if (displayedRules.isEmpty()) {
                         Text(
                             "아직 규칙이 없어요. 설정 > 고급 규칙 편집에서 먼저 규칙을 만들어 주세요.",
                             style = MaterialTheme.typography.bodySmall,
@@ -228,7 +258,7 @@ fun CategoryEditorScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            rules.forEach { rule ->
+                            displayedRules.forEach { rule ->
                                 val selected = draftSelectedRuleIds.contains(rule.id)
                                 FilterChip(
                                     selected = selected,
@@ -276,7 +306,16 @@ fun CategoryEditorScreen(
                         action = draftAction,
                         currentCategoriesCount = categories.size,
                     )
+                    val pendingRule = effectivePrefill?.pendingRule
                     scope.launch {
+                        // If this editor was opened via the "분류 변경 → 새 분류
+                        // 만들기" flow, the prefill carries a pendingRule that
+                        // must be persisted alongside the Category — otherwise
+                        // the Category references an id that doesn't exist and
+                        // the classifier can never hit it.
+                        if (pendingRule != null && pendingRule.id in persisted.ruleIds) {
+                            rulesRepository.upsertRule(pendingRule)
+                        }
                         categoriesRepository.upsertCategory(persisted)
                     }
                     onSaved(persisted.id)
