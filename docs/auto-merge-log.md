@@ -194,3 +194,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T15:56:49Z | journey-tester | #271 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24788280897/job/72538319048 |
 | 2026-04-22T15:50:00Z | project-manager | #270 | loop-monitor AUDIT_DRIFT backfill of #264 pr-review-log row | https://github.com/WooilKim/SmartNoti/actions/runs/24787962201 |
 | 2026-04-22T16:13:18Z | project-manager | #272 | gap-planner: priority-inbox debug-inject hook plan + Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24789004649 |
+| 2026-04-22T16:46:00Z | project-manager | #273 | plan-implementer; debug-only FORCE_STATUS hook + recipe rewrite for priority-inbox journey | https://github.com/WooilKim/SmartNoti/actions/runs/24790453337 |
