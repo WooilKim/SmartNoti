@@ -42,3 +42,17 @@ enum class CategoryAction {
     SILENT,
     IGNORE,
 }
+
+/**
+ * Canonical [CategoryAction] -> [NotificationDecision] mapping used by every
+ * downstream consumer in the notifier hot path (classifier, notifier, feedback
+ * policy). Plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
+ * Phase P2 Task 7 — the mapping lives on [CategoryAction] so notifier surfaces
+ * don't need to depend on [NotificationClassifier] just to translate.
+ */
+fun CategoryAction.toDecision(): NotificationDecision = when (this) {
+    CategoryAction.PRIORITY -> NotificationDecision.PRIORITY
+    CategoryAction.DIGEST -> NotificationDecision.DIGEST
+    CategoryAction.SILENT -> NotificationDecision.SILENT
+    CategoryAction.IGNORE -> NotificationDecision.IGNORE
+}

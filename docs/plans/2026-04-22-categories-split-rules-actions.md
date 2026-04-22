@@ -97,7 +97,7 @@ created: 2026-04-22
 
 ## Phase P2 — Classifier rewire
 
-### Task 5: Classifier uses Category.action via specificity tie-break
+### Task 5: Classifier uses Category.action via specificity tie-break `[IN PROGRESS via PR #TBD]`
 
 **Objective:** 알림이 들어오면 매칭 Rule 집합 → 그 Rule 을 포함하는 Category 집합 → specificity 순(app > keyword > sender > time) 정렬 → 최상위 Category.action 적용.
 
@@ -111,7 +111,7 @@ created: 2026-04-22
 2. `CategoryConflictResolver` 구현 — Rule 매칭은 그대로, 그 결과를 Category 로 lift.
 3. `ClassifyNotificationUseCase` 에서 `rulesRepo` + `categoriesRepo` 둘 다 읽어 합성.
 
-### Task 6: CategoryConflictResolver (higher-specificity Category overrides)
+### Task 6: CategoryConflictResolver (higher-specificity Category overrides) `[IN PROGRESS via PR #TBD]`
 
 **Objective:** 사용자가 만든 좁은 범위 Category (app-specific) 가 넓은 범위 Category (keyword-only) 의 action 을 override.
 
@@ -126,7 +126,7 @@ created: 2026-04-22
 4. `CategoriesRepository.moveCategory(categoryId, direction)` — Phase C 의 tier-aware `moveRule` 과 동일한 스왑 로직 (직접 이웃과 교환).
 5. 테스트로 tie-break 엣지 케이스 (동일 specificity + 다른 order, IGNORE vs SILENT 충돌, drag-reorder 로 결과가 뒤집히는지) 고정.
 
-### Task 7: Notifier + NotificationFeedbackPolicy 가 Category.action 을 읽도록 rewire
+### Task 7: Notifier + NotificationFeedbackPolicy 가 Category.action 을 읽도록 rewire `[IN PROGRESS via PR #TBD]`
 
 **Objective:** 알림 소비 경로(표시/억제/숨김)가 모두 Category.action 을 기반으로 분기.
 
