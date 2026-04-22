@@ -165,3 +165,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T02:20:44Z | project-manager | #238 | P3 Tasks 8+9 분류 primary tab + editor scaffold | https://github.com/WooilKim/SmartNoti/actions/runs/24756368071 |
 | 2026-04-22T03:00:01Z | project-manager | #240 | P3 Tasks 10+11 — Home uncategorized prompt card + 4-tab BottomNav (plan-implementer) | https://github.com/WooilKim/SmartNoti/actions/runs/24757166657 |
 | 2026-04-22T03:04:48Z | project-manager | #241 | Task 12 journey doc overhaul (3 new + 2 deprecated + 7 updated + plan→shipped) | https://github.com/WooilKim/SmartNoti/actions/runs/24757803198 |
+| 2026-04-21T10:50:30Z | project-manager | #242 | Categories runtime wiring fix plan (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24757929588 |
