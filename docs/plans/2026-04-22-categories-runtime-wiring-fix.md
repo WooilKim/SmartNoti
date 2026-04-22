@@ -141,7 +141,7 @@ superseded-by: ../journeys/rules-feedback-loop.md
 2. `./gradlew :app:assembleDebug :app:testDebugUnitTest` — green.
 3. Manual smoke: replacement alert from silent-suppression has no action buttons, only tap-to-open Detail.
 
-## Task 7: Journey doc overhaul [IN PROGRESS via PR #TBD]
+## Task 7: Journey doc overhaul [IN PROGRESS via PR #246]
 
 **Objective:** Sync journeys to the new flow and close the three Known-gap bullets.
 
