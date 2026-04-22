@@ -173,3 +173,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T06:25:22Z | project-manager | #247 | rules-feedback-loop DRIFT verification sweep (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24763434571 |
 | 2026-04-22T06:34:47Z | project-manager | #248 | gap-planner: CategoryEditor save wiring fix plan | https://github.com/WooilKim/SmartNoti/actions/runs/24763799372 |
 | 2026-04-22T06:54:44Z | project-manager | #249 | CategoryEditor save race fix (plan-implementer) | https://github.com/WooilKim/SmartNoti/actions/runs/24764486252 |
+| 2026-04-22T07:16:05Z | project-manager | #250 | plan for rules DataStore dedup hotfix (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24764593056 |
