@@ -188,3 +188,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T14:58:39Z | project-manager | #265 | feat(home,inbox): truncate Home recent list + de-nest Inbox sub-tabs (plan Tasks 0-3) | https://github.com/WooilKim/SmartNoti/actions/runs/24785303938 |
 | 2026-04-22T15:10:00Z | journey-tester | #266 | persistent-notification-protection (Policy-level PASS, PersistentNotificationPolicyTest 7/7) | https://github.com/WooilKim/SmartNoti/actions/runs/24785911934 |
 | 2026-04-22T15:27:22Z | journey-tester | #267 | protected-source-notifications | https://github.com/WooilKim/SmartNoti/actions/runs/24786782886/job/72532893339 |
+| 2026-04-22T15:41:41Z | journey-tester | #269 | quiet-hours | https://github.com/WooilKim/SmartNoti/actions/runs/24787520003 |
