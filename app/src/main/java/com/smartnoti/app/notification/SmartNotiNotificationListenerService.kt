@@ -2,6 +2,7 @@ package com.smartnoti.app.notification
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.smartnoti.app.BuildConfig
 import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationEntity
 import com.smartnoti.app.data.local.NotificationRepository
@@ -247,12 +248,26 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             sourceEntryKey = sbn.key,
         ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
-        val baseNotification = processor.process(
+        val classifiedNotification = processor.process(
             input = captureInput,
             rules = rules,
             settings = settings,
             categories = categories,
         )
+
+        // Debug-only override — lets the journey-tester priority-inbox
+        // recipe pin a classification regardless of accumulated user
+        // rules on the emulator. Release builds fold this branch to
+        // dead code because `BuildConfig.DEBUG == false`, so the
+        // `DebugClassificationOverride` reference is never resolved
+        // in an unminified release build and R8 strips the call site
+        // entirely under minification.
+        // Plan: docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md
+        val baseNotification = if (BuildConfig.DEBUG) {
+            DebugClassificationOverride.resolve(extras, classifiedNotification)
+        } else {
+            classifiedNotification
+        }
 
         val decision = baseNotification.status.toDecision()
         val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
