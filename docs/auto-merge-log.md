@@ -170,3 +170,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T05:21:38Z | project-manager | #245 | Tasks 1-6 categories-runtime-wiring-fix — assign flow code + tests | https://github.com/WooilKim/SmartNoti/actions/runs/24761131264 |
 | 2026-04-21T00:00:00Z | project-manager | #246 | Task 7 journey docs + plan→shipped (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24761627630 |
 | 2026-04-22T05:34:30Z | project-manager | #246 | plan-implementer Task 7: journey docs sync for 분류 변경 assign flow | https://github.com/WooilKim/SmartNoti/actions/runs/24761857832 |
+| 2026-04-22T06:25:22Z | project-manager | #247 | rules-feedback-loop DRIFT verification sweep (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24763434571 |
