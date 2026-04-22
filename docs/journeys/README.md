@@ -43,7 +43,7 @@
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | — |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-22 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-22 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-22 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — notification-detail end-to-end PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | PASS | `cmd notification post -S bigtext -t 'DetailTest_0422' FbTest1 '분류 변경 테스트'` → DIGEST 분류 → 정리함 → Digest 묶음 → Shell 번들 드릴 → Detail 마운트. Observable steps 1–4 관측: `DetailTopBar` + 알림 요약 `StatusBadge=Digest` + 왜 chip row + 전달 방식 5개 라벨 + "이 알림 분류하기" 카드 + 단일 `Button("분류 변경")`. 버튼 탭 → `CategoryAssignBottomSheet` 오픈 (title "분류 변경" / subtitle "이 알림이 속할 분류를 고르거나 새 분류를 만들어요." / terminal row `+ 새 분류 만들기`). 경로 B — "새 분류 만들기" 탭 → `CategoryEditorScreen` prefill 오픈 `전달 방식 = 즉시 전달 (PRIORITY)` (DIGEST 소스의 dynamic-opposite, Observable step 5.ii 증명). `last-verified` set to 2026-04-22. |
 
 
 ### 2026-04-22 (journey-tester — priority-inbox SKIP recipe blocked by accumulated rules, emulator-5554)
