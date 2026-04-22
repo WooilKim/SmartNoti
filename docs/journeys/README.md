@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — inbox-unified end-to-end PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | PASS | 4건 Coupang Digest + 2건 Promo SILENT 알림 포스팅 후 BottomNav "정리함" 탭 → `ScreenHeader` "알림 정리함" + subtitle "Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요." + `InboxTabRow` 3 세그먼트 (`Digest · 3건 / 보관 중 · 42건 / 처리됨 · 3건`) 렌더. Digest 기본 선택 → `DigestGroupCard` (Shell 3건) 표출. "보관 중" 탭 → `HiddenNotificationsScreen` 마운트 (의도된 nested HiddenTabRow 포함, 2개 앱 42건). "처리됨" 탭 → 동일 화면 재호스팅. Digest preview 카드 탭 → `Routes.Detail` "알림 상세" 진입 → 뒤로가기로 Digest 서브탭 복귀. `last-verified` set to 2026-04-22. |
+
+
 ### 2026-04-22 (journey-tester — categories-management empty-state PASS post #254, emulator-5554)
 
 | Journey | Result | Notes |
