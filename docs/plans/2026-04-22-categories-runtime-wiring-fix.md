@@ -1,130 +1,189 @@
 ---
 status: planned
 created: 2026-04-22
+updated: 2026-04-22
 ---
 
-# Categories Runtime Wiring Fix — Listener Injection + Feedback Upsert + Rule Delete Cascade
+# Categories Runtime Wiring Fix — Detail "분류 변경" Redesign + Listener Injection + Rule Delete Cascade
 
-> **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. Tests first — all three drifts break production classification today, so each fix starts with a failing test that pins the contract.
+> **For Hermes:** Use subagent-driven-development skill. This plan replaces the four Detail action buttons with a single "분류 변경" bottom-sheet flow (assign-to-existing OR create-new Category). Write tests first for each task; the UX change is the spine, and two remaining drifts (listener injection, rule-delete cascade) piggy-back.
 
-**Goal:** Categories-based classification actually runs in production. After this plan ships, (a) live notifications flowing through `SmartNotiNotificationListenerService` are classified using the user's real Category list, (b) Detail screen feedback buttons ("중요로 고정" / "Digest로 유지" / "조용히 유지" / "무시") persist a Category whose `action` drives future classifications for the same sender/app, and (c) deleting a Rule removes its id from every Category's `ruleIds`, preventing orphan accumulation.
+**Goal:** A notification's tier is always determined by a Category the user owns. In Detail, users no longer pick an "action" (중요/Digest/조용/무시). Instead they tap a single "분류 변경" button, which opens a bottom sheet offering (a) "기존 분류에 포함" — pick from their existing Categories, or (b) "새 분류 만들기" — open CategoryEditor pre-filled with a rule matching this notification. Future notifications from the same sender/app flow through that Category. The live listener really uses the user's Categories (not just Rules) and deleting a Rule no longer leaves orphan ids in Categories.
 
 **Architecture:**
-- **Drift 1 (Listener → Classifier injection):** `SmartNotiNotificationListenerService.processNotification(...)` reads `rulesRepository.currentRules()` but does not pass `categoriesRepository.currentCategories()` into `processor.process(...)`. After the P1 refactor, Rules are pure matchers (action field removed) so Classifier without Categories always falls back to the SILENT default. Fix: inject Categories alongside Rules at the same call site. Unit tests that stub `CategoriesRepository` pass today because the pathway being tested is synthetic — the real listener call site is not covered.
-- **Drift 2 (Feedback → Category upsert):** `NotificationFeedbackPolicy.applyAction(...)` + `toRule(...)` produces a `RuleUiModel`, which `NotificationDetailViewModel` (or equivalent) upserts through `RulesRepository`. Post-P1, a new Rule with no Category pointing at it has no effect on classification. Fix: feedback must either (i) find a Category whose `ruleIds` already contain the matching rule id and update that Category's `action`, or (ii) create a new Category with `ruleIds = [newRule.id]`, `action = feedbackAction`, and sensible defaults for `name` / `appPackageName` / `order`.
-- **Drift 3 (Rule deletion cascade):** `RulesRepository.deleteRule(ruleId)` only removes the Rule from its own DataStore key. Every Category that listed that rule id in `ruleIds` now holds a dangling reference. Fix: introduce `CategoriesRepository.onRuleDeleted(ruleId)` that rewrites each affected Category with the id stripped from `ruleIds`, and hook it into `RulesRepository.deleteRule` (either through a cross-repo coordinator or direct injection).
+- **UX redesign (new spine):** `NotificationDetailScreen` drops its four action buttons + their reducers. A new single-button CTA opens a `CategoryAssignBottomSheet` composable. Choosing an existing Category triggers a domain "assign to Category" use case that derives an auto-rule from the notification (sender → PERSON rule; otherwise APP rule), upserts the Rule, and appends the new Rule id to that Category's `ruleIds`. Choosing "새 분류 만들기" opens the existing `CategoryEditor` with pre-filled `name`, `appPackageName`, one pre-added rule, and an `action` picker (PRIORITY / DIGEST / SILENT / IGNORE).
+- **Drift 1 (Listener → Classifier injection):** `SmartNotiNotificationListenerService.processNotification(...)` reads `rulesRepository.currentRules()` but does not pass `categoriesRepository.currentCategories()` into `processor.process(...)`. Post-P1, Rules are pure matchers, so the Classifier without Categories always falls back to the SILENT default. Fix: inject Categories alongside Rules at the same call site.
+- **Drift 3 (Rule deletion cascade):** `RulesRepository.deleteRule(ruleId)` only removes the Rule from its own DataStore key. Every Category listing that id in `ruleIds` now holds a dangling reference. Fix: `CategoriesRepository.onRuleDeleted(ruleId)` that rewrites each affected Category with the id stripped, hooked into `RulesRepository.deleteRule`.
+- **Drift 2 — now resolved by deletion:** The previous "feedback upserts Rule not Category" drift disappears with the UX redesign. `NotificationFeedbackPolicy.applyAction`, `toRule`, and `CategoryFeedbackResult` stubs are removed entirely along with their call sites.
 
-**Tech Stack:** Kotlin, DataStore, Jetpack Compose, Gradle unit tests, Claude Code implementation.
+**Tech Stack:** Kotlin, DataStore, Jetpack Compose (ModalBottomSheet), Gradle unit tests.
 
 ---
 
 ## Product intent / assumptions
 
-- **Feedback upsert target — Category, not Rule alone:** Post-P1, Rules are pure matchers. A feedback tap must result in a Category mutation (create or update) so classification actually changes. The existing `toRule(...)` helper is still useful for generating the matcher; the new logic wraps it.
-- **Category default shape from feedback:** `name` = sender-or-appName (same derivation as `toRule.title`), `appPackageName` = notification's package name when the matcher type is APP, `ruleIds` = `[generatedRule.id]`, `action` = mapped from `RuleActionUi`, `order` = `max(existing.order) + 1` (append to bottom so explicit user-ordered Categories still win specificity ties).
-- **Update vs. create — prefer update:** If a Category already owns a Rule with the same `id` that `toRule(...)` would produce (deterministic by `"${type}:$matchValue"`), update that Category's `action` in place rather than creating a duplicate. This preserves user-chosen `order` and `name`.
-- **Deletion cascade atomicity:** Rule deletion and Category cleanup don't need to be transactional across DataStore keys (there are two). The user-visible invariant is eventual — orphan ids never survive past the next classifier read. Cross-repo ordering: delete Rule first, then cascade, so an in-flight classifier read never sees a Category pointing at a non-existent Rule that still affects tier lookup.
-- **Listener injection is not a behavior change, it's a bug fix:** The classifier pipeline already accepts Categories; the listener just forgets to pass them. No product question attached.
-- **Out of scope — wizard / detail UI:** The feedback buttons' visual affordance ("중요로 고정" label, Category-picker sheet) is unchanged by this plan. Only the underlying persistence swap from Rule-only to Category-inclusive.
+- **One operator verb, not four:** The four-button grid ("중요로 고정" / "Digest로 유지" / "조용히 유지" / "무시") conflates "which bucket" with "which Category". Replacing with a single "분류 변경" CTA frames the operation as *classification management* — the user is always telling SmartNoti *which Category this belongs to*, never emitting a bare action.
+- **Rule derivation is deterministic:** For "기존 분류에 포함", the auto-rule is `PERSON` matching `sender` if sender is non-blank; otherwise `APP` matching `packageName`. Id is deterministic (`"${type}:$matchValue"`) so repeat assignments to the same Category are idempotent.
+- **Existing Category unchanged otherwise:** Assigning to an existing Category only appends to `ruleIds` (deduped). `action`, `name`, `order`, `appPackageName` stay as the user set them. The chosen Category's action is what governs future classification.
+- **New-Category wizard pre-fill:** `name` defaults to sender-or-appName; `appPackageName` to notification packageName; one pre-added rule (same derivation as above); `action` picker opens on PRIORITY but user can change. User can edit anything before saving.
+- **Replacement notifications lose action buttons:** Today's replacement alert (silent-suppression replacement) currently carries the same four `addAction(...)` buttons. With the buttons deleted, the replacement alert becomes tap-only — tapping still opens Detail, which is where classification management now lives.
+- **IgnoreConfirmationDialog + undo snackbar are collateral:** Both were introduced for the "무시" button's destructive-confirm path (Task 6a of the IGNORE plan already merged to main). With the button gone, both UI affordances are removed. The IGNORE action itself survives as an action the user can pick inside the new-Category wizard or an existing IGNORE-actioned Category.
+- **α/β/γ multi-rule Category flip question retired:** That trilemma only existed because feedback was mutating an existing Category's action. The new flow never mutates an existing Category's action via feedback — it only appends rule ids. Question is moot.
+- **Listener injection is a pure bug fix** — no product question attached.
 
 ---
 
-## Task 1: Failing tests for all three drifts
+## Task 1: Failing tests for the new flow + two retained drifts
 
-**Objective:** Pin each drift as a red test before touching production code.
+**Objective:** Pin the new assign-flow contracts and the two retained drifts as red tests before touching production code.
 
 **Files:**
-- 신규: `app/src/test/java/com/smartnoti/app/notification/SmartNotiNotificationListenerServiceCategoryInjectionTest.kt` (or extend an existing listener test harness)
-- 신규 또는 보강: `app/src/test/java/com/smartnoti/app/domain/usecase/NotificationFeedbackPolicyCategoryUpsertTest.kt`
+- 신규: `app/src/test/java/com/smartnoti/app/domain/usecase/AssignNotificationToCategoryUseCaseTest.kt`
+- 신규: `app/src/test/java/com/smartnoti/app/ui/category/CreateCategoryFromNotificationPrefillTest.kt`
+- 신규: `app/src/test/java/com/smartnoti/app/notification/SmartNotiNotificationListenerServiceCategoryInjectionTest.kt`
 - 신규: `app/src/test/java/com/smartnoti/app/data/rules/RulesRepositoryDeleteCascadeTest.kt`
 
 **Steps:**
-1. **Listener injection test:** spin up the listener (or a thin testable seam around `processNotification`) with a fake `RulesRepository` returning one matching Rule and a fake `CategoriesRepository` returning one Category that wraps that Rule with `action = PRIORITY`. Capture the argument passed to `processor.process(...)`. Assert the Categories list is non-empty and contains the expected Category. Currently fails because the listener never reads `categoriesRepository.currentCategories()` at this call site.
-2. **Feedback → Category upsert test:** feed `NotificationFeedbackPolicy` (or its wrapping use case) a notification + `RuleActionUi.ALWAYS_PRIORITY`. Assert that after the action, `CategoriesRepository.currentCategories()` contains a Category with `action == PRIORITY` and `ruleIds` containing the rule id returned by `toRule(...)`. Second sub-case: pre-seed a Category already owning that rule id with `action = DIGEST`; assert the Category's `action` is updated in place (no duplicate Category created).
-3. **Rule delete cascade test:** pre-seed Rules `[r1, r2]` and Categories `[catA(ruleIds=[r1]), catB(ruleIds=[r1, r2])]`. Call `RulesRepository.deleteRule("r1")`. Assert Rules = `[r2]`, `catA.ruleIds == []`, `catB.ruleIds == [r2]`, no Category deleted (empty `ruleIds` is preserved — user sees a "rule-less" Category to edit, not silent disappearance).
-4. `./gradlew :app:testDebugUnitTest` — all three tests red.
+1. **Assign-to-existing test (with sender):** given a notification with non-blank sender "Alice" from package `com.kakao.talk`, and an existing Category `catWork` with `action=PRIORITY`, calling `AssignNotificationToCategoryUseCase.assignToExisting(notification, catWork.id)` must: (a) upsert a Rule `{type=PERSON, matchValue="Alice", id="PERSON:Alice"}`, (b) update `catWork.ruleIds` to include `"PERSON:Alice"` (deduped), (c) leave `catWork.action`/`name`/`order` untouched. Then reclassify a second notification from the same sender through the pipeline and assert it resolves to `catWork`'s action.
+2. **Assign-to-existing test (sender blank):** same as above but sender is blank → expect an `APP` rule with `matchValue=packageName` instead.
+3. **Create-new prefill test:** given notification with sender "Bob" / package "com.foo", calling the "create new Category" entry point must produce a `CategoryEditor` initial state with `name="Bob"`, `appPackageName="com.foo"`, `ruleIds` containing one pre-added rule `PERSON:Bob`, and `action=PRIORITY` (default). After the user saves, assert Categories list includes the new Category and future notifications from "Bob" classify via it.
+4. **Listener injection test:** spin up the listener (or a testable seam) with a fake `RulesRepository` and a fake `CategoriesRepository` holding one Category wrapping a matching Rule with `action=PRIORITY`. Capture the argument into `processor.process(...)`. Assert the Categories list is non-empty and contains the expected Category. Fails today because the listener doesn't read `categoriesRepository.currentCategories()` at this call site.
+5. **Rule-delete cascade test:** pre-seed Rules `[r1, r2]` and Categories `[catA(ruleIds=[r1]), catB(ruleIds=[r1, r2])]`. Call `RulesRepository.deleteRule("r1")`. Assert Rules = `[r2]`, `catA.ruleIds == []`, `catB.ruleIds == [r2]`, and no Category is deleted (empty `ruleIds` preserved).
+6. `./gradlew :app:testDebugUnitTest` — all five tests red.
 
-## Task 2: Wire listener to pass Categories + feedback policy upserts Category
+## Task 2: Detail UI — remove 4 buttons, add "분류 변경" + bottom sheet
 
-**Objective:** Turn tests 1 and 2 green.
-
-**Files:**
-- 변경: `app/src/main/java/com/smartnoti/app/notification/SmartNotiNotificationListenerService.kt` — read `categoriesRepository.currentCategories()` next to `rulesRepository.currentRules()` and pass both into `processor.process(...)`.
-- 변경: `app/src/main/java/com/smartnoti/app/domain/usecase/NotificationFeedbackPolicy.kt` — add new method (e.g. `applyActionToCategory(notification, action, existingCategories, existingRules) → FeedbackResult(rule, category)`) that returns both a Rule to upsert and a Category to upsert. Keep `applyAction(...)` and `toRule(...)` intact for call sites still using them.
-- 변경: Detail screen viewmodel(s) that currently call `rulesRepository.upsertRule(...)` — route through the new path so Category write happens alongside Rule write. Locate via `Grep` for `NotificationFeedbackPolicy` usage.
-
-**Steps:**
-1. In the listener, add `val categories = categoriesRepository.currentCategories()` immediately after the existing `currentRules()` read. Pass both into the `processor.process(input, rules, categories, settings)` call signature. If the `process(...)` overload does not yet accept Categories, add the parameter (Classifier machinery was built to consume them in Phase P2).
-2. In `NotificationFeedbackPolicy`, add `applyActionToCategory(...)`. Algorithm:
-   - Derive the Rule using existing `toRule(...)`.
-   - Look for a Category in `existingCategories` whose `ruleIds` contains `rule.id`. If found, return a copy with `action = action.toCategoryAction()` and keep `name` / `order` / `appPackageName` unchanged.
-   - If not found, create a new Category: `id = "cat-from-rule-${rule.id}"`, `name = rule.title`, `appPackageName = notification.packageName.takeIf { rule.type == RuleTypeUi.APP }`, `ruleIds = listOf(rule.id)`, `action = action.toCategoryAction()`, `order = (existingCategories.maxOfOrNull { it.order } ?: -1) + 1`.
-3. Update feedback call sites (Detail screen) to persist both Rule and Category through their repositories in the same coroutine scope — Rule first, then Category.
-4. Rerun Task 1 tests → green.
-
-## Task 3: Rule deletion cascade into Categories
-
-**Objective:** Turn test 3 green.
+**Objective:** Delete the 4-button grid and its reducers; introduce a single CTA that opens `CategoryAssignBottomSheet`.
 
 **Files:**
-- 변경: `app/src/main/java/com/smartnoti/app/data/categories/CategoriesRepository.kt` — add `suspend fun onRuleDeleted(ruleId: String)` that reads `currentCategories()`, rewrites each Category with `ruleIds = ruleIds - ruleId`, and persists.
-- 변경: `app/src/main/java/com/smartnoti/app/data/rules/RulesRepository.kt` — inject `CategoriesRepository` (or a narrow callback interface to avoid a direct cycle) and call `categoriesRepository.onRuleDeleted(ruleId)` after the existing `persist(...)` in `deleteRule(...)`.
-- 변경: DI / construction sites (`SmartNotiApplication` or equivalent) — wire `CategoriesRepository` into `RulesRepository` constructor.
+- 변경: `app/src/main/java/com/smartnoti/app/ui/notification/NotificationDetailScreen.kt` — remove the four action button composables + their click callbacks + state-handling plumbing.
+- 신규: `app/src/main/java/com/smartnoti/app/ui/notification/CategoryAssignBottomSheet.kt` — ModalBottomSheet containing: section "기존 분류에 포함" (scrollable list of user's Categories with name + action chip), and CTA row "새 분류 만들기".
+- 변경: `NotificationDetailViewModel` — replace action-apply state with `onOpenAssignSheet`, `onAssignToExisting(categoryId)`, `onCreateNewCategory()`. Remove state for action results / snackbar-undo.
+- 변경: `app/src/main/java/com/smartnoti/app/ui/category/CategoryEditor*.kt` (locate via Grep) — accept an optional `prefill: CategoryEditorPrefill?` carrying `name`, `appPackageName`, `pendingRule`, `defaultAction`. When present, seed editor state on first composition.
+- 변경: `AppNavHost.kt` — add a navigation path from Detail's "새 분류 만들기" into CategoryEditor with prefill args (serialize via saved-state or nav args), and a return path back to Detail after save.
+- 삭제: `IgnoreConfirmationDialog` composable + the undo snackbar wiring added in Task 6a of the IGNORE plan. Grep for `IgnoreConfirmationDialog` and remove all references.
 
 **Steps:**
-1. Implement `CategoriesRepository.onRuleDeleted(ruleId)` — idempotent (calling twice with the same ruleId is a no-op after the first), preserves Category even when `ruleIds` becomes empty.
-2. Modify `RulesRepository.deleteRule(ruleId)` to await the cascade after persist. Order is Rule-persist → Category-cascade so an observer reading during the window sees at worst a Category pointing at a deleted Rule (harmless — classifier resolves by id and skips misses) rather than a live Rule with no Category.
-3. If injecting `CategoriesRepository` into `RulesRepository` creates a dependency cycle, introduce a minimal `RuleDeletionObserver` interface that `CategoriesRepository` implements; `RulesRepository` holds a list of observers wired at construction.
-4. Rerun Task 1 cascade test → green. Run full suite.
+1. Delete the four `Button`/`FilledTonalButton` composables and their `onClick` bindings from `NotificationDetailScreen`. Replace with one `Button(onClick = viewModel::onOpenAssignSheet) { Text("분류 변경") }`.
+2. Build `CategoryAssignBottomSheet` — collect Categories list from viewmodel, render each row (name + action-color chip + current `ruleIds.size` small label). Tapping a row calls `onAssignToExisting(categoryId)` and dismisses. "새 분류 만들기" row navigates to editor with prefill.
+3. Extend CategoryEditor to accept prefill. First-composition effect: if editor state is empty (new-Category flow) and prefill is non-null, seed `name`, `appPackageName`, insert pre-added rule into pending rule list, set `action` to `defaultAction`.
+4. Delete `IgnoreConfirmationDialog.kt` + references. Delete undo-snackbar logic tied to the removed "무시" action.
+5. Turn Task 1 prefill test green.
 
-## Task 4: Journey doc sync — remove the three Known-gap bullets
+## Task 3: Domain — assign-to-Category use case + auto-rule derivation
 
-**Objective:** Close the loop — the journey docs that currently flag these drifts should reflect the fixed state. No Observable steps / Exit state changes; only Known gaps and Change log.
+**Objective:** Turn Task 1 steps 1–3 green.
 
 **Files:**
-- 변경: `docs/journeys/notification-capture-classify.md` — remove Known-gap bullet about listener not injecting Categories; add Change log row with commit hash + summary.
-- 변경: `docs/journeys/notification-detail.md` — remove Known-gap bullet about feedback creating Rule without Category; Change log row.
-- 변경: `docs/journeys/rules-management.md` (or wherever the cascade gap was logged) — remove Known-gap bullet about orphan rule ids in Categories; Change log row.
-- 변경: 이 plan `status: shipped` + `superseded-by:` 로 실제 영향받은 journey 중 대표 링크.
+- 신규: `app/src/main/java/com/smartnoti/app/domain/usecase/AssignNotificationToCategoryUseCase.kt` — exposes `assignToExisting(notification, categoryId)` and `buildPrefillForNewCategory(notification): CategoryEditorPrefill`.
+- 신규: `app/src/main/java/com/smartnoti/app/domain/usecase/NotificationRuleDerivation.kt` (or inline helper) — `deriveAutoRule(notification) → RuleUiModel`: PERSON if sender non-blank, else APP; id = `"${type}:$matchValue"`; title = sender-or-appName.
+- 변경: `CategoriesRepository.kt` — add `suspend fun appendRuleIdToCategory(categoryId: String, ruleId: String)` that reads, dedupes, persists. Leaves other fields untouched.
+- 변경: `NotificationDetailViewModel` — call the use case from `onAssignToExisting` and `onCreateNewCategory`.
 
 **Steps:**
-1. For each journey file, locate the exact bullet added in PR #241. Delete it (keep surrounding gap bullets untouched).
-2. Append a Change log entry: `YYYY-MM-DD — Categories runtime wiring fix shipped (commit <sha>): listener injects Categories, feedback upserts Category, Rule deletion cascades.`
-3. Do not touch `last-verified` — that only moves when a real verification recipe runs.
+1. Implement `NotificationRuleDerivation.deriveAutoRule(...)`.
+2. Implement `AssignNotificationToCategoryUseCase.assignToExisting`: derive rule, `rulesRepository.upsertRule(rule)`, `categoriesRepository.appendRuleIdToCategory(categoryId, rule.id)`. Dedupe via set conversion.
+3. Implement `buildPrefillForNewCategory`: derive rule; return `CategoryEditorPrefill(name=rule.title, appPackageName=if(rule.type==APP) notification.packageName else null, pendingRule=rule, defaultAction=PRIORITY)`.
+4. Wire viewmodel callbacks. Turn Task 1 tests 1–3 green.
+
+## Task 4: Listener injection (drift #1)
+
+**Objective:** Turn Task 1 step 4 green.
+
+**Files:**
+- 변경: `SmartNotiNotificationListenerService.kt` — read `categoriesRepository.currentCategories()` next to `rulesRepository.currentRules()`; pass both into `processor.process(...)`.
+- 변경: `processor.process(...)` signature if it does not yet accept Categories (Classifier machinery was built to consume them in P2).
+
+**Steps:**
+1. Add the categories read at the call site; pass into processor.
+2. If the service is hard to unit-test directly, extract a thin `NotificationProcessingCoordinator` seam (≤ 20 LOC) so the test can target plain Kotlin. If larger, split into its own task.
+3. Turn Task 1 step 4 green.
+
+## Task 5: Rule-delete cascade (drift #3)
+
+**Objective:** Turn Task 1 step 5 green.
+
+**Files:**
+- 변경: `CategoriesRepository.kt` — add `suspend fun onRuleDeleted(ruleId: String)` that strips `ruleId` from every Category's `ruleIds` and persists. Empty `ruleIds` is preserved (user sees a "rule-less" Category to edit).
+- 변경: `RulesRepository.kt` — after persisting the delete, invoke `categoriesRepository.onRuleDeleted(ruleId)`. Wire via direct injection; if that creates a cycle, fall back to a narrow `RuleDeletionObserver` interface.
+- 변경: DI / construction sites — wire CategoriesRepository into RulesRepository.
+
+**Steps:**
+1. Implement `onRuleDeleted` — idempotent, preserves empty-ruleIds Categories.
+2. Call it from `deleteRule` after persist; order = Rule-persist → Category-cascade.
+3. If a cycle appears, add `RuleDeletionObserver`.
+4. Turn Task 1 step 5 green.
+
+## Task 6: Cleanup — delete dead code
+
+**Objective:** Remove every piece the redesign made obsolete. No behavior change; pure deletion.
+
+**Files (delete or prune):**
+- `NotificationFeedbackPolicy.applyAction(...)` + `toRule(...)` + any `CategoryFeedbackResult` stubs. If `NotificationFeedbackPolicy` has no remaining members, delete the whole file.
+- `SmartNotiNotifier` — `ACTION_KEEP_PRIORITY` / `ACTION_KEEP_DIGEST` / `ACTION_KEEP_SILENT` / `ACTION_IGNORE` constants + every `NotificationCompat.Builder.addAction(...)` call that wires them. Keep notification construction otherwise intact.
+- `SmartNotiNotificationActionReceiver` — delete the entire broadcast handler for those four actions. If the receiver has no remaining handlers, remove its `<receiver>` from `AndroidManifest.xml` and delete the class.
+- `IgnoreConfirmationDialog` composable (Task 6a of IGNORE plan) + all call sites + the undo snackbar tied to it.
+
+**Steps:**
+1. Grep for each symbol; delete definitions and references atomically per symbol.
+2. `./gradlew :app:assembleDebug :app:testDebugUnitTest` — green.
+3. Manual smoke: replacement alert from silent-suppression has no action buttons, only tap-to-open Detail.
+
+## Task 7: Journey doc overhaul
+
+**Objective:** Sync journeys to the new flow and close the three Known-gap bullets.
+
+**Files:**
+- 변경: `docs/journeys/rules-feedback-loop.md` — rewrite the loop: Detail no longer emits actions; user picks a Category (existing) or creates one (editor). Observable steps, Exit state, Code pointers all updated.
+- 변경: `docs/journeys/notification-detail.md` — button list updated to the single "분류 변경" CTA; bottom-sheet flow referenced; replacement-alert behavior documented (no action buttons).
+- 변경: `docs/journeys/notification-capture-classify.md` — Known-gap bullet about listener not injecting Categories replaced with Change log row.
+- 변경: `docs/journeys/rules-management.md` — Known-gap bullet about orphan rule ids replaced with Change log row.
+- 변경: 이 plan `status: shipped` + `superseded-by:` 로 `rules-feedback-loop.md` 링크.
+
+**Steps:**
+1. Rewrite `rules-feedback-loop.md` Observable steps around the new "분류 변경" flow. Keep Goal/Exit state stable where the user-observable outcome (future notifications classify correctly) is unchanged.
+2. In `notification-detail.md`, update the button enumeration; add a short section on `CategoryAssignBottomSheet`.
+3. Append Change log rows (`YYYY-MM-DD — <summary> (commit <sha>)`) to all four journey docs.
+4. Do not touch `last-verified` on any journey — that only moves when a real verification recipe runs.
 
 ---
 
 ## Scope
 
 **In:**
-- Listener call site injects `categoriesRepository.currentCategories()` into `processor.process(...)`.
-- Feedback policy creates-or-updates a Category alongside the Rule, with deterministic id / default `order` / name.
-- Rule deletion cascades into Categories to strip orphan ids.
-- Unit tests for all three paths, failing first.
-- Journey doc Known-gap removal + Change log.
+- Delete the 4 Detail action buttons and every downstream code path (policy, notifier actions, broadcast receiver, ignore dialog, undo snackbar).
+- New single "분류 변경" CTA → `CategoryAssignBottomSheet` with "기존 분류에 포함" + "새 분류 만들기".
+- `AssignNotificationToCategoryUseCase` + auto-rule derivation.
+- CategoryEditor prefill path from notification.
+- Listener injects `currentCategories()` into classifier pipeline.
+- Rule deletion cascades into Categories.
+- Unit tests first, red before each implementation task.
+- Journey doc overhaul (`rules-feedback-loop.md` rewritten; three Known-gap bullets resolved).
 
 **Out:**
-- Category picker UI in Detail (user picking an existing Category instead of auto-create) — future plan.
-- Category auto-merge when feedback would create a near-duplicate — future plan.
-- Migration of pre-existing orphan ids in currently-deployed Categories — cascade only applies to future deletions. If existing users already have orphans, one-time cleanup at app start is a separate plan if verification shows it matters.
-- Moving Rule/Category coordination into a single use case (architectural refactor) — this plan stays at the repository seam.
+- Category auto-merge / smart suggestion ("this sender looks like your Work category").
+- One-time migration cleanup of existing deployments' orphan rule ids (classifier ignores misses gracefully; defer to a follow-up plan if verification shows it matters).
+- Multi-rule Category "flip action" semantics (α/β/γ trilemma — now moot).
+- Moving Rule/Category coordination into a single domain aggregate — stays at the repository seam.
 
 ---
 
 ## Risks / open questions
 
-- **Dependency direction RulesRepository ↔ CategoriesRepository:** Injecting `CategoriesRepository` into `RulesRepository` can induce a cycle if the reverse edge ever grows. The observer pattern (Task 3 step 3) is the fallback. Decision at implementation time — prefer direct injection unless a cycle appears.
-- **Feedback upsert when sender is null:** `toRule(...)` uses `packageName` as `matchValue` when sender is blank. New Category's `appPackageName` is already set from notification. What if the user's existing Category list already has a DIFFERENT Category covering the same app with a different action? Current algorithm matches by `rule.id` (deterministic), so it won't collide — it will create a new Category. Acceptable for MVP; user can manually merge. Document in plan.
-- **"Update in place" vs. "stack action":** If a Category exists with `action = DIGEST` and user taps "중요로 고정", the plan updates to PRIORITY. But what if that Category wraps 5 other Rules? The user might only mean "for this sender" — flipping all 5 is a side effect. Open question: should update-in-place be gated on `ruleIds.size == 1`, and create a new Category otherwise? Default in Task 2: always update-in-place (simpler, matches user's mental model of "I'm telling SmartNoti how to treat this sender"). Flag for verification after ship.
-- **Orphan cleanup for existing deployments:** Users who already deleted Rules before this plan landed have orphan ids in Categories. Classifier ignores misses gracefully, but `CategoryDetailScreen` may show phantom rows. Verification recipe should check and, if needed, a follow-up plan adds one-time cleanup.
-- **Listener test seam:** `SmartNotiNotificationListenerService` is an Android service — hard to unit-test directly. Task 1 step 1 may need a thin extract (e.g. `NotificationProcessingCoordinator`) to make the call site testable. If the extract is larger than ~20 lines, split into its own task.
+- **Dependency direction RulesRepository ↔ CategoriesRepository:** direct injection is preferred; the `RuleDeletionObserver` interface is the fallback if a cycle appears.
+- **Replacement-alert UX after action buttons are gone:** today's replacement alert depended on the four buttons for quick actions. With only tap-to-open Detail remaining, users must take one extra step to re-classify. This is an intentional trade — verify in `notification-replacement-alert` journey recipe post-ship that tap-through still feels acceptable.
+- **Prefill serialization across navigation:** `CategoryEditorPrefill` must survive process death. Use saved-state handle or nav arguments keyed by a short-lived id in a one-shot `PrefillStore`. Implementation task decides which is cleaner for the current nav graph.
+- **Deterministic rule id collisions across users of the same Category:** two different notifications sharing the same sender/package will produce the same rule id. Assigning either to the same Category is idempotent (good). Assigning each to different Categories creates two Categories both listing the same rule id — classifier resolves by `order`, so user-set ordering governs. Documented expectation, not a bug.
+- **Listener test seam:** `SmartNotiNotificationListenerService` is an Android service — hard to unit-test directly. A ≤ 20-LOC extract is fine; anything larger splits into its own task.
+- **CategoryEditor prefill invariants:** if the user cancels the editor, no Rule should have been written. Use case must only persist on editor-save, not on open.
 
 ---
 
 ## Related journeys
 
-- [notification-capture-classify](../journeys/notification-capture-classify.md) — Drift 1 (listener injection) is the Classifier entry point described here.
-- [notification-detail](../journeys/notification-detail.md) — Drift 2 (feedback buttons) is the Observable-step tail of this journey.
-- [rules-management](../journeys/rules-management.md) — Drift 3 (deletion cascade) affects the Rule lifecycle contract recorded here.
+- [rules-feedback-loop](../journeys/rules-feedback-loop.md) — rewritten by this plan; the "분류 변경" flow is its new spine.
+- [notification-detail](../journeys/notification-detail.md) — buttons section and sheet flow updated.
+- [notification-capture-classify](../journeys/notification-capture-classify.md) — Drift 1 (listener injection) resolved.
+- [rules-management](../journeys/rules-management.md) — Drift 3 (rule-delete cascade) resolved.
 
-Shipping this plan replaces the three Known-gap bullets added in PR #241 with Change log entries linking back to this plan.
+Shipping this plan replaces the two retained Known-gap bullets (drifts #1 and #3) with Change log entries, and retires drift #2 by deleting its code path entirely.
