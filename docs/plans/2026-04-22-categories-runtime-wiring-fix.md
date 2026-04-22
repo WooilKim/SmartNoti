@@ -29,7 +29,7 @@ created: 2026-04-22
 
 ---
 
-## Task 1: Failing tests for all three drifts [IN PROGRESS via PR #TBD]
+## Task 1: Failing tests for all three drifts [IN PROGRESS via PR #243]
 
 **Objective:** Pin each drift as a red test before touching production code.
 
