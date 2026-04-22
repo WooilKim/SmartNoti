@@ -175,4 +175,3 @@ If a self-merged row caused a regression:
 | 2026-04-22T06:54:44Z | project-manager | #249 | CategoryEditor save race fix (plan-implementer) | https://github.com/WooilKim/SmartNoti/actions/runs/24764486252 |
 | 2026-04-22T07:16:05Z | project-manager | #250 | plan for rules DataStore dedup hotfix (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24764593056 |
 | 2026-04-22T07:17:51Z | project-manager | #251 | hotfix: collapse smartnoti_rules DataStore to single owner | https://github.com/WooilKim/SmartNoti/actions/runs/24765350558 |
-| 2026-04-22T07:30:54Z | journey-tester | #252 | rules-feedback-loop verification sweep 2026-04-22 (PASS) | https://github.com/WooilKim/SmartNoti/actions/runs/24765878391 |
