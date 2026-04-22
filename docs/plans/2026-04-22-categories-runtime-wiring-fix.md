@@ -51,7 +51,7 @@ updated: 2026-04-22
 5. **Rule-delete cascade test:** pre-seed Rules `[r1, r2]` and Categories `[catA(ruleIds=[r1]), catB(ruleIds=[r1, r2])]`. Call `RulesRepository.deleteRule("r1")`. Assert Rules = `[r2]`, `catA.ruleIds == []`, `catB.ruleIds == [r2]`, and no Category is deleted (empty `ruleIds` preserved).
 6. `./gradlew :app:testDebugUnitTest` — all five tests red.
 
-## Task 2: Detail UI — remove 4 buttons, add "분류 변경" + bottom sheet
+## Task 2: Detail UI — remove 4 buttons, add "분류 변경" + bottom sheet [IN PROGRESS via PR #245]
 
 **Objective:** Delete the 4-button grid and its reducers; introduce a single CTA that opens `CategoryAssignBottomSheet`.
 
@@ -70,7 +70,7 @@ updated: 2026-04-22
 4. Delete `IgnoreConfirmationDialog.kt` + references. Delete undo-snackbar logic tied to the removed "무시" action.
 5. Turn Task 1 prefill test green.
 
-## Task 3: Domain — assign-to-Category use case + auto-rule derivation
+## Task 3: Domain — assign-to-Category use case + auto-rule derivation [IN PROGRESS via PR #245]
 
 **Objective:** Turn Task 1 steps 1–3 green.
 
@@ -86,7 +86,7 @@ updated: 2026-04-22
 3. Implement `buildPrefillForNewCategory`: derive rule; return `CategoryEditorPrefill(name=rule.title, appPackageName=if(rule.type==APP) notification.packageName else null, pendingRule=rule, defaultAction=PRIORITY)`.
 4. Wire viewmodel callbacks. Turn Task 1 tests 1–3 green.
 
-## Task 4: Listener injection (drift #1)
+## Task 4: Listener injection (drift #1) [IN PROGRESS via PR #245]
 
 **Objective:** Turn Task 1 step 4 green.
 
@@ -99,7 +99,7 @@ updated: 2026-04-22
 2. If the service is hard to unit-test directly, extract a thin `NotificationProcessingCoordinator` seam (≤ 20 LOC) so the test can target plain Kotlin. If larger, split into its own task.
 3. Turn Task 1 step 4 green.
 
-## Task 5: Rule-delete cascade (drift #3)
+## Task 5: Rule-delete cascade (drift #3) [IN PROGRESS via PR #245]
 
 **Objective:** Turn Task 1 step 5 green.
 
@@ -114,7 +114,18 @@ updated: 2026-04-22
 3. If a cycle appears, add `RuleDeletionObserver`.
 4. Turn Task 1 step 5 green.
 
-## Task 6: Cleanup — delete dead code
+## Task 6: Cleanup — delete dead code [IN PROGRESS via PR #245]
+
+> **Collateral carve-out, 2026-04-22:** `NotificationFeedbackPolicy.applyAction`
+> / `toRule` are still used by the live `PassthroughReviewReclassifyDispatcher`
+> (Priority screen inline reclassify from `rules-ux-v2-inbox-restructure`
+> Phase A Task 3). Deleting them was out of scope for this plan (not in the
+> Out list, not in any other plan's Task list, and would have broken that
+> feature). The methods stay; every Detail-side caller is removed. The
+> `CategoryFeedbackResult` stub referenced in the plan never materialized in
+> code, so there was nothing to delete there. `markSilentProcessed` +
+> `PROCESSED_REASON_TAG` are preserved (used by `silent-archive-drift-fix`).
+
 
 **Objective:** Remove every piece the redesign made obsolete. No behavior change; pure deletion.
 

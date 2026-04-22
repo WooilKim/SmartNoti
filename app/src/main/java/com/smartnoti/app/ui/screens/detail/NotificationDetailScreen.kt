@@ -2,7 +2,6 @@ package com.smartnoti.app.ui.screens.detail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,13 +15,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,28 +29,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.NotificationStatusUi
-import com.smartnoti.app.domain.model.NotificationUiModel
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SilentMode
+import com.smartnoti.app.domain.usecase.AssignNotificationToCategoryUseCase
+import com.smartnoti.app.domain.usecase.CategoryEditorPrefill
 import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendationSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailReasonSectionBuilder
-import com.smartnoti.app.domain.usecase.NotificationDetailRuleReference
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
-import com.smartnoti.app.domain.usecase.NotificationFeedbackPolicy
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
 import com.smartnoti.app.notification.MarkSilentProcessedTrayCancelChain
 import com.smartnoti.app.notification.SmartNotiNotificationListenerService
 import com.smartnoti.app.ui.components.EmptyState
-import com.smartnoti.app.ui.components.IgnoreConfirmationDialog
 import com.smartnoti.app.ui.components.ReasonChipRow
 import com.smartnoti.app.ui.components.RuleHitChipRow
 import com.smartnoti.app.ui.components.StatusBadge
-import kotlinx.coroutines.Dispatchers
+import com.smartnoti.app.ui.notification.CategoryAssignBottomSheet
+import com.smartnoti.app.ui.notification.ChangeCategorySheetState
+import com.smartnoti.app.ui.screens.categories.CategoryEditorScreen
+import com.smartnoti.app.ui.screens.categories.CategoryEditorTarget
 import kotlinx.coroutines.launch
 
 @Composable
@@ -91,7 +89,7 @@ fun NotificationDetailScreen(
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
-    val feedbackPolicy = remember { NotificationFeedbackPolicy() }
+    val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
     val deliveryProfileSummaryBuilder = remember { NotificationDetailDeliveryProfileSummaryBuilder() }
     val onboardingRecommendationSummaryBuilder = remember { NotificationDetailOnboardingRecommendationSummaryBuilder() }
     val sourceSuppressionSummaryBuilder = remember { NotificationDetailSourceSuppressionSummaryBuilder() }
@@ -100,12 +98,28 @@ fun NotificationDetailScreen(
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
     val rules by rulesRepository.observeRules().collectAsState(initial = emptyList<RuleUiModel>())
-    // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a: destructive "무시"
-    // flow needs a confirm dialog + 3-sec undo snackbar. State is scoped to
-    // this screen so dismissing/navigating away drops the undo window (the
-    // flag-off rehydration is intentional — see plan Risks).
-    var showIgnoreDialog by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val categories by categoriesRepository.observeCategories().collectAsState(initial = emptyList<Category>())
+    // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 2: the four
+    // action buttons are replaced with a single "분류 변경" CTA that opens
+    // a ModalBottomSheet. Local state governs whether the sheet or the
+    // editor dialog is up; dismissing either returns to the Detail card.
+    var showAssignSheet by remember { mutableStateOf(false) }
+    var pendingPrefill by remember { mutableStateOf<CategoryEditorPrefill?>(null) }
+    val assignUseCase = remember(rulesRepository, categoriesRepository) {
+        AssignNotificationToCategoryUseCase(
+            ports = object : AssignNotificationToCategoryUseCase.Ports {
+                override suspend fun upsertRule(rule: RuleUiModel) {
+                    rulesRepository.upsertRule(rule)
+                }
+                override suspend fun appendRuleIdToCategory(
+                    categoryId: String,
+                    ruleId: String,
+                ) {
+                    categoriesRepository.appendRuleIdToCategory(categoryId, ruleId)
+                }
+            },
+        )
+    }
     val reasonSections = remember(notification, rules) {
         notification?.let { reasonSectionBuilder.build(it, rules) }
     }
@@ -198,12 +212,6 @@ fun NotificationDetailScreen(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                         )
-                        // Phase B Task 3 split: classifier-internal factoids
-                        // (grey, non-interactive) are separate from user-rule
-                        // hits (blue, clickable → Rules deep-link). Either
-                        // sub-section is hidden when its list is empty so a
-                        // passthrough alert doesn't show an empty "적용된 규칙"
-                        // header.
                         if (sections?.classifierSignals?.isNotEmpty() == true) {
                             ReasonSubSection(
                                 title = "SmartNoti 가 본 신호",
@@ -355,8 +363,6 @@ fun NotificationDetailScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    // Chain DB flip → tray cancel. See
-                                    // docs/plans/2026-04-20-silent-archive-drift-fix.md Task 3.
                                     val chain = MarkSilentProcessedTrayCancelChain(
                                         markSilentProcessed = repository::markSilentProcessed,
                                         sourceEntryKeyForId = repository::sourceEntryKeyForId,
@@ -383,145 +389,131 @@ fun NotificationDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        "이 알림 학습시키기",
+                        "이 알림 분류하기",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
+                    // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 2:
+                    // the four per-action buttons are replaced by a single
+                    // "분류 변경" CTA. Tap opens [CategoryAssignBottomSheet]
+                    // which lets the user (a) add this notification's
+                    // auto-rule to an existing Category or (b) launch the
+                    // Category editor with a prefilled draft.
                     Text(
-                        "한 번 누르면 상태를 바꾸고 같은 유형의 규칙도 함께 저장해요",
+                        "이 알림이 어떤 분류에 속하는지 알려주세요. 다음부터는 분류의 전달 방식이 적용돼요.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Button(
-                        onClick = {
-                            scope.launch {
-                                val updated = feedbackPolicy.applyAction(notification, RuleActionUi.ALWAYS_PRIORITY)
-                                repository.updateNotification(updated)
-                                rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.ALWAYS_PRIORITY))
-                            }
-                        },
+                        onClick = { showAssignSheet = true },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("중요로 고정")
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    val updated = feedbackPolicy.applyAction(notification, RuleActionUi.DIGEST)
-                                    repository.updateNotification(updated)
-                                    rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.DIGEST))
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text("Digest로 보내기")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    val updated = feedbackPolicy.applyAction(notification, RuleActionUi.SILENT)
-                                    repository.updateNotification(updated)
-                                    rulesRepository.upsertRule(feedbackPolicy.toRule(notification, RuleActionUi.SILENT))
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text("조용히 처리")
-                        }
-                        // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a —
-                        // "무시" sits to the right of "조용히 처리" so the feedback
-                        // row reads least-destructive → most-destructive. Tap
-                        // opens a confirmation dialog; the dialog's confirm path
-                        // handles the DB flip, rule upsert, back-nav, and undo
-                        // snackbar.
-                        OutlinedButton(
-                            onClick = { showIgnoreDialog = true },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text("무시")
-                        }
+                        Text("분류 변경")
                     }
                 }
             }
         }
     }
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(contentPadding)
-                .padding(16.dp),
-        ) { data ->
-            Snackbar(snackbarData = data)
-        }
     }
 
-    if (showIgnoreDialog) {
-        IgnoreConfirmationDialog(
-            onConfirm = {
-                showIgnoreDialog = false
+    if (showAssignSheet) {
+        val sheetState = ChangeCategorySheetState.from(
+            notification = notification,
+            categories = categories,
+        )
+        CategoryAssignBottomSheet(
+            state = sheetState,
+            onDismiss = { showAssignSheet = false },
+            onAssignToExisting = { categoryId ->
+                showAssignSheet = false
                 scope.launch {
-                    applyIgnoreWithUndo(
-                        feedbackPolicy = feedbackPolicy,
-                        repository = repository,
-                        rulesRepository = rulesRepository,
+                    assignUseCase.assignToExisting(
                         notification = notification,
-                        existingRules = rules,
-                        snackbarHostState = snackbarHostState,
+                        categoryId = categoryId,
                     )
-                    onBack()
                 }
             },
-            onDismiss = { showIgnoreDialog = false },
+            onCreateNewCategory = {
+                showAssignSheet = false
+                // Derive the notification's currently-owning Category action
+                // (if any) so the editor's default action is dynamic-opposite.
+                val currentAction = resolveOwningCategoryAction(
+                    notification = notification,
+                    categories = categories,
+                    rules = rules,
+                )
+                pendingPrefill = AssignNotificationToCategoryUseCase.buildPrefillForNewCategory(
+                    notification = notification,
+                    currentCategoryAction = currentAction,
+                )
+            },
+        )
+    }
+
+    val prefill = pendingPrefill
+    if (prefill != null) {
+        // Reuse the existing CategoryEditorScreen (AlertDialog) with prefill
+        // seeded. Save persists the pendingRule alongside the Category.
+        val allRules = rules
+        CategoryEditorScreen(
+            target = CategoryEditorTarget.New,
+            categories = categories,
+            rules = allRules,
+            capturedApps = emptyList(),
+            onDismiss = { pendingPrefill = null },
+            onSaved = { pendingPrefill = null },
+            onDelete = { /* no-op in New flow */ },
+            prefill = prefill,
         )
     }
 }
 
 /**
- * Applies IGNORE to [notification], upserts a matching IGNORE rule, and shows a
- * 3-second undo snackbar. Undo restores the prior notification state and either
- * deletes the newly-created rule or restores the previous rule action (for the
- * case where a rule for this sender/app already existed before).
+ * Resolve the Category that currently "owns" [notification] so the
+ * "새 분류 만들기" default action can be dynamic-opposite of it.
  *
- * Kept separate from the Composable so the mutation path is readable and so the
- * "rollback on undo" snapshot is explicit. The undo window is in-memory only;
- * process restart finalizes the IGNORE (see plan Risks).
+ * Matches the classifier's Category selection logic at a high level: find
+ * any Category whose `ruleIds` reference a Rule that matches the
+ * notification's sender/app. Returns null when no Category owns the
+ * notification today (classifier fell through to a heuristic default) —
+ * the use case then defaults to PRIORITY.
  */
-private suspend fun applyIgnoreWithUndo(
-    feedbackPolicy: NotificationFeedbackPolicy,
-    repository: NotificationRepository,
-    rulesRepository: RulesRepository,
-    notification: NotificationUiModel,
-    existingRules: List<RuleUiModel>,
-    snackbarHostState: SnackbarHostState,
-) {
-    val priorNotification = notification
-    val ignoreRule = feedbackPolicy.toRule(notification, RuleActionUi.IGNORE)
-    // Match on the same (id || (type, matchValue)) rule identity RulesRepository
-    // uses for upsert collisions — otherwise we'd miss an existing rule that
-    // was stored under a different id.
-    val priorRule = existingRules.firstOrNull { existing ->
-        existing.id == ignoreRule.id ||
-            (existing.type == ignoreRule.type && existing.matchValue == ignoreRule.matchValue)
+private fun resolveOwningCategoryAction(
+    notification: com.smartnoti.app.domain.model.NotificationUiModel,
+    categories: List<Category>,
+    rules: List<RuleUiModel>,
+): CategoryAction? {
+    val matchedRuleIds = rules
+        .filter { rule -> rule.enabled && ruleMatches(rule, notification) }
+        .map { it.id }
+        .toSet()
+    if (matchedRuleIds.isEmpty()) return null
+    val owning = categories.firstOrNull { category ->
+        category.ruleIds.any { it in matchedRuleIds }
     }
+    return owning?.action
+}
 
-    val updated = feedbackPolicy.applyAction(notification, RuleActionUi.IGNORE)
-    repository.updateNotification(updated)
-    rulesRepository.upsertRule(ignoreRule)
-
-    val result = snackbarHostState.showSnackbar(
-        message = "무시됨. 되돌리려면 탭",
-        actionLabel = "되돌리기",
-        withDismissAction = false,
-    )
-    if (result == SnackbarResult.ActionPerformed) {
-        repository.updateNotification(priorNotification)
-        if (priorRule != null) {
-            rulesRepository.upsertRule(priorRule)
-        } else {
-            rulesRepository.deleteRule(ignoreRule.id)
+private fun ruleMatches(
+    rule: RuleUiModel,
+    notification: com.smartnoti.app.domain.model.NotificationUiModel,
+): Boolean {
+    return when (rule.type) {
+        com.smartnoti.app.domain.model.RuleTypeUi.PERSON ->
+            !notification.sender.isNullOrBlank() &&
+                notification.sender.equals(rule.matchValue, ignoreCase = true)
+        com.smartnoti.app.domain.model.RuleTypeUi.APP ->
+            notification.packageName.equals(rule.matchValue, ignoreCase = true)
+        com.smartnoti.app.domain.model.RuleTypeUi.KEYWORD -> {
+            val content = listOf(notification.title, notification.body).joinToString(" ")
+            rule.matchValue
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .any { content.contains(it, ignoreCase = true) }
         }
+        com.smartnoti.app.domain.model.RuleTypeUi.SCHEDULE,
+        com.smartnoti.app.domain.model.RuleTypeUi.REPEAT_BUNDLE -> false
     }
 }
 

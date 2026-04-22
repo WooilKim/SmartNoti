@@ -22,6 +22,15 @@ class SmartNotiNotifier(
 ) {
     private val notificationManager by lazy { NotificationManagerCompat.from(context) }
 
+    /**
+     * Post a silent-suppression replacement alert.
+     *
+     * Plan `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Task 6
+     * removes every per-action button that this alert used to carry
+     * ("중요로 고정" / "Digest로 유지" / "조용히 유지" / "무시"). The alert is
+     * now **tap-only**: tapping the body opens Detail, where the single
+     * "분류 변경" CTA is the user's reclassification entry point.
+     */
     @SuppressLint("MissingPermission")
     fun notifySuppressedNotification(
         decision: NotificationDecision,
@@ -34,12 +43,8 @@ class SmartNotiNotifier(
         deliveryProfile: DeliveryProfile = DeliveryProfile.defaultsFor(decision),
     ) {
         if (decision == NotificationDecision.PRIORITY) return
-        // IGNORE early-return — plan `2026-04-21-ignore-tier-fourth-decision`
-        // Task 2 seeds the guard here; Task 4 expands it into the full early
-        // path in [SmartNotiNotificationListenerService] (persist + tray
-        // cancel + no replacement alert). For Task 2 we simply refuse to
-        // post a replacement notification to keep the build green without
-        // materializing any user-visible IGNORE behaviour yet.
+        // IGNORE never posts a replacement alert — plan
+        // `2026-04-21-ignore-tier-fourth-decision` Task 2.
         if (decision == NotificationDecision.IGNORE) return
         ensureChannels()
         val sanitizedProfile = deliveryProfile.sanitizedForDecision(decision)
@@ -69,7 +74,6 @@ class SmartNotiNotifier(
             parentRoute = parentRoute,
             requestCode = replacementNotificationId,
         )
-        val keepAction = keepActionFor(decision)
         val notificationBuilder = NotificationCompat.Builder(context, channelSpec.id)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(contentTitle)
@@ -82,39 +86,12 @@ class SmartNotiNotifier(
             .setOnlyAlertOnce(true)
             .setVisibility(channelSpec.notificationVisibility)
             .setContentIntent(contentIntent)
-            .addAction(
-                android.R.drawable.ic_input_add,
-                ACTION_LABEL_PROMOTE_TO_PRIORITY,
-                createFeedbackActionIntent(
-                    notificationId = notificationId,
-                    replacementNotificationId = replacementNotificationId,
-                    action = RuleAction.ALWAYS_PRIORITY,
-                ),
-            )
 
         if (channelSpec.silentBuilder) {
             notificationBuilder.setSilent(true)
         }
 
-        if (keepAction != null) {
-            notificationBuilder.addAction(
-                android.R.drawable.ic_menu_recent_history,
-                keepAction.label,
-                createFeedbackActionIntent(
-                    notificationId = notificationId,
-                    replacementNotificationId = replacementNotificationId,
-                    action = keepAction.action,
-                ),
-            )
-        }
-
-        val notification = notificationBuilder
-            .addAction(
-                android.R.drawable.ic_menu_view,
-                ACTION_LABEL_OPEN,
-                contentIntent,
-            )
-            .build()
+        val notification = notificationBuilder.build()
 
         if (!OnboardingPermissions.isPostNotificationsGranted(context)) {
             return
@@ -179,62 +156,9 @@ class SmartNotiNotifier(
         )
     }
 
-    private fun createFeedbackActionIntent(
-        notificationId: String,
-        replacementNotificationId: Int,
-        action: RuleAction,
-    ): PendingIntent {
-        val intent = Intent(context, SmartNotiNotificationActionReceiver::class.java).apply {
-            this.action = action.intentAction
-            putExtra(EXTRA_NOTIFICATION_ID, notificationId)
-            putExtra(EXTRA_REPLACEMENT_NOTIFICATION_ID, replacementNotificationId)
-        }
-        return PendingIntent.getBroadcast(
-            context,
-            feedbackRequestCode(notificationId, action),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
-
-    private fun keepActionFor(decision: NotificationDecision): NotificationQuickAction? = when (decision) {
-        NotificationDecision.PRIORITY -> null
-        NotificationDecision.DIGEST -> NotificationQuickAction(
-            label = ACTION_LABEL_KEEP_DIGEST,
-            action = RuleAction.DIGEST,
-        )
-        NotificationDecision.SILENT -> NotificationQuickAction(
-            label = ACTION_LABEL_KEEP_SILENT,
-            action = RuleAction.SILENT,
-        )
-        // No replacement alert is ever posted for IGNORE, so no "keep"
-        // quick-action is needed. Plan `2026-04-21-ignore-tier-fourth-decision`
-        // Task 2 — the wiring is finalized alongside the Detail feedback
-        // button in Task 6a.
-        NotificationDecision.IGNORE -> null
-    }
-
-    private fun feedbackRequestCode(notificationId: String, action: RuleAction): Int {
-        return feedbackRequestCodeForTest(notificationId, action.intentAction)
-    }
-
     companion object {
-        const val ACTION_PROMOTE_TO_PRIORITY = "com.smartnoti.app.action.PROMOTE_TO_PRIORITY"
-        const val ACTION_KEEP_DIGEST = "com.smartnoti.app.action.KEEP_DIGEST"
-        const val ACTION_KEEP_SILENT = "com.smartnoti.app.action.KEEP_SILENT"
-        // Plan 2026-04-21-ignore-tier-fourth-decision Task 6a — Detail screen's
-        // "무시" feedback button dispatches this broadcast. No replacement alert
-        // surfaces IGNORE as a quick action (IGNORE means no replacement at
-        // all), but the constant still participates in the feedback-action
-        // vocabulary so the receiver can resolve it.
-        const val ACTION_IGNORE = "com.smartnoti.app.action.IGNORE"
-        const val ACTION_LABEL_OPEN = "열기"
-        const val ACTION_LABEL_PROMOTE_TO_PRIORITY = "중요로 고정"
-        const val ACTION_LABEL_KEEP_DIGEST = "Digest로 유지"
-        const val ACTION_LABEL_KEEP_SILENT = "조용히 유지"
         const val EXTRA_NOTIFICATION_ID = "com.smartnoti.app.extra.NOTIFICATION_ID"
         const val EXTRA_PARENT_ROUTE = "com.smartnoti.app.extra.PARENT_ROUTE"
-        const val EXTRA_REPLACEMENT_NOTIFICATION_ID = "com.smartnoti.app.extra.REPLACEMENT_NOTIFICATION_ID"
         const val EXTRA_DEEP_LINK_ROUTE = "com.smartnoti.app.extra.DEEP_LINK_ROUTE"
 
         /**
@@ -276,24 +200,7 @@ class SmartNotiNotifier(
             }
             manager.createNotificationChannel(channel)
         }
-
-        internal fun feedbackRequestCodeForTest(notificationId: String, action: String): Int {
-            return (notificationId.hashCode() * 31) + action.hashCode()
-        }
     }
-}
-
-private data class NotificationQuickAction(
-    val label: String,
-    val action: RuleAction,
-)
-
-private enum class RuleAction(
-    val intentAction: String,
-) {
-    ALWAYS_PRIORITY(SmartNotiNotifier.ACTION_PROMOTE_TO_PRIORITY),
-    DIGEST(SmartNotiNotifier.ACTION_KEEP_DIGEST),
-    SILENT(SmartNotiNotifier.ACTION_KEEP_SILENT),
 }
 
 object NotificationReplacementIds {
