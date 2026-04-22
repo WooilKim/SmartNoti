@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-04-22
 updated: 2026-04-22
 ---
@@ -33,7 +33,7 @@ updated: 2026-04-22
 
 ---
 
-## Task 1: Failing tests for the new flow + two retained drifts
+## Task 1: Failing tests for the new flow + two retained drifts [IN PROGRESS via PR #245]
 
 **Objective:** Pin the new assign-flow contracts and the two retained drifts as red tests before touching production code.
 
@@ -171,8 +171,9 @@ updated: 2026-04-22
 ## Risks / open questions
 
 - **Dependency direction RulesRepository ↔ CategoriesRepository:** direct injection is preferred; the `RuleDeletionObserver` interface is the fallback if a cycle appears.
-- **Replacement-alert UX after action buttons are gone:** today's replacement alert depended on the four buttons for quick actions. With only tap-to-open Detail remaining, users must take one extra step to re-classify. This is an intentional trade — verify in `notification-replacement-alert` journey recipe post-ship that tap-through still feels acceptable.
+- **(a) Replacement-alert UX after action buttons are gone — RESOLVED 2026-04-22:** action buttons on the replacement alert are **removed entirely**. Tap on the alert opens Detail, and Detail's "분류 변경" sheet is where the user reclassifies. No quick-action buttons on the replacement alert at all. Re-verify `notification-replacement-alert` journey recipe post-ship; the extra tap is accepted as an intentional trade.
 - **Prefill serialization across navigation:** `CategoryEditorPrefill` must survive process death. Use saved-state handle or nav arguments keyed by a short-lived id in a one-shot `PrefillStore`. Implementation task decides which is cleaner for the current nav graph.
+- **(b) CategoryEditor prefill default action — RESOLVED 2026-04-22:** the "새 분류 만들기" default action is **dynamic-opposite** relative to the current notification's Category action (if it has one). Mapping: current action DIGEST → default PRIORITY, SILENT → default PRIORITY, IGNORE → default PRIORITY, and current PRIORITY → default DIGEST. When the notification has no owning Category (classifier fell back to a default decision), use PRIORITY. The user can still change it in the editor.
 - **Deterministic rule id collisions across users of the same Category:** two different notifications sharing the same sender/package will produce the same rule id. Assigning either to the same Category is idempotent (good). Assigning each to different Categories creates two Categories both listing the same rule id — classifier resolves by `order`, so user-set ordering governs. Documented expectation, not a bug.
 - **Listener test seam:** `SmartNotiNotificationListenerService` is an Android service — hard to unit-test directly. A ≤ 20-LOC extract is fine; anything larger splits into its own task.
 - **CategoryEditor prefill invariants:** if the user cancels the editor, no Rule should have been written. Use case must only persist on editor-save, not on open.
