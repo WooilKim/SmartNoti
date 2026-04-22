@@ -189,3 +189,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T15:10:00Z | journey-tester | #266 | persistent-notification-protection (Policy-level PASS, PersistentNotificationPolicyTest 7/7) | https://github.com/WooilKim/SmartNoti/actions/runs/24785911934 |
 | 2026-04-22T15:27:22Z | journey-tester | #267 | protected-source-notifications | https://github.com/WooilKim/SmartNoti/actions/runs/24786782886/job/72532893339 |
 | 2026-04-22T15:41:41Z | journey-tester | #269 | quiet-hours | https://github.com/WooilKim/SmartNoti/actions/runs/24787520003 |
+| 2026-04-22T15:35:00Z | project-manager | #268 | loop-monitor AUDIT_DRIFT auto-fix backfill (#263 rows in both audit logs) | https://github.com/WooilKim/SmartNoti/actions/runs/24787208704 |
