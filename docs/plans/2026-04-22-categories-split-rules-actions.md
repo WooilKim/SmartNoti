@@ -212,7 +212,7 @@ superseded-by: docs/journeys/categories-management.md
 2. 정리함 통합 화면은 기존 Digest/Hidden screen 을 호스팅 — 급격한 내부 재작성은 이 task 범위 밖.
 3. 안내 modal 은 `SettingsRepository.categoriesMigrationAnnouncementSeen` flag 로 gate.
 
-### Task 12: Journey doc overhaul + plan 상태 shipped 로 전환 `[IN PROGRESS via PR #N]`
+### Task 12: Journey doc overhaul + plan 상태 shipped 로 전환 `[IN PROGRESS via PR #241]`
 
 **Files (journey 갱신):**
 - `docs/journeys/rules-management.md` — Observable steps 를 Category-centric 으로 재작성, Rules 는 "고급 편집" 경로로 표기.
