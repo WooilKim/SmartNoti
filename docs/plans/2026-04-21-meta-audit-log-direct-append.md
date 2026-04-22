@@ -25,7 +25,7 @@ superseded-by:
 - **Reversibility**: If the next 2 retrospectives after shipping show worse metrics (e.g., audit rows lost, duplicate rows from races, main-branch commit noise overwhelming real feature commits), the human reverts the `.claude/agents/project-manager.md` changes and PM returns to per-sweep PRs. No data migration needed — existing rows stay.
 - **Trust level**: PM already merges approved code PRs to `main` via `gh pr merge --squash`. Direct-append to `docs/pr-review-log.md` is strictly less privileged than merging arbitrary code. No new privilege boundary crossed.
 
-## Task 1: Draft the direct-append procedure in PM spec
+## Task 1: Draft the direct-append procedure in PM spec [IN PROGRESS]
 
 **Files:**
 - `.claude/agents/project-manager.md` — modify the "Logging" section and add a new "Audit-row direct-append" subsection.
