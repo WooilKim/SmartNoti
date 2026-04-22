@@ -102,6 +102,7 @@ fun HomeScreen(
     onRulesClick: () -> Unit,
     onInsightClick: (String) -> Unit,
     onCreateCategoryClick: () -> Unit = {},
+    onSeeAllRecent: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -124,6 +125,12 @@ fun HomeScreen(
         repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
     val recent by recentFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    // Plan `2026-04-22-inbox-denest-and-home-recent-truncate` Task 1: cap the
+    // Home recent feed to a small head; the remainder surfaces as a single
+    // "전체 N건 보기 →" footer row that deep-links into 정리함.
+    val recentView = remember(recent) {
+        HomeRecentNotificationsTruncation.truncate(recent)
+    }
     val rules by rulesRepository.observeRules().collectAsStateWithLifecycle(initialValue = emptyList())
     val categories by categoriesRepository.observeCategories().collectAsStateWithLifecycle(initialValue = emptyList())
     val snoozeUntil by settingsRepository
@@ -316,7 +323,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        if (recent.isEmpty()) {
+        if (recentView.visible.isEmpty() && recentView.hiddenCount == 0) {
             item {
                 EmptyState(
                     title = "아직 쌓인 알림이 없어요",
@@ -324,9 +331,57 @@ fun HomeScreen(
                 )
             }
         } else {
-            items(recent, key = { it.id }) { notification ->
+            items(recentView.visible, key = { it.id }) { notification ->
                 NotificationCard(model = notification, onClick = onNotificationClick)
             }
+            if (recentView.hiddenCount > 0) {
+                item {
+                    HomeRecentMoreRow(
+                        totalCount = recent.size,
+                        onClick = onSeeAllRecent,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Footer row mounted under the Home "방금 정리된 알림" head when more entries
+ * exist than [HomeRecentNotificationsTruncation.DEFAULT_CAPACITY]. Tapping
+ * deep-links into 정리함 (Routes.Inbox) so the user can review the full feed.
+ */
+@Composable
+private fun HomeRecentMoreRow(
+    totalCount: Int,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "전체 ${totalCount}건 보기",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

@@ -29,7 +29,7 @@ last-verified: 2026-04-22
 7. `QuickStartAppliedCard` — 온보딩 quick-start 프리셋 적용 결과 요약 (7-day TTL + tap-to-ack gate: `HomeQuickStartAppliedVisibility.shouldShow(...)` 로 제어). 카드 탭 시 `SettingsRepository.setQuickStartAppliedCardAcknowledgedAtMillis(...)` 저장 후 "고급 규칙 편집" 경로로 이동.
 8. `InsightCard` — `insights.filteredCount > 0` 일 때만 mount (Task 10 declutter). "가장 많은 앱/이유 + 점유율" 정보. 칩 탭 시 `Routes.Insight.createForApp` 또는 `createForReason` 으로 네비.
 9. `TimelineCard` — `HomeNotificationTimelineBuilder` 결과 (bucket 별 바차트, `HomeTimelineBarChartModelBuilder` 로 렌더 모델 변환). 비어 있으면 mount 생략.
-10. 최근 알림 리스트 — 일반 `NotificationCard` 로 최상단 몇 건 ("방금 정리된 알림").
+10. 최근 알림 리스트 ("방금 정리된 알림") — `HomeRecentNotificationsTruncation` 으로 최신 5건만 카드로 렌더 (`DEFAULT_CAPACITY = 5`). 그 이상이 있으면 마지막에 `HomeRecentMoreRow` ("전체 N건 보기 →") 가 mount, 탭 시 `Routes.Inbox` 로 진입해 기본 Digest sub-tab 에서 사용자가 outer 탭으로 ARCHIVED/PROCESSED 를 다시 고를 수 있음.
 11. 카드/리스트 탭 → Detail 또는 검토 화면 / 정리함 / Insight 로 네비. (기존 `QuickActionCard × 2` ("중요 알림" / "정리함") 는 Task 10 에서 제거 — BottomNav 의 `정리함` 탭이 이를 대신함.)
 
 ## Exit state
@@ -46,6 +46,7 @@ last-verified: 2026-04-22
 ## Code pointers
 
 - `ui/screens/home/HomeScreen`
+- `ui/screens/home/HomeRecentNotificationsTruncation` — pure-function (visible, hiddenCount) builder for the "방금 정리된 알림" cap + footer row
 - `ui/screens/home/HomeUncategorizedAppsPromptCard` — 새 앱 분류 유도 카드
 - `domain/usecase/UncategorizedAppsDetector` — 분류 유도 pure detector (→ [home-uncategorized-prompt](home-uncategorized-prompt.md))
 - `ui/components/HomePassthroughReviewCard` — passthrough 검토 카드 (count + empty/active 상태)
@@ -81,12 +82,13 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- 스크롤이 길어지면 위치 복원 UX 미검증.
 - 인사이트가 0건일 때의 카드 표시 규칙이 현재 모든 builder 에 균일하지 않음.
+- (resolved 2026-04-22) "스크롤이 길어지면 위치 복원 UX 미검증" — `HomeRecentNotificationsTruncation` 의 5건 cap 으로 Home 의 최대 스크롤 길이 자체가 짧아져 시급성이 사라짐. 더 긴 리뷰는 정리함에서 수행.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: Rules UX v2 Phase A shipped (PR #140/#141/#142/#143). Home 에 `HomePassthroughReviewCard` 가 StatPill 아래에 마운트되어 PRIORITY count 를 표시하고 탭 시 검토 화면으로 이동. Priority 는 더 이상 BottomNav 탭이 아니며, 이 카드가 검토 화면 유일한 UI 엔트리. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase A
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Home 의 기본 뷰에서 제외되도록 배선 — StatPill / 최근 알림 리스트 / QuickActionCard / Insight/Timeline 집계 모두 `observePriority` · `observeDigest` · `observeAllFiltered` 를 사용하므로 `status=IGNORE` row 는 자동 필터 아웃. `SuppressionInsightsBuilder` / `InsightDrillDownSummaryBuilder` 는 `ignoredCount` 를 별도 스트림으로 계산해 DIGEST/SILENT 와 분리 집계 (#185 `9a5b4b9`, plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6). IGNORE row 는 [ignored-archive](ignored-archive.md) 에서만 노출. `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
+- 2026-04-22: Plan `inbox-denest-and-home-recent-truncate` (PR pending) shipped — "방금 정리된 알림" 이 `HomeRecentNotificationsTruncation` (DEFAULT_CAPACITY=5) 로 head 5건 + `HomeRecentMoreRow` ("전체 N건 보기 →") footer 로 truncate. footer 탭 시 `Routes.Inbox` 로 이동. Observable step 10 + Code pointers + Known gaps 갱신. `last-verified` 는 ADB smoke 로 검증된 구간만 (Home truncate + Inbox de-nest + standalone deep-link 회귀 없음) 동일 일자 유지.
 - 2026-04-22: Plan `categories-split-rules-actions` Phase P3 Task 10 (#240) declutter 반영 — 최상단에 `HomeUncategorizedAppsPromptCard` 가 `UncategorizedAppsDetection.Prompt` 일 때만 mount (→ [home-uncategorized-prompt](home-uncategorized-prompt.md)). Access card 는 connected 시 `HomeNotificationAccessInlineRow` 1-row 로 축소 (disconnected 시에만 full card). 기존 `QuickActionCard × 2` ("중요 알림" / "정리함") 제거 — BottomNav 의 `정리함` 탭이 대체. `HomeQuickStartAppliedCard` 는 7일 TTL + tap-to-ack gate (`HomeQuickStartAppliedVisibility`) 추가. `HomePassthroughReviewCard` / `InsightCard` / `TimelineCard` 는 count 0 시 mount 생략. Observable steps / Code pointers 전면 갱신. `last-verified` 는 declutter 재검증 전까지 현 일자 유지.

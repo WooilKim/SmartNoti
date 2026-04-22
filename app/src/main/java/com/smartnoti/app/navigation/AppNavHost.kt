@@ -35,6 +35,7 @@ import com.smartnoti.app.ui.screens.categories.CategoriesScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenDeepLinkFilterResolver
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
+import com.smartnoti.app.ui.screens.hidden.HiddenScreenMode
 import com.smartnoti.app.ui.screens.home.HomeScreen
 import com.smartnoti.app.ui.screens.ignored.IgnoredArchiveScreen
 import com.smartnoti.app.ui.screens.inbox.InboxScreen
@@ -206,6 +207,7 @@ fun AppNavHost(
                     onRulesClick = { navigateToTopLevel(Routes.Rules.route) },
                     onInsightClick = { navController.navigate(it) },
                     onCreateCategoryClick = { navigateToTopLevel(Routes.Categories.route) },
+                    onSeeAllRecent = { navigateToTopLevel(Routes.Inbox.route) },
                 )
             }
             composable(Routes.Priority.route) {
@@ -320,7 +322,7 @@ fun AppNavHost(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onBack = { navController.popBackStack() },
-                    initialFilter = initialFilter,
+                    mode = HiddenScreenMode.Standalone(initialFilter = initialFilter),
                 )
             }
             composable(

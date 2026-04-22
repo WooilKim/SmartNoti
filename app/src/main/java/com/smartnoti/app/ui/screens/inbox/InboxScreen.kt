@@ -35,6 +35,7 @@ import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
+import com.smartnoti.app.ui.screens.hidden.HiddenScreenMode
 import com.smartnoti.app.ui.theme.BorderSubtle
 
 /**
@@ -124,17 +125,16 @@ fun InboxScreen(
                 contentPadding = innerPadding,
                 onNotificationClick = onNotificationClick,
             )
-            // The Hidden screen hosts its own boardered ARCHIVED/PROCESSED
-            // sub-segments — so `HiddenNotificationsScreen` handles both
-            // InboxTab.Archived and InboxTab.Processed in a single mount.
-            // When the user lands on either sub-tab we pass a hint to
-            // pre-select the matching segment inside the Hidden screen.
+            // Plan `2026-04-22-inbox-denest-and-home-recent-truncate` Task 2:
+            // outer Inbox tab is the single source of truth. Embed the Hidden
+            // screen so it skips its own ScreenHeader + ARCHIVED/PROCESSED
+            // segment row and renders only the body matching the outer pick.
             InboxTab.Archived,
             InboxTab.Processed -> HiddenNotificationsScreen(
                 contentPadding = innerPadding,
                 onNotificationClick = onNotificationClick,
                 onBack = onBack,
-                initialFilter = null,
+                mode = InboxToHiddenScreenModeMapper.mapToMode(selectedTab),
             )
         }
     }

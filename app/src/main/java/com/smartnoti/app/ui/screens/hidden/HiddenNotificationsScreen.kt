@@ -62,14 +62,31 @@ import kotlinx.coroutines.launch
  *   silentMode 을 가진 legacy row 를 포함. (plan Open question 4 마이그레이션 결정)
  *
  * 참조: `docs/plans/2026-04-21-silent-archive-vs-process-split.md` Task 4.
+ *
+ * The [mode] parameter (plan
+ * `docs/plans/2026-04-22-inbox-denest-and-home-recent-truncate.md` Task 2)
+ * controls how the screen is hosted:
+ *
+ * - [HiddenScreenMode.Standalone] — entered via the legacy `Routes.Hidden`
+ *   deep link (tray group-summary contentIntent, onboarding flow). Renders the
+ *   ScreenHeader + back button + the ARCHIVED/PROCESSED segment row, with the
+ *   selected segment persisted via `rememberSaveable`. Optional
+ *   [HiddenScreenMode.Standalone.initialFilter] snaps the user to the deep-link
+ *   group.
+ * - [HiddenScreenMode.Embedded] — entered via the InboxScreen outer tab. The
+ *   outer host already shows a ScreenHeader and an outer 보관 중/처리됨
+ *   selection, so this mode skips the screen's own header and tab row and
+ *   resolves [selectedTab] directly from the embed's [SilentMode]. The body
+ *   (summary card, group cards, bulk-clear dialog) is identical.
  */
 @Composable
 fun HiddenNotificationsScreen(
     contentPadding: PaddingValues,
     onNotificationClick: (String) -> Unit,
     onBack: () -> Unit,
-    initialFilter: SilentGroupKey? = null,
+    mode: HiddenScreenMode = HiddenScreenMode.Standalone(),
 ) {
+    val initialFilter = (mode as? HiddenScreenMode.Standalone)?.initialFilter
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -96,15 +113,27 @@ fun HiddenNotificationsScreen(
     val archivedCount = remember(archivedGroups) { archivedGroups.sumOf { it.count } }
     val processedCount = remember(processedGroups) { processedGroups.sumOf { it.count } }
 
-    var selectedTab by rememberSaveable { mutableStateOf(HiddenTab.Archived) }
+    // Embedded mode: outer host (Inbox) supplies the selection. Standalone:
+    // user picks via the in-screen segmented row, persisted via rememberSaveable.
+    var standaloneTab by rememberSaveable { mutableStateOf(HiddenTab.Archived) }
+    val selectedTab: HiddenTab = when (mode) {
+        is HiddenScreenMode.Standalone -> standaloneTab
+        is HiddenScreenMode.Embedded -> when (mode.silentMode) {
+            SilentMode.ARCHIVED -> HiddenTab.Archived
+            SilentMode.PROCESSED -> HiddenTab.Processed
+        }
+    }
     var pendingClearAll by remember { mutableStateOf(false) }
 
     // Deep-link filter arriving from the tray group summary snaps the user back to the
     // ARCHIVED tab (that's where sender/app groups live; PROCESSED items won't have a
-    // matching group summary in the tray by construction).
+    // matching group summary in the tray by construction). Only meaningful in
+    // standalone mode — embedded callers don't pass a deep-link filter.
     LaunchedEffect(initialFilter) {
+        // initialFilter is non-null only in Standalone mode (Embedded callers
+        // never pass a deep-link filter), so writing standaloneTab here is safe.
         if (initialFilter != null) {
-            selectedTab = HiddenTab.Archived
+            standaloneTab = HiddenTab.Archived
         }
     }
 
@@ -137,9 +166,13 @@ fun HiddenNotificationsScreen(
         val targetId = highlightedGroupId ?: return@LaunchedEffect
         val indexInVisible = visibleGroups.indexOfFirst { it.id == targetId }
         if (indexInVisible < 0) return@LaunchedEffect
-        // Leading items (header row + tab row + summary card) occupy the first 3 slots when
-        // the list is non-empty; target index in LazyColumn = 3 + indexInVisible.
-        val leadingItems = 3
+        // Leading items in standalone mode: header row + tab row + summary card = 3.
+        // Embedded mode skips the header row + tab row, so only the summary card precedes
+        // the group items (1). Deep-link scroll only fires in standalone mode anyway.
+        val leadingItems = when (mode) {
+            is HiddenScreenMode.Standalone -> 3
+            is HiddenScreenMode.Embedded -> 1
+        }
         listState.animateScrollToItem(leadingItems + indexInVisible)
     }
 
@@ -172,36 +205,38 @@ fun HiddenNotificationsScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "뒤로 가기",
-                        tint = MaterialTheme.colorScheme.onSurface,
+        if (mode is HiddenScreenMode.Standalone) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "뒤로 가기",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    ScreenHeader(
+                        eyebrow = "숨긴 알림",
+                        title = "보관 ${archivedCount}건 · 처리 ${processedCount}건",
+                        subtitle = "'보관 중' 은 아직 확인하지 않은 알림, '처리됨' 은 이미 훑어본 알림이에요. 탭으로 오가며 정리하세요.",
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 12.dp),
                     )
                 }
-                ScreenHeader(
-                    eyebrow = "숨긴 알림",
-                    title = "보관 ${archivedCount}건 · 처리 ${processedCount}건",
-                    subtitle = "'보관 중' 은 아직 확인하지 않은 알림, '처리됨' 은 이미 훑어본 알림이에요. 탭으로 오가며 정리하세요.",
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = 12.dp),
+            }
+            item {
+                HiddenTabRow(
+                    selected = selectedTab,
+                    archivedCount = archivedCount,
+                    processedCount = processedCount,
+                    onSelected = { standaloneTab = it },
                 )
             }
-        }
-        item {
-            HiddenTabRow(
-                selected = selectedTab,
-                archivedCount = archivedCount,
-                processedCount = processedCount,
-                onSelected = { selectedTab = it },
-            )
         }
         if (visibleGroups.isEmpty()) {
             item {
