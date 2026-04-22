@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import kotlinx.coroutines.flow.Flow
@@ -169,7 +168,6 @@ private fun defaultRules(): List<RuleUiModel> = listOf(
         title = "엄마",
         subtitle = "항상 바로 보기",
         type = RuleTypeUi.PERSON,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = "엄마",
     ),
@@ -178,7 +176,6 @@ private fun defaultRules(): List<RuleUiModel> = listOf(
         title = "쿠팡",
         subtitle = "Digest로 묶기",
         type = RuleTypeUi.APP,
-        action = RuleActionUi.DIGEST,
         enabled = true,
         matchValue = "com.coupang.mobile",
     ),
@@ -187,7 +184,6 @@ private fun defaultRules(): List<RuleUiModel> = listOf(
         title = "인증번호",
         subtitle = "즉시 전달",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = "인증번호",
     ),

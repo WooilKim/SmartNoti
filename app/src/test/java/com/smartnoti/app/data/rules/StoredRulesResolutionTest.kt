@@ -46,7 +46,6 @@ class StoredRulesResolutionTest {
                     title = "배송",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "배송",
                 ),

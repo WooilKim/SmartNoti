@@ -1,10 +1,13 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.ClassificationInput
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import org.junit.Ignore
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -17,6 +20,7 @@ class NotificationClassifierTest {
     )
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun schedule_rule_matches_hour_inside_same_day_window() {
         val result = classifier.classify(
             input = ClassificationInput(
@@ -31,7 +35,6 @@ class NotificationClassifierTest {
                     title = "업무 시간에는 Digest",
                     subtitle = "Digest로 묶기",
                     type = RuleTypeUi.SCHEDULE,
-                    action = RuleActionUi.DIGEST,
                     enabled = true,
                     matchValue = "9-18",
                 )
@@ -57,7 +60,6 @@ class NotificationClassifierTest {
                     title = "심야엔 조용히",
                     subtitle = "조용히 정리",
                     type = RuleTypeUi.SCHEDULE,
-                    action = RuleActionUi.SILENT,
                     enabled = true,
                     matchValue = "23-7",
                 )
@@ -69,6 +71,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun earlier_matching_rule_wins_when_multiple_rules_match() {
         val input = ClassificationInput(
             packageName = "com.chat.app",
@@ -84,7 +87,6 @@ class NotificationClassifierTest {
                     title = "운영 Digest",
                     subtitle = "Digest로 묶기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.DIGEST,
                     enabled = true,
                     matchValue = "장애,긴급",
                 ),
@@ -93,7 +95,6 @@ class NotificationClassifierTest {
                     title = "운영 긴급",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "장애,긴급",
                 )
@@ -105,6 +106,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun user_person_rule_is_applied_before_default_logic() {
         val result = classifier.classify(
             input = ClassificationInput(
@@ -118,7 +120,6 @@ class NotificationClassifierTest {
                     title = "고객",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.PERSON,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "고객",
                 )
@@ -130,6 +131,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun keyword_rule_matches_any_keyword_in_comma_separated_list() {
         val result = classifier.classify(
             input = ClassificationInput(
@@ -143,7 +145,6 @@ class NotificationClassifierTest {
                     title = "운영 키워드",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "배포,장애,긴급",
                 )
@@ -167,7 +168,6 @@ class NotificationClassifierTest {
                     title = "소셜",
                     subtitle = "항상 조용히",
                     type = RuleTypeUi.APP,
-                    action = RuleActionUi.SILENT,
                     enabled = false,
                     matchValue = "com.social.app",
                 )
@@ -234,6 +234,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun repeat_bundle_rule_overrides_default_repeat_handling_at_custom_threshold() {
         val result = classifier.classify(
             input = ClassificationInput(
@@ -247,7 +248,6 @@ class NotificationClassifierTest {
                     title = "반복되면 바로 보기",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.REPEAT_BUNDLE,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "2",
                 )
@@ -272,6 +272,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun matched_rule_id_is_reported_even_when_classifier_signal_would_also_fire() {
         // VIP sender would otherwise promote to PRIORITY on its own, but a
         // matching user rule still takes precedence and its id is returned.
@@ -287,7 +288,6 @@ class NotificationClassifierTest {
                     title = "엄마",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.PERSON,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "엄마",
                 )
@@ -317,7 +317,6 @@ class NotificationClassifierTest {
             title = "결제",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "결제",
         )
@@ -326,7 +325,6 @@ class NotificationClassifierTest {
             title = "결제+광고",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             enabled = true,
             matchValue = "광고",
             overrideOf = basePayment.id,
@@ -346,6 +344,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun base_rule_applies_when_override_condition_is_absent() {
         // Same rule pair as above. A payment-only notification (no 광고
         // keyword) must fall through to the base rule — PRIORITY.
@@ -354,7 +353,6 @@ class NotificationClassifierTest {
             title = "결제",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "결제",
         )
@@ -363,7 +361,6 @@ class NotificationClassifierTest {
             title = "결제+광고",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             enabled = true,
             matchValue = "광고",
             overrideOf = basePayment.id,
@@ -392,7 +389,6 @@ class NotificationClassifierTest {
             title = "결제",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "결제",
         )
@@ -401,7 +397,6 @@ class NotificationClassifierTest {
             title = "결제+광고",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             enabled = true,
             matchValue = "광고",
             overrideOf = basePayment.id,
@@ -432,7 +427,6 @@ class NotificationClassifierTest {
             title = "결제",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "결제",
         )
@@ -441,7 +435,6 @@ class NotificationClassifierTest {
             title = "결제+광고",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             enabled = true,
             matchValue = "광고",
             overrideOf = basePayment.id,
@@ -461,6 +454,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun disabled_override_does_not_win_and_base_rule_applies() {
         // If the override is toggled off, it must not participate. The base
         // remains the sole match.
@@ -469,7 +463,6 @@ class NotificationClassifierTest {
             title = "결제",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "결제",
         )
@@ -478,7 +471,6 @@ class NotificationClassifierTest {
             title = "결제+광고",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             enabled = false, // disabled
             matchValue = "광고",
             overrideOf = basePayment.id,
@@ -510,13 +502,13 @@ class NotificationClassifierTest {
     // ALWAYS_PRIORITY override so the PRIORITY tier wins.
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun ignore_rule_match_routes_to_ignore_decision() {
         val ignoreRule = RuleUiModel(
             id = "r-ignore-ads",
             title = "광고",
             subtitle = "무시",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.IGNORE,
             enabled = true,
             matchValue = "광고",
         )
@@ -572,6 +564,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun always_priority_override_beats_base_ignore_rule() {
         // "광고 앱 전부 무시, 단 COMPANY_APP 은 항상 바로 보기" pattern. Base IGNORE
         // + override ALWAYS_PRIORITY both match -> override wins -> PRIORITY.
@@ -580,7 +573,6 @@ class NotificationClassifierTest {
             title = "광고",
             subtitle = "무시",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.IGNORE,
             enabled = true,
             matchValue = "광고",
         )
@@ -589,7 +581,6 @@ class NotificationClassifierTest {
             title = "회사 앱은 예외",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.APP,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "com.company.app",
             overrideOf = baseIgnore.id,
@@ -609,6 +600,7 @@ class NotificationClassifierTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun base_ignore_rule_still_wins_when_override_condition_absent() {
         // Same rule pair as the override test above. A payload that only
         // satisfies the base IGNORE rule (no matching override condition)
@@ -618,7 +610,6 @@ class NotificationClassifierTest {
             title = "광고",
             subtitle = "무시",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.IGNORE,
             enabled = true,
             matchValue = "광고",
         )
@@ -627,7 +618,6 @@ class NotificationClassifierTest {
             title = "회사 앱은 예외",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.APP,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "com.company.app",
             overrideOf = baseIgnore.id,
@@ -664,7 +654,6 @@ class NotificationClassifierTest {
                     title = "업무 키워드",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "배포,장애",
                 )

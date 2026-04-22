@@ -2,6 +2,7 @@ package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.CapturedNotificationInput
+import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.NotificationContext
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
@@ -20,6 +21,7 @@ class NotificationCaptureProcessor(
         input: CapturedNotificationInput,
         rules: List<RuleUiModel> = emptyList(),
         settings: SmartNotiSettings,
+        categories: List<Category> = emptyList(),
     ): NotificationUiModel {
         val classification = classifier.classify(
             com.smartnoti.app.domain.model.ClassificationInput(
@@ -32,6 +34,7 @@ class NotificationCaptureProcessor(
                 hourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
             ),
             rules = rules,
+            categories = categories,
         )
         val decision = classification.decision
         val deliveryProfile = deliveryProfilePolicy.resolve(

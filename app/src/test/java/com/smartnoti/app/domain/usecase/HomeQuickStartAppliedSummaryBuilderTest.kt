@@ -22,6 +22,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
                 promoRule(),
                 repeatRule(),
             ),
+            ruleActions = presetRuleActions(),
             notifications = emptyList(),
         )
 
@@ -39,6 +40,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
                 promoRule(),
                 repeatRule(),
             ),
+            ruleActions = presetRuleActions(),
             notifications = listOf(
                 notification(
                     id = "1",
@@ -87,6 +89,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
                 promoRule(),
                 repeatRule(),
             ),
+            ruleActions = presetRuleActions(),
             notifications = listOf(
                 notification(
                     id = "1",
@@ -111,6 +114,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
         val summary = builder.build(
             rules = listOf(importantRule()),
             notifications = emptyList(),
+            ruleActions = presetRuleActions(),
         )
 
         requireNotNull(summary)
@@ -126,7 +130,6 @@ class HomeQuickStartAppliedSummaryBuilderTest {
                     title = "엄마",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.PERSON,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "엄마",
                 ),
@@ -150,6 +153,7 @@ class HomeQuickStartAppliedSummaryBuilderTest {
                     reasonTags = listOf("발신자 있음"),
                 ),
             ),
+            ruleActions = presetRuleActions(),
         )
 
         requireNotNull(summary)
@@ -183,7 +187,6 @@ class HomeQuickStartAppliedSummaryBuilderTest {
         title = "프로모션 알림",
         subtitle = "Digest로 묶기",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.DIGEST,
         enabled = true,
         matchValue = "광고,프로모션,쿠폰,세일,특가,이벤트,혜택",
     )
@@ -193,7 +196,6 @@ class HomeQuickStartAppliedSummaryBuilderTest {
         title = "반복 알림",
         subtitle = "Digest로 묶기",
         type = RuleTypeUi.REPEAT_BUNDLE,
-        action = RuleActionUi.DIGEST,
         enabled = true,
         matchValue = "3",
     )
@@ -203,8 +205,17 @@ class HomeQuickStartAppliedSummaryBuilderTest {
         title = "중요 알림",
         subtitle = "항상 바로 보기",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = "인증번호,결제,배송,출발",
+    )
+
+    // Post-P1-Task-4: Rule.action was lifted to the owning Category. The
+    // builder now takes a ruleId->action map derived from the Category
+    // graph. Supply the canonical preset mapping for tests that previously
+    // relied on the action being baked into RuleUiModel.
+    private fun presetRuleActions(): Map<String, RuleActionUi> = mapOf(
+        "keyword:important" to RuleActionUi.ALWAYS_PRIORITY,
+        "keyword:promo" to RuleActionUi.DIGEST,
+        "repeat_bundle:3" to RuleActionUi.DIGEST,
     )
 }

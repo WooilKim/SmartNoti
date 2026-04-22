@@ -34,14 +34,14 @@ created: 2026-04-22
 
 ## Phase P1 — Data model + migration
 
-### Task 1: Failing tests for Category model + round-trip + Rule-without-action contract
+### Task 1: Failing tests for Category model + round-trip + Rule-without-action contract `[IN PROGRESS via PR #236]`
 
 **Objective:** 새 모델 계약과 마이그레이션 parity 를 테스트로 먼저 고정.
 
 **Files:**
 - 신규: `app/src/test/java/com/smartnoti/app/domain/model/CategoryTest.kt`
 - 신규: `app/src/test/java/com/smartnoti/app/data/categories/CategoriesRepositoryTest.kt`
-- 신규: `app/src/test/java/com/smartnoti/app/data/rules/RuleMigrationToCategoryTest.kt`
+- 신규: `app/src/test/java/com/smartnoti/app/domain/usecase/CategoryTieBreakTest.kt` *(drag-reorder tie-break pinned in RED; migration parity test deferred to Task 3 RED)*
 
 **Steps:**
 1. `CategoryTest` — `Category` 가 필수 필드 (`id`, `name`, `ruleIds`, `action`) 와 선택 필드 (`appPackageName`) 를 갖고, action enum 이 PRIORITY/DIGEST/SILENT/IGNORE 4개로 제한되는지.
@@ -49,7 +49,7 @@ created: 2026-04-22
 3. `RuleMigrationToCategoryTest` — 입력 `List<Rule (with action)>`, 출력 `List<Category>` 가 1:1, `ruleIds == [rule.id]`, `action` 상속, `name == rule.matchValue`, IGNORE 도 그대로 옮겨지는지.
 4. `./gradlew :app:testDebugUnitTest` 실패 확인.
 
-### Task 2: Add Category domain model + CategoriesRepository (Rule.action deprecated but retained)
+### Task 2: Add Category domain model + CategoriesRepository (Rule.action deprecated but retained) `[IN PROGRESS via PR #236]`
 
 **Objective:** Task 1 초록. 단 이 단계에서는 Rule 의 `action` 필드를 `@Deprecated` 로만 표기, 실제 제거는 Task 4 에서.
 
@@ -63,7 +63,7 @@ created: 2026-04-22
 2. DataStore 기반 repository — key `categories_json_v1`. 쓰기/읽기/observe(Flow) API.
 3. Rule 의 action 필드에 `@Deprecated("Moved to Category.action")` 추가.
 
-### Task 3: Auto-migration on first launch post-upgrade
+### Task 3: Auto-migration on first launch post-upgrade `[IN PROGRESS via PR #236]`
 
 **Objective:** 기존 사용자의 Rule 들을 손실 없이 Category 로 옮긴다.
 
@@ -78,7 +78,7 @@ created: 2026-04-22
 3. 완료 후 flag = true. 도중 crash 시 다음 실행에서 재시도 가능 (idempotent).
 4. 테스트: 마이그레이션 두 번 돌려도 Category 가 중복 생성되지 않는지.
 
-### Task 4: Remove action field from Rule + Room schema v9 → v10
+### Task 4: Remove action field from Rule + Room schema v9 → v10 `[IN PROGRESS via PR #236]`
 
 **Objective:** Rule 이 순수 조건 매처가 됨. 코드 전역의 `rule.action` 참조 제거.
 

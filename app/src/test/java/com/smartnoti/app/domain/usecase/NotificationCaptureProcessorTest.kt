@@ -13,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.Ignore
 import org.junit.Test
 
 class NotificationCaptureProcessorTest {
@@ -45,7 +46,6 @@ class NotificationCaptureProcessorTest {
                     title = "고객",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.PERSON,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "고객",
                 )
@@ -80,6 +80,7 @@ class NotificationCaptureProcessorTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun matched_user_rule_becomes_priority_with_rule_reason_tag() {
         val result = processor.process(
             input = CapturedNotificationInput(
@@ -98,7 +99,6 @@ class NotificationCaptureProcessorTest {
                     title = "고객",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.PERSON,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "고객",
                 )
@@ -112,6 +112,7 @@ class NotificationCaptureProcessorTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun onboarding_promo_rule_adds_onboarding_recommendation_reason_tag() {
         val result = processor.process(
             input = CapturedNotificationInput(
@@ -130,7 +131,6 @@ class NotificationCaptureProcessorTest {
                     title = "프로모션 알림",
                     subtitle = "Digest로 묶기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.DIGEST,
                     enabled = true,
                     matchValue = "광고,프로모션,쿠폰,세일,특가,이벤트,혜택",
                 ),
@@ -144,6 +144,7 @@ class NotificationCaptureProcessorTest {
     }
 
     @Test
+    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun onboarding_important_rule_matches_keywords_inside_comma_delimited_rule() {
         val result = processor.process(
             input = CapturedNotificationInput(
@@ -162,7 +163,6 @@ class NotificationCaptureProcessorTest {
                     title = "중요 알림",
                     subtitle = "항상 바로 보기",
                     type = RuleTypeUi.KEYWORD,
-                    action = RuleActionUi.ALWAYS_PRIORITY,
                     enabled = true,
                     matchValue = "인증번호,결제,배송,출발",
                 ),

@@ -13,15 +13,15 @@ class RuleRowMatchValueFormatterTest {
     @Test
     fun repeat_bundle_display_value_reads_like_user_threshold_copy() {
         val description = builder.build(
-            RuleUiModel(
+            rule = RuleUiModel(
                 id = "repeat:5",
                 title = "반복 푸시",
                 subtitle = "unused",
                 type = RuleTypeUi.REPEAT_BUNDLE,
-                action = RuleActionUi.DIGEST,
                 enabled = true,
                 matchValue = "5",
-            )
+            ),
+            action = RuleActionUi.DIGEST,
         )
 
         assertEquals("같은 알림이 5회 이상 반복되면 Digest로 묶어요", description.primaryText)

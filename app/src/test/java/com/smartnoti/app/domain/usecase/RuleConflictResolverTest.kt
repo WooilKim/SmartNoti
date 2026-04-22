@@ -96,7 +96,6 @@ class RuleConflictResolverTest {
             title = "운영 Digest",
             subtitle = "Digest로 묶기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.DIGEST,
             enabled = true,
             matchValue = "장애",
         )
@@ -105,7 +104,6 @@ class RuleConflictResolverTest {
             title = "운영 Priority",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "장애",
         )
@@ -141,7 +139,6 @@ class RuleConflictResolverTest {
             title = "결제+광고 A",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             enabled = true,
             matchValue = "광고",
             overrideOf = base.id,
@@ -151,7 +148,6 @@ class RuleConflictResolverTest {
             title = "결제+광고 B",
             subtitle = "Digest",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.DIGEST,
             enabled = true,
             matchValue = "프로모션",
             overrideOf = base.id,
@@ -170,7 +166,6 @@ class RuleConflictResolverTest {
         title = "결제",
         subtitle = "항상 바로 보기",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = "결제",
     )
@@ -180,7 +175,6 @@ class RuleConflictResolverTest {
         title = "결제+광고",
         subtitle = "조용히",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.SILENT,
         enabled = true,
         matchValue = "광고",
         overrideOf = baseId,

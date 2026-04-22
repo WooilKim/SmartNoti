@@ -169,14 +169,13 @@ class RuleListHierarchyBuilderTest {
 
     private fun rule(
         id: String,
-        action: RuleActionUi = RuleActionUi.ALWAYS_PRIORITY,
+        @Suppress("UNUSED_PARAMETER") action: RuleActionUi = RuleActionUi.ALWAYS_PRIORITY,
         overrideOf: String? = null,
     ) = RuleUiModel(
         id = id,
         title = "규칙$id",
         subtitle = "subtitle$id",
         type = RuleTypeUi.KEYWORD,
-        action = action,
         enabled = true,
         matchValue = "match$id",
         overrideOf = overrideOf,

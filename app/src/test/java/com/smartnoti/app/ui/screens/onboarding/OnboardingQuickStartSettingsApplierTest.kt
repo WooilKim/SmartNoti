@@ -147,7 +147,7 @@ class OnboardingQuickStartSettingsApplierTest {
 
         assertFalse(result.settings.suppressSourceForDigestAndSilent)
         assertTrue(result.settings.suppressedSourceApps.isEmpty())
-        assertEquals(listOf(RuleActionUi.ALWAYS_PRIORITY), result.rules.map { it.action })
+        assertEquals(1, result.rules.size)
     }
 
     @Test

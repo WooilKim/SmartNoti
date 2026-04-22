@@ -30,7 +30,6 @@ class RuleOverrideSupersetValidatorTest {
         title = id,
         subtitle = "",
         type = type,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = matchValue,
         overrideOf = overrideOf,

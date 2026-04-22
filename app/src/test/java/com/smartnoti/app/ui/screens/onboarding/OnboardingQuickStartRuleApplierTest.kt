@@ -17,7 +17,6 @@ class OnboardingQuickStartRuleApplierTest {
 
         assertEquals(1, rules.size)
         assertEquals(RuleTypeUi.KEYWORD, rules.single().type)
-        assertEquals(RuleActionUi.DIGEST, rules.single().action)
         assertEquals("광고,프로모션,쿠폰,세일,특가,이벤트,혜택", rules.single().matchValue)
     }
 
@@ -72,7 +71,6 @@ class OnboardingQuickStartRuleApplierTest {
         assertEquals(1, mergedRules.size)
         assertEquals(existingRules.single().id, mergedRules.single().id)
         assertEquals("프로모션 알림", mergedRules.single().title)
-        assertEquals(RuleActionUi.DIGEST, mergedRules.single().action)
         assertTrue(mergedRules.single().enabled)
     }
 
@@ -111,7 +109,6 @@ class OnboardingQuickStartRuleApplierTest {
 
         assertEquals(1, rules.size)
         assertEquals(RuleTypeUi.REPEAT_BUNDLE, rules.single().type)
-        assertEquals(RuleActionUi.DIGEST, rules.single().action)
         assertEquals("3", rules.single().matchValue)
     }
 
@@ -121,7 +118,6 @@ class OnboardingQuickStartRuleApplierTest {
 
         assertEquals(1, rules.size)
         assertEquals(RuleTypeUi.KEYWORD, rules.single().type)
-        assertEquals(RuleActionUi.ALWAYS_PRIORITY, rules.single().action)
         assertEquals("인증번호,결제,배송,출발", rules.single().matchValue)
     }
 
@@ -135,14 +131,6 @@ class OnboardingQuickStartRuleApplierTest {
             ),
         )
 
-        assertEquals(
-            listOf(
-                RuleActionUi.ALWAYS_PRIORITY,
-                RuleActionUi.DIGEST,
-                RuleActionUi.DIGEST,
-            ),
-            rules.map { it.action },
-        )
         assertEquals(
             listOf(
                 "중요 알림",

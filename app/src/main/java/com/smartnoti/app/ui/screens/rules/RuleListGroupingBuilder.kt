@@ -11,9 +11,12 @@ data class RuleListGroup(
 )
 
 class RuleListGroupingBuilder {
-    fun build(rules: List<RuleUiModel>): List<RuleListGroup> {
+    fun build(
+        rules: List<RuleUiModel>,
+        ruleActions: Map<String, RuleActionUi> = emptyMap(),
+    ): List<RuleListGroup> {
         return orderedActions.mapNotNull { action ->
-            val groupedRules = rules.filter { rule -> rule.action == action }
+            val groupedRules = rules.filter { rule -> ruleActions[rule.id] == action }
             if (groupedRules.isEmpty()) {
                 null
             } else {
