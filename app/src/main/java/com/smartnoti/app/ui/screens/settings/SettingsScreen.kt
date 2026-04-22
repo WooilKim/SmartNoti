@@ -86,6 +86,11 @@ fun SettingsScreen(
     // route registration so this screen does not depend on nav routes
     // directly.
     onOpenIgnoredArchive: (() -> Unit)? = null,
+    // Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3
+    // Task 11 demotes the Rules tab from BottomNav to a Settings sub-menu
+    // ("고급 규칙 편집"). The callback is optional — when null (e.g. from a
+    // future preview that doesn't wire nav) the row simply doesn't render.
+    onOpenAdvancedRules: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
@@ -248,6 +253,11 @@ fun SettingsScreen(
                 onOpenIgnoredArchive = onOpenIgnoredArchive,
             )
         }
+        if (onOpenAdvancedRules != null) {
+            item {
+                AdvancedRulesEntryCard(onClick = onOpenAdvancedRules)
+            }
+        }
         item {
             NotificationAccessCard(
                 summary = notificationAccessSummary,
@@ -255,6 +265,30 @@ fun SettingsScreen(
                     openNotificationAccessSettings(context)
                 },
             )
+        }
+    }
+}
+
+/**
+ * "고급 규칙 편집" entry card — plan
+ * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11.
+ * Rules are no longer a top-level BottomNav tab; power users who still want to
+ * edit matcher rules directly enter through Settings. The copy deliberately
+ * frames it as advanced so the default flow goes through 분류.
+ */
+@Composable
+private fun AdvancedRulesEntryCard(onClick: () -> Unit) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        SettingsCardHeader(
+            eyebrow = "고급",
+            title = "고급 규칙 편집",
+            subtitle = "분류에 묶이기 전의 개별 매처 규칙을 직접 다룹니다. 일반적으로는 '분류' 탭에서 편집하세요.",
+        )
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("고급 규칙 편집 열기")
         }
     }
 }

@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
@@ -54,6 +56,8 @@ import com.smartnoti.app.domain.usecase.HomeReasonInsight
 import com.smartnoti.app.domain.usecase.HomeTimelineBar
 import com.smartnoti.app.domain.usecase.HomeTimelineBarChartModelBuilder
 import com.smartnoti.app.domain.usecase.HomeTimelineRange
+import com.smartnoti.app.domain.usecase.UncategorizedAppsDetection
+import com.smartnoti.app.domain.usecase.UncategorizedAppsDetector
 import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.onboarding.OnboardingPermissions
 import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
@@ -61,7 +65,6 @@ import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.HomePassthroughReviewCard
 import com.smartnoti.app.ui.components.NotificationCard
-import com.smartnoti.app.ui.components.QuickActionCard
 import com.smartnoti.app.ui.theme.DigestContainer
 import com.smartnoti.app.ui.theme.DigestOnContainer
 import com.smartnoti.app.ui.theme.GreenContainer
@@ -70,21 +73,42 @@ import com.smartnoti.app.ui.theme.PriorityContainer
 import com.smartnoti.app.ui.theme.PriorityOnContainer
 import com.smartnoti.app.ui.theme.SilentContainer
 import com.smartnoti.app.ui.theme.SilentOnContainer
+import kotlinx.coroutines.launch
 
+/**
+ * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3
+ * Task 10 declutter:
+ * - Keep: StatPill hero summary.
+ * - Keep conditional (count > 0): [HomePassthroughReviewCard].
+ * - Demote: notification access card to inline 1-row when CONNECTED; full card
+ *   only when there's an issue.
+ * - Hide: the two [com.smartnoti.app.ui.components.QuickActionCard] entries —
+ *   the BottomNav already exposes both destinations.
+ * - Demote: [HomeQuickStartAppliedCard] with 7-day TTL + tap-to-ack stored on
+ *   SettingsRepository.
+ * - Keep conditional: InsightCard (when filteredCount > 0), TimelineCard (when
+ *   totalFiltered > 0).
+ * - Keep: "방금 정리된 알림" list.
+ *
+ * The new "새 앱 분류 유도 카드" sits at the **top** of the list above the
+ * StatPill hero when [UncategorizedAppsDetector] returns a Prompt.
+ */
 @Composable
 fun HomeScreen(
     contentPadding: PaddingValues,
     onNotificationClick: (String) -> Unit,
     onPriorityClick: () -> Unit,
-    onDigestClick: () -> Unit,
     onNotificationAccessClick: () -> Unit,
     onRulesClick: () -> Unit,
     onInsightClick: (String) -> Unit,
+    onCreateCategoryClick: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
+    val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
     val settingsRepository = remember(context) { com.smartnoti.app.data.settings.SettingsRepository.getInstance(context) }
+    val coroutineScope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val insightsBuilder = remember { HomeNotificationInsightsBuilder() }
     val quickStartAppliedSummaryBuilder = remember { HomeQuickStartAppliedSummaryBuilder() }
@@ -92,6 +116,7 @@ fun HomeScreen(
     val reasonBreakdownBuilder = remember { HomeReasonBreakdownChartModelBuilder() }
     val timelineBuilder = remember { HomeNotificationTimelineBuilder() }
     val timelineBarChartBuilder = remember { HomeTimelineBarChartModelBuilder() }
+    val uncategorizedAppsDetector = remember { UncategorizedAppsDetector() }
     var selectedTimelineRange by remember { mutableStateOf(HomeTimelineRange.RECENT_3_HOURS) }
     var notificationAccessStatus by remember { mutableStateOf(OnboardingPermissions.currentStatus(context)) }
     val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = com.smartnoti.app.data.settings.SmartNotiSettings())
@@ -100,6 +125,13 @@ fun HomeScreen(
     }
     val recent by recentFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val rules by rulesRepository.observeRules().collectAsStateWithLifecycle(initialValue = emptyList())
+    val categories by categoriesRepository.observeCategories().collectAsStateWithLifecycle(initialValue = emptyList())
+    val snoozeUntil by settingsRepository
+        .observeUncategorizedPromptSnoozeUntilMillis()
+        .collectAsStateWithLifecycle(initialValue = 0L)
+    val quickStartAcknowledgedAt by settingsRepository
+        .observeQuickStartAppliedCardAcknowledgedAtMillis()
+        .collectAsStateWithLifecycle(initialValue = 0L)
     val notificationCounts = remember(recent) { HomeNotificationCounts.from(recent) }
     val priorityCount = notificationCounts.priority
     val digestCount = notificationCounts.digest
@@ -111,6 +143,13 @@ fun HomeScreen(
             notifications = recent,
         )
     }
+    val shouldShowQuickStart = remember(quickStartAppliedSummary, quickStartAcknowledgedAt) {
+        HomeQuickStartAppliedVisibility.shouldShow(
+            hasSummary = quickStartAppliedSummary != null,
+            acknowledgedAtMillis = quickStartAcknowledgedAt,
+            nowMillis = System.currentTimeMillis(),
+        )
+    }
     val notificationAccessSummary = remember(notificationAccessStatus, recent) {
         notificationAccessSummaryBuilder.build(
             status = notificationAccessStatus,
@@ -118,6 +157,14 @@ fun HomeScreen(
             priorityCount = priorityCount,
             digestCount = digestCount,
             silentCount = silentCount,
+        )
+    }
+    val uncategorizedDetection = remember(recent, categories, snoozeUntil) {
+        uncategorizedAppsDetector.detect(
+            notifications = recent,
+            categories = categories,
+            nowMillis = System.currentTimeMillis(),
+            snoozeUntilMillis = snoozeUntil,
         )
     }
     val reasonBreakdownItems = remember(insights) {
@@ -147,6 +194,22 @@ fun HomeScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 새 앱 분류 유도 카드 sits above everything else.
+        val detection = uncategorizedDetection
+        if (detection is UncategorizedAppsDetection.Prompt) {
+            item {
+                HomeUncategorizedAppsPromptCard(
+                    prompt = detection,
+                    onCreateCategory = onCreateCategoryClick,
+                    onSnooze = {
+                        coroutineScope.launch {
+                            val deadline = System.currentTimeMillis() + HomeUncategorizedPromptSnooze.TWENTY_FOUR_HOURS_MILLIS
+                            settingsRepository.setUncategorizedPromptSnoozeUntilMillis(deadline)
+                        }
+                    },
+                )
+            }
+        }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -161,6 +224,7 @@ fun HomeScreen(
                 )
             }
         }
+        // StatPill hero — kept as-is.
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -181,35 +245,42 @@ fun HomeScreen(
                 }
             }
         }
-        item {
-            HomePassthroughReviewCard(
-                count = priorityCount,
-                onReviewClick = onPriorityClick,
-            )
+        // PassthroughReview — only when there is something to review.
+        if (priorityCount > 0) {
+            item {
+                HomePassthroughReviewCard(
+                    count = priorityCount,
+                    onReviewClick = onPriorityClick,
+                )
+            }
         }
+        // Access card — inline 1-row when CONNECTED; full card only on issue.
+        // The two QuickActionCard entries are dropped (BottomNav covers them).
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (notificationAccessSummary.granted) {
+                HomeNotificationAccessInlineRow(
+                    summary = notificationAccessSummary,
+                    onClick = onNotificationAccessClick,
+                )
+            } else {
                 HomeNotificationAccessCard(
                     summary = notificationAccessSummary,
                     onClick = onNotificationAccessClick,
                 )
-                QuickActionCard(
-                    title = "중요 알림",
-                    subtitle = "지금 봐야 할 알림 ${priorityCount}개",
-                    onClick = onPriorityClick,
-                )
-                QuickActionCard(
-                    title = "정리함",
-                    subtitle = "묶인 알림 ${digestCount}개",
-                    onClick = onDigestClick,
-                )
             }
         }
-        if (quickStartAppliedSummary != null) {
+        if (quickStartAppliedSummary != null && shouldShowQuickStart) {
             item {
                 HomeQuickStartAppliedCard(
                     summary = quickStartAppliedSummary,
-                    onClick = onRulesClick,
+                    onClick = {
+                        coroutineScope.launch {
+                            settingsRepository.setQuickStartAppliedCardAcknowledgedAtMillis(
+                                System.currentTimeMillis(),
+                            )
+                        }
+                        onRulesClick()
+                    },
                 )
             }
         }
@@ -227,13 +298,15 @@ fun HomeScreen(
                 )
             }
         }
-        item {
-            TimelineCard(
-                timeline = timeline,
-                bars = timelineBars,
-                selectedRange = selectedTimelineRange,
-                onRangeSelected = { range -> selectedTimelineRange = range },
-            )
+        if (timeline.totalFilteredCount > 0) {
+            item {
+                TimelineCard(
+                    timeline = timeline,
+                    bars = timelineBars,
+                    selectedRange = selectedTimelineRange,
+                    onRangeSelected = { range -> selectedTimelineRange = range },
+                )
+            }
         }
         item {
             Text(
@@ -256,6 +329,35 @@ fun HomeScreen(
             }
         }
     }
+}
+
+/**
+ * Pure-function gate for the `HomeQuickStartAppliedCard` visibility. Plan Task
+ * 10: demoted to a 7-day TTL — after the user acknowledges (taps the card) we
+ * timestamp it on SettingsRepository and suppress the card until seven days
+ * have elapsed, at which point the card may re-appear if the quick-start
+ * summary is still present.
+ */
+internal object HomeQuickStartAppliedVisibility {
+    const val TTL_MILLIS: Long = 7L * 24L * 60L * 60L * 1000L
+
+    fun shouldShow(
+        hasSummary: Boolean,
+        acknowledgedAtMillis: Long,
+        nowMillis: Long,
+    ): Boolean {
+        if (!hasSummary) return false
+        if (acknowledgedAtMillis <= 0L) return true
+        return nowMillis - acknowledgedAtMillis >= TTL_MILLIS
+    }
+}
+
+/**
+ * 24-hour snooze constant for the Home "나중에" action. Shared between
+ * [HomeScreen] and tests.
+ */
+internal object HomeUncategorizedPromptSnooze {
+    const val TWENTY_FOUR_HOURS_MILLIS: Long = 24L * 60L * 60L * 1000L
 }
 
 internal data class HomeNotificationCounts(
@@ -289,6 +391,42 @@ internal data class HomeNotificationCounts(
                 silent = silent,
             )
         }
+    }
+}
+
+/**
+ * Demoted 1-row version of the access card (plan Task 10). Shows only when
+ * the listener is connected — nothing is wrong, so the full card is overkill.
+ */
+@Composable
+private fun HomeNotificationAccessInlineRow(
+    summary: HomeNotificationAccessSummary,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ContextBadge(
+            label = summary.statusLabel,
+            containerColor = GreenAccent.copy(alpha = 0.16f),
+            contentColor = GreenAccent,
+        )
+        Text(
+            text = summary.title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 

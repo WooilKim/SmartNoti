@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -217,6 +218,59 @@ class SettingsRepository private constructor(
         }
     }
 
+    /**
+     * Epoch-millis deadline for the Home "새 앱 분류 유도 카드" snooze (plan
+     * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task
+     * 10). Zero means "never snoozed". Tapping "나중에" on the card writes
+     * `now + 24h` here; the [UncategorizedAppsDetector] consults this when
+     * deciding whether to re-emit a Prompt.
+     */
+    fun observeUncategorizedPromptSnoozeUntilMillis(): Flow<Long> {
+        return context.dataStore.data.map { prefs ->
+            prefs[UNCATEGORIZED_PROMPT_SNOOZE_UNTIL_MILLIS] ?: 0L
+        }
+    }
+
+    suspend fun setUncategorizedPromptSnoozeUntilMillis(millis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[UNCATEGORIZED_PROMPT_SNOOZE_UNTIL_MILLIS] = millis
+        }
+    }
+
+    /**
+     * Tracks when the Home `HomeQuickStartAppliedCard` was last acknowledged
+     * so the Task 10 Home declutter can drop the card after 7 days or after an
+     * explicit tap-to-ack. Zero means "not acknowledged yet".
+     */
+    fun observeQuickStartAppliedCardAcknowledgedAtMillis(): Flow<Long> {
+        return context.dataStore.data.map { prefs ->
+            prefs[QUICK_START_APPLIED_CARD_ACKNOWLEDGED_AT_MILLIS] ?: 0L
+        }
+    }
+
+    suspend fun setQuickStartAppliedCardAcknowledgedAtMillis(millis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[QUICK_START_APPLIED_CARD_ACKNOWLEDGED_AT_MILLIS] = millis
+        }
+    }
+
+    /**
+     * One-shot gate for the Task 11 categories-migration announcement modal:
+     * false until the user dismisses the "규칙은 이제 '분류' 안에서 편집합니다"
+     * notice, after which it flips permanently.
+     */
+    fun observeCategoriesMigrationAnnouncementSeen(): Flow<Boolean> {
+        return context.dataStore.data.map { prefs ->
+            prefs[CATEGORIES_MIGRATION_ANNOUNCEMENT_SEEN] ?: false
+        }
+    }
+
+    suspend fun setCategoriesMigrationAnnouncementSeen(seen: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[CATEGORIES_MIGRATION_ANNOUNCEMENT_SEEN] = seen
+        }
+    }
+
     suspend fun consumeOnboardingActiveNotificationBootstrapRequest(): Boolean {
         var consumed = false
         context.dataStore.edit { prefs ->
@@ -283,6 +337,12 @@ class SettingsRepository private constructor(
             booleanPreferencesKey("onboarding_active_notification_bootstrap_completed")
         private val RULES_TO_CATEGORIES_MIGRATED =
             booleanPreferencesKey("rules_to_categories_migrated")
+        private val UNCATEGORIZED_PROMPT_SNOOZE_UNTIL_MILLIS =
+            longPreferencesKey("uncategorized_prompt_snooze_until_millis")
+        private val QUICK_START_APPLIED_CARD_ACKNOWLEDGED_AT_MILLIS =
+            longPreferencesKey("quick_start_applied_card_acknowledged_at_millis")
+        private val CATEGORIES_MIGRATION_ANNOUNCEMENT_SEEN =
+            booleanPreferencesKey("categories_migration_announcement_seen")
 
         @Volatile private var instance: SettingsRepository? = null
 

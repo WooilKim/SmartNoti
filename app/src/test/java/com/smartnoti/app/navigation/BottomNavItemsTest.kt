@@ -13,18 +13,16 @@ import org.junit.Test
  * Priority composable itself must remain registered in [AppNavHost] so the Home card
  * tap, and PRIORITY-decision replacement notifications, still resolve.
  *
- * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 8
- * adds the "분류" primary tab between Digest (정리함) and Rules (규칙). The 4-tab
- * reshape that drops Rules in favour of the Settings sub-menu is Task 11 — until
- * that ships the bar has five entries.
+ * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11
+ * collapses the bar to four entries — Home / 정리함 (Inbox) / 분류 / Settings —
+ * demoting the legacy 규칙 tab to a Settings sub-menu ("고급 규칙 편집") while
+ * keeping the underlying route registered for deep links.
  */
 class BottomNavItemsTest {
 
     @Test
-    fun bottom_nav_contains_five_entries_during_categories_rollout() {
-        // Phase P3 Task 8 adds 분류 alongside the existing four. Task 11 will
-        // demote Rules to Settings and bring the count back to four.
-        assertEquals(5, bottomNavItems.size)
+    fun bottom_nav_contains_four_entries_after_rules_demotion() {
+        assertEquals(4, bottomNavItems.size)
     }
 
     @Test
@@ -37,21 +35,37 @@ class BottomNavItemsTest {
     }
 
     @Test
-    fun bottom_nav_exposes_home_digest_categories_rules_settings_in_order() {
-        // Rules' bottom-nav entry navigates to the bare "rules" URL (not the
-        // pattern with `{highlightRuleId}`) so that nav-compose resolves it to
-        // the unfiltered list via the query param's `null` default. Selection
-        // matching in AppBottomBar compares route prefixes to handle the
-        // pattern/URL mismatch.
+    fun bottom_nav_does_not_expose_rules_route() {
+        val routes = bottomNavItems.map { it.route }
+        assertFalse(
+            "Rules must be reachable only via Settings > 고급 규칙 편집 (plan Phase P3 Task 11).",
+            routes.contains(Routes.Rules.create()),
+        )
+        assertFalse(
+            "Rules must be reachable only via Settings > 고급 규칙 편집 (plan Phase P3 Task 11).",
+            routes.contains(Routes.Rules.route),
+        )
+    }
+
+    @Test
+    fun bottom_nav_exposes_home_inbox_categories_settings_in_order() {
         assertEquals(
             listOf(
                 Routes.Home.route,
-                Routes.Digest.route,
+                Routes.Inbox.route,
                 Routes.Categories.route,
-                Routes.Rules.create(),
                 Routes.Settings.route,
             ),
             bottomNavItems.map { it.route },
+        )
+    }
+
+    @Test
+    fun bottom_nav_exposes_inbox_route() {
+        val routes = bottomNavItems.map { it.route }
+        assertTrue(
+            "정리함 tab must be registered (plan Phase P3 Task 11).",
+            routes.contains(Routes.Inbox.route),
         )
     }
 
@@ -71,5 +85,18 @@ class BottomNavItemsTest {
         // to it via onPriorityClick.
         assertTrue(Routes.Priority.route.isNotBlank())
         assertEquals("priority", Routes.Priority.route)
+    }
+
+    @Test
+    fun rules_route_still_survives_for_deep_link_and_settings_entry_point() {
+        // Sanity guard: deep link from NotificationDetail's "적용된 규칙" chip
+        // and the Settings "고급 규칙 편집" entry both rely on this staying stable.
+        assertTrue(Routes.Rules.route.isNotBlank())
+        assertEquals("rules", Routes.Rules.create())
+    }
+
+    @Test
+    fun inbox_route_is_stable() {
+        assertEquals("inbox", Routes.Inbox.route)
     }
 }

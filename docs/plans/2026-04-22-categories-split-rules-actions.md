@@ -177,7 +177,7 @@ created: 2026-04-22
 1. 신규/편집 두 모드 (navigation argument 로 id null = 신규).
 2. Rule multi-select 는 기존 `RulesScreen` 셀 렌더러 재사용.
 
-### Task 10: Home "새 앱 분류 유도 카드" + detection
+### Task 10: Home "새 앱 분류 유도 카드" + detection `[IN PROGRESS via PR #240]`
 
 **Files:**
 - 변경: `app/src/main/java/com/smartnoti/app/ui/screens/home/HomeScreen.kt`
@@ -194,7 +194,7 @@ created: 2026-04-22
 1. UseCase 가 순수 함수 단위로 테스트 가능해야 함 — 먼저 테스트.
 2. Home 카드는 기존 Home 의 "시작 가이드" 카드 자리 재활용 가능한지 검토.
 
-### Task 11: Digest+Hidden → 정리함 통합 탭 + Rules 탭 → Settings 서브메뉴
+### Task 11: Digest+Hidden → 정리함 통합 탭 + Rules 탭 → Settings 서브메뉴 `[IN PROGRESS via PR #240]`
 
 **Files:**
 - 변경: `app/src/main/java/com/smartnoti/app/navigation/AppNavHost.kt` — BottomNav 4-tab (Home / 정리함 / 분류 / Settings).
