@@ -53,7 +53,7 @@
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | — |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-22 |
-| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-21 |
+| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-22 |
 
 ## 아직 문서화하지 않은 영역
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — rules-feedback-loop full end-to-end PASS on fresh Categories APK, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | PASS | Fresh `./gradlew :app:installDebug` on refactor P1-P3 + runtime-wiring + Category save race fix + DataStore dedup crash fix stack. Onboarding quick-start → AssignTest_0422_T1 알림 post → Detail → "분류 변경" 시트 렌더. **Path B PASS**: "+ 새 분류 만들기" → editor prefilled (name=`AssignTest_0422_T1`, action=PRIORITY dynamic-opposite of SILENT, pendingRule=`PERSON:AssignTest_0422_T1` pre-checked) → "추가" → `smartnoti_categories.preferences_pb` persists, 분류 탭 카드 "규칙 1개 · 즉시 전달" 표출. **Path A PASS**: PathATest_0422 알림 post → Detail → 시트 "기존 분류에 포함" 헤더 + AssignTest Category row 렌더 → 탭 → Category.ruleIds=`PERSON:AssignTest_0422_T1,PERSON:PathATest_0422` (append + dedup, name/action/order 불변) + `PERSON:PathATest_0422` rule upsert. **Auto-reclassify PASS**: 동일 sender 후속 알림 포스팅 시 Home "즉시" StatPill 0 → 1 (PRIORITY 로 auto-routed). `last-verified` 2026-04-21 → 2026-04-22 bump. Orthogonal finding: 온보딩 quick-start 가 Rules 만 seed 하고 Categories 0 건으로 남김 — onboarding-bootstrap journey precondition 과 불일치 (별도 follow-up). |
 
 
 ### 2026-04-22 (journey-tester — rules-feedback-loop Categories end-to-end DRIFT, emulator-5554)
