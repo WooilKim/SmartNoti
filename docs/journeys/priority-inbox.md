@@ -101,6 +101,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 검토 화면 자체에 일괄 처리(모두 읽음/모두 재분류) 액션 없음 — 여전히 카드별 처리.
 - `PriorityScreen` / `PassthroughReclassifyActions` 의 Compose UI 테스트 부재.
 - Verification recipe 의 `엄마` 고정값이 rules-feedback-loop sweep 이후 남은 `person:엄마 → DIGEST` rule 에 의해 DIGEST 로 라우팅되어 검증이 무효화될 수 있어 은행/인증번호 경로로 변경됨. 사용자 환경에 따라 다른 키워드가 필요할 수 있음.
+- 2026-04-22: 위 fragility 가 `은행` + `인증번호` 경로에서도 재현됨 (journey-tester sweep). 누적된 user rules 가 `reasonTags=사용자 규칙|인증번호|중요 키워드` 매칭으로 status 를 SILENT 로 강등시켜 PRIORITY 가 0 건으로 떨어지면 `HomePassthroughReviewCard` 가 hidden 되어 recipe 의 Observable steps 1, 4–8 검증 불가. Recipe 를 unique non-keyword sender + per-sweep rule reset 또는 test-only PRIORITY injection hook 으로 재설계 필요.
 
 ## Change log
 

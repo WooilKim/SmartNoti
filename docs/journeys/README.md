@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — priority-inbox SKIP recipe blocked by accumulated rules, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | SKIP | Posted `PriFreshAPK_0422` with sender `은행` + body `인증번호 998877…` per Verification recipe. DB row classified `status=SILENT, reasonTags=발신자 있음\|사용자 규칙\|인증번호\|중요 키워드` — accumulated user-saved rules from prior rules-feedback-loop sweeps now shadow both `은행` and `인증번호` keyword paths. `SELECT count(*) FROM notifications WHERE status='PRIORITY'` = 0 → Home StatPill `즉시 0` + `HomePassthroughReviewCard` not rendered (count=0 hidden), so Observable steps 1, 4–8 (card tap → PriorityScreen list/inline-actions) are unreachable without DB reset or fresh rule-free APK. Routing invariant for *existing* PRIORITY rows not contradicted; recipe itself is blocked. Recurrence of the 2026-04-21 documented "recipe fragility" Known gap, now extended beyond `엄마`/`은행` to `인증번호`. `last-verified` unchanged. Suggested follow-up: gap-planner could plan a recipe-hardening (use unique non-keyword sender + per-sweep rule reset, or test-only PRIORITY injection hook). |
+
+
 ### 2026-04-22 (journey-tester — inbox-unified end-to-end PASS, emulator-5554)
 
 | Journey | Result | Notes |
