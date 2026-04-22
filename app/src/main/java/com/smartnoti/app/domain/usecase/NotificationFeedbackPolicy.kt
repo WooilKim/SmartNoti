@@ -1,11 +1,30 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SilentMode
+
+/**
+ * Result envelope for [NotificationFeedbackPolicy.applyActionToCategory].
+ *
+ * Plan `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Drift 2:
+ * feedback taps must persist both a matcher Rule AND a Category whose action
+ * drives future classification. Callers upsert [rule] through
+ * [com.smartnoti.app.data.rules.RulesRepository] and [category] through
+ * [com.smartnoti.app.data.categories.CategoriesRepository] in the same
+ * coroutine scope (Rule first, then Category).
+ *
+ * [category] is nullable so future refinements can signal "no Category
+ * change" (e.g. CONTEXTUAL action) without breaking the envelope shape.
+ */
+data class CategoryFeedbackResult(
+    val rule: RuleUiModel,
+    val category: Category?,
+)
 
 class NotificationFeedbackPolicy {
     fun applyAction(
@@ -50,6 +69,37 @@ class NotificationFeedbackPolicy {
             enabled = true,
             matchValue = matchValue,
         )
+    }
+
+    /**
+     * Feedback → Category upsert stub. Plan
+     * `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Drift 2.
+     *
+     * Task 1 (RED) ships this as a "rule-only" stub that returns `category =
+     * null`, mirroring today's production behavior where feedback creates a
+     * Rule with no Category pointing at it (and therefore no classifier
+     * effect). The accompanying
+     * [NotificationFeedbackPolicyCategoryUpsertTest] fails because the
+     * returned [CategoryFeedbackResult.category] is null / not updated in
+     * place.
+     *
+     * Task 2 implements the update-or-create algorithm:
+     *  - Derive the Rule via [toRule].
+     *  - If a Category in [existingCategories] already owns `rule.id`, copy
+     *    it with `action` replaced (preserve id / name / order).
+     *  - Otherwise create a new Category with deterministic id, name,
+     *    `appPackageName` (when rule type is APP), `ruleIds = [rule.id]`,
+     *    `order = max(existing.order) + 1` (or 0 when list is empty).
+     */
+    fun applyActionToCategory(
+        notification: NotificationUiModel,
+        action: RuleActionUi,
+        @Suppress("UNUSED_PARAMETER") existingCategories: List<Category>,
+    ): CategoryFeedbackResult {
+        val rule = toRule(notification, action)
+        // BUG preserved so the RED test fails. Task 2 replaces this body
+        // with the actual update-or-create algorithm described above.
+        return CategoryFeedbackResult(rule = rule, category = null)
     }
 
     private fun RuleActionUi.toStatus(currentStatus: NotificationStatusUi): NotificationStatusUi = when (this) {
