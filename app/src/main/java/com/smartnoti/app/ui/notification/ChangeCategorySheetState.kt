@@ -5,17 +5,14 @@ import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.NotificationUiModel
 
 /**
- * RED-phase skeleton for plan
- * `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Task 2.
+ * Plan `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Task 2.
  *
- * Pure state model that drives the "분류 변경" bottom sheet. See
- * `ChangeCategorySheetStateTest` for the exact contract Task 2 must
- * satisfy: rows ordered by `Category.order`, always-present "새 분류
- * 만들기" affordance, typed action factories for each user tap. The
- * factory methods throw [NotImplementedError] today so the RED tests
- * fail at runtime. Task 2 replaces them with the real implementation.
+ * Pure state model that drives the "분류 변경" bottom sheet. Rows render
+ * in `Category.order` ascending so the user's drag-ordering in the 분류
+ * tab governs sheet ordering too. The "새 분류 만들기" affordance is an
+ * implicit terminal row — exposed as a flag so the composable can style
+ * it differently from an existing-Category row.
  */
-@Suppress("UNUSED_PARAMETER")
 data class ChangeCategorySheetState(
     val notification: NotificationUiModel,
     val existingRows: List<ExistingCategoryRow>,
@@ -23,11 +20,11 @@ data class ChangeCategorySheetState(
 ) {
 
     fun onTapExisting(categoryId: String): ChangeCategorySheetAction {
-        TODO("Plan task 2: produce ChangeCategorySheetAction.AssignToExisting(categoryId)")
+        return ChangeCategorySheetAction.AssignToExisting(categoryId = categoryId)
     }
 
     fun onTapCreateNew(): ChangeCategorySheetAction {
-        TODO("Plan task 2: produce ChangeCategorySheetAction.CreateNew")
+        return ChangeCategorySheetAction.CreateNew
     }
 
     data class ExistingCategoryRow(
@@ -38,19 +35,34 @@ data class ChangeCategorySheetState(
     )
 
     companion object {
-        @Suppress("UNUSED_PARAMETER")
         fun from(
             notification: NotificationUiModel,
             categories: List<Category>,
         ): ChangeCategorySheetState {
-            TODO("Plan task 2: order by Category.order, wrap each as ExistingCategoryRow, canCreateNewCategory = true")
+            val rows = categories
+                .sortedBy { it.order }
+                .map { category ->
+                    ExistingCategoryRow(
+                        categoryId = category.id,
+                        name = category.name,
+                        action = category.action,
+                        ruleCount = category.ruleIds.size,
+                    )
+                }
+            return ChangeCategorySheetState(
+                notification = notification,
+                existingRows = rows,
+                canCreateNewCategory = true,
+            )
         }
     }
 }
 
 /**
  * Typed action the sheet produces when the user taps a row. Viewmodel
- * dispatches each variant to the matching use case.
+ * dispatches each variant to the matching use case (AssignToExisting →
+ * `AssignNotificationToCategoryUseCase.assignToExisting`, CreateNew →
+ * editor navigation with prefill).
  */
 sealed class ChangeCategorySheetAction {
     data class AssignToExisting(val categoryId: String) : ChangeCategorySheetAction()

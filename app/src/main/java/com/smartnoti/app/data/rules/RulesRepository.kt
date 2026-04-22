@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import kotlinx.coroutines.flow.Flow
@@ -83,6 +84,13 @@ fun resolveConfiguredRules(encodedPayload: String?): List<RuleUiModel> {
 class RulesRepository private constructor(
     private val context: Context,
     private val overrideValidator: RuleOverrideValidator = RuleOverrideValidator(),
+    private val onRuleDeletedCascade: suspend (String) -> Unit = { ruleId ->
+        // Default cascade hooks into CategoriesRepository so every deletion
+        // strips the removed rule id from every Category. Plan
+        // `2026-04-22-categories-runtime-wiring-fix.md` Task 5. Tests can
+        // inject a no-op lambda to exercise the Rule-delete path in isolation.
+        CategoriesRepository.getInstance(context).onRuleDeleted(ruleId)
+    },
 ) {
     fun observeRules(): Flow<List<RuleUiModel>> {
         return context.rulesDataStore.data.map { prefs ->
@@ -136,6 +144,10 @@ class RulesRepository private constructor(
 
     suspend fun deleteRule(ruleId: String) {
         persist(currentRules().filterNot { it.id == ruleId })
+        // Cascade the deletion so every Category listing this id drops it
+        // from `ruleIds`. Must run after persist so an observer reading
+        // Categories sees a consistent (Rules, Categories) snapshot.
+        onRuleDeletedCascade(ruleId)
     }
 
     suspend fun moveRule(ruleId: String, direction: RuleMoveDirection) {

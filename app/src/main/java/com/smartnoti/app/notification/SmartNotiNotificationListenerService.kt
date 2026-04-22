@@ -2,6 +2,7 @@ package com.smartnoti.app.notification
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationEntity
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.local.toEntity
@@ -191,9 +192,15 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
         val repository = NotificationRepository.getInstance(applicationContext)
         val rulesRepository = RulesRepository.getInstance(applicationContext)
+        val categoriesRepository = CategoriesRepository.getInstance(applicationContext)
         val settingsRepository = SettingsRepository.getInstance(applicationContext)
 
         val rules = rulesRepository.currentRules()
+        // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 4 (Drift #1):
+        // without this read the Classifier always falls back to SILENT because
+        // the Category.action it routes through is never in scope. Read at
+        // the same call site as rules so both snapshots are consistent.
+        val categories = categoriesRepository.currentCategories()
         val settings = settingsRepository.observeSettings().first()
         val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
             isOngoing = sbn.isOngoing,
@@ -244,6 +251,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             input = captureInput,
             rules = rules,
             settings = settings,
+            categories = categories,
         )
 
         val decision = baseNotification.status.toDecision()
