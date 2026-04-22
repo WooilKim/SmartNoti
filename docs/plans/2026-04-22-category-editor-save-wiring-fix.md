@@ -1,7 +1,8 @@
 ---
-status: planned
+status: shipped
 created: 2026-04-22
 updated: 2026-04-22
+superseded-by: ../journeys/rules-feedback-loop.md
 ---
 
 # CategoryEditor Save Wiring Fix — "추가" 가 persist 되도록
@@ -30,7 +31,7 @@ updated: 2026-04-22
 
 ---
 
-## Task 1: Failing tests — save button persists via both entry paths
+## Task 1: Failing tests — save button persists via both entry paths  [SHIPPED]
 
 **Objective:** "추가" 탭 → DataStore 에 Category (및 prefill path 의 동반 Rule) 가 실제 쓰이는지를 두 entry path 모두에 대해 red 로 고정.
 
@@ -58,7 +59,7 @@ updated: 2026-04-22
    - 사용자가 draft 를 채운 뒤 "닫기" 또는 back → RulesRepository / CategoriesRepository 모두 비어 있어야 함.
 5. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.categories.CategoryEditor*Test"` 로 A/B/C 실패 (혹은 A/B 중 분류 탭이 이미 우회적으로 동작하면 B/C 만 실패) 확인.
 
-## Task 2: Fix the save coroutine race
+## Task 2: Fix the save coroutine race  [SHIPPED]
 
 **Objective:** persist 가 `onSaved` 호출 *이전에* 완료되게 재배선.
 
@@ -82,7 +83,9 @@ updated: 2026-04-22
 4. 중복 탭 방지: `var saving by remember { mutableStateOf(false) }` + `enabled = canSave && !saving`, launch 시작 직전 `saving = true`.
 5. Task 1 의 A/B/C 테스트 green.
 
-## Task 3: ADB end-to-end verification + journey sync
+## Task 3: ADB end-to-end verification + journey sync  [PARTIAL — blocked by orthogonal crash]
+
+> **Implementer note (2026-04-22):** Tasks 1-2 shipped with single `CategoryEditorSaveOrchestratorTest.kt` (6 tests — standalone path persist, prefill rule-before-category ordering, scope-cancel ⇒ no onSaved, dismiss-is-noop, dedup, suspend-await). Journey Known-gap DRIFT bullet removed and Change log row added. The ADB verification recipe below could not be executed end-to-end because every fresh launch of `com.smartnoti.app` on `emulator-5554` crashes with `IllegalStateException: There are multiple DataStores active for the same file: …/smartnoti_rules.preferences_pb`, triggered by `LegacyRuleActionReader` (`data/categories/LegacyRuleActionReader.kt`) and `RulesRepository` (`data/rules/RulesRepository.kt`) both declaring `preferencesDataStore(name = "smartnoti_rules")` at the top level. This is a pre-existing P1 migration-plumbing defect (landed in #236), orthogonal to the save-wiring race this plan fixes. `last-verified` on rules-feedback-loop is deliberately NOT bumped. Follow-up plan should consolidate to a single DataStore handle.
 
 **Objective:** 실제 디바이스에서 두 entry path 가 preferences_pb 를 쓰는지 관측하고, 관련 journey 의 Known-gap bullet 을 Change log 행으로 이관.
 

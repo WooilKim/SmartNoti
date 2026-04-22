@@ -295,8 +295,9 @@ fun CategoryEditorScreen(
             }
         },
         confirmButton = {
+            var saving by remember { mutableStateOf(false) }
             Button(
-                enabled = canSave,
+                enabled = canSave && !saving,
                 onClick = {
                     val persisted = persistCategory(
                         editing = editingCategory,
@@ -307,18 +308,28 @@ fun CategoryEditorScreen(
                         currentCategoriesCount = categories.size,
                     )
                     val pendingRule = effectivePrefill?.pendingRule
+                    saving = true
+                    // Plan `2026-04-22-category-editor-save-wiring-fix.md`
+                    // Task 2: persist must complete *before* `onSaved` is
+                    // invoked — otherwise the host composable tears down
+                    // this editor (and its rememberCoroutineScope) before
+                    // the DataStore edit{} block finishes, and nothing is
+                    // ever written to `smartnoti_categories.preferences_pb`.
+                    // Moving the callback inside the launch makes teardown
+                    // strictly downstream of the persisted write.
                     scope.launch {
-                        // If this editor was opened via the "분류 변경 → 새 분류
-                        // 만들기" flow, the prefill carries a pendingRule that
-                        // must be persisted alongside the Category — otherwise
-                        // the Category references an id that doesn't exist and
-                        // the classifier can never hit it.
-                        if (pendingRule != null && pendingRule.id in persisted.ruleIds) {
-                            rulesRepository.upsertRule(pendingRule)
+                        try {
+                            saveCategoryDraft(
+                                categoriesRepository = categoriesRepository,
+                                rulesRepository = rulesRepository,
+                                persisted = persisted,
+                                pendingRule = pendingRule,
+                                onSaved = onSaved,
+                            )
+                        } finally {
+                            saving = false
                         }
-                        categoriesRepository.upsertCategory(persisted)
                     }
-                    onSaved(persisted.id)
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -350,6 +361,38 @@ fun CategoryEditorScreen(
             },
         )
     }
+}
+
+/**
+ * Orchestrate the editor's save path: persist the pendingRule (if any),
+ * persist the Category, then invoke [onSaved] with the persisted id.
+ *
+ * Plan `docs/plans/2026-04-22-category-editor-save-wiring-fix.md` Task 2
+ * — the previous implementation invoked `onSaved(...)` synchronously
+ * outside the `scope.launch { upsert... }` block, so the host composable
+ * would tear down the editor (and cancel its coroutine scope) before the
+ * DataStore `edit {}` block inside [CategoriesRepository.upsertCategory]
+ * ever ran. That left `smartnoti_categories.preferences_pb` uncreated on
+ * disk even though the UI had already dismissed. Pulling the callback
+ * inside a single `suspend` orchestrator makes teardown strictly
+ * downstream of the write.
+ *
+ * Rule-before-Category ordering is preserved so the Category's
+ * `ruleIds` never references a rule id the Rules DataStore has not yet
+ * seen (matters for the classifier's first post-save tick).
+ */
+internal suspend fun saveCategoryDraft(
+    categoriesRepository: CategoriesRepository,
+    rulesRepository: RulesRepository,
+    persisted: Category,
+    pendingRule: RuleUiModel?,
+    onSaved: (String) -> Unit,
+) {
+    if (pendingRule != null && pendingRule.id in persisted.ruleIds) {
+        rulesRepository.upsertRule(pendingRule)
+    }
+    categoriesRepository.upsertCategory(persisted)
+    onSaved(persisted.id)
 }
 
 /**

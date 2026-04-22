@@ -171,6 +171,10 @@ class RulesRepository private constructor(
                 instance ?: RulesRepository(context.applicationContext).also { instance = it }
             }
         }
+
+        internal fun clearInstanceForTest() {
+            synchronized(this) { instance = null }
+        }
     }
 }
 
