@@ -184,6 +184,7 @@ If a self-merged row caused a regression:
 | 2026-04-22T12:59:58Z | journey-tester | #259 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24779437119 |
 | 2026-04-22T13:01:03Z | project-manager | #258 | plan-shipped frontmatter flip (categories empty-state CTA) | https://github.com/WooilKim/SmartNoti/actions/runs/24778113552 |
 | 2026-04-22T14:13:46Z | journey-tester | #262 | duplicate-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24782942317/job/72518867059 |
+| 2026-04-22T14:23:03Z | loop-manager (human-merged; backfilled by loop-monitor) | #263 | tune /journey-loop tick interval to 60s (ops, docs-only config) | https://github.com/WooilKim/SmartNoti/actions/runs/24783697617 |
 | 2026-04-22T14:37:16Z | journey-tester | #264 | digest-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24784217205 |
 | 2026-04-22T14:58:39Z | project-manager | #265 | feat(home,inbox): truncate Home recent list + de-nest Inbox sub-tabs (plan Tasks 0-3) | https://github.com/WooilKim/SmartNoti/actions/runs/24785303938 |
 | 2026-04-22T15:10:00Z | journey-tester | #266 | persistent-notification-protection (Policy-level PASS, PersistentNotificationPolicyTest 7/7) | https://github.com/WooilKim/SmartNoti/actions/runs/24785911934 |
