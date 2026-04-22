@@ -2,6 +2,8 @@ package com.smartnoti.app.data.rules
 
 import android.content.Context
 import android.util.Log
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -12,6 +14,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
+// Single DataStore delegate for the `smartnoti_rules` file. Plan
+// `docs/plans/2026-04-22-rules-datastore-dedup-fix.md` — prior to this
+// consolidation, `LegacyRuleActionReader` declared a parallel delegate
+// against the same filename which made AndroidX DataStore throw
+// `IllegalStateException: There are multiple DataStores active for the
+// same file` on first read. `RulesRepository` now owns the handle and
+// hands it to any other reader that needs it.
 private val Context.rulesDataStore by preferencesDataStore(name = "smartnoti_rules")
 
 enum class RuleMoveDirection {
@@ -92,8 +101,19 @@ class RulesRepository private constructor(
         CategoriesRepository.getInstance(context).onRuleDeleted(ruleId)
     },
 ) {
+    /**
+     * Handle to the `smartnoti_rules` Preferences DataStore. Exposed as
+     * `internal` so `LegacyRuleActionReader` (and any other one-shot
+     * reader the Categories migration needs) can share the single delegate
+     * instead of redeclaring `preferencesDataStore("smartnoti_rules")` —
+     * AndroidX enforces one delegate per file, and the previous parallel
+     * declaration crashed the app on launch. Plan
+     * `docs/plans/2026-04-22-rules-datastore-dedup-fix.md`.
+     */
+    internal val dataStore: DataStore<Preferences> = context.rulesDataStore
+
     fun observeRules(): Flow<List<RuleUiModel>> {
-        return context.rulesDataStore.data.map { prefs ->
+        return dataStore.data.map { prefs ->
             resolveStoredRules(prefs[RULES])
         }
     }
@@ -101,7 +121,7 @@ class RulesRepository private constructor(
     suspend fun currentRules(): List<RuleUiModel> = observeRules().first()
 
     suspend fun currentConfiguredRules(): List<RuleUiModel> {
-        val encodedPayload = context.rulesDataStore.data.first()[RULES]
+        val encodedPayload = dataStore.data.first()[RULES]
         return resolveConfiguredRules(encodedPayload)
     }
 
@@ -155,7 +175,7 @@ class RulesRepository private constructor(
     }
 
     private suspend fun persist(rules: List<RuleUiModel>) {
-        context.rulesDataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[RULES] = RuleStorageCodec.encode(rules)
         }
     }
