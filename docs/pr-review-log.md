@@ -182,5 +182,6 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:41:36Z | #254 | plan-implementer | APPROVE | Categories FAB + empty-state CTA; CI green |
 | 2026-04-22T13:01:12Z | #258 | main-session (plan-shipped flip) | APPROVE+merge | frontmatter-only; clears 4-tick carryover; shipped-via #254 |
 | 2026-04-22T14:23:03Z | #263 | loop-manager | APPROVE+MERGE | ops tick-interval tune to 60s; human-merged bcd3573; CI run 24783697617 green; backfilled by loop-monitor |
+| 2026-04-22T14:34:48Z | #264 | journey-tester | APPROVE+MERGE | digest-suppression sweep SKIP — recipe environment limit (NMS 50-cap on com.android.shell), code path unchanged; docs-only Verification log row + Known gap; CI green (run 24784217205); squash e23608f; backfilled by loop-monitor |
 | 2026-04-22T14:59:03Z | #265 | plan-implementer | APPROVE+MERGE | feat Home truncate + Inbox de-nest, plan Tasks 0-3, RED tests + 2 journey doc syncs, CI pass, squash 85fd8b3 |
 | 2026-04-22T15:35:00Z | #268 | loop-monitor | APPROVE+MERGE | AUDIT_DRIFT auto-fix backfill of #263 rows; docs-only (2 files, 2 additions); CI green (run 24787208704); chronological insert correct |
