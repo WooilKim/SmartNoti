@@ -12,62 +12,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * RED-phase tests for plan
- * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Task 3.
- *
- * Exercises the pure migration computation — the caller-glue that reads from
- * [com.smartnoti.app.data.rules.RulesRepository], writes to
- * [CategoriesRepository], and toggles the
- * `SettingsRepository.migrationV2CategoriesComplete` flag is covered by
- * [MigrateRulesToCategoriesRunnerTest] once Task 3 ships. This test only
- * pins the shape of the generated Category list.
+ * Tests for plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
+ * Phase P1 Task 3 + Task 4. The migration is purely a function of
+ * `(rules, existingCategories, legacyActions)` — I/O glue lives in
+ * [MigrateRulesToCategoriesRunner].
  */
 class RuleToCategoryMigrationTest {
 
     @Test
     fun migrates_each_rule_to_one_category_preserving_action_and_match_value() {
         val rules = listOf(
-            RuleUiModel(
-                id = "rule-person-mom",
-                title = "엄마",
-                subtitle = "항상 바로 보기",
-                type = RuleTypeUi.PERSON,
-                action = RuleActionUi.ALWAYS_PRIORITY,
-                enabled = true,
-                matchValue = "엄마",
-            ),
-            RuleUiModel(
-                id = "rule-app-coupang",
-                title = "쿠팡",
-                subtitle = "Digest로 묶기",
-                type = RuleTypeUi.APP,
-                action = RuleActionUi.DIGEST,
-                enabled = true,
-                matchValue = "com.coupang.mobile",
-            ),
-            RuleUiModel(
-                id = "rule-keyword-ad",
-                title = "광고",
-                subtitle = "무시",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.IGNORE,
-                enabled = true,
-                matchValue = "광고",
-            ),
-            RuleUiModel(
-                id = "rule-keyword-otp",
-                title = "인증번호",
-                subtitle = "즉시 전달",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.ALWAYS_PRIORITY,
-                enabled = true,
-                matchValue = "인증번호",
-            ),
+            rule(id = "rule-person-mom", type = RuleTypeUi.PERSON, matchValue = "엄마"),
+            rule(id = "rule-app-coupang", type = RuleTypeUi.APP, matchValue = "com.coupang.mobile"),
+            rule(id = "rule-keyword-ad", type = RuleTypeUi.KEYWORD, matchValue = "광고"),
+            rule(id = "rule-keyword-otp", type = RuleTypeUi.KEYWORD, matchValue = "인증번호"),
+        )
+        val legacyActions = mapOf(
+            "rule-person-mom" to RuleActionUi.ALWAYS_PRIORITY,
+            "rule-app-coupang" to RuleActionUi.DIGEST,
+            "rule-keyword-ad" to RuleActionUi.IGNORE,
+            "rule-keyword-otp" to RuleActionUi.ALWAYS_PRIORITY,
         )
 
         val migrated = RuleToCategoryMigration.migrate(
             rules = rules,
             existingCategories = emptyList(),
+            legacyActions = legacyActions,
         )
 
         assertEquals(4, migrated.size)
@@ -81,7 +51,7 @@ class RuleToCategoryMigrationTest {
         assertEquals("com.coupang.mobile", migrated[1].name)
         // ruleIds = [rule.id]
         assertEquals(listOf("rule-person-mom"), migrated[0].ruleIds)
-        // Action is inherited from the rule.
+        // Action is inherited from the legacy map.
         assertEquals(CategoryAction.PRIORITY, migrated[0].action)
         assertEquals(CategoryAction.DIGEST, migrated[1].action)
         assertEquals(CategoryAction.IGNORE, migrated[2].action)
@@ -100,48 +70,34 @@ class RuleToCategoryMigrationTest {
     @Test
     fun running_migration_twice_produces_the_same_state() {
         val rules = listOf(
-            RuleUiModel(
-                id = "rule-1",
-                title = "A",
-                subtitle = "",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.DIGEST,
-                enabled = true,
-                matchValue = "A",
-            ),
-            RuleUiModel(
-                id = "rule-2",
-                title = "B",
-                subtitle = "",
-                type = RuleTypeUi.APP,
-                action = RuleActionUi.SILENT,
-                enabled = true,
-                matchValue = "com.example.b",
-            ),
+            rule(id = "rule-1", type = RuleTypeUi.KEYWORD, matchValue = "A"),
+            rule(id = "rule-2", type = RuleTypeUi.APP, matchValue = "com.example.b"),
+        )
+        val legacyActions = mapOf(
+            "rule-1" to RuleActionUi.DIGEST,
+            "rule-2" to RuleActionUi.SILENT,
         )
 
         val first = RuleToCategoryMigration.migrate(
             rules = rules,
             existingCategories = emptyList(),
+            legacyActions = legacyActions,
         )
         val second = RuleToCategoryMigration.migrate(
             rules = rules,
             existingCategories = first,
+            legacyActions = legacyActions,
         )
 
         // Idempotent: no duplicates, same content.
         assertEquals(first, second)
         assertEquals(2, second.size)
-        // Still stable ids.
         assertEquals("cat-from-rule-rule-1", second[0].id)
         assertEquals("cat-from-rule-rule-2", second[1].id)
     }
 
     @Test
     fun migration_preserves_existing_user_categories_and_appends_missing_ones() {
-        // User has already manually created one Category ahead of a rule-based
-        // migration — that Category must survive untouched while the rule
-        // scan appends the not-yet-migrated ones.
         val preexistingUserCategory = Category(
             id = "user-made-cat",
             name = "내가만든분류",
@@ -151,129 +107,109 @@ class RuleToCategoryMigrationTest {
             order = 0,
         )
         val rules = listOf(
-            RuleUiModel(
-                id = "rule-shared",
-                title = "공유",
-                subtitle = "",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.DIGEST,
-                enabled = true,
-                matchValue = "공유",
-            ),
-            RuleUiModel(
-                id = "rule-new",
-                title = "신규",
-                subtitle = "",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.SILENT,
-                enabled = true,
-                matchValue = "신규",
-            ),
+            rule(id = "rule-shared", type = RuleTypeUi.KEYWORD, matchValue = "공유"),
+            rule(id = "rule-new", type = RuleTypeUi.KEYWORD, matchValue = "신규"),
+        )
+        val legacyActions = mapOf(
+            "rule-shared" to RuleActionUi.DIGEST,
+            "rule-new" to RuleActionUi.SILENT,
         )
 
         val migrated = RuleToCategoryMigration.migrate(
             rules = rules,
             existingCategories = listOf(preexistingUserCategory),
+            legacyActions = legacyActions,
         )
 
-        // Pre-existing user-made category still present, unmodified.
         val preserved = migrated.firstOrNull { it.id == "user-made-cat" }
         assertNotNull(preserved)
         assertEquals("내가만든분류", preserved!!.name)
         assertEquals(CategoryAction.PRIORITY, preserved.action)
-        // Rule-derived categories for rule-shared + rule-new are appended.
-        // rule-shared is a DIFFERENT category from user-made-cat because the
-        // migration keys by rule id, not by membership — they coexist.
         assertTrue(migrated.any { it.id == "cat-from-rule-rule-shared" })
         assertTrue(migrated.any { it.id == "cat-from-rule-rule-new" })
-        // Total size = 1 preexisting + 2 rule-derived.
         assertEquals(3, migrated.size)
     }
 
     @Test
-    fun migration_skips_rules_without_action_gracefully() {
-        // Defensive — if a future storage bug produces a rule row that
-        // somehow carries no usable action (legacy data / partial decode),
-        // the migration should NOT crash. We simulate this by emitting the
-        // CONTEXTUAL action which maps to no Category action in the current
-        // enum set — treated as "skip this rule" rather than shoehorning
-        // into SILENT.
+    fun migration_skips_rules_without_legacy_action_gracefully() {
         val rules = listOf(
-            RuleUiModel(
-                id = "rule-ok",
-                title = "ok",
-                subtitle = "",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.DIGEST,
-                enabled = true,
-                matchValue = "ok",
-            ),
-            RuleUiModel(
-                id = "rule-orphan",
-                title = "orphan",
-                subtitle = "",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.CONTEXTUAL,
-                enabled = true,
-                matchValue = "orphan",
-            ),
+            rule(id = "rule-ok", type = RuleTypeUi.KEYWORD, matchValue = "ok"),
+            rule(id = "rule-orphan", type = RuleTypeUi.KEYWORD, matchValue = "orphan"),
+        )
+        val legacyActions = mapOf(
+            "rule-ok" to RuleActionUi.DIGEST,
+            // rule-orphan intentionally absent — simulates a rule whose legacy
+            // action column was unreadable / missing.
         )
 
         val migrated = RuleToCategoryMigration.migrate(
             rules = rules,
             existingCategories = emptyList(),
+            legacyActions = legacyActions,
         )
 
-        // Orphan rule dropped, OK rule migrated.
         assertEquals(1, migrated.size)
         assertEquals("cat-from-rule-rule-ok", migrated.first().id)
         assertFalse(migrated.any { it.id.endsWith("rule-orphan") })
     }
 
     @Test
-    fun re_running_migration_after_new_rule_added_only_creates_the_missing_category() {
-        // Simulate a user upgrade path: after first migration, the user adds a
-        // new rule. A second migration pass should be a no-op for the old
-        // rules and create exactly one new Category for the new rule.
-        val initialRules = listOf(
-            RuleUiModel(
-                id = "rule-a",
-                title = "A",
-                subtitle = "",
-                type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.ALWAYS_PRIORITY,
-                enabled = true,
-                matchValue = "A",
-            ),
+    fun migration_skips_contextual_rules() {
+        // CONTEXTUAL has no Category.action analogue (plan Phase P1 Task 3
+        // Risk note: IGNORE 는 전이, CONTEXTUAL 은 skip). Verify explicitly.
+        val rules = listOf(
+            rule(id = "rule-ctx", type = RuleTypeUi.KEYWORD, matchValue = "ctx"),
         )
+        val legacyActions = mapOf("rule-ctx" to RuleActionUi.CONTEXTUAL)
+
+        val migrated = RuleToCategoryMigration.migrate(
+            rules = rules,
+            existingCategories = emptyList(),
+            legacyActions = legacyActions,
+        )
+
+        assertTrue(migrated.isEmpty())
+    }
+
+    @Test
+    fun re_running_migration_after_new_rule_added_only_creates_the_missing_category() {
+        val initialRules = listOf(
+            rule(id = "rule-a", type = RuleTypeUi.KEYWORD, matchValue = "A"),
+        )
+        val initialActions = mapOf("rule-a" to RuleActionUi.ALWAYS_PRIORITY)
         val firstPass = RuleToCategoryMigration.migrate(
             rules = initialRules,
             existingCategories = emptyList(),
+            legacyActions = initialActions,
         )
 
-        val expandedRules = initialRules + RuleUiModel(
-            id = "rule-b",
-            title = "B",
-            subtitle = "",
-            type = RuleTypeUi.APP,
-            action = RuleActionUi.SILENT,
-            enabled = true,
-            matchValue = "com.b",
-        )
+        val expandedRules = initialRules + rule(id = "rule-b", type = RuleTypeUi.APP, matchValue = "com.b")
+        val expandedActions = initialActions + ("rule-b" to RuleActionUi.SILENT)
 
         val secondPass = RuleToCategoryMigration.migrate(
             rules = expandedRules,
             existingCategories = firstPass,
+            legacyActions = expandedActions,
         )
 
         assertEquals(2, secondPass.size)
-        // First pass category untouched.
         assertEquals(firstPass.first(), secondPass.first { it.id == "cat-from-rule-rule-a" })
-        // Second pass category created with correct order.
         val added = secondPass.first { it.id == "cat-from-rule-rule-b" }
         assertEquals(1, added.order)
         assertEquals(CategoryAction.SILENT, added.action)
         assertEquals("com.b", added.appPackageName)
     }
 
+    private fun rule(
+        id: String,
+        type: RuleTypeUi,
+        matchValue: String,
+    ) = RuleUiModel(
+        id = id,
+        title = matchValue,
+        subtitle = "",
+        type = type,
+        enabled = true,
+        matchValue = matchValue,
+    )
 }

@@ -14,10 +14,13 @@ data class RuleListPresentation(
 )
 
 class RuleListPresentationBuilder {
-    fun build(rules: List<RuleUiModel>): RuleListPresentation {
+    fun build(
+        rules: List<RuleUiModel>,
+        ruleActions: Map<String, RuleActionUi> = emptyMap(),
+    ): RuleListPresentation {
         val totalCount = rules.size
         val counts = RuleActionUi.entries.associateWith { action ->
-            rules.count { rule -> rule.action == action }
+            rules.count { rule -> ruleActions[rule.id] == action }
         }
 
         val overviewSegments = buildList {

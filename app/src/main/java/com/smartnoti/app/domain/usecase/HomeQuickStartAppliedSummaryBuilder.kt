@@ -10,21 +10,23 @@ class HomeQuickStartAppliedSummaryBuilder {
     fun build(
         rules: List<RuleUiModel>,
         notifications: List<NotificationUiModel> = emptyList(),
+        ruleActions: Map<String, RuleActionUi> = emptyMap(),
     ): HomeQuickStartAppliedSummary? {
         val appliedPresetIds = mutableSetOf<String>()
         rules.filter(RuleUiModel::enabled).forEach { rule ->
+            val ruleAction = ruleActions[rule.id]
             when {
                 rule.title == "중요 알림" &&
                     rule.type == RuleTypeUi.KEYWORD &&
-                    rule.action == RuleActionUi.ALWAYS_PRIORITY &&
+                    ruleAction == RuleActionUi.ALWAYS_PRIORITY &&
                     rule.matchValue == "인증번호,결제,배송,출발" -> appliedPresetIds += IMPORTANT
                 rule.title == "프로모션 알림" &&
                     rule.type == RuleTypeUi.KEYWORD &&
-                    rule.action == RuleActionUi.DIGEST &&
+                    ruleAction == RuleActionUi.DIGEST &&
                     rule.matchValue == "광고,프로모션,쿠폰,세일,특가,이벤트,혜택" -> appliedPresetIds += PROMO
                 rule.title == "반복 알림" &&
                     rule.type == RuleTypeUi.REPEAT_BUNDLE &&
-                    rule.action == RuleActionUi.DIGEST &&
+                    ruleAction == RuleActionUi.DIGEST &&
                     rule.matchValue == "3" -> appliedPresetIds += REPEAT
             }
         }

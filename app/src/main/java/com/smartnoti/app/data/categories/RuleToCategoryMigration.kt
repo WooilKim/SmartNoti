@@ -11,29 +11,32 @@ import com.smartnoti.app.domain.model.RuleUiModel
  * every existing [RuleUiModel] into a 1:1 [Category].
  *
  * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1
- * Task 3. The runner-side glue (reading `RulesRepository` / writing
+ * Task 3 + Task 4. The runner-side glue (reading `RulesRepository` / reading
+ * the legacy action column via [LegacyRuleActionReader] / writing
  * `CategoriesRepository` / flipping the `SettingsRepository` flag) lives in
  * [MigrateRulesToCategoriesRunner] so this object stays free of I/O and
  * trivially unit-testable.
  *
- * Contract pinned by [RuleToCategoryMigrationTest]:
+ * Contract:
  *
  *  - Each Rule → one Category with id `cat-from-rule-<ruleId>` (idempotent
  *    across re-runs and across crashes partway through a previous pass).
  *  - Name = `rule.matchValue` (user-facing phrase they already associate
  *    with the rule — the migration is supposed to be invisible).
- *  - `ruleIds = [rule.id]`, `action` inherited from `rule.action`.
+ *  - `ruleIds = [rule.id]`, `action` supplied by the caller via
+ *    [legacyActions] (post-Task-4 RuleUiModel has no action field; the
+ *    caller recovers the action from the legacy 8-column DataStore payload
+ *    using [LegacyRuleActionReader]).
  *  - `appPackageName = rule.matchValue` when `rule.type == APP` so the
  *    Category wins the app-pin specificity bonus in
  *    [com.smartnoti.app.domain.usecase.CategoryConflictResolver]; null for
  *    all other rule types.
- *  - `order` = sequential (0-indexed) starting at the max existing order + 1
- *    so user-made Categories that happened to land first keep their slot.
- *  - Rules that cannot be mapped to a Category action (e.g. the legacy
- *    `CONTEXTUAL` bucket) are SKIPPED rather than shoehorned — the
- *    per-journey tests still enumerate CONTEXTUAL behaviour separately.
- *  - Existing Categories already carrying `id == cat-from-rule-<ruleId>`
- *    are left untouched (idempotent).
+ *  - `order` = sequential, starting at `max(existingCategories.order) + 1`
+ *    so user-made Categories keep their slot.
+ *  - Rules that cannot be mapped to a Category action (missing from
+ *    [legacyActions] or carrying the legacy CONTEXTUAL bucket) are SKIPPED.
+ *  - Existing Categories carrying `id == cat-from-rule-<ruleId>` are left
+ *    untouched (idempotent).
  */
 object RuleToCategoryMigration {
 
@@ -42,13 +45,14 @@ object RuleToCategoryMigration {
     fun migrate(
         rules: List<RuleUiModel>,
         existingCategories: List<Category>,
+        legacyActions: Map<String, RuleActionUi> = emptyMap(),
     ): List<Category> {
         val existingIds = existingCategories.map { it.id }.toSet()
         val nextOrderStart = (existingCategories.maxOfOrNull { it.order } ?: -1) + 1
 
         val appended = rules
             .asSequence()
-            .mapNotNull { rule -> buildCategory(rule) }
+            .mapNotNull { rule -> buildCategory(rule, legacyActions[rule.id]) }
             .filter { category -> category.id !in existingIds }
             .toList()
 
@@ -61,8 +65,8 @@ object RuleToCategoryMigration {
         return existingCategories + reindexedAppended
     }
 
-    private fun buildCategory(rule: RuleUiModel): Category? {
-        val action = rule.action.toCategoryActionOrNull() ?: return null
+    private fun buildCategory(rule: RuleUiModel, legacyAction: RuleActionUi?): Category? {
+        val action = legacyAction?.toCategoryActionOrNull() ?: return null
         return Category(
             id = "$ID_PREFIX${rule.id}",
             name = rule.matchValue.ifBlank { rule.title },
@@ -81,8 +85,7 @@ object RuleToCategoryMigration {
         // CONTEXTUAL carries no deterministic Category.action mapping; the
         // classifier previously treated it as SILENT, but producing a SILENT
         // Category silently would capture the rule under an inappropriate
-        // bucket forever. Drop it from the migration — the user keeps the
-        // Rule, they just won't get a Category for it until they revisit.
+        // bucket forever. Drop it from the migration.
         RuleActionUi.CONTEXTUAL -> null
     }
 }

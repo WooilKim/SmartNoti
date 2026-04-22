@@ -7,11 +7,12 @@ class RuleListFilterApplicator {
     fun apply(
         rules: List<RuleUiModel>,
         action: RuleActionUi?,
+        ruleActions: Map<String, RuleActionUi> = emptyMap(),
     ): List<RuleUiModel> {
         return if (action == null) {
             rules
         } else {
-            rules.filter { rule -> rule.action == action }
+            rules.filter { rule -> ruleActions[rule.id] == action }
         }
     }
 }

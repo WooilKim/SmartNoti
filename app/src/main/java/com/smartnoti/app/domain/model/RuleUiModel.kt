@@ -3,19 +3,23 @@ package com.smartnoti.app.domain.model
 /**
  * UI-layer representation of a user rule.
  *
+ * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1
+ * Task 4: the `action` field was removed from this model. A rule is a pure
+ * condition matcher — the action (PRIORITY / DIGEST / SILENT / IGNORE) now
+ * lives on the owning [Category]. UI / classifier sites that need an
+ * action per rule compose it from the Category graph via
+ * [com.smartnoti.app.domain.usecase.RuleCategoryActionIndex].
+ *
  * @property overrideOf Optional id of another rule that this rule overrides.
- * When set, [RuleConflictResolver][com.smartnoti.app.domain.usecase.RuleConflictResolver]
- * prefers this rule over the referenced base when both matched against the same
- * notification. `null` means the rule is a plain base-tier rule. Plan
- * `rules-ux-v2-inbox-restructure` Phase C Task 1.
+ *   When set, [RuleConflictResolver][com.smartnoti.app.domain.usecase.RuleConflictResolver]
+ *   prefers this rule over the referenced base when both matched against the
+ *   same notification. `null` means the rule is a plain base-tier rule.
  */
 data class RuleUiModel(
     val id: String,
     val title: String,
     val subtitle: String,
     val type: RuleTypeUi,
-    @Deprecated("Moved to Category.action. Removed in Phase P1 Task 4 of plan docs/plans/2026-04-22-categories-split-rules-actions.md.")
-    val action: RuleActionUi,
     val enabled: Boolean,
     val matchValue: String = "",
     val overrideOf: String? = null,
@@ -29,6 +33,14 @@ enum class RuleTypeUi {
     REPEAT_BUNDLE,
 }
 
+/**
+ * Historically stored on every [RuleUiModel]; as of plan Phase P1 Task 4 it
+ * now lives only on [Category] and is used by UI surfaces that still want
+ * to present an action label next to a rule (list grouping, filter chips,
+ * editor draft). The enum itself remains so those UI sites keep compiling —
+ * they look the action up via [com.smartnoti.app.domain.usecase.RuleCategoryActionIndex]
+ * instead of reading it from the rule row.
+ */
 enum class RuleActionUi {
     ALWAYS_PRIORITY,
     DIGEST,
@@ -36,12 +48,11 @@ enum class RuleActionUi {
     CONTEXTUAL,
 
     /**
-     * Delete-level rule action added by plan
-     * `2026-04-21-ignore-tier-fourth-decision` Task 2. Rules carrying this
-     * action route matched notifications to [NotificationDecision.IGNORE] —
-     * the classifier wiring lands in Task 3, the editor UI in Task 5, and the
-     * Detail feedback button in Task 6a. Task 2 only introduces the enum
-     * value and its Room persistence round-trip.
+     * Delete-level action. Category-level IGNORE is the canonical home
+     * (plan `2026-04-22-categories-split-rules-actions.md` Phase P1); this
+     * enum value is kept so the editor can still offer "무시" in the action
+     * dropdown and the group/filter builders can still surface IGNORE as a
+     * bucket label.
      */
     IGNORE,
 }

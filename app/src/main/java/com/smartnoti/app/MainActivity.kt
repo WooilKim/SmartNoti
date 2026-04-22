@@ -7,10 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
-import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
-import com.smartnoti.app.data.rules.RulesRepository
-import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.navigation.AppNavHost
 import com.smartnoti.app.navigation.ReplacementNotificationEntry
 import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
@@ -60,12 +57,7 @@ class MainActivity : ComponentActivity() {
      * edit cycle.
      */
     private fun runRulesToCategoriesMigration() {
-        val appContext = applicationContext
-        val runner = MigrateRulesToCategoriesRunner(
-            rulesRepository = RulesRepository.getInstance(appContext),
-            categoriesRepository = CategoriesRepository.getInstance(appContext),
-            settingsRepository = SettingsRepository.getInstance(appContext),
-        )
+        val runner = MigrateRulesToCategoriesRunner.create(applicationContext)
         lifecycleScope.launch {
             runCatching { runner.run() }
                 .onFailure { error ->

@@ -138,7 +138,6 @@ class NotificationDetailReasonSectionBuilderTest {
         title = title,
         subtitle = "항상 바로 보기",
         type = RuleTypeUi.PERSON,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = matchValue,
     )

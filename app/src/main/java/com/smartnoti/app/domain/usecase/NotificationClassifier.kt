@@ -1,9 +1,10 @@
 package com.smartnoti.app.domain.usecase
 
+import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.ClassificationInput
 import com.smartnoti.app.domain.model.NotificationClassification
 import com.smartnoti.app.domain.model.NotificationDecision
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 
@@ -12,14 +13,35 @@ class NotificationClassifier(
     private val priorityKeywords: Set<String>,
     private val shoppingPackages: Set<String>,
     private val ruleConflictResolver: RuleConflictResolver = RuleConflictResolver(),
+    private val categoryConflictResolver: CategoryConflictResolver = CategoryConflictResolver(),
 ) {
+    /**
+     * Classify [input] against the user's Rule / Category graph.
+     *
+     * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1
+     * Task 4 rewired this to delegate action selection to
+     * [CategoryConflictResolver]: matched Rules are lifted to their owning
+     * Categories and the winning Category's action drives the decision.
+     * The per-rule tie-break (via [RuleConflictResolver]) is still run
+     * first so a base-vs-override duel resolves to a single Rule before we
+     * ask "which Category owns that rule?" — avoiding a mid-flight swap
+     * between unrelated Categories.
+     *
+     * When no user rule matches, the legacy heuristic chain (VIP /
+     * priority keywords / quiet-hours shopping / duplicate burst / SILENT
+     * default) still runs. Phase P2 will collapse these into Category-level
+     * signals; Phase P1 keeps the behaviour unchanged so the migration is
+     * invisible to users who haven't yet built a Category graph.
+     */
     fun classify(
         input: ClassificationInput,
         rules: List<RuleUiModel> = emptyList(),
+        categories: List<Category> = emptyList(),
     ): NotificationClassification {
         findMatchingRule(input, rules)?.let { rule ->
+            val decision = resolveCategoryDecision(rule.id, categories)
             return NotificationClassification(
-                decision = rule.action.toDecision(),
+                decision = decision ?: NotificationDecision.SILENT,
                 matchedRuleIds = listOf(rule.id),
             )
         }
@@ -45,14 +67,27 @@ class NotificationClassifier(
     }
 
     /**
+     * Lift the matched [ruleId] to its owning Category (via
+     * [CategoryConflictResolver]) and map the winning action to a
+     * [NotificationDecision]. Returns null when no Category owns the rule —
+     * the classifier falls back to SILENT in that case so an orphaned rule
+     * cannot crash the notifier pipeline.
+     */
+    private fun resolveCategoryDecision(
+        ruleId: String,
+        categories: List<Category>,
+    ): NotificationDecision? {
+        val owning = categories.filter { it.ruleIds.contains(ruleId) }
+        val winner = categoryConflictResolver.resolve(
+            matched = owning,
+            allCategories = categories,
+        ) ?: return null
+        return winner.action.toDecision()
+    }
+
+    /**
      * Picks the user rule that applies to [input], delegating conflict
      * resolution to [RuleConflictResolver].
-     *
-     * Plan `rules-ux-v2-inbox-restructure` Phase C Task 2: the flat
-     * first-match-wins loop was replaced with a collect-all-matches pass +
-     * resolver call so that when a base rule AND its override both fire the
-     * override wins. Same-tier ties still break by list order (the resolver
-     * consults [rules] directly).
      */
     private fun findMatchingRule(
         input: ClassificationInput,
@@ -100,19 +135,10 @@ class NotificationClassifier(
         return threshold > 0 && duplicateCountInWindow >= threshold
     }
 
-    private fun RuleActionUi.toDecision(): NotificationDecision = when (this) {
-        RuleActionUi.ALWAYS_PRIORITY -> NotificationDecision.PRIORITY
-        RuleActionUi.DIGEST -> NotificationDecision.DIGEST
-        RuleActionUi.SILENT -> NotificationDecision.SILENT
-        RuleActionUi.CONTEXTUAL -> NotificationDecision.SILENT
-        // Rule-driven IGNORE routing — plan
-        // `2026-04-21-ignore-tier-fourth-decision`. Task 2 wired the enum
-        // value through persistence; Task 3 locks in the classifier contract
-        // via `NotificationClassifierTest`: IGNORE is *only* reachable through
-        // a matching user rule. The VIP / priority-keyword / quiet-hours /
-        // repeat-burst / default branches above intentionally never produce
-        // IGNORE. Overrides still apply — a base IGNORE rule may be overridden
-        // by an ALWAYS_PRIORITY override via `RuleConflictResolver`.
-        RuleActionUi.IGNORE -> NotificationDecision.IGNORE
+    private fun CategoryAction.toDecision(): NotificationDecision = when (this) {
+        CategoryAction.PRIORITY -> NotificationDecision.PRIORITY
+        CategoryAction.DIGEST -> NotificationDecision.DIGEST
+        CategoryAction.SILENT -> NotificationDecision.SILENT
+        CategoryAction.IGNORE -> NotificationDecision.IGNORE
     }
 }

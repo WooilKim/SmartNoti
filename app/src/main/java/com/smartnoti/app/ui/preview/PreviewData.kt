@@ -3,7 +3,6 @@ package com.smartnoti.app.ui.preview
 import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.NotificationUiModel
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 
@@ -52,7 +51,6 @@ object PreviewData {
             title = "엄마",
             subtitle = "항상 바로 보기",
             type = RuleTypeUi.PERSON,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "엄마",
         ),
@@ -61,7 +59,6 @@ object PreviewData {
             title = "쿠팡",
             subtitle = "Digest로 묶기",
             type = RuleTypeUi.APP,
-            action = RuleActionUi.DIGEST,
             enabled = true,
             matchValue = "com.coupang.mobile",
         ),
@@ -70,7 +67,6 @@ object PreviewData {
             title = "인증번호",
             subtitle = "즉시 전달",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
             enabled = true,
             matchValue = "인증번호",
         ),

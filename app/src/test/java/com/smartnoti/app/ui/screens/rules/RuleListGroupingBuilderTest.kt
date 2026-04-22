@@ -12,14 +12,15 @@ class RuleListGroupingBuilderTest {
 
     @Test
     fun build_orders_groups_by_operator_priority_and_hides_empty_actions() {
-        val groups = builder.build(
-            listOf(
-                rule("1", RuleActionUi.SILENT),
-                rule("2", RuleActionUi.DIGEST),
-                rule("3", RuleActionUi.ALWAYS_PRIORITY),
-                rule("4", RuleActionUi.DIGEST),
-            )
+        val rules = listOf(rule("1"), rule("2"), rule("3"), rule("4"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.SILENT,
+            "2" to RuleActionUi.DIGEST,
+            "3" to RuleActionUi.ALWAYS_PRIORITY,
+            "4" to RuleActionUi.DIGEST,
         )
+
+        val groups = builder.build(rules, ruleActions)
 
         assertEquals(
             listOf("즉시 전달", "Digest", "조용히"),
@@ -33,19 +34,16 @@ class RuleListGroupingBuilderTest {
 
     @Test
     fun build_emits_ignore_group_after_silent_and_contextual() {
-        // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 step 2 — IGNORE
-        // surfaces at the bottom of the tier stack because it is the loudest
-        // (destructive) downgrade of a notification and should not visually
-        // dominate the editor.
-        val groups = builder.build(
-            listOf(
-                rule("1", RuleActionUi.ALWAYS_PRIORITY),
-                rule("2", RuleActionUi.DIGEST),
-                rule("3", RuleActionUi.SILENT),
-                rule("4", RuleActionUi.IGNORE),
-                rule("5", RuleActionUi.IGNORE),
-            )
+        val rules = listOf(rule("1"), rule("2"), rule("3"), rule("4"), rule("5"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.ALWAYS_PRIORITY,
+            "2" to RuleActionUi.DIGEST,
+            "3" to RuleActionUi.SILENT,
+            "4" to RuleActionUi.IGNORE,
+            "5" to RuleActionUi.IGNORE,
         )
+
+        val groups = builder.build(rules, ruleActions)
 
         assertEquals(
             listOf("즉시 전달", "Digest", "조용히", "무시"),
@@ -59,12 +57,13 @@ class RuleListGroupingBuilderTest {
 
     @Test
     fun build_omits_ignore_group_when_no_ignore_rules_present() {
-        val groups = builder.build(
-            listOf(
-                rule("1", RuleActionUi.ALWAYS_PRIORITY),
-                rule("2", RuleActionUi.DIGEST),
-            )
+        val rules = listOf(rule("1"), rule("2"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.ALWAYS_PRIORITY,
+            "2" to RuleActionUi.DIGEST,
         )
+
+        val groups = builder.build(rules, ruleActions)
 
         assertEquals(
             listOf("즉시 전달", "Digest"),
@@ -74,23 +73,23 @@ class RuleListGroupingBuilderTest {
 
     @Test
     fun build_uses_count_based_section_subtitles() {
-        val groups = builder.build(
-            listOf(
-                rule("1", RuleActionUi.CONTEXTUAL),
-                rule("2", RuleActionUi.CONTEXTUAL),
-            )
+        val rules = listOf(rule("1"), rule("2"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.CONTEXTUAL,
+            "2" to RuleActionUi.CONTEXTUAL,
         )
+
+        val groups = builder.build(rules, ruleActions)
 
         assertEquals("상황별", groups.single().title)
         assertEquals("규칙 2개", groups.single().subtitle)
     }
 
-    private fun rule(id: String, action: RuleActionUi) = RuleUiModel(
+    private fun rule(id: String) = RuleUiModel(
         id = id,
         title = "규칙$id",
         subtitle = "subtitle$id",
         type = RuleTypeUi.KEYWORD,
-        action = action,
         enabled = true,
         matchValue = "match$id",
     )

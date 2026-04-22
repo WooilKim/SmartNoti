@@ -47,7 +47,6 @@ class NotificationFeedbackPolicy {
             title = title,
             subtitle = action.toSubtitle(),
             type = type,
-            action = action,
             enabled = true,
             matchValue = matchValue,
         )

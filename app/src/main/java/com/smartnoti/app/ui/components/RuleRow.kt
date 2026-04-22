@@ -57,6 +57,7 @@ sealed interface RuleRowPresentation {
 @Composable
 fun RuleRow(
     rule: RuleUiModel,
+    action: RuleActionUi,
     onCheckedChange: (Boolean) -> Unit,
     onMoveUpClick: () -> Unit = {},
     onMoveDownClick: () -> Unit = {},
@@ -64,7 +65,7 @@ fun RuleRow(
     onDeleteClick: () -> Unit = {},
     presentation: RuleRowPresentation = RuleRowPresentation.Base,
 ) {
-    val description = rememberRuleRowDescription(rule)
+    val description = rememberRuleRowDescription(rule, action)
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
@@ -103,8 +104,8 @@ fun RuleRow(
                         // action chip drops the solid fill for a border-only
                         // neutral gray treatment per ui-improvement.md tone.
                         RuleMetaChip(
-                            text = actionLabel(rule.action),
-                            style = if (rule.action == RuleActionUi.IGNORE) {
+                            text = actionLabel(action),
+                            style = if (action == RuleActionUi.IGNORE) {
                                 RuleMetaChipStyle.BorderOnly
                             } else {
                                 RuleMetaChipStyle.Filled
@@ -349,7 +350,10 @@ private fun actionLabel(action: RuleActionUi): String = when (action) {
 }
 
 @Composable
-private fun rememberRuleRowDescription(rule: RuleUiModel): RuleRowDescription {
+private fun rememberRuleRowDescription(
+    rule: RuleUiModel,
+    action: RuleActionUi,
+): RuleRowDescription {
     val builder = remember { RuleRowDescriptionBuilder() }
-    return remember(rule) { builder.build(rule) }
+    return remember(rule, action) { builder.build(rule, action) }
 }

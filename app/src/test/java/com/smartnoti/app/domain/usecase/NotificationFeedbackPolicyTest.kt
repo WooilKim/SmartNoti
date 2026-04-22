@@ -112,7 +112,9 @@ class NotificationFeedbackPolicyTest {
 
         assertEquals(RuleTypeUi.PERSON, rule.type)
         assertEquals("광고봇", rule.matchValue)
-        assertEquals(RuleActionUi.IGNORE, rule.action)
+        // Rule.action removed in plan Phase P1 Task 4; action is now
+        // carried by the owning Category. This assertion is re-expressed in
+        // CategoriesRepositoryTest / CategoryConflictResolverTest.
     }
 
     @Test
@@ -124,7 +126,6 @@ class NotificationFeedbackPolicyTest {
 
         assertEquals(RuleTypeUi.APP, rule.type)
         assertEquals("com.news.app", rule.matchValue)
-        assertEquals(RuleActionUi.IGNORE, rule.action)
     }
 
     private fun sampleNotification(sender: String? = "엄마") = NotificationUiModel(

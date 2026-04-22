@@ -1,7 +1,9 @@
 package com.smartnoti.app.data.categories
 
+import android.content.Context
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.domain.model.RuleActionUi
 
 /**
  * I/O-facing runner that glues [RuleToCategoryMigration] to the three
@@ -14,23 +16,29 @@ import com.smartnoti.app.data.settings.SettingsRepository
  * category id scheme (re-running against the same data produces the same
  * state even if the flag was missed).
  *
- * Application bootstrap (or any lazy entry point that needs a Category
- * graph) should invoke `run()` and ignore the boolean result; callers that
- * want to surface "we just migrated N rules" can read the return value.
+ * The legacy rule-action column disappeared from `RuleStorageCodec` in
+ * Phase P1 Task 4, so the runner reads it directly via
+ * [LegacyRuleActionReader] BEFORE anything re-encodes the Rule payload.
  */
 class MigrateRulesToCategoriesRunner(
     private val rulesRepository: RulesRepository,
     private val categoriesRepository: CategoriesRepository,
     private val settingsRepository: SettingsRepository,
+    private val legacyActionsLoader: suspend () -> Map<String, RuleActionUi>,
 ) {
     suspend fun run(): Result {
         if (settingsRepository.isRulesToCategoriesMigrated()) {
             return Result.AlreadyMigrated
         }
 
+        val legacyActions = legacyActionsLoader()
         val rules = rulesRepository.currentRules()
         val existing = categoriesRepository.currentCategories()
-        val merged = RuleToCategoryMigration.migrate(rules = rules, existingCategories = existing)
+        val merged = RuleToCategoryMigration.migrate(
+            rules = rules,
+            existingCategories = existing,
+            legacyActions = legacyActions,
+        )
         val createdCount = merged.size - existing.size
 
         categoriesRepository.replaceAllCategories(merged)
@@ -42,5 +50,18 @@ class MigrateRulesToCategoriesRunner(
     sealed class Result {
         object AlreadyMigrated : Result()
         data class Migrated(val createdCount: Int) : Result()
+    }
+
+    companion object {
+        fun create(context: Context): MigrateRulesToCategoriesRunner {
+            val appContext = context.applicationContext
+            val legacyReader = LegacyRuleActionReader(appContext)
+            return MigrateRulesToCategoriesRunner(
+                rulesRepository = RulesRepository.getInstance(appContext),
+                categoriesRepository = CategoriesRepository.getInstance(appContext),
+                settingsRepository = SettingsRepository.getInstance(appContext),
+                legacyActionsLoader = { legacyReader.readRuleActions() },
+            )
+        }
     }
 }

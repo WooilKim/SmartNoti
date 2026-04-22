@@ -66,7 +66,7 @@ class PassthroughReviewReclassifyDispatcherTest {
         assertEquals(NotificationStatusUi.DIGEST, updated.status)
         assertTrue(updated.reasonTags.contains("사용자 규칙"))
         assertEquals(1, rules.upserted.size)
-        assertEquals(RuleActionUi.DIGEST, rules.upserted.single().action)
+        // Rule.action removed Phase P1 Task 4; action now carried by Category.
     }
 
     @Test
@@ -87,7 +87,6 @@ class PassthroughReviewReclassifyDispatcherTest {
 
         assertEquals(ReclassifyOutcome.UPDATED_WITH_RULE, outcome)
         assertEquals(NotificationStatusUi.SILENT, notifications.updated.single().status)
-        assertEquals(RuleActionUi.SILENT, rules.upserted.single().action)
     }
 
     @Test
@@ -132,7 +131,6 @@ class PassthroughReviewReclassifyDispatcherTest {
         assertNotNull(draft)
         assertEquals(RuleTypeUi.PERSON, draft.type)
         assertEquals("엄마", draft.matchValue)
-        assertEquals(RuleActionUi.ALWAYS_PRIORITY, draft.action)
         assertTrue(
             "buildRuleDraft must not write to repositories",
             notifications.updated.isEmpty() && rules.upserted.isEmpty(),

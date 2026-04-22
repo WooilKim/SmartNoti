@@ -49,14 +49,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RuleMoveDirection
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
+import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex
+import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex.Companion.toCategoryActionOrNull
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import com.smartnoti.app.ui.components.RuleRow
 import com.smartnoti.app.ui.components.RuleRowPresentation
@@ -75,6 +79,7 @@ fun RulesScreen(
 ) {
     val context = LocalContext.current
     val repository = remember(context) { RulesRepository.getInstance(context) }
+    val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
     val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
     val ruleFactory = remember { RuleDraftFactory() }
@@ -94,12 +99,26 @@ fun RulesScreen(
     val capturedApps by capturedAppsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val appSuggestions = remember(capturedApps) { appSuggestionBuilder.build(capturedApps) }
     val rules by repository.observeRules().collectAsStateWithLifecycle(initialValue = emptyList())
-    val listPresentation = remember(rules) { listPresentationBuilder.build(rules) }
-    var selectedActionFilter by rememberSaveable { mutableStateOf<RuleActionUi?>(null) }
-    val visibleRules = remember(rules, selectedActionFilter) {
-        listFilterApplicator.apply(rules, selectedActionFilter)
+    val categories by categoriesRepository.observeCategories()
+        .collectAsStateWithLifecycle(initialValue = emptyList<Category>())
+    // Plan `2026-04-22-categories-split-rules-actions.md` Phase P1 Task 4:
+    // Rule.action was removed. The editor / list / filter / grouping
+    // surfaces still reason about an action per rule, so we derive it by
+    // looking up the owning Category.
+    val ruleActions = remember(categories) {
+        val index = RuleCategoryActionIndex(categories)
+        rules.associate { rule -> rule.id to index.actionForOrDefault(rule.id) }
     }
-    val groupedVisibleRules = remember(visibleRules) { listGroupingBuilder.build(visibleRules) }
+    val listPresentation = remember(rules, ruleActions) {
+        listPresentationBuilder.build(rules, ruleActions)
+    }
+    var selectedActionFilter by rememberSaveable { mutableStateOf<RuleActionUi?>(null) }
+    val visibleRules = remember(rules, selectedActionFilter, ruleActions) {
+        listFilterApplicator.apply(rules, selectedActionFilter, ruleActions)
+    }
+    val groupedVisibleRules = remember(visibleRules, ruleActions) {
+        listGroupingBuilder.build(visibleRules, ruleActions)
+    }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     var showEditor by remember { mutableStateOf(false) }
@@ -132,7 +151,7 @@ fun RulesScreen(
         draftTitle = rule.title
         draftMatchValue = rule.matchValue
         draftType = rule.type
-        draftAction = rule.action
+        draftAction = ruleActions[rule.id] ?: RuleActionUi.ALWAYS_PRIORITY
         if (rule.type == RuleTypeUi.SCHEDULE) {
             val parts = rule.matchValue.split('-')
             scheduleStartHour = parts.getOrNull(0).orEmpty().ifBlank { "9" }
@@ -152,7 +171,7 @@ fun RulesScreen(
     // drive one scroll per deep-link arrival.
     LaunchedEffect(highlightRuleId, rules) {
         val target = highlightRuleId ?: return@LaunchedEffect
-        val visibleRulesSnapshot = listFilterApplicator.apply(rules, selectedActionFilter)
+        val visibleRulesSnapshot = listFilterApplicator.apply(rules, selectedActionFilter, ruleActions)
         if (visibleRulesSnapshot.none { it.id == target }) {
             // Filter is hiding the target — drop it so the user sees every rule.
             selectedActionFilter = null
@@ -297,6 +316,7 @@ fun RulesScreen(
                 ) {
                     RuleRow(
                         rule = rule,
+                        action = ruleActions[rule.id] ?: RuleActionUi.SILENT,
                         onCheckedChange = { checked ->
                             scope.launch { repository.setRuleEnabled(rule.id, checked) }
                         },
@@ -511,7 +531,34 @@ fun RulesScreen(
                             enabled = editingRule?.enabled ?: true,
                             overrideOf = draftOverrideOf.takeIf { draftOverrideEnabled },
                         )
-                        scope.launch { repository.upsertRule(newRule) }
+                        // Plan `2026-04-22-categories-split-rules-actions.md`
+                        // Phase P1 Task 4: the rule itself no longer carries
+                        // an action. Upsert a 1:1 Category alongside so the
+                        // selected `draftAction` survives. Category id mirrors
+                        // the migration's `cat-from-rule-<ruleId>` scheme so
+                        // a subsequent migration pass stays idempotent.
+                        val draftCategoryAction = draftAction.toCategoryActionOrNull()
+                        scope.launch {
+                            repository.upsertRule(newRule)
+                            if (draftCategoryAction != null) {
+                                val existingCategory = categoriesRepository.currentCategories()
+                                    .firstOrNull { it.ruleIds.contains(newRule.id) }
+                                val category = Category(
+                                    id = existingCategory?.id ?: "cat-from-rule-${newRule.id}",
+                                    name = existingCategory?.name ?: newRule.matchValue.ifBlank { newRule.title },
+                                    appPackageName = if (newRule.type == RuleTypeUi.APP) {
+                                        newRule.matchValue
+                                    } else {
+                                        existingCategory?.appPackageName
+                                    },
+                                    ruleIds = existingCategory?.ruleIds?.takeIf { it.contains(newRule.id) }
+                                        ?: listOf(newRule.id),
+                                    action = draftCategoryAction,
+                                    order = existingCategory?.order ?: 0,
+                                )
+                                categoriesRepository.upsertCategory(category)
+                            }
+                        }
                         showEditor = false
                     },
                     enabled = draftValidator.canSave(

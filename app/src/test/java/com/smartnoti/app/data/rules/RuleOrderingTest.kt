@@ -141,9 +141,9 @@ class RuleOrderingTest {
     }
 
     private fun sampleRules(): List<RuleUiModel> = listOf(
-        RuleUiModel("r1", "엄마", "항상 바로 보기", RuleTypeUi.PERSON, RuleActionUi.ALWAYS_PRIORITY, true, "엄마"),
-        RuleUiModel("r2", "쿠팡", "Digest로 묶기", RuleTypeUi.APP, RuleActionUi.DIGEST, true, "com.coupang.mobile"),
-        RuleUiModel("r3", "인증번호", "즉시 전달", RuleTypeUi.KEYWORD, RuleActionUi.ALWAYS_PRIORITY, true, "인증번호"),
+        RuleUiModel("r1", "엄마", "항상 바로 보기", RuleTypeUi.PERSON, true, "엄마"),
+        RuleUiModel("r2", "쿠팡", "Digest로 묶기", RuleTypeUi.APP, true, "com.coupang.mobile"),
+        RuleUiModel("r3", "인증번호", "즉시 전달", RuleTypeUi.KEYWORD, true, "인증번호"),
     )
 
     private fun baseRule(id: String): RuleUiModel = RuleUiModel(
@@ -151,7 +151,6 @@ class RuleOrderingTest {
         title = id,
         subtitle = "base",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = id,
         overrideOf = null,
@@ -162,7 +161,6 @@ class RuleOrderingTest {
         title = id,
         subtitle = "override of $of",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.SILENT,
         enabled = true,
         matchValue = "$id-match",
         overrideOf = of,

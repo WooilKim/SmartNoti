@@ -11,7 +11,7 @@ data class RuleRowDescription(
 )
 
 class RuleRowDescriptionBuilder {
-    fun build(rule: RuleUiModel): RuleRowDescription {
+    fun build(rule: RuleUiModel, action: RuleActionUi): RuleRowDescription {
         val emphasisLabel = if (rule.title in onboardingRecommendationTitles) {
             "온보딩 추천"
         } else {
@@ -19,27 +19,27 @@ class RuleRowDescriptionBuilder {
         }
         return when (rule.type) {
             RuleTypeUi.APP -> RuleRowDescription(
-                primaryText = "${rule.title} 알림은 ${rule.action.toActionPhrase()}",
+                primaryText = "${rule.title} 알림은 ${action.toActionPhrase()}",
                 secondaryText = "패키지 · ${rule.matchValue}",
                 emphasisLabel = emphasisLabel,
             )
             RuleTypeUi.KEYWORD -> RuleRowDescription(
-                primaryText = "'${rule.matchValue.toKeywordDisplay()}'가 들어오면 ${rule.action.toActionPhrase()}",
+                primaryText = "'${rule.matchValue.toKeywordDisplay()}'가 들어오면 ${action.toActionPhrase()}",
                 secondaryText = "키워드 기준",
                 emphasisLabel = emphasisLabel,
             )
             RuleTypeUi.SCHEDULE -> RuleRowDescription(
-                primaryText = "${rule.matchValue.toScheduleDisplay()}에는 ${rule.action.toActionPhrase()}",
+                primaryText = "${rule.matchValue.toScheduleDisplay()}에는 ${action.toActionPhrase()}",
                 secondaryText = "시간대 기준",
                 emphasisLabel = emphasisLabel,
             )
             RuleTypeUi.REPEAT_BUNDLE -> RuleRowDescription(
-                primaryText = "같은 알림이 ${rule.matchValue.filter(Char::isDigit)}회 이상 반복되면 ${rule.action.toActionPhrase()}",
+                primaryText = "같은 알림이 ${rule.matchValue.filter(Char::isDigit)}회 이상 반복되면 ${action.toActionPhrase()}",
                 secondaryText = "반복 기준",
                 emphasisLabel = emphasisLabel,
             )
             RuleTypeUi.PERSON -> RuleRowDescription(
-                primaryText = "${rule.title} 연락은 ${rule.action.toActionPhrase()}",
+                primaryText = "${rule.title} 연락은 ${action.toActionPhrase()}",
                 secondaryText = "발신자 기준",
                 emphasisLabel = emphasisLabel,
             )

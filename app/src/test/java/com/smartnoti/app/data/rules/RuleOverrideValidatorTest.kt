@@ -132,7 +132,6 @@ class RuleOverrideValidatorTest {
         title = id,
         subtitle = "",
         type = RuleTypeUi.KEYWORD,
-        action = RuleActionUi.ALWAYS_PRIORITY,
         enabled = true,
         matchValue = "k",
         overrideOf = overrideOf,

@@ -12,14 +12,15 @@ class RuleListPresentationBuilderTest {
 
     @Test
     fun build_creates_overview_and_filter_counts_in_operator_order() {
-        val presentation = builder.build(
-            listOf(
-                rule(id = "1", action = RuleActionUi.DIGEST),
-                rule(id = "2", action = RuleActionUi.ALWAYS_PRIORITY),
-                rule(id = "3", action = RuleActionUi.SILENT),
-                rule(id = "4", action = RuleActionUi.DIGEST),
-            )
+        val rules = listOf(rule("1"), rule("2"), rule("3"), rule("4"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.DIGEST,
+            "2" to RuleActionUi.ALWAYS_PRIORITY,
+            "3" to RuleActionUi.SILENT,
+            "4" to RuleActionUi.DIGEST,
         )
+
+        val presentation = builder.build(rules, ruleActions)
 
         assertEquals("전체 4개 · 즉시 전달 1 · Digest 2 · 조용히 1", presentation.overview)
         assertEquals(
@@ -34,16 +35,14 @@ class RuleListPresentationBuilderTest {
 
     @Test
     fun build_includes_ignore_overview_segment_and_filter_when_ignore_rules_exist() {
-        // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 — the overview
-        // strip and the filter chip row both surface an IGNORE entry so the
-        // user can scope the list to destructive rules without scrolling.
-        val presentation = builder.build(
-            listOf(
-                rule(id = "1", action = RuleActionUi.ALWAYS_PRIORITY),
-                rule(id = "2", action = RuleActionUi.IGNORE),
-                rule(id = "3", action = RuleActionUi.IGNORE),
-            )
+        val rules = listOf(rule("1"), rule("2"), rule("3"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.ALWAYS_PRIORITY,
+            "2" to RuleActionUi.IGNORE,
+            "3" to RuleActionUi.IGNORE,
         )
+
+        val presentation = builder.build(rules, ruleActions)
 
         assertEquals(
             "전체 3개 · 즉시 전달 1 · Digest 0 · 조용히 0 · 무시 2",
@@ -61,12 +60,13 @@ class RuleListPresentationBuilderTest {
 
     @Test
     fun build_omits_ignore_segments_when_no_ignore_rules_present() {
-        val presentation = builder.build(
-            listOf(
-                rule(id = "1", action = RuleActionUi.ALWAYS_PRIORITY),
-                rule(id = "2", action = RuleActionUi.DIGEST),
-            )
+        val rules = listOf(rule("1"), rule("2"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.ALWAYS_PRIORITY,
+            "2" to RuleActionUi.DIGEST,
         )
+
+        val presentation = builder.build(rules, ruleActions)
 
         assertEquals(
             "전체 2개 · 즉시 전달 1 · Digest 1 · 조용히 0",
@@ -80,12 +80,13 @@ class RuleListPresentationBuilderTest {
 
     @Test
     fun build_only_includes_contextual_filter_when_rules_exist() {
-        val presentation = builder.build(
-            listOf(
-                rule(id = "1", action = RuleActionUi.ALWAYS_PRIORITY),
-                rule(id = "2", action = RuleActionUi.CONTEXTUAL),
-            )
+        val rules = listOf(rule("1"), rule("2"))
+        val ruleActions = mapOf(
+            "1" to RuleActionUi.ALWAYS_PRIORITY,
+            "2" to RuleActionUi.CONTEXTUAL,
         )
+
+        val presentation = builder.build(rules, ruleActions)
 
         assertEquals(
             listOf("전체 2", "즉시 전달 1", "상황별 1"),
@@ -93,15 +94,11 @@ class RuleListPresentationBuilderTest {
         )
     }
 
-    private fun rule(
-        id: String,
-        action: RuleActionUi,
-    ) = RuleUiModel(
+    private fun rule(id: String) = RuleUiModel(
         id = id,
         title = "규칙$id",
         subtitle = "subtitle$id",
         type = RuleTypeUi.KEYWORD,
-        action = action,
         enabled = true,
         matchValue = "match$id",
     )

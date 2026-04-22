@@ -22,7 +22,6 @@ class RuleDraftFactoryTest {
         assertEquals("항상 바로 보기", draft.subtitle)
         assertEquals("팀장", draft.matchValue)
         assertEquals(RuleTypeUi.PERSON, draft.type)
-        assertEquals(RuleActionUi.ALWAYS_PRIORITY, draft.action)
         assertEquals(true, draft.enabled)
     }
 

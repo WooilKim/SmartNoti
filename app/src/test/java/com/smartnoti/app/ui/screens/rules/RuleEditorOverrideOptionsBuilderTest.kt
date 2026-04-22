@@ -22,7 +22,7 @@ class RuleEditorOverrideOptionsBuilderTest {
         id: String,
         title: String = id,
         type: RuleTypeUi = RuleTypeUi.KEYWORD,
-        action: RuleActionUi = RuleActionUi.ALWAYS_PRIORITY,
+        @Suppress("UNUSED_PARAMETER") action: RuleActionUi = RuleActionUi.ALWAYS_PRIORITY,
         matchValue: String = "v-$id",
         overrideOf: String? = null,
     ) = RuleUiModel(
@@ -30,7 +30,6 @@ class RuleEditorOverrideOptionsBuilderTest {
         title = title,
         subtitle = "",
         type = type,
-        action = action,
         enabled = true,
         matchValue = matchValue,
         overrideOf = overrideOf,
