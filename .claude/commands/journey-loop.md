@@ -121,7 +121,7 @@ Otherwise:
 
 ```
 ScheduleWakeup(
-  delaySeconds: 21600,            # 6h default; runtime clamps to 3600 max in current harness
+  delaySeconds: 60,               # 60s tick — runtime floor; user-tuned 2026-04-22
   prompt: "/journey-loop",
   reason: "Next loop tick; previous tick: <Phase A hint>"
 )
