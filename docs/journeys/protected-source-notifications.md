@@ -3,7 +3,7 @@ id: protected-source-notifications
 title: 미디어·통화·포그라운드 서비스 알림 보호
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
