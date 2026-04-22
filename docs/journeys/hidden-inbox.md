@@ -1,10 +1,13 @@
 ---
 id: hidden-inbox
 title: 숨긴 알림 인박스 (Hidden 화면) — 보관 / 처리 탭 분리
-status: shipped
+status: deprecated
+superseded-by: docs/journeys/inbox-unified.md
 owner: @wooilkim
 last-verified: 2026-04-21
 ---
+
+> **Deprecated 2026-04-22** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 Hidden 화면은 독립 deep-link 타겟으로는 남아 있으나 (silent summary contentIntent 용), 1차 사용자 진입 경로는 `정리함` 통합 탭의 "보관 중" / "처리됨" 서브탭이다. 현재 동작 계약은 [inbox-unified](inbox-unified.md) 가 소유한다. 이 문서는 tray deep-link 경로 + `HiddenNotificationsScreen` 내부 세그먼트 계약에 대한 기록으로 남긴다 — 신규 기능 작성 시에는 inbox-unified 를 기준으로 갱신하거나 통합하라.
 
 ## Goal
 
@@ -128,3 +131,4 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 2026-04-21: **"보관 중" 탭이 실제로 채워지기 시작 (drift fix)** — listener 가 신규 SILENT 캡처 시 `silentMode = ARCHIVED` 로 저장하도록 배선되어 (PR #125) Hidden "보관 중" 탭이 기본 경로에서 채워진다. Detail "처리 완료로 표시" 는 DB flip 에 더해 tray 원본 cancel 까지 연계되어 (PR #126) 사용자 체감 "처리 = tray 에서 사라짐" 과 일치. Known gap "Capture 경로의 ARCHIVED 기본값 미배선 여파" 해소. 관련 plan: `docs/plans/2026-04-20-silent-archive-drift-fix.md` Task 1–3.
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Hidden 의 보관/처리 두 탭에서 모두 제외됨을 명시 — `toHiddenGroups` 가 이미 `status == SILENT` 로 선필터하므로 자동 배제, IGNORE row 는 [ignored-archive](ignored-archive.md) 전용. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
 - 2026-04-21: **ADB verification on fresh APK (post-IGNORE) PASS** — emulator-5554 에서 cold-start deep-link (`am force-stop` → `am start -e DEEP_LINK_ROUTE hidden`) 후 Recipe 5단계 전부 일치: (1) 헤더 `보관 10건 · 처리 3건` + 기본 탭 "보관 중" 선택, (2) "처리됨" tap 후 요약 서브카피 `이미 확인했거나…` 1건 관측, (3) 보관/처리 두 탭 모두 초기 `최근 묶음 미리보기` 0건 (collapsed 계약), (4) Archived 그룹 헤더 tap 후 `최근 묶음 미리보기` + bulk action row (`모두 중요로 복구` / `모두 지우기`) 노출. IGNORE row 는 두 탭 어디에도 누출 없음 (`toHiddenGroups` 의 `status == SILENT` 선필터 binary 상 동작 증명). 직전 change-log 가 남겨둔 "ADB 검증 전까지 bump 하지 않음" 보류 해소.
+- 2026-04-22: **Deprecated** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 `정리함` 통합 탭 ([inbox-unified](inbox-unified.md)) 이 기본 진입 경로를 소유한다. `Routes.Hidden` 은 silent summary / 그룹 summary deep-link 타겟으로 계속 사용됨. 문서는 참조용으로 남김.

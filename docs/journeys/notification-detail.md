@@ -17,7 +17,7 @@ last-verified: 2026-04-21
 
 ## Trigger
 
-- Home / Priority / Digest / Hidden / Insight 어디서든 카드 탭 → `navController.navigate(Routes.Detail.create(id))`
+- Home / Priority (검토 대기) / 정리함 (Digest / 보관 중 / 처리됨) / Insight 어디서든 카드 탭 → `navController.navigate(Routes.Detail.create(id))`
 - replacement 알림 본문 탭 → 딥링크로 parent route + detail 연결 (→ [digest-suppression](digest-suppression.md))
 - IGNORE 상태 row 는 기본 뷰에서 제외되므로 Detail 도달 경로가 제한됨 — Settings 의 "무시된 알림 아카이브 표시" 토글이 ON 일 때 [ignored-archive](ignored-archive.md) 화면의 row 탭만 유일한 진입점
 
@@ -43,17 +43,18 @@ last-verified: 2026-04-21
    1. `NotificationFeedbackPolicy.applyAction(notification, action)` → status/reasonTags 업데이트된 UI 모델 반환
    2. `NotificationRepository.updateNotification(updated)` → DB upsert
    3. `NotificationFeedbackPolicy.toRule(notification, action)` → 새 `RuleUiModel` (sender 있으면 PERSON, 없으면 APP)
-   4. `RulesRepository.upsertRule(rule)` — 다음 동일 알림부터 자동 적용
+   4. `RulesRepository.upsertRule(rule)` — Rule DataStore 에 영속. **Category 는 자동 생성/갱신되지 않음** (Known gap) — 미래 동일 알림이 Category.action 경로로 자동 적용되려면 사용자가 [categories-management](categories-management.md) 에서 해당 Rule 을 Category 에 묶어주어야 함. UI 레벨에서는 Home StatPill / 리스트가 즉시 갱신되지만 classifier hot path 는 orphan → SILENT fallback 으로 빠질 수 있음.
 
    내부 처리 (`무시`):
    1. `IgnoreConfirmationDialog` 렌더 — "이 알림을 무시하면 앱에서도 삭제됩니다. 되돌리려면 설정 > 무시된 알림 보기." 확인 문구
    2. 확인 → `applyIgnoreWithUndo`: 이전 `NotificationUiModel` + 이전 매칭 룰 (있으면) 스냅샷 저장 → `applyAction(..., IGNORE)` → `updateNotification` → `upsertRule(IGNORE)` → `onBack()` 으로 Detail pop → 3초 "되돌리기" 스낵바. 스낵바 action 탭 시 status/룰 rollback (새 룰이면 `deleteRule`, 기존 룰이면 prior action 으로 `upsertRule`). Undo 는 in-memory — 스낵바 닫히면 영구화.
+   3. 의미 전환: "무시" 버튼은 **Category.action = IGNORE 를 지향** — 이상적으로는 해당 Rule 을 소유한 Category 의 action 을 IGNORE 로 갱신하거나 전용 IGNORE Category 를 생성해야 하지만, 현 구현은 Rule upsert 만 수행 (Known gap). DB row 의 status 는 즉시 IGNORE 로 바뀌어 [ignored-archive](ignored-archive.md) 에 노출되지만, 다음 동일 알림이 자동으로 IGNORE 가 되려면 사용자가 [categories-management](categories-management.md) 에서 해당 Rule 을 IGNORE 액션 Category 에 묶어야 함.
 
 ## Exit state
 
 - DB 의 알림 row 는 새로운 status/태그로 업데이트됨 (해당 리스트 화면 자동 갱신).
-- RulesRepository 에 매칭 룰이 있다면 upsert, 없으면 insert.
-- 사용자는 뒤로가기로 원래 화면(Priority/Digest/Hidden/Home)으로 복귀.
+- RulesRepository 에 매칭 룰이 있다면 upsert, 없으면 insert. CategoriesRepository 는 이 경로에서 갱신되지 않음 (Known gap — 사용자가 [categories-management](categories-management.md) 에서 후속 연결 필요).
+- 사용자는 뒤로가기로 원래 화면 (Home / 검토 대기 / 정리함 / Insight) 으로 복귀.
 
 ## Out of scope
 
@@ -93,7 +94,8 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Known gaps
 
 - 재분류 시 토스트/확인 UI 없음 (상태만 바뀌어 UX 가 조용함).
-- Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Rules 탭으로 수동 이동 필요.
+- Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Settings → "고급 규칙 편집" 으로 수동 이동 필요 (Rules 탭 자체가 BottomNav 에서 제거됐음).
+- **피드백 버튼이 Category 를 자동 생성하지 않음**: "중요로 고정" / "Digest로 보내기" / "조용히 처리" / "무시" 어느 경로도 `CategoriesRepository.upsertCategory(...)` 를 호출하지 않음. `NotificationFeedbackPolicy.toRule()` 도 Rule 만 반환. 결과적으로 feedback 으로 생성된 Rule 은 orphan 상태로 남아 classifier 의 hot path 에서 Category lift 가 실패 → SILENT fallback. UI 즉시 갱신은 `NotificationRepository.updateNotification` 이 수행하므로 사용자는 체감하지 못하지만, 후속 동일 알림이 **자동으로 같은 처리를 받으려면** 사용자가 [categories-management](categories-management.md) 에서 해당 Rule 을 원하는 action Category 에 묶어야 함. 후속 drift plan 으로 `FeedbackPolicy` 에 Category upsert 를 추가하거나 Detail 에 "분류 만들기" 링크를 노출.
 - 2026-04-21 (journey-tester): Verification recipe step 3 ("다음 동일 signature 알림을 보내 자동 Priority 로 분류되는지 확인") 이 테스트용 sender 로 `"광고"` 를 제안 — 이 값은 온보딩이 기본 주입하는 KEYWORD 룰 (`광고,프로모션,쿠폰,세일,특가,이벤트,혜택 → DIGEST`) 의 매치 대상과 겹쳐 `RuleConflictResolver` 가 PERSON-ALWAYS_PRIORITY 대신 KEYWORD-DIGEST 로 라우팅하므로 step 3 만 단독으로 보면 기대와 달라 보인다. PERSON 분기 자체는 중립 sender (e.g. `TestSender_0421_T12`) 로 검증 시 정상 동작하므로 contract 문제 아님 — recipe 문구를 중립 sender 기반으로 바꾸는 편이 후속 재현성 향상에 도움. (Phase B `ruleHitIds` 를 활용한 "적용된 규칙" 섹션 전용 관측으로 확장되면 자연스레 해소될 가능성 있음.)
 - 2026-04-21 (ui-ux-inspector, emulator-5554): "이 알림 학습시키기" 카드의 3-버튼 secondary row (`Digest로 보내기` / `조용히 처리` / `무시`) 에서 `Digest로 보내기` 라벨만 2줄로 줄바꿈되어 버튼 높이가 나머지 두 버튼과 불일치. `ui-improvement.md` 의 "tighter spacing rhythm" + "Lists and rows: tap targets large enough while reducing visual clutter" 항목에 대한 시각 위반 (moderate). 3개 버튼이 동일한 row 를 공유하므로 폭 제약으로 첫 버튼만 wrap — 라벨 단축 (e.g. `Digest` / `조용히` / `무시`) 또는 `FlowRow` 기반 레이아웃 재고 필요. 같은 스크린 screenshot: `/tmp/ui-ignore-detail2.png`.
 - 2026-04-21 (ui-ux-inspector, emulator-5554): `IgnoreConfirmationDialog` 의 확정 버튼 "무시" 가 primary accent 파랑을 사용 — 파괴성 신호는 전적으로 본문 카피 ("앱에서도 삭제됩니다") 에 의존. `ui-improvement.md` 의 "accent color sparingly for ... primary actions" 규칙에는 부합하므로 Linear/Superhuman 톤 유지. Minor — 현재 문구 중심 접근이 의도적이라면 그대로 두고, 후속에서 파괴 액션 전용 tonal variant 도입 여부를 제품 결정으로 재확인 필요. Screenshot: `/tmp/ui-ignore-confirm-dialog.png`.
@@ -105,3 +107,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: journey-tester end-to-end re-verify (emulator-5554, APK `lastUpdateTime=2026-04-21 15:47:57`) — `cmd notification post -S bigtext -t '광고' DetailTest_0421 '오늘의 이벤트 테스트'` → DIGEST 분류 → Digest 탭 → 프리뷰 row 탭 → Detail 진입. Observable steps 1–4 의 모든 섹션 (알림 요약 / `StatusBadge=Digest` / "왜 이렇게 처리됐나요?" + 5개 chip / 온보딩 추천 카드 / 전달 모드 5개 라벨 / 원본 상태+대체 알림 / "이 알림 학습시키기" 3 버튼) 전부 렌더 확인. "중요로 고정" 탭 → DB row `status=PRIORITY` 로 업데이트, `RulesRepository` 에 `person:광고|광고|항상 바로 보기|PERSON|ALWAYS_PRIORITY` 신규 upsert (Observable step 5.i–iv 증명). PERSON→ALWAYS_PRIORITY 자동 적용은 별도 sender (`TestSender_0421_T12`) 로 확인 — 동일 sender 재-post 시 `reasonTags` 에 sender 레이블 + "사용자 규칙" 태그 + `status=PRIORITY` 반영. DRIFT 없음.
 - 2026-04-21: "이 알림 학습시키기" 카드에 4번째 버튼 **"무시"** 추가 — 파괴성을 드러내기 위해 least → most destructive 순서로 배치 (중요로 고정 → Digest → 조용히 → 무시). 탭 시 `IgnoreConfirmationDialog` 확인 다이얼로그 + 확정 시 `applyIgnoreWithUndo` 가 `NotificationFeedbackPolicy.applyAction(IGNORE)` + `RulesRepository.upsertRule(RuleActionUi.IGNORE)` + `onBack()` + 3초 "되돌리기" 스낵바 체인을 실행. 스낵바 action 탭 시 prior `NotificationUiModel` / prior rule 복원 (새 룰이면 delete, 기존 룰이면 prior action 으로 upsert). Undo 는 in-memory 로만 유지되며 스낵바 닫힘 = 영구화. Trigger 섹션에 IGNORE row 가 기본 뷰에서 제외되어 [ignored-archive](ignored-archive.md) 경유로만 Detail 도달 가능함을 명시. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6a (#187 `57df6ac`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-21: journey-tester end-to-end re-verify of IGNORE flow (emulator-5554, APK `lastUpdateTime=2026-04-22 02:35:44` post-#189+#192). `cmd notification post -S bigtext -t '광고' IgnoreBtnTest '무시 버튼 Detail 테스트'` → DIGEST 분류 → 정리함 탭 → 프리뷰 row 탭 → Detail 마운트. Observable step 4 "이 알림 학습시키기" 카드에 4 버튼 (`중요로 고정` / `Digest로 보내기` / `조용히 처리` / `무시`) 존재 및 순서 확인. `무시` 탭 → `IgnoreConfirmationDialog` 제목 "이 알림을 무시할까요?" 본문 "이 알림을 무시하면 앱에서도 삭제됩니다. 되돌리려면 설정 > 무시된 알림 보기." `취소` / `무시` 버튼 렌더 확인 (Observable step 5.i). 다이얼로그 `무시` 확정 → Detail pop → 정리함 배경 복귀 + 스낵바 "무시됨. 되돌리려면 탭" + action `되돌리기` 렌더 (Observable step 5.ii). DB row `status=IGNORE` + `RulesRepository` 에 신규 `person:광고|광고|무시 (즉시 삭제)|PERSON|IGNORE|true|광고` upsert 확인 (`applyAction(IGNORE)` + `upsertRule(IGNORE)` 증명). `되돌리기` 탭 → DB row `status=DIGEST` 복원, rule 은 prior `person:광고|...|ALWAYS_PRIORITY` 로 복원 (기존 룰 prior action rollback 경로 증명; 새 룰이 아니었으므로 delete 대신 upsert). DRIFT 없음.
+- 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — "이 알림 학습시키기" 4개 버튼의 내부 처리 계약에 "Category 는 자동 생성되지 않음" 을 명시. 피드백 액션은 여전히 `NotificationRepository.updateNotification` + `RulesRepository.upsertRule` 두 write 만 수행 — 즉시 UI 반영은 보장되나 classifier hot path 의 자동 재적용은 해당 Rule 을 소유한 Category 가 있을 때만. "무시" 버튼 의미도 "Category.action = IGNORE 지향" 으로 copy 정렬. Trigger 에서 "Priority/Digest/Hidden 탭" 표현을 "검토 대기 / 정리함 (통합)" 로 갱신. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Tasks 1-4 (#236), P3 Tasks 10-11 (#240). `last-verified` 는 후속 ADB sweep 이 Category-free feedback path 를 재검증할 때까지 갱신 없음.

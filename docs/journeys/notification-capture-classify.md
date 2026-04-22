@@ -34,17 +34,25 @@ last-verified: 2026-04-22
 5. `PersistentNotificationPolicy.shouldTreatAsPersistent(isOngoing, isClearable)` 로 persistent 여부 판단.
 6. `DuplicateNotificationPolicy` + `LiveDuplicateCountTracker` 로 최근 동일 content signature 발생 횟수 집계.
 7. `CapturedNotificationInput` 을 조립해 `NotificationCaptureProcessor.process(input, rules, settings)` 호출.
-8. 내부에서 `NotificationClassifier.classify(input, rules)` 가 분류 결정:
-   - 룰 매치 (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 최우선. 매치된 enabled rule 집합은 `RuleConflictResolver.resolve(matched, allRules)` 에 위임 — base 와 해당 base 를 가리키는 override 가 동시에 매치되면 override 가 승리, 단일 tier 안에서는 `allRules` 인덱스 (earlier wins) 로 tie-break. 1-level override 만 탐색.
-   - Classifier 가 단일 winning rule 의 id 를 `NotificationClassification.matchedRuleIds` 로 래핑해 반환 → `NotificationCaptureProcessor` 가 decision + matchedRuleIds 를 분리 소비, `NotificationEntityMapper` 가 `ruleHitIds` 컬럼에 comma-separated 로 영속화.
-   - **IGNORE 는 룰 매치 경로에서만 도달 가능.** `RuleActionUi.IGNORE` 가 걸린 rule 이 `RuleConflictResolver` 를 거쳐 최종 winner 가 되면 `NotificationDecision.IGNORE` 가 반환됨. Classifier 의 VIP / 우선순위 키워드 / 반복 / Quiet hours / 기본 SILENT 분기는 **절대 IGNORE 를 만들지 않는다** — 파괴적 결정이므로 사용자가 명시적으로 규칙을 만들었을 때만 적용. `ALWAYS_PRIORITY` override 로 base IGNORE 를 덮는 경로는 `RuleConflictResolver` 계약에 따라 그대로 동작.
-   - 그 외 rule miss: VIP 발신자 집합, 우선순위 키워드 집합, 중복 카운트 임계, Quiet hours + 쇼핑앱 등 heuristic.
+8. 내부에서 `NotificationClassifier.classify(input, rules, categories)` 가 분류 결정:
+   - 룰 매치 (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 최우선. 매치된 enabled rule 집합은 override collapse (Phase C) 를 거쳐 `matchedRuleIds` 로 축약.
+   - **Decision cascade (Phase P2, plan `2026-04-22-categories-split-rules-actions.md`):**
+     1. `matchedRuleIds` 에 포함된 rule 을 **소유한 Category 집합** 을 `categories.filter { it.ruleIds.any { ... in matchedRuleIds } }` 로 lift.
+     2. 소유 Category 가 하나 이상이면 `CategoryConflictResolver.resolve(matched, allCategories, matchedRuleTypes)` 가 승자 선택:
+        - **App-pin 보너스** (`appPackageName != null` → +16)
+        - **Rule-type 사다리** (APP > KEYWORD > PERSON > SCHEDULE > REPEAT_BUNDLE) — 실제 매치된 rule 의 타입 중 최고 rank
+        - **드래그 순서** (`order` 낮을수록 승) — specificity 동점 시 사용자가 분류 탭에서 정한 순서 그대로
+     3. 승자 Category 의 `action` 이 `toDecision()` 으로 변환돼 최종 `NotificationDecision` 생성.
+   - 매치된 Rule 이 어느 Category 에도 속하지 않는 경우 (orphan) → `NotificationDecision.SILENT` 로 안전 fallback (hot path 크래시 방지).
+   - 룰 매치 자체가 없는 경우 → VIP 발신자 / 우선순위 키워드 / 중복 카운트 임계 / 쇼핑앱+Quiet hours / 기본 SILENT 의 heuristic cascade 로 진입 (Category 무관).
+   - `NotificationClassification(decision, matchedRuleIds)` 반환 → `NotificationCaptureProcessor` 가 decision + matchedRuleIds 를 분리 소비, `NotificationEntityMapper` 가 `ruleHitIds` 컬럼에 comma-separated 로 영속화.
+   - **IGNORE 는 Category.action = IGNORE 경로에서만 도달 가능.** Rule 모델에서 action 필드는 제거됐으므로 (Phase P1 Task 4) IGNORE 는 해당 Category 가 winning 했을 때만 결정된다. Classifier 의 VIP / 우선순위 키워드 / 반복 / Quiet hours / 기본 SILENT 분기는 **절대 IGNORE 를 만들지 않는다**.
 9. `NotificationRepository.save(notification, postTime, contentSignature)` → Room `notifications` 테이블에 upsert.
 10. 이어서 source routing 단계 진입 (→ [silent-auto-hide](silent-auto-hide.md), [priority-inbox](priority-inbox.md), digest-suppression).
 
 ## Exit state
 
-- `NotificationEntity` row 한 건이 `status ∈ {PRIORITY, DIGEST, SILENT, IGNORE}` 로 저장됨. IGNORE 는 룰 매치 경로에서만 생성되며, 저장 후 기본 뷰 (`observePriority/Digest/Silent`, `toHiddenGroups`) 에서는 필터 아웃된다 (→ [ignored-archive](ignored-archive.md)).
+- `NotificationEntity` row 한 건이 `status ∈ {PRIORITY, DIGEST, SILENT, IGNORE}` 로 저장됨. IGNORE 는 Category.action = IGNORE 경로에서만 생성되며, 저장 후 기본 뷰 (`observePriority/Digest/Silent`, `toHiddenGroups`) 에서는 필터 아웃된다 (→ [ignored-archive](ignored-archive.md)).
 - `NotificationRepository.observeAll()` 을 구독하는 모든 구성 요소가 새 알림을 즉시 관측 가능.
 - 분류 결과에 따른 후속 routing이 실행됨 (cancel / replacement / keep). IGNORE 는 tray cancel 만 수행하고 replacement alert 는 posting 하지 않음 — listener 의 early-return 분기가 책임.
 
@@ -64,9 +72,11 @@ last-verified: 2026-04-22
   `SweepDedupKey(packageName, contentSignature, postTimeMillis)` 로 in-process
   Set + `NotificationRepository.existsByContentSignature` 조합 dedup
 - `SmartNotiNotificationListenerService#processNotification` — pipeline
-- `domain/usecase/NotificationCaptureProcessor` — input → decision + matchedRuleIds
-- `domain/usecase/NotificationClassifier` — 분류 규칙 본체 (VIP/키워드/shopping 상수도 이곳 생성자에 주입), `RuleConflictResolver` 로 rule 매치 위임
-- `domain/usecase/RuleConflictResolver` — base/override 우선순위 + tier 내 tie-break
+- `domain/usecase/NotificationCaptureProcessor` — input → decision + matchedRuleIds, `categories: List<Category>` 파라미터 수용 (Phase P2)
+- `domain/usecase/NotificationClassifier` — 분류 규칙 본체 (VIP/키워드/shopping 상수도 이곳 생성자에 주입), rule 매치 후 Category lift + `CategoryConflictResolver` 위임
+- `domain/usecase/CategoryConflictResolver` — app-pin 보너스 + rule-type 사다리 + `order` 드래그 tie-break
+- `domain/model/Category` + `CategoryAction#toDecision` — Category.action → NotificationDecision 매핑
+- `data/categories/CategoriesRepository#currentCategories` — 분류 스냅샷 (hot path)
 - `domain/model/NotificationClassification` — decision + matchedRuleIds wrapper
 - `domain/usecase/DuplicateNotificationPolicy`, `LiveDuplicateCountTracker`
 - `domain/usecase/PersistentNotificationPolicy`
@@ -101,6 +111,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
   에 없으므로 SmartNoti 가 복구할 수 없음. 리스너가 재접속 시점에 tray 에 남아 있는
   알림만 [onboarding-bootstrap](onboarding-bootstrap.md) bootstrap + reconnect sweep
   이 소급 캡처.
+- `SmartNotiNotificationListenerService#processNotification` 은 현재 `categoriesRepository.currentCategories()` 를 **호출하지 않고** `processor.process(input, rules, settings)` 로 categories 를 공란으로 넘김 (Phase P2 Task 7 의 "Notifier rewire" 는 `CategoryAction.toDecision()` 매핑까지만 shipped, listener 의 스냅샷 loading 은 후속). 결과적으로 매치된 Rule 이 어느 Category 에도 속하지 않게 되어 classifier 는 **"orphan → SILENT"** fallback 으로 라우팅된다. 마이그레이션으로 1:1 Category 가 자동 생성되고 RulesScreen upsert 가 Category 도 upsert 하지만, listener 가 그 Category 를 읽지 않는 한 hot path 상 Category.action 이 실제로 적용되지 않음. 후속 drift plan 이 listener 에 `categoriesRepository.currentCategories()` 를 주입하고 recipe 로 end-to-end 검증해야 함.
 
 ## Change log
 
@@ -111,3 +122,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: journey-tester 재검증 sweep PASS — recipe end-to-end (`cmd notification post … CaptureClassifyTest_0421`) 로 PRIORITY 라우팅 + `사용자 규칙` 태그 관측, 5개 unit test 클래스 (`NotificationClassifierTest`, `RuleConflictResolverTest`, `DuplicateNotificationPolicyTest`, `QuietHoursPolicyTest`, `NotificationCapturePolicyTest`) 총 34건 green. 자세한 증거는 `docs/journeys/README.md` Verification log. DRIFT 없음. 설치된 APK 가 `ruleHitIds` 컬럼 이전 빌드 (`lastUpdateTime=2026-04-21 15:47:57`) 라 live schema 에서 해당 컬럼은 확인 불가 — pre-condition 제약이며 contract 는 code-level test 로 증명.
 - 2026-04-21: 4번째 분류 tier **IGNORE (무시)** 추가 — `NotificationDecision.IGNORE` / `NotificationStatusUi.IGNORE` / `RuleActionUi.IGNORE` 및 Room v8→v9 no-op migration (#178 `6aad9d5`), `NotificationClassifier` 의 `RuleActionUi.IGNORE → NotificationDecision.IGNORE` 매핑 (#179 `5f516d6`). Classifier 의 rule-miss 분기는 IGNORE 를 생성하지 않으며, `ALWAYS_PRIORITY` override 로 base IGNORE 를 덮는 경로는 `RuleConflictResolver` 기존 계약 그대로. Exit state 의 status 집합에 IGNORE 포함. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Tasks 1-3. `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-22: journey-tester 재검증 sweep PASS (fresh APK `lastUpdateTime=2026-04-22 03:46:30`). IGNORE 분류 path end-to-end 최초 관측 — `keyword:IGNOREKEYr` IGNORE 룰 존재 상태에서 `cmd notification post -t 'IGNOREKEYr in title' IgnoreCaptureTest_0421` 포스팅 → DB row `status=IGNORE, reasonTags=발신자 있음|사용자 규칙|IgnoreTestRule|조용한 시간, ruleHitIds=keyword:IGNOREKEYr` 저장 + tray cancel 확인. PRIORITY 경로 + rule-miss SILENT 경로도 대조 재현. Home StatPill 이 IGNORE 1건을 3-bucket (`즉시 16 / Digest 2 / 조용히 12 = 30`) 에서 필터 아웃, total captured 31 과 차이 1 발생 — Exit state 의 "기본 뷰에서 필터 아웃" 계약 증명. `ruleHitIds` live schema 관측 재확인 (23-column v9). DRIFT 없음. 자세한 증거는 `docs/journeys/README.md` Verification log.
+- 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — Rule 모델에서 `action` 필드 제거 (Phase P1 Task 4), 액션은 Category 가 소유. Classifier cascade 는 "Rule 매치 → matched rules 를 소유한 Category 집합 → `CategoryConflictResolver` (app-pin 보너스 + rule-type 사다리 + `order` 드래그 tie-break) → winning Category.action → NotificationDecision". IGNORE 는 Category.action = IGNORE 경로에서만 도달. Rule orphan (어느 Category 에도 소속되지 않은 Rule 매치) 은 SILENT 로 안전 fallback. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Tasks 1-4 (#236), Phase P2 Tasks 5-7 (#239). `last-verified` 는 변경 없음 (Phase P2 이후 recipe 재실행 미수행; Known gap 참고 — listener 가 categories 스냅샷을 아직 주입하지 않아 실제 production 경로에서는 Category.action 적용 전). journey-tester 가 listener 주입 상태 확인 후 `last-verified` 갱신.
