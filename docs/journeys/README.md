@@ -51,7 +51,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
-| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | — |
+| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-22 |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-22 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-22 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — categories-management empty-state PASS post #254, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| categories-management | PASS | Empty state on emulator-5554 renders ScreenHeader "분류" + "내 분류" + EmptyState ("아직 분류가 없어요") with inline `FilledTonalButton` "새 분류 만들기" centered (~y=1080) AND ExtendedFAB "새 분류 만들기" floating bottom-right above AppBottomBar (visible, not occluded — FAB regression confirmed fixed). Both entry points tap → `CategoryEditorScreen` AlertDialog (이름 / 전달 방식 / 연결할 앱 / 소속 규칙 / 닫기·추가). Single source of truth label `CategoriesEmptyStateAction.LABEL` honored across both surfaces. `last-verified` set to 2026-04-22. |
 
 
 ### 2026-04-22 (journey-tester — rules-feedback-loop full end-to-end PASS on fresh Categories APK, emulator-5554)
