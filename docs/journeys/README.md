@@ -23,7 +23,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-22 |
-| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-21 |
+| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-22 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-21 |
 
 ### Source notification routing (시스템 tray 조작)
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — duplicate-suppression PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| duplicate-suppression | PASS | `for i in 1 2 3; do cmd notification post -S bigtext -t 'Shopping' "Repeat$i" '한정 특가'; done` (1s gap) → Home StatPills `즉시 0 / Digest 3 / 조용히 47` (3시간 윈도우, Δ=+3 from this batch). 정리함 탭 → `Digest · 3건 / 보관 중 · 44건 / 처리됨 · 3건` 세그먼트, Digest 기본 → `DigestGroupCard` "Shell" 3건 + 부제 "Shell 관련 알림 3건" 렌더. Threshold(3) → DIGEST 강등 + persisted contentSignature 그룹핑 + 정리함 묶음 표출 모두 Observable steps 4–7 / Exit state 와 일치. `last-verified` set to 2026-04-22. |
 
 
 ### 2026-04-22 (journey-tester — notification-detail end-to-end PASS, emulator-5554)
