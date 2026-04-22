@@ -66,6 +66,15 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — rules-feedback-loop Categories end-to-end DRIFT, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | DRIFT | Fresh Categories APK (`installDebug` post Phase P1-P3 + runtime-wiring-fix #245). Detail "분류 변경" sheet PASS (렌더 + "+ 새 분류 만들기" terminal row). Path B editor PASS (prefill name=sender `AssignTest_T21b`, defaultAction=PRIORITY per dynamic-opposite of SILENT, pending rule pre-checked). **DRIFT**: editor "추가" 탭 후 신규 Category 가 persist 되지 않음 — 분류 탭이 "아직 분류가 없어요" 유지, `files/datastore/smartnoti_categories.preferences_pb` 미생성. Root cause 미조사 (gap-planner 로 routing 권장). `last-verified` 변경 없음. |
+
+감지된 증거: fresh install 상태에서 AssignTest 알림 → Detail → "분류 변경" → "+ 새 분류 만들기" → AlertDialog 에 "새 분류" / name=AssignTest_T21b / "즉시 전달 (PRIORITY)" / 체크박스 pre-checked 로 pendingRule 노출 → "추가" 탭 (bounds 내 좌표). 결과: dialog dismiss → 분류 탭 "아직 분류가 없어요" 유지, datastore 에 categories 파일 0. Pre-drift 상태 대비: `smartnoti_rules.preferences_pb` (1787B, prior onboarding) + `smartnoti_settings.preferences_pb` (319B) 두 파일만 존재. 경로 A 는 기존 Category 0 건 precondition 때문에 본 sweep 에서 관측 불가.
+
+
 ### 2026-04-22 (plan-implementer — categories-split Task 12 journey doc overhaul, docs-only)
 
 | Journey | Change | Notes |
