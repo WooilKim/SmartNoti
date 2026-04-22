@@ -32,7 +32,7 @@
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-21 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
-| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-21 |
+| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-22 |
 
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (journey-tester — persistent-notification-protection PASS, JVM unit suite)
+
+| Journey | Result | Notes |
+|---|---|---|
+| persistent-notification-protection | PASS | `./gradlew :app:testDebugUnitTest --tests "...PersistentNotificationPolicyTest"` → BUILD SUCCESSFUL, 7/7 testcases pass in 0.016s (`disables_bypass_when_critical_persistent_protection_is_turned_off`, `keeps_recording_and_navigation_persistent_notifications_visible`, `ignores_normal_clearable_notifications`, `keeps_call_related_persistent_notifications_visible`, `allows_charging_notifications_to_be_hidden`, `treats_ongoing_notifications_as_persistent`, `treats_non_clearable_notifications_as_persistent`). Recipe-documented Policy-level coverage (bypass keywords + protection toggle off + ongoing/non-clearable promotion) intact. End-to-end leg (real call/maps/recording app) deliberately not re-run — recipe documents it as out-of-band. `last-verified` set to 2026-04-22. |
 
 
 ### 2026-04-22 (journey-tester — digest-suppression SKIP recipe blocked by NMS per-package quota, emulator-5554)
