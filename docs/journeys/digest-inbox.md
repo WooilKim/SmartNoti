@@ -1,10 +1,13 @@
 ---
 id: digest-inbox
-title: 정리함 인박스
-status: shipped
+title: 정리함 인박스 (legacy — Digest 전용)
+status: deprecated
+superseded-by: docs/journeys/inbox-unified.md
 owner: @wooilkim
 last-verified: 2026-04-22
 ---
+
+> **Deprecated 2026-04-22** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 Digest 전용 화면은 `정리함` 통합 탭 ([inbox-unified](inbox-unified.md)) 의 "Digest" 서브탭으로 호스팅된다. `Routes.Digest` 는 replacement notification contentIntent deep-link 타겟으로 계속 사용되어 `DigestScreen` composable 자체는 유지되지만, 1차 진입 경로 + Observable steps 의 owner 는 inbox-unified 다. 이 문서는 레거시 탭 직접 진입 경로와 DigestScreen 단독 동작 계약에 대한 기록으로 남긴다.
 
 ## Goal
 
@@ -81,3 +84,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Digest 기본 뷰에서 제외됨을 명시 — `observeDigestGroupsFiltered` 는 `status == DIGEST` 로만 필터하므로 IGNORE row 는 자동 배제, [ignored-archive](ignored-archive.md) 화면에서만 노출. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
 - 2026-04-22: Fresh APK (`lastUpdateTime=2026-04-22 03:46:30`, post-IGNORE) ADB end-to-end 검증 — Observable steps 1–5 + Exit state 전부 일치. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신.
+- 2026-04-22: **Deprecated** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 정리함 통합 탭 ([inbox-unified](inbox-unified.md)) 이 Digest + 보관 중 + 처리됨 세그먼트를 통합 소유한다. `Routes.Digest` 는 tray deep-link 용으로 유지. 문서는 참조용으로 남김.

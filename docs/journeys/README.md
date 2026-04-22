@@ -38,18 +38,21 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
-| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 | shipped | 2026-04-21 |
-| [digest-inbox](digest-inbox.md) | 정리함 인박스 | shipped | 2026-04-22 |
-| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (Hidden 화면) | shipped | 2026-04-21 |
+| [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | — |
+| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-21 |
+| [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | — |
+| [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
+| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-21 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-22 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-22 |
 
-### Rules & onboarding
+### Categories, Rules & onboarding
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
-| [rules-management](rules-management.md) | 규칙 CRUD | shipped | 2026-04-21 |
+| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | — |
+| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-22 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-21 |
 
 ## 아직 문서화하지 않은 영역
@@ -61,6 +64,26 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (plan-implementer — categories-split Task 12 journey doc overhaul, docs-only)
+
+| Journey | Change | Notes |
+|---|---|---|
+| categories-management | **NEW** | Category CRUD + drag-reorder + 액션 선택 계약. Code pointers: `CategoriesScreen` / `CategoryDetailScreen` / `CategoryEditorScreen` / `CategoriesRepository` / `CategoryConflictResolver`. `last-verified` 비어 있음 (ADB recipe 미실행). |
+| inbox-unified | **NEW** | 정리함 통합 탭 (Digest + 보관 중 + 처리됨 서브탭) 계약. `InboxScreen` 이 `DigestScreen` + `HiddenNotificationsScreen` 를 재호스팅. 레거시 digest-inbox / hidden-inbox 는 deprecated. |
+| home-uncategorized-prompt | **NEW** | Home 최상단 새 앱 분류 유도 카드 + `UncategorizedAppsDetector` (N≥3 uncovered / 7-day window / 24h snooze) 계약. |
+| notification-capture-classify | UPDATED | Classifier cascade 를 Rule → Category lift → `CategoryConflictResolver` (app-pin + rule-type + `order` tie-break) → `Category.action.toDecision()` 로 재작성. Known gap 추가: listener 가 `categoriesRepository.currentCategories()` 를 아직 inject 하지 않아 production hot path 에서 SILENT fallback. |
+| rules-management | UPDATED | Title → "고급 규칙 편집 (Settings 하위)". Trigger 에서 BottomNav 탭 제거, Settings "고급 규칙 편집 열기" + Detail 의 "적용된 규칙" chip deep-link 만 유효. Observable step 6 에 Rule + Category 동시 upsert 명시. Known gap: Rule 삭제 시 Category cascade 없음 + atomicity 없음. |
+| notification-detail | UPDATED | Trigger 의 인박스 명 갱신 (Priority→검토 대기, Digest/Hidden→정리함). 피드백 4-버튼 내부 처리에서 "Category 자동 생성 안 됨" 명시 — feedback 으로 생성된 Rule 은 orphan 이라 classifier hot path 재적용 실패. |
+| rules-feedback-loop | UPDATED | Goal / Observable step 3 / Exit state / Known gaps 에 "Category 갱신 누락" drift 기록. Out-of-scope 에 categories-management 링크 추가. |
+| home-overview | UPDATED | Observable steps 재작성 — 최상단 `HomeUncategorizedAppsPromptCard`, Access card connected 시 inline 1-row, QuickActionCard × 2 제거 (BottomNav 대체), `HomeQuickStartAppliedCard` TTL + ack gate, PassthroughReview/Insight/Timeline count>0 gate. BottomNav 4-tab 로 갱신. |
+| priority-inbox | UPDATED | Goal + Preconditions + BottomNav 설명을 "`Category.action = PRIORITY` 결과" + 4-tab 로 갱신. |
+| ignored-archive | UPDATED | Goal/Preconditions 를 "`Category.action = IGNORE`" 기준으로 재정의. filter 계약 (`status == IGNORE`) 은 불변. |
+| digest-inbox, hidden-inbox | **DEPRECATED** | `status: deprecated` + `superseded-by: docs/journeys/inbox-unified.md`. `Routes.Digest` / `Routes.Hidden` 은 deep-link 용으로 유지. |
+| README | UPDATED | Active journeys 인덱스에 신규 3건 추가 + deprecated 2건 이동. 섹션 heading "Rules & onboarding" → "Categories, Rules & onboarding". |
+
+검증 성격: 이 sweep 은 **docs-only** (코드 변경 없음). `last-verified` 는 어떤 journey 에도 갱신하지 않음 — ADB recipe 실행은 후속 journey-tester 의 책임. 신규 journey 3건과 Rule/Category 분리 아키텍처 반영이 주요 대상. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Task 12 (shipped).
 
 
 ### 2026-04-22 (ui-ux inspector sweep — IGNORE tier audit, emulator-5554)
@@ -495,7 +518,10 @@ Verification recipe 를 실행한 결과. `last-verified` 는 전원 2026-04-20 
 
 ## Deprecated
 
-(없음)
+| ID | Superseded by | 이유 |
+|---|---|---|
+| [digest-inbox](digest-inbox.md) | [inbox-unified](inbox-unified.md) | 2026-04-22 plan `categories-split-rules-actions` Phase P3 Task 11 이후 Digest 전용 탭은 `정리함` 통합 탭의 서브탭으로 호스팅됨. `Routes.Digest` 는 tray deep-link 용으로만 유지. |
+| [hidden-inbox](hidden-inbox.md) | [inbox-unified](inbox-unified.md) | 동 plan — 보관/처리 탭이 `정리함` 통합 탭의 서브탭으로 호스팅됨. `Routes.Hidden` 은 silent summary deep-link 용으로 유지. |
 
 ## Journey 문서 작성 가이드
 

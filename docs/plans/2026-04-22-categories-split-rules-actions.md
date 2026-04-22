@@ -1,6 +1,7 @@
 ---
-status: planned
+status: shipped
 created: 2026-04-22
+superseded-by: docs/journeys/categories-management.md
 ---
 
 # Categories (분류) — Split Rule = {condition + action} into Rule (condition) + Category (action container)
@@ -211,7 +212,7 @@ created: 2026-04-22
 2. 정리함 통합 화면은 기존 Digest/Hidden screen 을 호스팅 — 급격한 내부 재작성은 이 task 범위 밖.
 3. 안내 modal 은 `SettingsRepository.categoriesMigrationAnnouncementSeen` flag 로 gate.
 
-### Task 12: Journey doc overhaul + plan 상태 shipped 로 전환
+### Task 12: Journey doc overhaul + plan 상태 shipped 로 전환 `[IN PROGRESS via PR #241]`
 
 **Files (journey 갱신):**
 - `docs/journeys/rules-management.md` — Observable steps 를 Category-centric 으로 재작성, Rules 는 "고급 편집" 경로로 표기.
@@ -280,3 +281,13 @@ created: 2026-04-22
 - [priority-inbox](../journeys/priority-inbox.md) — PRIORITY 는 Category.action.
 
 이 plan 이 shipped 되면 각 journey 문서의 해당 Known gaps / Observable steps 를 갱신하고 Change log 에 본 plan 링크를 남긴다.
+
+---
+
+## Change log
+
+- 2026-04-22: Phase P1 Tasks 1-4 shipped (#236) — `Category` + `CategoryAction` domain model, `CategoriesRepository` (DataStore `smartnoti_categories`), `RuleToCategoryMigration` + `MigrateRulesToCategoriesRunner` (1:1 idempotent 자동 마이그레이션), Rule 모델에서 `action` 필드 제거. Rule 은 순수 조건 매처로 확정.
+- 2026-04-22: Phase P2 Tasks 5+6+7 shipped (#239) — `CategoryConflictResolver` (app-pin 보너스 + rule-type 사다리 + `order` 드래그 tie-break), `NotificationClassifier.classify(input, rules, categories)` 가 매치된 Rule 을 소유 Category 로 lift 한 뒤 resolver 호출, `CategoryAction.toDecision()` 매핑이 notifier 하위 consumer 전체에서 단일 진리점으로 사용.
+- 2026-04-22: Phase P3 Tasks 8+9 shipped (#238) — `CategoriesScreen` + `CategoryDetailScreen` + `CategoryEditorScreen` + `CategoryEditorDraftValidator` + `CategoryActionBadge`. 분류 primary tab 신설.
+- 2026-04-22: Phase P3 Tasks 10+11 shipped (#240) — `UncategorizedAppsDetector` + `HomeUncategorizedAppsPromptCard` + `SettingsRepository` 24h snooze, `InboxScreen` (Digest + 보관 중 + 처리됨 서브탭 통합), BottomNav 4-tab (홈/정리함/분류/설정), Rules 탭을 Settings "고급 규칙 편집" 서브메뉴로 격하, Home declutter (Access card inline / QuickActionCard 제거 / QuickStartAppliedCard TTL+ack / count>0 gate).
+- 2026-04-22: Phase P3 Task 12 shipped — journey doc overhaul. 신규 3건 (`categories-management`, `inbox-unified`, `home-uncategorized-prompt`), 레거시 2건 deprecated (`digest-inbox`, `hidden-inbox`), 기존 6건 업데이트 (`notification-capture-classify`, `rules-management`, `notification-detail`, `rules-feedback-loop`, `home-overview`, `priority-inbox`, `ignored-archive`), README 인덱스 + Verification log + Deprecated 섹션 갱신. `status: shipped` + `superseded-by: docs/journeys/categories-management.md` 전환. 남은 drift (listener 의 categories 스냅샷 미주입 / feedback path 의 Category upsert 누락 / Rule 삭제 시 Category cascade 없음) 는 각 journey Known gap 에 기록 — 후속 drift plan 으로 해소.

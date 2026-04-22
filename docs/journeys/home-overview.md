@@ -20,17 +20,17 @@ last-verified: 2026-04-22
 
 ## Observable steps
 
-1. `HomeScreen` 이 repository/settings/RulesRepository 구독 시작.
-2. 상단 `ScreenHeader` — "SmartNoti" + "중요한 알림만 먼저 보여드리고 있어요".
-3. `StatPill` — `즉시 N / Digest N / 조용히 N` 컬러칩 (분류 카운트 live). IGNORE 는 기본 뷰에서 제외되므로 StatPill 및 아래의 최근 알림 리스트, QuickActionCard, Insight/Timeline 집계 어느 지점에도 포함되지 않음 — 오직 Settings 의 opt-in 토글을 켠 뒤 [ignored-archive](ignored-archive.md) 화면에서만 노출 (단, weekly/daily insights 의 "조용히 정리" 요약에는 별도 `ignoredCount` 스트림으로 집계된다).
-4. `HomePassthroughReviewCard` — PRIORITY 카운트를 받아 "SmartNoti 가 건드리지 않은 알림 N건" + "이 판단이 맞는지 검토하고 필요하면 규칙으로 만들 수 있어요" + "검토하기" 액션 라벨로 렌더. 카운트 0 일 때는 "검토 대기 알림 없음" 의 empty-state 카피로 전환. 카드 전체를 탭하면 `onPriorityClick` → `Routes.Priority.route` 로 이동 (검토 화면, → [priority-inbox](priority-inbox.md)). Rules UX v2 Phase A 이후 Priority 가 BottomNav 에서 제거되면서, 이 카드가 검토 화면으로 진입하는 유일한 UI 엔트리 포인트.
-5. `HomeNotificationAccessCard` — `HomeNotificationAccessSummaryBuilder` 결과로 리스너 연결 상태 + 최근 캡처 현황.
-6. `QuickActionCard` × 2 — "중요 알림 지금 봐야 할 알림 N개" / "정리함 묶인 알림 N개" ("열기" 탭 시 각 탭으로 이동). 중요 알림 카드 역시 검토 화면으로 연결됨 (passthrough review card 와 동일 route).
-7. `QuickStartAppliedCard` — 온보딩 quick-start 프리셋 적용 결과 요약.
-8. `InsightCard` — `HomeNotificationInsightsBuilder` 가 반환하는 "가장 많은 앱/이유 + 점유율" 정보. 칩 탭 시 `Routes.Insight.createForApp` 또는 `createForReason` 으로 네비.
-9. `TimelineCard` — `HomeNotificationTimelineBuilder` 결과 (bucket 별 바차트, `HomeTimelineBarChartModelBuilder` 로 렌더 모델 변환).
-10. 최근 알림 리스트 — 일반 `NotificationCard` 로 최상단 몇 건.
-11. 카드/리스트 탭 → Detail 또는 Priority(검토)/Digest/Insight 로 네비.
+1. `HomeScreen` 이 repository/settings/RulesRepository/**CategoriesRepository** + `UncategorizedAppsDetector` 구독 시작.
+2. **(최상단)** `HomeUncategorizedAppsPromptCard` — `UncategorizedAppsDetector.detect(...)` 가 `Prompt` 를 반환할 때만 mount. "새 앱 N개가 알림을 보내고 있어요" + "분류 만들기" / "나중에" 액션. "분류 만들기" 탭 → `navigateToTopLevel(Routes.Categories.route)` (→ [home-uncategorized-prompt](home-uncategorized-prompt.md)). "나중에" 탭 → 24시간 snooze persist → 카드 즉시 비표시.
+3. `ScreenHeader` — "SmartNoti" + "중요한 알림만 먼저 보여드리고 있어요".
+4. `StatPill` (`primaryContainer` hero 카드 내부) — 타이틀 "오늘 알림 N개 중 중요한 M개를 먼저 전달했어요" + `즉시 N / Digest N / 조용히 N` 컬러칩 (분류 카운트 live). IGNORE 는 기본 뷰에서 제외되므로 StatPill 및 아래 최근 알림 리스트, Insight/Timeline 집계 어느 지점에도 포함되지 않음 — 오직 Settings 의 opt-in 토글을 켠 뒤 [ignored-archive](ignored-archive.md) 화면에서만 노출 (단, weekly/daily insights 의 "조용히 정리" 요약에는 별도 `ignoredCount` 스트림으로 집계된다).
+5. `HomePassthroughReviewCard` — `priorityCount > 0` 일 때만 mount. PRIORITY 카운트 + "검토하기" 라벨. 카드 탭 → `onPriorityClick` → `Routes.Priority.route` (→ [priority-inbox](priority-inbox.md)). PRIORITY 가 0 이면 카드 자체가 비표시 (declutter per Task 10).
+6. Access card — connected 면 `HomeNotificationAccessInlineRow` (1-row), disconnected / error 면 full `HomeNotificationAccessCard`. Task 10 declutter 로 Home 상시 full-card 를 connected 시 inline 으로 강등.
+7. `QuickStartAppliedCard` — 온보딩 quick-start 프리셋 적용 결과 요약 (7-day TTL + tap-to-ack gate: `HomeQuickStartAppliedVisibility.shouldShow(...)` 로 제어). 카드 탭 시 `SettingsRepository.setQuickStartAppliedCardAcknowledgedAtMillis(...)` 저장 후 "고급 규칙 편집" 경로로 이동.
+8. `InsightCard` — `insights.filteredCount > 0` 일 때만 mount (Task 10 declutter). "가장 많은 앱/이유 + 점유율" 정보. 칩 탭 시 `Routes.Insight.createForApp` 또는 `createForReason` 으로 네비.
+9. `TimelineCard` — `HomeNotificationTimelineBuilder` 결과 (bucket 별 바차트, `HomeTimelineBarChartModelBuilder` 로 렌더 모델 변환). 비어 있으면 mount 생략.
+10. 최근 알림 리스트 — 일반 `NotificationCard` 로 최상단 몇 건 ("방금 정리된 알림").
+11. 카드/리스트 탭 → Detail 또는 검토 화면 / 정리함 / Insight 로 네비. (기존 `QuickActionCard × 2` ("중요 알림" / "정리함") 는 Task 10 에서 제거 — BottomNav 의 `정리함` 탭이 이를 대신함.)
 
 ## Exit state
 
@@ -46,14 +46,21 @@ last-verified: 2026-04-22
 ## Code pointers
 
 - `ui/screens/home/HomeScreen`
+- `ui/screens/home/HomeUncategorizedAppsPromptCard` — 새 앱 분류 유도 카드
+- `domain/usecase/UncategorizedAppsDetector` — 분류 유도 pure detector (→ [home-uncategorized-prompt](home-uncategorized-prompt.md))
 - `ui/components/HomePassthroughReviewCard` — passthrough 검토 카드 (count + empty/active 상태)
+- `ui/screens/home/HomeNotificationAccessInlineRow` — connected 시 strip
+- `ui/screens/home/HomeNotificationAccessCard` — disconnected 시 full card
+- `ui/screens/home/HomeQuickStartAppliedCard` + `HomeQuickStartAppliedVisibility` — TTL + ack gate
 - `domain/usecase/HomeNotificationInsightsBuilder`
 - `domain/usecase/HomeNotificationAccessSummaryBuilder`
 - `domain/usecase/HomeNotificationTimelineBuilder`
 - `domain/usecase/HomeQuickStartAppliedSummaryBuilder`
 - `domain/usecase/HomeReasonBreakdownChartModelBuilder`
 - `domain/usecase/HomeTimelineBarChartModelBuilder`
-- `navigation/Routes#Home`, `navigation/BottomNavItem` ("홈" 라벨 — Priority 탭은 Phase A 이후 제거됨)
+- `data/categories/CategoriesRepository` — 새 앱 감지의 coverage 소스
+- `data/settings/SettingsRepository#observeUncategorizedPromptSnoozeUntilMillis` — 24h snooze
+- `navigation/Routes#Home`, `navigation/BottomNavItem` (4-tab: 홈 / 정리함 / 분류 / 설정)
 
 ## Tests
 
@@ -82,3 +89,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: Rules UX v2 Phase A shipped (PR #140/#141/#142/#143). Home 에 `HomePassthroughReviewCard` 가 StatPill 아래에 마운트되어 PRIORITY count 를 표시하고 탭 시 검토 화면으로 이동. Priority 는 더 이상 BottomNav 탭이 아니며, 이 카드가 검토 화면 유일한 UI 엔트리. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase A
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Home 의 기본 뷰에서 제외되도록 배선 — StatPill / 최근 알림 리스트 / QuickActionCard / Insight/Timeline 집계 모두 `observePriority` · `observeDigest` · `observeAllFiltered` 를 사용하므로 `status=IGNORE` row 는 자동 필터 아웃. `SuppressionInsightsBuilder` / `InsightDrillDownSummaryBuilder` 는 `ignoredCount` 를 별도 스트림으로 계산해 DIGEST/SILENT 와 분리 집계 (#185 `9a5b4b9`, plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6). IGNORE row 는 [ignored-archive](ignored-archive.md) 에서만 노출. `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
+- 2026-04-22: Plan `categories-split-rules-actions` Phase P3 Task 10 (#240) declutter 반영 — 최상단에 `HomeUncategorizedAppsPromptCard` 가 `UncategorizedAppsDetection.Prompt` 일 때만 mount (→ [home-uncategorized-prompt](home-uncategorized-prompt.md)). Access card 는 connected 시 `HomeNotificationAccessInlineRow` 1-row 로 축소 (disconnected 시에만 full card). 기존 `QuickActionCard × 2` ("중요 알림" / "정리함") 제거 — BottomNav 의 `정리함` 탭이 대체. `HomeQuickStartAppliedCard` 는 7일 TTL + tap-to-ack gate (`HomeQuickStartAppliedVisibility`) 추가. `HomePassthroughReviewCard` / `InsightCard` / `TimelineCard` 는 count 0 시 mount 생략. Observable steps / Code pointers 전면 갱신. `last-verified` 는 declutter 재검증 전까지 현 일자 유지.

@@ -8,13 +8,13 @@ last-verified: 2026-04-21
 
 ## Goal
 
-PRIORITY 로 분류된 알림을 **"SmartNoti 가 건드리지 않은 알림"** 으로 재프레이밍해서, 사용자가 이 판단이 맞는지 검토하고 필요하면 즉시 Digest / 조용히 / 규칙으로 재분류할 수 있게 한다. 시스템 알림센터의 원본은 **절대 건드리지 않아** 사용자가 기대하는 즉시 전달(소리 / 헤즈업 / 잠금화면)이 정상 동작하게 한다.
+PRIORITY 로 분류된 알림을 **"SmartNoti 가 건드리지 않은 알림"** 으로 재프레이밍해서, 사용자가 이 판단이 맞는지 검토하고 필요하면 즉시 Digest / 조용히 / 규칙 / 분류로 재분류할 수 있게 한다. 시스템 알림센터의 원본은 **절대 건드리지 않아** 사용자가 기대하는 즉시 전달(소리 / 헤즈업 / 잠금화면)이 정상 동작하게 한다.
 
-> 2026-04-21 Rules UX v2 Phase A 이후, 이 화면은 더 이상 BottomNav 상의 독립 탭이 아니다. Home 의 "검토 대기" 패스스루 카드 탭을 통해서만 진입한다. Route (`Routes.Priority`) 는 유지되어 replacement notification deep-link 의 parent 로도 계속 사용된다.
+> 2026-04-21 Rules UX v2 Phase A 이후 + 2026-04-22 plan `categories-split-rules-actions` Phase P3 Task 11 이후, 이 화면은 BottomNav 상의 독립 탭이 아니다. Home 의 "검토 대기" 패스스루 카드 탭을 통해서만 진입한다. Route (`Routes.Priority`) 는 유지되어 replacement notification deep-link 의 parent 로도 계속 사용된다. PRIORITY 는 Rule 매치 후 winning `Category.action == PRIORITY` 로 결정되는 상태다 (→ [notification-capture-classify](notification-capture-classify.md), [categories-management](categories-management.md)).
 
 ## Preconditions
 
-- 알림이 PRIORITY 로 분류되어 DB 에 저장됨 (→ [notification-capture-classify](notification-capture-classify.md))
+- 알림이 PRIORITY 로 분류되어 DB 에 저장됨 — `Category.action = PRIORITY` 인 분류에 속한 Rule 매치 또는 classifier heuristic (VIP 발신자 / 우선순위 키워드) 로 결정 (→ [notification-capture-classify](notification-capture-classify.md))
 - 온보딩 완료 상태 (→ [onboarding-bootstrap](onboarding-bootstrap.md))
 
 ## Trigger
@@ -71,7 +71,7 @@ PRIORITY 로 분류된 알림을 **"SmartNoti 가 건드리지 않은 알림"** 
 - `notification/SourceNotificationRoutingPolicy` — PRIORITY 분기
 - `notification/ReplacementNotificationChannelRegistry` — 채널 정의
 - `navigation/Routes.Priority` — route 유지 (탭 아님, 카드 tap + replacement parent 용)
-- `navigation/BottomNavItem` — Priority 엔트리 **없음** (홈 / 정리함 / 규칙 / 설정만)
+- `navigation/BottomNavItem` — Priority 엔트리 **없음** (4-tab: 홈 / 정리함 / 분류 / 설정)
 
 ## Tests
 
@@ -110,3 +110,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: Rules UX v2 Phase A shipped (PR #140/#141/#142/#143). Priority 탭을 "검토 대기 알림" 으로 재프레이밍 — BottomNav 에서 제거, Home `HomePassthroughReviewCard` 탭으로만 진입. 화면 제목 "SmartNoti 가 건드리지 않은 알림" + 인라인 재분류 액션 (`→ Digest` / `→ 조용히` / `→ 규칙 만들기`) 추가. Route (`Routes.Priority`) 는 replacement notification parent 로 유지. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase A
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 검토 대기 리스트에서 제외됨을 명시 — `observePriorityFiltered` 는 `status == PRIORITY` 로만 필터하므로 IGNORE row 는 자동 배제, [ignored-archive](ignored-archive.md) 화면에서만 노출. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6 (#185 `9a5b4b9`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
 - 2026-04-21: Post-IGNORE fresh APK ADB 검증 PASS on emulator-5554 (APK `lastUpdateTime=2026-04-22 03:46:30`). `cmd notification post -t '은행' PriFreshAPK_0421 '인증번호 778899...'` → DB `status=PRIORITY, reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|조용한 시간\|중요 키워드`. Tray 원본 유지 (`SourceNotificationRoutingPolicy` PRIORITY 분기 고정값). Home passthrough card "건드리지 않은 알림 18건 / 검토하기" 탭 → PriorityScreen eyebrow "검토" + title "SmartNoti 가 건드리지 않은 알림" + subtitle + SmartSurfaceCard "검토 대기 18건" + 카드별 "이 판단을 바꿀까요?" 헤더 + `→ Digest / → 조용히 / → 규칙 만들기` 3버튼 노출. 카드 탭 → NotificationDetailScreen "알림 상세" 진입 확인. BottomNav 4탭 (홈/정리함/규칙/설정, Priority 탭 부재) 재확인. Observable steps 1–8 + Exit state 전부 일치.
+- 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — Goal/Preconditions 에 "PRIORITY 는 `Category.action == PRIORITY` 의 결과" 를 명시. BottomNav 구성을 "홈/정리함/분류/설정" 으로 갱신 (plan `categories-split-rules-actions` Phase P3 Task 11 이후 `규칙` 탭 → Settings 서브메뉴로 이동). Observable steps / 시스템 tray 처리 / Delivery profile 섹션은 변경 없음 — PRIORITY routing 불변조건 (`cancelSource=false`) 은 아키텍처 교체와 무관하게 유지. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 (#236), P3 (#240). `last-verified` 변경 없음.
