@@ -169,5 +169,9 @@ class CategoriesRepository private constructor(
                 instance ?: CategoriesRepository(context.applicationContext).also { instance = it }
             }
         }
+
+        internal fun clearInstanceForTest() {
+            synchronized(this) { instance = null }
+        }
     }
 }
