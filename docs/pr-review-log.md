@@ -175,3 +175,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T06:54:59Z | #250 | gap-planner | DEFER | CI pending (Unit tests + debug APK); docs-only plan for launch crash |
 | 2026-04-22T07:15:54Z | #250 | gap-planner | APPROVE | docs/plans/ only; blocks #248 hotfix implementation |
 | 2026-04-22T07:17:26Z | #251 | plan-implementer | APPROVE | hotfix: single-owner smartnoti_rules DataStore; RED test + ADB smoke |
+| 2026-04-21T00:00:00Z | #252 | journey-tester | DEFER | CI pending (Unit tests + debug APK) |
