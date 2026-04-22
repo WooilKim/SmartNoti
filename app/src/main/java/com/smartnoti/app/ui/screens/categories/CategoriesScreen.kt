@@ -16,8 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,6 +57,15 @@ import kotlinx.coroutines.launch
  * Composes repositories directly (matching the pattern used by the existing
  * Rules tab): no dedicated ViewModel is introduced because a Compose-local
  * remember is sufficient for the drawer/dialog state this scaffold needs.
+ *
+ * Plan `docs/plans/2026-04-22-categories-empty-state-inline-cta.md` wraps
+ * the list + FAB in a local [Scaffold] so the FAB is routed through the
+ * Material 3 `floatingActionButton` slot: this lays the FAB above the
+ * AppBottomBar inset carried in by [contentPadding]. Without this, a
+ * plain `Box(fillMaxSize())` with a `.align(BottomEnd)` FAB renders
+ * beneath the parent Scaffold's bottom bar and becomes unreachable. The
+ * same plan adds an empty-state inline CTA so first-run users can enter
+ * the editor directly from where their eyes already are.
  */
 @Composable
 fun CategoriesScreen(
@@ -83,14 +95,14 @@ fun CategoriesScreen(
         scope.launch { categoriesRepository.deleteCategory(categoryId) }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        val detailCategory = detailTargetId?.let { id -> categories.firstOrNull { it.id == id } }
-        if (detailTargetId != null && detailCategory == null) {
-            // Underlying Category was deleted out from under us.
-            detailTargetId = null
-        }
+    val detailCategory = detailTargetId?.let { id -> categories.firstOrNull { it.id == id } }
+    if (detailTargetId != null && detailCategory == null) {
+        // Underlying Category was deleted out from under us.
+        detailTargetId = null
+    }
 
-        if (detailCategory != null) {
+    if (detailCategory != null) {
+        Box(modifier = Modifier.fillMaxSize()) {
             CategoryDetailScreen(
                 contentPadding = contentPadding,
                 category = detailCategory,
@@ -102,11 +114,51 @@ fun CategoriesScreen(
                     deleteCategory(detailCategory.id)
                 },
             )
-        } else {
+            EditorOverlay(
+                target = editorTarget,
+                categories = categories,
+                rules = rules,
+                capturedApps = capturedApps,
+                onDismiss = { editorTarget = null },
+                onSaved = { savedId ->
+                    editorTarget = null
+                    if (detailTargetId != null) detailTargetId = savedId
+                },
+                onDelete = { deletedId ->
+                    editorTarget = null
+                    if (detailTargetId == deletedId) detailTargetId = null
+                    deleteCategory(deletedId)
+                },
+            )
+        }
+        return
+    }
+
+    // Local Scaffold is intentional: the parent AppNavHost Scaffold owns
+    // the bottomBar and passes its bottom inset via `contentPadding`. We
+    // consume that inset on this Scaffold's modifier so the FAB sits
+    // above the bottom navigation. `containerColor = Transparent` avoids
+    // re-painting the app background underneath the parent.
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+        containerColor = Color.Transparent,
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { editorTarget = CategoryEditorTarget.New },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                text = { Text(CategoriesEmptyStateAction.LABEL) },
+                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+            )
+        },
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(contentPadding),
+                    .padding(innerPadding),
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
@@ -129,6 +181,13 @@ fun CategoriesScreen(
                             title = "아직 분류가 없어요",
                             subtitle = "새 분류를 추가해 규칙을 묶고 전달 방식을 지정해 보세요.",
                             icon = Icons.Outlined.Category,
+                            action = {
+                                FilledTonalButton(
+                                    onClick = { editorTarget = CategoryEditorTarget.New },
+                                ) {
+                                    Text(CategoriesEmptyStateAction.LABEL)
+                                }
+                            },
                         )
                     }
                 } else {
@@ -142,31 +201,14 @@ fun CategoriesScreen(
                 }
             }
 
-            ExtendedFloatingActionButton(
-                onClick = { editorTarget = CategoryEditorTarget.New },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                text = { Text("새 분류 추가") },
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 24.dp, end = 24.dp),
-            )
-        }
-
-        val target = editorTarget
-        if (target != null) {
-            CategoryEditorScreen(
-                target = target,
+            EditorOverlay(
+                target = editorTarget,
                 categories = categories,
                 rules = rules,
                 capturedApps = capturedApps,
                 onDismiss = { editorTarget = null },
                 onSaved = { savedId ->
                     editorTarget = null
-                    // If we edited from the detail surface, stay there on the
-                    // refreshed Category; a brand-new Category simply lands in
-                    // the list and the user can tap in when they want.
                     if (detailTargetId != null) detailTargetId = savedId
                 },
                 onDelete = { deletedId ->
@@ -176,6 +218,29 @@ fun CategoriesScreen(
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun EditorOverlay(
+    target: CategoryEditorTarget?,
+    categories: List<Category>,
+    rules: List<com.smartnoti.app.domain.model.RuleUiModel>,
+    capturedApps: List<com.smartnoti.app.data.local.CapturedAppSelectionItem>,
+    onDismiss: () -> Unit,
+    onSaved: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    if (target != null) {
+        CategoryEditorScreen(
+            target = target,
+            categories = categories,
+            rules = rules,
+            capturedApps = capturedApps,
+            onDismiss = onDismiss,
+            onSaved = onSaved,
+            onDelete = onDelete,
+        )
     }
 }
 
