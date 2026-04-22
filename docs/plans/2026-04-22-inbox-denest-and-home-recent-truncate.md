@@ -43,7 +43,7 @@ related-journeys:
 
 ---
 
-## Task 0: Add failing unit tests for both pure-function contracts (RED)
+## Task 0: Add failing unit tests for both pure-function contracts (RED) [IN PROGRESS via PR pending]
 
 **Objective:** TDD-first. 구현 전에 두 contract 테스트를 추가해 RED 상태로 두고, Task 1 / Task 2 가 GREEN 으로 전환.
 
@@ -65,7 +65,7 @@ related-journeys:
    - `mapToMode(InboxTab.Digest)` → throws / returns null (Digest 는 Hidden 으로 위임하지 않으므로 호출 자체가 잘못)
 3. `./gradlew :app:testDebugUnitTest --tests "*HomeRecentNotificationsTruncationTest*"` + `--tests "*InboxToHiddenScreenModeMapperTest*"` 모두 컴파일 실패 (대상 클래스 미존재) → RED.
 
-## Task 1: Implement `HomeRecentNotificationsTruncation` builder + Home UI 적용
+## Task 1: Implement `HomeRecentNotificationsTruncation` builder + Home UI 적용 [IN PROGRESS via PR pending]
 
 **Objective:** Home "방금 정리된 알림" 을 5건 + 전체 보기 행으로 축소.
 
@@ -115,7 +115,7 @@ related-journeys:
 4. `HomeRecentMoreRow` composable 작성 — 다른 Home row 와 일관된 톤 (`SmartSurfaceCard` 또는 `OutlinedButton`-스타일 1행). 카피: `전체 N건 보기 →`. `Routes.Inbox` 의 기본 sub-tab (Digest) 로 진입.
 5. `./gradlew :app:testDebugUnitTest --tests "*HomeRecentNotificationsTruncationTest*"` GREEN 확인.
 
-## Task 2: Implement `HiddenScreenMode` + Inbox 위임 변경
+## Task 2: Implement `HiddenScreenMode` + Inbox 위임 변경 [IN PROGRESS via PR pending]
 
 **Objective:** `HiddenNotificationsScreen` 이 외부에서 호출될 때 자체 ScreenHeader + HiddenTabRow 를 숨기고, outer 탭 선택을 그대로 따른다.
 
@@ -152,7 +152,7 @@ related-journeys:
    - `InboxTab.Archived`, `InboxTab.Processed` → `HiddenNotificationsScreen(contentPadding = innerPadding, onNotificationClick = onNotificationClick, onBack = onBack, mode = InboxToHiddenScreenModeMapper.mapToMode(selectedTab))`
 6. `./gradlew :app:testDebugUnitTest --tests "*InboxToHiddenScreenModeMapperTest*"` GREEN. 전체 단위 테스트 초록 유지.
 
-## Task 3: ADB smoke + journey docs sync + ship
+## Task 3: ADB smoke + journey docs sync + ship [IN PROGRESS via PR pending]
 
 **Objective:** 실 디바이스에서 두 변경 모두 의도대로 동작 확인 + journey 문서 두 개 동기화 + PR 마감.
 
