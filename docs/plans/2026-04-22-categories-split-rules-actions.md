@@ -34,7 +34,7 @@ created: 2026-04-22
 
 ## Phase P1 — Data model + migration
 
-### Task 1: Failing tests for Category model + round-trip + Rule-without-action contract `[IN PROGRESS via PR TBD]`
+### Task 1: Failing tests for Category model + round-trip + Rule-without-action contract `[IN PROGRESS via PR #236]`
 
 **Objective:** 새 모델 계약과 마이그레이션 parity 를 테스트로 먼저 고정.
 
