@@ -37,6 +37,15 @@ sealed class Routes(val route: String) {
      * separately.
      */
     data object Categories : Routes("categories")
+    /**
+     * 정리함 (Inbox) tab — plan
+     * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task
+     * 11. Hosts the Digest + Hidden (ARCHIVED / PROCESSED) sub-tabs on a
+     * single screen. The legacy `Routes.Digest` and `Routes.Hidden` routes
+     * still exist for backwards compatibility and deep-link handling — the
+     * new top-level BottomNav entry points at [Inbox] instead.
+     */
+    data object Inbox : Routes("inbox")
     data object Settings : Routes("settings")
     data object Hidden : Routes("hidden?sender={sender}&packageName={packageName}") {
         /**

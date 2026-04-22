@@ -1,0 +1,228 @@
+package com.smartnoti.app.domain.usecase
+
+import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.CategoryAction
+import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.NotificationUiModel
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3
+ * Task 10 — the "새 앱 분류 유도 카드" surfaces when the user has received
+ * notifications from distinct packages over the last 7 days that are **not**
+ * covered by any existing Category's `appPackageName` pin. Once the user taps
+ * "나중에" the detection enters a 24-hour snooze.
+ *
+ * This detector is a pure function so that Home can remember the result
+ * cheaply — the actual flow wiring (NotificationRepository + CategoriesRepository
+ * + SettingsRepository snooze flag) happens in HomeScreen.
+ */
+class UncategorizedAppsDetectorTest {
+
+    private val detector = UncategorizedAppsDetector()
+    private val nowMillis = 1_700_000_000_000L
+    private val sevenDaysMillis = 7L * 24L * 60L * 60L * 1000L
+
+    @Test
+    fun returns_none_when_fewer_than_three_uncovered_apps() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", postedAt = nowMillis),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertEquals(UncategorizedAppsDetection.None, result)
+    }
+
+    @Test
+    fun returns_prompt_when_at_least_three_uncovered_apps_exist() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", appName = "앱A", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", appName = "앱B", postedAt = nowMillis),
+                notification(id = "n3", packageName = "com.app.c", appName = "앱C", postedAt = nowMillis),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertTrue("Expected Prompt, got $result", result is UncategorizedAppsDetection.Prompt)
+        val prompt = result as UncategorizedAppsDetection.Prompt
+        assertEquals(3, prompt.uncoveredCount)
+        assertEquals(listOf("앱A", "앱B", "앱C"), prompt.sampleAppLabels)
+        assertEquals(listOf("com.app.a", "com.app.b", "com.app.c"), prompt.samplePackageNames)
+    }
+
+    @Test
+    fun excludes_apps_already_covered_by_a_category_app_pin() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", appName = "앱A", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", appName = "앱B", postedAt = nowMillis),
+                notification(id = "n3", packageName = "com.app.c", appName = "앱C", postedAt = nowMillis),
+                notification(id = "n4", packageName = "com.app.d", appName = "앱D", postedAt = nowMillis),
+                notification(id = "n5", packageName = "com.app.e", appName = "앱E", postedAt = nowMillis),
+            ),
+            categories = listOf(
+                category(id = "cat-a", appPackageName = "com.app.a"),
+                category(id = "cat-b", appPackageName = "com.app.b"),
+            ),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertTrue("Expected Prompt, got $result", result is UncategorizedAppsDetection.Prompt)
+        val prompt = result as UncategorizedAppsDetection.Prompt
+        assertEquals(3, prompt.uncoveredCount)
+        assertFalse(prompt.samplePackageNames.contains("com.app.a"))
+        assertFalse(prompt.samplePackageNames.contains("com.app.b"))
+    }
+
+    @Test
+    fun exclusion_below_threshold_returns_none() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", postedAt = nowMillis),
+                notification(id = "n3", packageName = "com.app.c", postedAt = nowMillis),
+                notification(id = "n4", packageName = "com.app.d", postedAt = nowMillis),
+            ),
+            categories = listOf(
+                category(id = "cat-a", appPackageName = "com.app.a"),
+                category(id = "cat-b", appPackageName = "com.app.b"),
+            ),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertEquals(UncategorizedAppsDetection.None, result)
+    }
+
+    @Test
+    fun ignores_notifications_older_than_seven_days() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", postedAt = nowMillis),
+                notification(id = "n3", packageName = "com.app.c", postedAt = nowMillis - sevenDaysMillis - 1L),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertEquals(UncategorizedAppsDetection.None, result)
+    }
+
+    @Test
+    fun returns_none_while_snooze_is_active() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", postedAt = nowMillis),
+                notification(id = "n3", packageName = "com.app.c", postedAt = nowMillis),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = nowMillis + 1L,
+        )
+
+        assertEquals(UncategorizedAppsDetection.None, result)
+    }
+
+    @Test
+    fun returns_prompt_when_snooze_has_expired() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.b", postedAt = nowMillis),
+                notification(id = "n3", packageName = "com.app.c", postedAt = nowMillis),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = nowMillis - 1L,
+        )
+
+        assertTrue(result is UncategorizedAppsDetection.Prompt)
+    }
+
+    @Test
+    fun deduplicates_packages_across_multiple_notifications() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", appName = "앱A", postedAt = nowMillis),
+                notification(id = "n2", packageName = "com.app.a", appName = "앱A", postedAt = nowMillis - 1L),
+                notification(id = "n3", packageName = "com.app.b", appName = "앱B", postedAt = nowMillis),
+                notification(id = "n4", packageName = "com.app.c", appName = "앱C", postedAt = nowMillis),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertTrue(result is UncategorizedAppsDetection.Prompt)
+        val prompt = result as UncategorizedAppsDetection.Prompt
+        assertEquals(3, prompt.uncoveredCount)
+    }
+
+    @Test
+    fun sample_labels_top_three_by_most_recent_notification() {
+        val result = detector.detect(
+            notifications = listOf(
+                notification(id = "n1", packageName = "com.app.a", appName = "앱A", postedAt = nowMillis - 100L),
+                notification(id = "n2", packageName = "com.app.b", appName = "앱B", postedAt = nowMillis - 50L),
+                notification(id = "n3", packageName = "com.app.c", appName = "앱C", postedAt = nowMillis - 10L),
+                notification(id = "n4", packageName = "com.app.d", appName = "앱D", postedAt = nowMillis - 200L),
+            ),
+            categories = emptyList(),
+            nowMillis = nowMillis,
+            snoozeUntilMillis = 0L,
+        )
+
+        assertTrue(result is UncategorizedAppsDetection.Prompt)
+        val prompt = result as UncategorizedAppsDetection.Prompt
+        assertEquals(4, prompt.uncoveredCount)
+        // Top 3 most recent: C (most recent) > B > A
+        assertEquals(listOf("앱C", "앱B", "앱A"), prompt.sampleAppLabels)
+    }
+
+    private fun notification(
+        id: String,
+        packageName: String,
+        appName: String = packageName,
+        postedAt: Long,
+    ) = NotificationUiModel(
+        id = id,
+        appName = appName,
+        packageName = packageName,
+        sender = null,
+        title = "제목",
+        body = "본문",
+        receivedAtLabel = "방금",
+        status = NotificationStatusUi.PRIORITY,
+        reasonTags = emptyList(),
+        score = null,
+        isBundled = false,
+        postedAtMillis = postedAt,
+    )
+
+    private fun category(
+        id: String,
+        appPackageName: String?,
+    ) = Category(
+        id = id,
+        name = "분류-$id",
+        appPackageName = appPackageName,
+        ruleIds = emptyList(),
+        action = CategoryAction.PRIORITY,
+        order = 0,
+    )
+}

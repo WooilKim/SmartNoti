@@ -37,6 +37,7 @@ import com.smartnoti.app.ui.screens.hidden.HiddenDeepLinkFilterResolver
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.home.HomeScreen
 import com.smartnoti.app.ui.screens.ignored.IgnoredArchiveScreen
+import com.smartnoti.app.ui.screens.inbox.InboxScreen
 import com.smartnoti.app.ui.screens.onboarding.OnboardingScreen
 import com.smartnoti.app.ui.screens.priority.PriorityScreen
 import com.smartnoti.app.ui.screens.rules.RulesScreen
@@ -201,10 +202,10 @@ fun AppNavHost(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onPriorityClick = { navigateToTopLevel(Routes.Priority.route) },
-                    onDigestClick = { navigateToTopLevel(Routes.Digest.route) },
                     onNotificationAccessClick = { navigateToTopLevel(Routes.Settings.route) },
                     onRulesClick = { navigateToTopLevel(Routes.Rules.route) },
                     onInsightClick = { navController.navigate(it) },
+                    onCreateCategoryClick = { navigateToTopLevel(Routes.Categories.route) },
                 )
             }
             composable(Routes.Priority.route) {
@@ -223,6 +224,18 @@ fun AppNavHost(
                 DigestScreen(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) }
+                )
+            }
+            // Plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
+            // Phase P3 Task 11 — 정리함 (Inbox) hosts Digest + Hidden in a
+            // single screen with segmented sub-tabs. Legacy `Digest` / `Hidden`
+            // routes remain registered above/below so deep-link tray
+            // contentIntents keep working.
+            composable(Routes.Inbox.route) {
+                InboxScreen(
+                    contentPadding = paddingValues,
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(
@@ -258,6 +271,16 @@ fun AppNavHost(
                         }
                     } else {
                         null
+                    },
+                    // Plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
+                    // Phase P3 Task 11 demotes Rules from a top-level BottomNav
+                    // entry to a Settings sub-menu. The "고급 규칙 편집" row
+                    // in Settings uses this callback to navigate into the
+                    // existing Rules screen via its stable route.
+                    onOpenAdvancedRules = {
+                        navController.navigate(Routes.Rules.create()) {
+                            launchSingleTop = true
+                        }
                     },
                 )
             }
