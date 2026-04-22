@@ -167,6 +167,18 @@ Append one row to `docs/pr-review-log.md` for every review verdict (approve / re
 | Date (UTC) | PR | Agent | Verdict | Notes |
 ```
 
+**Use the direct-append helper** — do NOT open a per-sweep audit PR anymore. Call:
+
+```bash
+.claude/lib/audit-log-append.sh --log pr-review --row '| <ISO8601 UTC> | #<num> | <agent> | <verdict> | <notes> |' --dedupe
+```
+
+The helper creates a short-lived `ops/audit-log-*` branch, commits the row, and fast-forwards directly to `main` via `git push origin HEAD:main`, retrying on race (up to 3 attempts). Exit codes:
+
+- `0` — row appended to `main` (or `--dedupe` detected it was already there).
+- `2` — direct push rejected after retries; the helper opened a fallback audit PR. Treat as DEFERRED: re-check next sweep, PM merges the fallback PR with the normal approve+merge flow.
+- `1` — unrecoverable error; emit the PM report line `audit-append FAILED` and continue.
+
 This is your audit surface. If a bad PR slipped through, someone tracing the regression should be able to find your approval row and read the "Notes" column for your reasoning.
 
 ## Merging approved PRs
@@ -179,13 +191,18 @@ After you approve a PR, **merge it** with `gh pr merge <num> --squash --delete-b
 - The head branch is NOT `main` or a protected branch you must never force.
 - The PR was NOT opened by you (project-manager opens no PRs except the small `ops/pr-review-log-*` and `ops/auto-merge-audit-*` audit rows; never merge those yourself).
 
-When you merge, append an audit row to `docs/auto-merge-log.md` BEFORE calling `gh pr merge`:
+When you merge, append an audit row to `docs/auto-merge-log.md` BEFORE calling `gh pr merge`, via the direct-append helper:
 
-```
-| <ISO8601 UTC> | project-manager | #<num> | <short scope summary> | <CI run URL> |
+```bash
+.claude/lib/audit-log-append.sh \
+  --log auto-merge \
+  --row '| <ISO8601 UTC> | project-manager | #<num> | <short scope summary> | <CI run URL> |' \
+  --dedupe
 ```
 
-Then `git commit` + `git push` the audit row on a short-lived ops branch (not on `main` directly), open a tiny audit PR titled `docs(auto-merge-log): record PR #<num> merged by project-manager`. **PM merges its own audit PRs** in the next sweep (no human-merge requirement; the audit row is append-only and low-risk).
+The helper lands the row directly on `main` (no per-sweep audit PR). If it exits `2`, it opened a fallback audit PR on your behalf — treat as DEFERRED and pick it up next sweep. See the "Logging" section above for exit-code semantics.
+
+Rationale for the direct-append path: prior to MP-1 (2026-04-21), PM opened one audit PR per sweep to record verdicts + merges. This produced ~10 PRs/session that nobody reviewed (docs-only, append-only) and accumulated rebase conflicts on shared log files. The `docs/plans/2026-04-21-meta-audit-log-direct-append.md` meta-plan moved the writes to a helper that appends + fast-forwards to `main` directly, preserving the audit-row traceability surface while eliminating the PR-wrapper churn.
 
 ### Never merge
 
@@ -216,7 +233,7 @@ project-manager review
  ├─ Changes requested: <list of #nums with one-line reason>
  ├─ Escalated to human: <list of #nums + specific risk signal>
  ├─ Deferred (CI pending only): <list>
- ├─ Audit rows: <PR # of audit-log PRs opened (PM merges these in next sweep)>
+ ├─ Audit rows: <N rows direct-appended to main via .claude/lib/audit-log-append.sh; fallback PRs (if any) listed by #>
  └─ Log: docs/pr-review-log.md updated with <N> rows
 ```
 

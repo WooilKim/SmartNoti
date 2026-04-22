@@ -4,7 +4,9 @@
     "allow": [
       "Bash(gh pr merge * --squash --delete-branch)",
       "Bash(gh pr comment * --body *)",
-      "Bash(gh pr review *)"
+      "Bash(gh pr review *)",
+      "Bash(.claude/lib/audit-log-append.sh *)",
+      "Bash(git push origin HEAD:main)"
     ]
   }
 }
