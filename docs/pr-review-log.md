@@ -181,3 +181,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:38:15Z | #254 | plan-implementer | DEFER | CI pending (run 24768625424); re-review on completion |
 | 2026-04-22T08:41:36Z | #254 | plan-implementer | APPROVE | Categories FAB + empty-state CTA; CI green |
 | 2026-04-22T13:01:12Z | #258 | main-session (plan-shipped flip) | APPROVE+merge | frontmatter-only; clears 4-tick carryover; shipped-via #254 |
+| 2026-04-22T14:59:03Z | #265 | plan-implementer | APPROVE+MERGE | feat Home truncate + Inbox de-nest, plan Tasks 0-3, RED tests + 2 journey doc syncs, CI pass, squash 85fd8b3 |
