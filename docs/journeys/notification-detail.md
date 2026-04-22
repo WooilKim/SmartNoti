@@ -18,7 +18,7 @@ last-verified: 2026-04-21
 ## Trigger
 
 - Home / Priority (검토 대기) / 정리함 (Digest / 보관 중 / 처리됨) / Insight 어디서든 카드 탭 → `navController.navigate(Routes.Detail.create(id))`
-- replacement 알림 본문 탭 → 딥링크로 parent route + detail 연결 (→ [digest-suppression](digest-suppression.md))
+- replacement 알림 본문 탭 → 딥링크로 parent route + detail 연결 (→ [digest-suppression](digest-suppression.md)). 2026-04-22 plan `categories-runtime-wiring-fix` (#245) 이후 replacement 알림에는 per-action 버튼 (중요/Digest/조용히/무시) 이 **전부 제거**되어 tap-only — 본문 탭이 Detail 진입의 유일한 경로.
 - IGNORE 상태 row 는 기본 뷰에서 제외되므로 Detail 도달 경로가 제한됨 — Settings 의 "무시된 알림 아카이브 표시" 토글이 ON 일 때 [ignored-archive](ignored-archive.md) 화면의 row 탭만 유일한 진입점
 
 ## Observable steps
@@ -32,29 +32,20 @@ last-verified: 2026-04-21
    - (선택) 온보딩 추천 반영 카드 — `NotificationDetailOnboardingRecommendationSummaryBuilder`
    - (선택) "어떻게 전달되나요?" — `NotificationDetailDeliveryProfileSummaryBuilder` 결과. 전달 모드/소리/진동/Heads-up/잠금화면 라벨
    - (선택) "원본 알림 처리 상태" — `NotificationDetailSourceSuppressionSummaryBuilder` 결과 (원본 상태 / 대체 알림 여부)
-   - "이 알림 학습시키기" 카드 — 4개 액션 버튼 (least-destructive → most-destructive)
-5. 액션 탭:
-   - `중요로 고정` → `RuleActionUi.ALWAYS_PRIORITY`
-   - `Digest로 보내기` → `RuleActionUi.DIGEST`
-   - `조용히 처리` → `RuleActionUi.SILENT`
-   - `무시` → `RuleActionUi.IGNORE` (파괴적 — 확인 다이얼로그 경유)
-
-   내부 처리 (`중요로 고정` / `Digest로 보내기` / `조용히 처리`):
-   1. `NotificationFeedbackPolicy.applyAction(notification, action)` → status/reasonTags 업데이트된 UI 모델 반환
-   2. `NotificationRepository.updateNotification(updated)` → DB upsert
-   3. `NotificationFeedbackPolicy.toRule(notification, action)` → 새 `RuleUiModel` (sender 있으면 PERSON, 없으면 APP)
-   4. `RulesRepository.upsertRule(rule)` — Rule DataStore 에 영속. **Category 는 자동 생성/갱신되지 않음** (Known gap) — 미래 동일 알림이 Category.action 경로로 자동 적용되려면 사용자가 [categories-management](categories-management.md) 에서 해당 Rule 을 Category 에 묶어주어야 함. UI 레벨에서는 Home StatPill / 리스트가 즉시 갱신되지만 classifier hot path 는 orphan → SILENT fallback 으로 빠질 수 있음.
-
-   내부 처리 (`무시`):
-   1. `IgnoreConfirmationDialog` 렌더 — "이 알림을 무시하면 앱에서도 삭제됩니다. 되돌리려면 설정 > 무시된 알림 보기." 확인 문구
-   2. 확인 → `applyIgnoreWithUndo`: 이전 `NotificationUiModel` + 이전 매칭 룰 (있으면) 스냅샷 저장 → `applyAction(..., IGNORE)` → `updateNotification` → `upsertRule(IGNORE)` → `onBack()` 으로 Detail pop → 3초 "되돌리기" 스낵바. 스낵바 action 탭 시 status/룰 rollback (새 룰이면 `deleteRule`, 기존 룰이면 prior action 으로 `upsertRule`). Undo 는 in-memory — 스낵바 닫히면 영구화.
-   3. 의미 전환: "무시" 버튼은 **Category.action = IGNORE 를 지향** — 이상적으로는 해당 Rule 을 소유한 Category 의 action 을 IGNORE 로 갱신하거나 전용 IGNORE Category 를 생성해야 하지만, 현 구현은 Rule upsert 만 수행 (Known gap). DB row 의 status 는 즉시 IGNORE 로 바뀌어 [ignored-archive](ignored-archive.md) 에 노출되지만, 다음 동일 알림이 자동으로 IGNORE 가 되려면 사용자가 [categories-management](categories-management.md) 에서 해당 Rule 을 IGNORE 액션 Category 에 묶어야 함.
+   - "이 알림 학습시키기" 카드 — 단일 CTA 버튼 `"분류 변경"` (2026-04-22 redesign 이전에는 4개 액션 버튼이었음)
+5. `"분류 변경"` 탭 → `CategoryAssignBottomSheet` 모달 바텀시트 오픈. 내부 동작 및 후속 플로우는 [rules-feedback-loop](rules-feedback-loop.md) 에 위임. 요약:
+   - 상단 "기존 분류에 포함" — 사용자 Category 리스트 (`Category.order` 오름차순). 한 Category row 탭 시 `AssignNotificationToCategoryUseCase.assignToExisting` 이 자동 rule (PERSON if sender else APP) 을 upsert + 해당 Category 의 `ruleIds` 에 dedup append. Category 의 `action` / `name` / `order` 는 불변.
+   - 하단 "새 분류 만들기" — `buildPrefillForNewCategory` 로 `CategoryEditorPrefill` 조립 (`name=sender-or-appName`, `appPackageName=packageName if APP rule`, `pendingRule=PERSON/APP rule`, `defaultAction=현재 Category action 의 dynamic-opposite` — DIGEST/SILENT/IGNORE → PRIORITY, PRIORITY → DIGEST, 소유 Category 없으면 PRIORITY). `AppNavHost` 가 `PrefillStore` 경유로 `CategoryEditorScreen` 으로 navigate — editor 저장 시에만 Rule + Category 가 persist (취소 시 아무것도 쓰이지 않음).
+6. 재분류 효과는 **다음 tick** 에 관측됨 — 이 경로는 대상 알림 row 자체의 status / reasonTags 를 즉시 업데이트하지 않는다. 동일 sender/앱으로 들어오는 후속 알림이 새로 묶인 Category 의 action 으로 자동 분류된다 (→ [notification-capture-classify](notification-capture-classify.md)).
 
 ## Exit state
 
-- DB 의 알림 row 는 새로운 status/태그로 업데이트됨 (해당 리스트 화면 자동 갱신).
-- RulesRepository 에 매칭 룰이 있다면 upsert, 없으면 insert. CategoriesRepository 는 이 경로에서 갱신되지 않음 (Known gap — 사용자가 [categories-management](categories-management.md) 에서 후속 연결 필요).
-- 사용자는 뒤로가기로 원래 화면 (Home / 검토 대기 / 정리함 / Insight) 으로 복귀.
+- RulesRepository: 경로 A/B 모두 자동-유도 Rule 이 upsert 됨 (deterministic id → 재탭 idempotent).
+- CategoriesRepository:
+  - 경로 A — 선택한 Category 의 `ruleIds` 에 rule.id 가 dedup 으로 append. 기타 필드 불변.
+  - 경로 B — editor 저장 시점에 새 Category 가 persist (Rule+Category 동시).
+- NotificationRepository: **대상 알림 row 는 이 경로에서 갱신되지 않는다** (legacy 4-버튼과의 계약 차이). 재분류 효과는 후속 동일 sender/앱 알림에 대해 발현.
+- 사용자는 시트 dismiss 후 Detail 에 머무르고, 뒤로가기로 원래 화면 (Home / 검토 대기 / 정리함 / Insight) 으로 복귀.
 
 ## Out of scope
 
@@ -64,41 +55,56 @@ last-verified: 2026-04-21
 
 ## Code pointers
 
-- `ui/screens/detail/NotificationDetailScreen` — 4버튼 feedback row + `applyIgnoreWithUndo` 내부 헬퍼 + 로컬 `SnackbarHost`
-- `ui/components/IgnoreConfirmationDialog` — 파괴적 액션 확인 다이얼로그
-- `domain/usecase/NotificationFeedbackPolicy` — applyAction + toRule (IGNORE 케이스 포함)
+- `ui/screens/detail/NotificationDetailScreen` — 단일 "분류 변경" Button + `CategoryAssignBottomSheet` 호스팅
+- `ui/notification/CategoryAssignBottomSheet` — ModalBottomSheet ("기존 분류에 포함" 리스트 + "새 분류 만들기" terminal row)
+- `ui/notification/ChangeCategorySheetState` — 시트의 pure state 모델 (Category.order 오름차순)
+- `domain/usecase/AssignNotificationToCategoryUseCase` — `assignToExisting` + `buildPrefillForNewCategory` + 자동 rule 유도
+- `data/categories/CategoriesRepository#appendRuleIdToCategory` — 경로 A 의 Category 단일 필드 갱신
+- `ui/screens/categories/CategoryEditorScreen` — prefill 수용 (경로 B)
+- `navigation/AppNavHost` + `PrefillStore` — Detail → Editor 로 prefill 전달
 - `domain/usecase/NotificationDetailDeliveryProfileSummaryBuilder`
 - `domain/usecase/NotificationDetailOnboardingRecommendationSummaryBuilder`
 - `domain/usecase/NotificationDetailSourceSuppressionSummaryBuilder`
-- `data/local/NotificationRepository#observeNotification`, `#updateNotification`
-- `data/rules/RulesRepository#upsertRule`, `#deleteRule` (undo 경로)
-- `notification/SmartNotiNotifier#ACTION_IGNORE` — broadcast 상수 (replacement alert 에는 IGNORE 버튼을 노출하지 않음 — replacement 자체가 non-IGNORE 결정)
+- `data/local/NotificationRepository#observeNotification`
+- `notification/SmartNotiNotifier` — replacement 알림에서 per-action `addAction(...)` 호출 전부 삭제 (tap-only)
+- `notification/SmartNotiNotificationActionReceiver` — per-action broadcast 핸들러 전부 삭제됨 (receiver 자체 제거)
 
 ## Tests
 
-- `NotificationFeedbackPolicyTest` — sender → PERSON, else → APP 규칙 생성
+- `AssignNotificationToCategoryUseCaseTest` — 경로 A PERSON / APP 분기 + idempotent dedupe
+- `CreateCategoryFromNotificationPrefillTest` — prefill 필드 + dynamic-opposite default action
+- `ChangeCategorySheetStateTest` — Category.order 정렬 + "새 분류 만들기" row 합성
 - `NotificationDetailDeliveryProfileSummaryBuilderTest` (있다면)
 
 ## Verification recipe
 
 ```bash
-# 1. 알림 게시 → 분류 → Detail 진입
-adb shell cmd notification post -S bigtext -t "광고" Promo1 "오늘의 이벤트"
+# 1. 알림 게시 → 분류 → Detail 진입 (fresh sender 로 baseline 오염 방지)
+adb shell cmd notification post -S bigtext -t "DetailTest_0421" FbTest1 "분류 변경 테스트"
 adb shell am start -n com.smartnoti.app/.MainActivity
-# Priority/Digest/Hidden 어느 화면에서든 카드 탭
+# Home / 검토 대기 / 정리함 어디서든 카드 탭 → Detail 마운트
 
-# 2. "중요로 고정" 탭 → 해당 알림이 Priority 로 이동했는지 확인
-# 3. 다음 동일 signature 알림을 보내 자동 Priority 로 분류되는지 확인
+# 2. "이 알림 학습시키기" 카드에 단일 "분류 변경" 버튼만 렌더되는지 확인
+# 3. "분류 변경" 탭 → CategoryAssignBottomSheet 렌더:
+#    - 기존 Category 리스트 (Category.order 오름차순)
+#    - 하단 "새 분류 만들기" terminal row
+
+# 4. 경로 A — 기존 Category 하나 탭 → 시트 닫힘
+#    → 후속 동일 sender 알림 포스팅 시 해당 Category 의 action 으로 분류되는지 관측
+adb shell cmd notification post -S bigtext -t "DetailTest_0421" FbTest2 "두 번째"
+
+# 5. 경로 B — Detail 재진입 → "분류 변경" → "새 분류 만들기"
+#    → CategoryEditor 가 prefill (name/appPackageName/pendingRule/defaultAction) 로 오픈
+#    → 저장 시 Rule+Category 동시 persist
 ```
 
 ## Known gaps
 
-- 재분류 시 토스트/확인 UI 없음 (상태만 바뀌어 UX 가 조용함).
+- 재분류 시 토스트/확인 UI 없음 (시트만 닫혀 UX 가 조용함).
 - Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Settings → "고급 규칙 편집" 으로 수동 이동 필요 (Rules 탭 자체가 BottomNav 에서 제거됐음).
-- **피드백 버튼이 Category 를 자동 생성하지 않음**: "중요로 고정" / "Digest로 보내기" / "조용히 처리" / "무시" 어느 경로도 `CategoriesRepository.upsertCategory(...)` 를 호출하지 않음. `NotificationFeedbackPolicy.toRule()` 도 Rule 만 반환. 결과적으로 feedback 으로 생성된 Rule 은 orphan 상태로 남아 classifier 의 hot path 에서 Category lift 가 실패 → SILENT fallback. UI 즉시 갱신은 `NotificationRepository.updateNotification` 이 수행하므로 사용자는 체감하지 못하지만, 후속 동일 알림이 **자동으로 같은 처리를 받으려면** 사용자가 [categories-management](categories-management.md) 에서 해당 Rule 을 원하는 action Category 에 묶어야 함. 후속 drift plan 으로 `FeedbackPolicy` 에 Category upsert 를 추가하거나 Detail 에 "분류 만들기" 링크를 노출.
-- 2026-04-21 (journey-tester): Verification recipe step 3 ("다음 동일 signature 알림을 보내 자동 Priority 로 분류되는지 확인") 이 테스트용 sender 로 `"광고"` 를 제안 — 이 값은 온보딩이 기본 주입하는 KEYWORD 룰 (`광고,프로모션,쿠폰,세일,특가,이벤트,혜택 → DIGEST`) 의 매치 대상과 겹쳐 `RuleConflictResolver` 가 PERSON-ALWAYS_PRIORITY 대신 KEYWORD-DIGEST 로 라우팅하므로 step 3 만 단독으로 보면 기대와 달라 보인다. PERSON 분기 자체는 중립 sender (e.g. `TestSender_0421_T12`) 로 검증 시 정상 동작하므로 contract 문제 아님 — recipe 문구를 중립 sender 기반으로 바꾸는 편이 후속 재현성 향상에 도움. (Phase B `ruleHitIds` 를 활용한 "적용된 규칙" 섹션 전용 관측으로 확장되면 자연스레 해소될 가능성 있음.)
-- 2026-04-21 (ui-ux-inspector, emulator-5554): "이 알림 학습시키기" 카드의 3-버튼 secondary row (`Digest로 보내기` / `조용히 처리` / `무시`) 에서 `Digest로 보내기` 라벨만 2줄로 줄바꿈되어 버튼 높이가 나머지 두 버튼과 불일치. `ui-improvement.md` 의 "tighter spacing rhythm" + "Lists and rows: tap targets large enough while reducing visual clutter" 항목에 대한 시각 위반 (moderate). 3개 버튼이 동일한 row 를 공유하므로 폭 제약으로 첫 버튼만 wrap — 라벨 단축 (e.g. `Digest` / `조용히` / `무시`) 또는 `FlowRow` 기반 레이아웃 재고 필요. 같은 스크린 screenshot: `/tmp/ui-ignore-detail2.png`.
-- 2026-04-21 (ui-ux-inspector, emulator-5554): `IgnoreConfirmationDialog` 의 확정 버튼 "무시" 가 primary accent 파랑을 사용 — 파괴성 신호는 전적으로 본문 카피 ("앱에서도 삭제됩니다") 에 의존. `ui-improvement.md` 의 "accent color sparingly for ... primary actions" 규칙에는 부합하므로 Linear/Superhuman 톤 유지. Minor — 현재 문구 중심 접근이 의도적이라면 그대로 두고, 후속에서 파괴 액션 전용 tonal variant 도입 여부를 제품 결정으로 재확인 필요. Screenshot: `/tmp/ui-ignore-confirm-dialog.png`.
+- **대상 알림 row 즉시 상태 변경 부재** (redesign 2026-04-22): legacy 4-버튼은 `NotificationRepository.updateNotification` 으로 해당 row 의 status/reasonTags 를 즉시 덮어써 Home/리스트에 즉시 반영했으나, redesign 이후 이 경로는 Rule+Category 만 persist 하고 row 자체는 건드리지 않는다. 재분류 효과는 **후속 동일 sender/앱 알림** 에 대해 다음 tick 부터 발현. 이 UX 후퇴를 후속 plan 이 명시적 "이 알림도 지금 재분류" CTA 로 보완할지 결정 필요.
+- **per-action broadcast 경로 제거** (2026-04-22): `SmartNotiNotificationActionReceiver` 및 `SmartNotiNotifier.ACTION_*` 상수 4종이 삭제되어 replacement 알림 / 3rd-party notification action 경유 재분류 훅이 완전히 사라졌다. 재분류는 오직 Detail 의 "분류 변경" 시트 경유로만 가능 — tap-only UX 로 의도적 단순화.
+- 2026-04-21 (journey-tester): 구 Verification recipe 가 테스트용 sender 로 `"광고"` 를 제안했는데 이 값이 온보딩 KEYWORD 룰 (`광고,프로모션,쿠폰,세일,특가,이벤트,혜택 → DIGEST`) 과 충돌해 baseline 이 오염됐다. Redesigned recipe 는 중립 sender (`DetailTest_0421` 등) 사용.
 
 ## Change log
 
@@ -108,3 +114,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: "이 알림 학습시키기" 카드에 4번째 버튼 **"무시"** 추가 — 파괴성을 드러내기 위해 least → most destructive 순서로 배치 (중요로 고정 → Digest → 조용히 → 무시). 탭 시 `IgnoreConfirmationDialog` 확인 다이얼로그 + 확정 시 `applyIgnoreWithUndo` 가 `NotificationFeedbackPolicy.applyAction(IGNORE)` + `RulesRepository.upsertRule(RuleActionUi.IGNORE)` + `onBack()` + 3초 "되돌리기" 스낵바 체인을 실행. 스낵바 action 탭 시 prior `NotificationUiModel` / prior rule 복원 (새 룰이면 delete, 기존 룰이면 prior action 으로 upsert). Undo 는 in-memory 로만 유지되며 스낵바 닫힘 = 영구화. Trigger 섹션에 IGNORE row 가 기본 뷰에서 제외되어 [ignored-archive](ignored-archive.md) 경유로만 Detail 도달 가능함을 명시. Plan: `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6a (#187 `57df6ac`). `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-21: journey-tester end-to-end re-verify of IGNORE flow (emulator-5554, APK `lastUpdateTime=2026-04-22 02:35:44` post-#189+#192). `cmd notification post -S bigtext -t '광고' IgnoreBtnTest '무시 버튼 Detail 테스트'` → DIGEST 분류 → 정리함 탭 → 프리뷰 row 탭 → Detail 마운트. Observable step 4 "이 알림 학습시키기" 카드에 4 버튼 (`중요로 고정` / `Digest로 보내기` / `조용히 처리` / `무시`) 존재 및 순서 확인. `무시` 탭 → `IgnoreConfirmationDialog` 제목 "이 알림을 무시할까요?" 본문 "이 알림을 무시하면 앱에서도 삭제됩니다. 되돌리려면 설정 > 무시된 알림 보기." `취소` / `무시` 버튼 렌더 확인 (Observable step 5.i). 다이얼로그 `무시` 확정 → Detail pop → 정리함 배경 복귀 + 스낵바 "무시됨. 되돌리려면 탭" + action `되돌리기` 렌더 (Observable step 5.ii). DB row `status=IGNORE` + `RulesRepository` 에 신규 `person:광고|광고|무시 (즉시 삭제)|PERSON|IGNORE|true|광고` upsert 확인 (`applyAction(IGNORE)` + `upsertRule(IGNORE)` 증명). `되돌리기` 탭 → DB row `status=DIGEST` 복원, rule 은 prior `person:광고|...|ALWAYS_PRIORITY` 로 복원 (기존 룰 prior action rollback 경로 증명; 새 룰이 아니었으므로 delete 대신 upsert). DRIFT 없음.
 - 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — "이 알림 학습시키기" 4개 버튼의 내부 처리 계약에 "Category 는 자동 생성되지 않음" 을 명시. 피드백 액션은 여전히 `NotificationRepository.updateNotification` + `RulesRepository.upsertRule` 두 write 만 수행 — 즉시 UI 반영은 보장되나 classifier hot path 의 자동 재적용은 해당 Rule 을 소유한 Category 가 있을 때만. "무시" 버튼 의미도 "Category.action = IGNORE 지향" 으로 copy 정렬. Trigger 에서 "Priority/Digest/Hidden 탭" 표현을 "검토 대기 / 정리함 (통합)" 로 갱신. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Tasks 1-4 (#236), P3 Tasks 10-11 (#240). `last-verified` 는 후속 ADB sweep 이 Category-free feedback path 를 재검증할 때까지 갱신 없음.
+- 2026-04-22: **Detail "분류 변경" 단일 CTA redesign** — "이 알림 학습시키기" 카드의 4-버튼 grid ("중요로 고정" / "Digest로 보내기" / "조용히 처리" / "무시") 와 `IgnoreConfirmationDialog` / 3초 undo 스낵바 / Detail 호출 경로 `NotificationFeedbackPolicy.applyAction` 을 전부 제거. 대체: 단일 `Button("분류 변경")` → `CategoryAssignBottomSheet` (기존 분류 리스트 + "새 분류 만들기" terminal row). 경로 A = `AssignNotificationToCategoryUseCase.assignToExisting` (기존 Category 의 `ruleIds` append, action 불변). 경로 B = `buildPrefillForNewCategory` → `CategoryEditorPrefill` → `PrefillStore` → `CategoryEditorScreen` seed (`defaultAction` = 현재 Category action 의 dynamic-opposite). Replacement 알림 per-action 버튼 4종 제거 (tap-only), `SmartNotiNotificationActionReceiver` + manifest `<receiver>` 삭제, `SmartNotiNotifier.ACTION_*` 상수 4종 삭제. 재분류 효과는 후속 동일 알림에 대해 다음 tick 부터 발현 (대상 row status 즉시 갱신 X). Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Tasks 2-6 (#245), Task 7 (this PR). `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).

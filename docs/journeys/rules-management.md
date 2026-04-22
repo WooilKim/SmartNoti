@@ -40,7 +40,7 @@ last-verified: 2026-04-22
    - "예외 규칙" 섹션 — "기존 규칙의 예외로 만들기" `Switch` + (ON 일 때) `RuleEditorOverrideOptionsBuilder` 가 만든 base 후보 dropdown. 후보가 없으면 switch 자체 비활성화.
    - `RuleEditorDraftValidator` 가 입력 유효성 검사 (빈 값/잘못된 시간 등), `RuleOverrideSupersetValidator` 가 draft 매치 조건이 선택된 base 의 superset 인지 검증 (KEYWORD 는 token 포함, 그 외는 strict equality) 하여 helper text 로 경고.
    - 저장 → `RuleDraftFactory.create(..., overrideOf = ...)` 로 `RuleUiModel` 생성 → `rulesRepository.upsertRule(rule)` + `categoriesRepository.upsertCategory(category)` (rule id 를 포함한 Category 가 없으면 생성, 있으면 action 갱신). `RuleOverrideValidator` 가 self-reference / circular chain 을 감지하면 persist 없이 `Log.e` 후 reject.
-7. 삭제 버튼 → `rulesRepository.deleteRule(id)`. (대응 Category 삭제 / 업데이트는 현 구현에서는 자동 cascade 되지 않음 — Known gap 참고.)
+7. 삭제 버튼 → `rulesRepository.deleteRule(id)`. 2026-04-22 plan `categories-runtime-wiring-fix` Task 5 (#245) 이후 `deleteRule` 이 Rule persist 후 `CategoriesRepository.onRuleDeleted(id)` 를 호출해 해당 rule id 를 모든 Category 의 `ruleIds` 에서 dedup 제거한다. `ruleIds` 가 비게 된 Category 는 **삭제하지 않고 보존** — 사용자가 분류 탭에서 "rule 없는 Category" 를 명시적으로 편집/삭제 결정.
 8. 순서 이동 → drag handle long-press + vertical drag (48dp step) 또는 arrow 버튼 → `rulesRepository.moveRule(id, direction)`. `RuleOrdering` 이 tier key (`overrideOf`) 가 동일한 가장 가까운 이웃까지만 swap 하도록 non-tier rows 를 skip — base 는 base 끼리, override 는 같은 base 를 공유하는 sibling 끼리만 우선순위가 바뀌고, 다른 tier 와는 절대 섞이지 않음. (Category 간 순서 변경은 [categories-management](categories-management.md) 의 drag-reorder 로 수행.)
 9. 활성 토글 → `rulesRepository.setRuleEnabled(id, enabled)`.
 
@@ -73,9 +73,11 @@ last-verified: 2026-04-22
 - `domain/usecase/RuleOverrideValidator` — self-reference / cycle 감지
 - `domain/usecase/RuleConflictResolver` — 동일 tier 타이-브레이크 + base/override 선택 (분류기 측)
 - `ui/components/RuleRow` — `RuleRowPresentation.Base` / `Override` / `BrokenOverride`
-- `data/rules/RulesRepository` — DataStore `smartnoti_rules`, override-aware upsert
+- `data/rules/RulesRepository` — DataStore `smartnoti_rules`, override-aware upsert, `deleteRule` 이 persist 후 `CategoriesRepository.onRuleDeleted(id)` 로 cascade 호출
 - `data/rules/RuleStorageCodec` — 8-column 포맷 (legacy 7-column tolerant)
 - `data/categories/CategoriesRepository` — editor 저장 시 owning Category 를 upsert
+- `data/categories/CategoriesRepository#onRuleDeleted` — Rule 삭제 시 모든 Category 의 `ruleIds` 에서 dedup 제거 (empty `ruleIds` Category 는 보존)
+- `data/categories/RuleDeletedCascade` — pure helper, strip logic 단위 테스트 대상
 - `domain/usecase/RuleCategoryActionIndex` — rule id → owning Category.action 조회 (리스트 derive)
 - `domain/model/Rule` — 순수 조건 매처 (action 필드 없음, Phase P1 Task 4)
 - `domain/model/RuleUiModel` — `RuleTypeUi`, `RuleActionUi` (UI 편의 enum, storage 용 아님), nullable `overrideOf`
@@ -93,6 +95,7 @@ last-verified: 2026-04-22
 - `RuleOverrideValidatorTest`
 - `RuleConflictResolverTest`
 - `RuleDraftFactoryTest` (있다면)
+- `RulesRepositoryDeleteCascadeTest` — `deleteRule` 이 Category.ruleIds 에서 id 를 제거하고 빈 `ruleIds` Category 는 보존함
 
 ## Verification recipe
 
@@ -115,7 +118,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - Override 체인은 1-level 만 지원 (base → override). `C → B → A` 같은 다단 체인은 `RuleListHierarchyBuilder` 가 top-level broken 으로 표시하고 분류기 측에서도 resolver 가 한 단계만 탐색. (plan `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Open question #3).
 - Recipe fragility — baseline 누적 (2026-04-21 cycle): rules-feedback-loop 경로로 upsert 된 `person:*` 룰이 `smartnoti_rules.preferences_pb` 에 영속화되어 이 recipe 의 "활성 규칙 N개" 헤더 baseline 이 cycle 에 따라 증가한다. 검증 시 추가/삭제 delta (N→N+1, N+1→N) 만 관측하고, 절대값(N) 은 테스트 환경 상태에 따라 달라질 수 있다.
 - ADB-only verification 으로는 override pill / nested tree indent / tier-aware drag-reorder 관찰 불가 (2026-04-22 sweep): (a) 현 recipe 가 override 룰을 만들지 않아 DB 에 nested 대상이 없고, (b) `adb shell input text` 가 한글 미지원이라 한글 base (`광고`, `엄마`, `중요 알림` 등) 를 strict-equality 로 override 하는 ASCII 값이 없으며, (c) same-value ASCII 시도 (e.g. `TestSender_0421_T12` → `TestSender_0421_T12`) 는 `RuleOverrideValidator` 의 SELF_REFERENCE 로 정상 reject. Phase C UI 재검증은 instrumentation test (`RulesScreenTest` 혹은 Compose UI test) 또는 사전-seed 된 override 룰이 포함된 fixture 로 이동하는 것이 안정적.
-- **Rule 삭제 시 대응 Category cascade 미구현**: `deleteRule` 은 Rule DataStore 에서만 제거되며, 해당 Rule 을 `ruleIds` 에 갖고 있던 Category 는 그대로 남는다. Category 의 `ruleIds` 멤버가 0 이 된 상태로 남으면 classifier lift 단계에서 해당 Category 는 매치에 참여하지 않아 효과가 없지만, 분류 탭 목록에는 "빈 Category" 로 계속 보인다. 사용자가 [categories-management](categories-management.md) 에서 수동 정리가 필요. 후속 plan 에서 cascade 혹은 empty-category GC 처리.
+- (resolved 2026-04-22, plan `categories-runtime-wiring-fix` Task 5 / #245) **Rule 삭제 시 Category.ruleIds cascade** — `deleteRule` 이 `CategoriesRepository.onRuleDeleted(id)` 를 호출해 해당 id 를 모든 Category 의 `ruleIds` 에서 dedup 제거. `ruleIds` 가 비게 된 Category 는 보존 (empty-Category GC 는 별도 과제). 더 이상 dangling reference 가 쌓이지 않음.
 - **Rule 조건 편집 시 action 변경**: Rule 의 action dropdown 편집은 `rulesRepository.upsertRule` + `categoriesRepository.upsertCategory` 두 개의 별도 persist 호출로 구성 — 원자성 없음. 프로세스 kill 이 그 사이에 끼면 Rule 만 갱신되고 Category 의 action 이 이전 값으로 남을 수 있음. 실제 재현 빈도는 낮지만 데이터 정합성 reasoning 상 언급.
 
 ## Change log
@@ -125,3 +128,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: Phase C (hierarchical rules v2) 반영 — `RuleUiModel.overrideOf` 필드 추가, `RuleStorageCodec` 8-column 포맷, `RuleOverrideValidator` 가 self-reference / circular chain reject (#148). Rule editor AlertDialog 에 "예외 규칙" 섹션 + base dropdown + `RuleOverrideSupersetValidator` helper text (#151). Rules 탭이 `RuleListHierarchyBuilder` 로 base/override tree 렌더, `RuleRow` 에 `Base` / `Override` / `BrokenOverride` presentation 분기 (#150). Drag-to-reorder 가 `RuleOrdering` 으로 tier-aware swap 만 허용 (#152). 1-level override 체인만 지원 — Known gaps 참고. Plan: `docs/plans/2026-04-21-rules-ux-v2-inbox-restructure.md` Phase C Task 1/3/4/5. `last-verified` 는 실제 recipe 재실행 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
 - 2026-04-22: Fresh APK (build 2026-04-22) re-verify on emulator-5554. PASS — recipe 의 키워드 "인증번호" 포스트 → Home StatPill 즉시 카운트 16→17 로 반영 확인. Phase C 관측: 편집 다이얼로그 "예외 규칙" switch 토글 시 base dropdown 이 9개 candidate (`중요 알림`, `프로모션 알림`, `반복 알림`, `엄마`, `TestSender_0421_T11`, `TestSender_0421_T12`, `SilentTest_0421_T1`, `광고`, `IgnoreTestRule`) 를 채워 렌더. Action dropdown 에 IGNORE "무시 (즉시 삭제)" chip 노출, 리스트 상단 filter 에 "무시 1" chip 및 최하단 tier 섹션 "무시 / 규칙 1개" 렌더. 그룹 순서: 즉시 전달 3 → Digest 4 → 조용히 1 → 무시 1 (doc 과 일치). Override pill / nested indent / drag-reorder 는 이번 세션에서 end-to-end exercise 불가 — 현 DB 에 override 룰이 없고, strict-equality 타입 (PERSON/APP/SCHEDULE/REPEAT_BUNDLE) 은 same-value override 시 `RuleOverrideValidator` 가 SELF_REFERENCE 로 reject 되므로 (base.id == draft.id), KEYWORD superset 또는 한글 입력이 가능한 instrumentation 환경에서 재검증 필요. Known gaps 에 observability 제한 기록.
 - 2026-04-22: **Rule/Category 분리 + Settings 격하** 반영 — Rule 모델에서 action 필드 제거 (Phase P1 Task 4), action 은 Category 가 소유. Rules 탭은 BottomNav 에서 제거되어 Settings "고급 규칙 편집" 서브메뉴로 진입. RulesScreen 의 액션 chip / filter / grouping 은 `RuleCategoryActionIndex` 로 owning Category 의 action 을 derive 해 기존 UI 계약 유지. 저장 시 Rule + 대응 Category 를 동시 upsert. Title/Goal/Trigger/Observable steps/Code pointers 전면 갱신. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Tasks 1-4 (#236), P3 Task 11 (#240). `last-verified` 는 Settings 진입점 재-ADB 검증 전까지 현 일자 유지 (이전 sweep 은 레거시 BottomNav "규칙" 탭 기반 recipe 로 수행됨).
+- 2026-04-22: **Rule 삭제 cascade drift 해소** — `RulesRepository.deleteRule` 이 Rule persist 완료 후 `CategoriesRepository.onRuleDeleted(id)` 를 호출해 모든 Category 의 `ruleIds` 에서 해당 rule id 를 dedup 제거. `RuleDeletedCascade` pure helper 로 strip 로직 분리, `RulesRepositoryDeleteCascadeTest` 로 계약 고정. `ruleIds` 가 비게 된 Category 는 "rule-less" 상태로 보존 (empty-Category GC 는 별도 과제). 더 이상 dangling Rule id 가 Category 에 남지 않음. Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Task 5 (#245), Task 7 (this PR). `last-verified` 변경 없음.

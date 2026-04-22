@@ -15,7 +15,7 @@ last-verified: 2026-04-22
 ## Preconditions
 
 - 온보딩 완료
-- 최소 하나 이상의 `Category.action == IGNORE` 분류에 묶인 Rule 이 존재하거나, Detail 의 "무시" 피드백 버튼으로 IGNORE 를 적용한 이력이 있어야 아카이브가 비어있지 않음
+- 최소 하나 이상의 `Category.action == IGNORE` 분류에 묶인 Rule 이 존재해야 아카이브가 비어있지 않음. 2026-04-22 plan `categories-runtime-wiring-fix` (#245) 이후 Detail 의 "무시" 버튼은 제거되어 피드백 경로에서 IGNORE 를 만들 수 없음 — IGNORE 를 원하면 Detail 의 "분류 변경" → "새 분류 만들기" 에서 Category action 을 IGNORE 로 선택하거나, 기존 IGNORE Category 에 할당해야 함 (→ [rules-feedback-loop](rules-feedback-loop.md)).
 - Settings 의 `showIgnoredArchive` 토글이 ON (default OFF). 2026-04-22 픽스 (#199) 이후 route 는 상시 등록되고 토글은 Settings 의 "무시됨 아카이브 열기" 버튼 가시성만 gate 함 (→ Known gaps)
 
 ## Trigger
@@ -36,7 +36,7 @@ last-verified: 2026-04-22
    - `ScreenHeader` subtitle 이 "SmartNoti 가 IGNORE 규칙으로 즉시 정리한 알림이에요. 원본 알림센터에서도 사라진 상태예요." 로 전환.
    - `SmartSurfaceCard` — "보관 중 N건" + "최신 순으로 정렬돼 있어요. 탭하면 상세 화면에서 어떤 규칙이 걸렸는지 확인할 수 있어요."
    - LazyColumn 이 `NotificationCard` 로 개별 row 렌더 (그룹 collapse / bulk action 없음 — 의도적으로 plain list).
-7. 카드 탭 → `navController.navigate(Routes.Detail.create(id))` (→ [notification-detail](notification-detail.md)). Detail 에서는 `StatusBadge` 가 IGNORE 케이스로 중립 회색 tone 렌더, 피드백 버튼 "무시" 는 이미 IGNORE 인 row 에서도 눌림 (결과적으로 noop upsert) — Detail 계약의 일부.
+7. 카드 탭 → `navController.navigate(Routes.Detail.create(id))` (→ [notification-detail](notification-detail.md)). Detail 에서는 `StatusBadge` 가 IGNORE 케이스로 중립 회색 tone 렌더. 재분류는 Detail 의 단일 "분류 변경" CTA 경유로만 — IGNORE 를 벗어나려면 "분류 변경" → PRIORITY/DIGEST/SILENT action 을 가진 Category 를 선택 혹은 생성.
 
 ## Exit state
 
@@ -46,7 +46,7 @@ last-verified: 2026-04-22
 
 ## Out of scope
 
-- 개별 row 를 아카이브 안에서 재분류하거나 복구하는 UI (현재 Detail 의 기존 피드백 버튼 3종 + "무시" 만 지원; bulk action 미구현)
+- 개별 row 를 아카이브 안에서 재분류하거나 복구하는 UI (복구는 Detail 진입 후 "분류 변경" → 원하는 action 을 가진 Category 에 할당; bulk action 미구현)
 - IGNORE row 의 retention / 자동 삭제 정책 (현재 무제한 보관)
 - 아카이브 그룹핑 / 필터 / 검색 (plain list 만)
 - IGNORE 룰 편집 (→ [rules-management](rules-management.md))
@@ -70,7 +70,7 @@ last-verified: 2026-04-22
 ## Verification recipe
 
 ```bash
-# 1. Rules 탭에서 IGNORE 룰 생성 — 예: 키워드 "광고" + 액션 "무시 (즉시 삭제)"
+# 1. Settings → "고급 규칙 편집 열기" 에서 IGNORE 룰 생성 — 예: 키워드 "광고" + 액션 "무시 (즉시 삭제)"
 #    (→ rules-management recipe)
 
 # 2. 해당 키워드 포함 알림 게시
@@ -89,7 +89,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Known gaps
 
 - 화면 단독 Compose UI 테스트 부재 (repository + settings 단위 테스트로만 커버).
-- 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현 — 복구가 필요하면 Detail 로 가서 "중요로 고정" / "Digest로 보내기" / "조용히 처리" 중 하나를 눌러야 함.
+- 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현 — 복구가 필요하면 Detail 로 가서 "분류 변경" → non-IGNORE action 을 가진 Category 에 할당해야 함 (2026-04-22 redesign 이후 단일 CTA 경로).
 - IGNORE row 의 retention 정책 미구현 — 물리 삭제 / 오래된 row 자동 정리는 후속. Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` out-of-scope.
 - Weekly insights 에서 IGNORE 카운트가 DIGEST / SILENT 와 별도 스트림으로 노출되는지 (Insights builder contract) 는 test-level 로만 검증되고, 화면 레이블이 실제로 "삭제 N건" 같은 copy 로 분리되어 보이는지는 아직 미검증 — Task 8 verification 에서 확인 필요.
 - Preconditions / Trigger / Observable steps / Exit state / Code pointers 가 아직 "route 가 조건부로 등록됨" 을 전제로 기술되어 있으나, 2026-04-22 픽스 이후 route 는 상시 등록되고 토글은 Settings 버튼 가시성만 gate 함. 다음 verification 패스에서 문구 정비 필요 (별도 journey-tester PR).
@@ -102,3 +102,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: toggle OFF→ON 직후 same-composition 탭 race 해소 — plan `docs/plans/2026-04-22-ignored-archive-first-tap-nav-race.md` (PR #199). Option A 적용: `AppNavHost` 가 `Routes.IgnoredArchive` 를 상시 등록하고, 토글은 Settings 버튼 가시성만 gate. `IgnoredArchiveNavGate.isRouteRegistered` 이 unconditional `true` 로 전환되어 "button visible ⇒ route registered" 불변식이 단일 읽기 지점으로 고정됨.
 - 2026-04-22: post-fix verification — APK rebuild (`lastUpdateTime=2026-04-22 03:46:30`) 후 OFF→ON→즉시 버튼 탭 시퀀스 3회 반복. 크래시 0건, `IgnoredArchiveScreen` 정상 마운트 확인 (`보관 중 1건` 렌더). 직전 sweep 에서 보고된 `IllegalArgumentException: Navigation destination ... ignored_archive cannot be found` 재현 불가. `last-verified` 를 2026-04-22 로 갱신.
 - 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — Goal/Preconditions 에서 IGNORE 를 "Rule 의 속성" 대신 "`Category.action = IGNORE` 의 결과" 로 재정의. `observeIgnoredArchive` 의 필터 자체 (`status == NotificationStatusUi.IGNORE`) 는 불변. classifier cascade 가 Category.action 기반으로 바뀐 뒤에도 IGNORE status 생성 경로는 논리적으로 동일 (Rule 매치 → winning Category 의 action 적용). Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 (#236), P2 (#239). `last-verified` 는 변경 없음.
+- 2026-04-22: **Detail "무시" 버튼 제거 반영** — Detail 의 4-버튼 grid ("중요로 고정" / "Digest로 유지" / "조용히 유지" / "무시") 가 단일 "분류 변경" CTA 로 대체됨 (→ [notification-detail](notification-detail.md)). IGNORE 는 여전히 `Category.action == IGNORE` 경로로 생성 가능하지만 **Detail 피드백 경유 즉시 IGNORE 표시는 불가** — 사용자는 "분류 변경" → 기존 IGNORE Category 선택 혹은 "새 분류 만들기" 에서 action=IGNORE 선택을 거쳐야 후속 동일 알림이 IGNORE 로 라우팅된다. 아카이브 필터 / 진입 경로 / StatusBadge 계약은 불변. Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Tasks 2+6 (#245), Task 7 (this PR). `last-verified` 는 변경 없음.
