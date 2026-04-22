@@ -1,48 +1,80 @@
 package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.Category
-import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.ClassificationInput
 import com.smartnoti.app.domain.model.NotificationClassification
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.model.toDecision
 
 class NotificationClassifier(
     private val vipSenders: Set<String>,
     private val priorityKeywords: Set<String>,
     private val shoppingPackages: Set<String>,
-    private val ruleConflictResolver: RuleConflictResolver = RuleConflictResolver(),
+    @Suppress("UNUSED_PARAMETER") ruleConflictResolver: RuleConflictResolver = RuleConflictResolver(),
     private val categoryConflictResolver: CategoryConflictResolver = CategoryConflictResolver(),
 ) {
     /**
      * Classify [input] against the user's Rule / Category graph.
      *
-     * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1
-     * Task 4 rewired this to delegate action selection to
-     * [CategoryConflictResolver]: matched Rules are lifted to their owning
-     * Categories and the winning Category's action drives the decision.
-     * The per-rule tie-break (via [RuleConflictResolver]) is still run
-     * first so a base-vs-override duel resolves to a single Rule before we
-     * ask "which Category owns that rule?" — avoiding a mid-flight swap
-     * between unrelated Categories.
+     * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P2
+     * Task 5 rewires this path:
+     *  1. Filter [rules] down to the enabled rules that match [input].
+     *  2. Apply [RuleConflictResolver] to resolve **override vs base**
+     *     collisions — a matched override drops its matched base from the
+     *     set so `base+override → override` semantics (Phase C contract)
+     *     still hold. Any rule without an override in the matched set
+     *     passes through unchanged.
+     *  3. Lift every surviving rule to every Category that owns it.
+     *  4. Hand the resulting Category list to [CategoryConflictResolver]
+     *     along with a `ruleId -> ruleType` map so the resolver can apply
+     *     the Task 6 specificity ladder (APP > KEYWORD > PERSON > SCHEDULE
+     *     > REPEAT_BUNDLE) + app-pin bonus + drag-order tie-break.
+     *  5. Map the winning `Category.action` to a [NotificationDecision].
      *
-     * When no user rule matches, the legacy heuristic chain (VIP /
-     * priority keywords / quiet-hours shopping / duplicate burst / SILENT
-     * default) still runs. Phase P2 will collapse these into Category-level
-     * signals; Phase P1 keeps the behaviour unchanged so the migration is
-     * invisible to users who haven't yet built a Category graph.
+     * When no user rule matches (or no Category owns the matched rules) the
+     * legacy heuristic chain (VIP / priority keywords / quiet-hours shopping
+     * / duplicate burst / SILENT default) runs so users with an empty
+     * Category graph still see sensible routing.
+     *
+     * [NotificationClassification.matchedRuleIds] reports every matched rule
+     * (after override collapse) in their list-order so Detail reason chips
+     * can still explain every rule that fired — not just the one whose
+     * Category happened to win.
      */
     fun classify(
         input: ClassificationInput,
         rules: List<RuleUiModel> = emptyList(),
         categories: List<Category> = emptyList(),
     ): NotificationClassification {
-        findMatchingRule(input, rules)?.let { rule ->
-            val decision = resolveCategoryDecision(rule.id, categories)
+        val matchedRules = findMatchingRules(input, rules)
+        if (matchedRules.isNotEmpty()) {
+            val effectiveRules = collapseOverrides(matchedRules)
+            val matchedRuleIds = effectiveRules.map { it.id }
+            val owning = categories.filter { category ->
+                category.ruleIds.any { ruleId -> ruleId in matchedRuleIds }
+            }
+            if (owning.isNotEmpty()) {
+                val winner = categoryConflictResolver.resolve(
+                    matched = owning,
+                    allCategories = categories,
+                    matchedRuleTypes = effectiveRules.associate { it.id to it.type },
+                )
+                if (winner != null) {
+                    return NotificationClassification(
+                        decision = winner.action.toDecision(),
+                        matchedRuleIds = matchedRuleIds,
+                    )
+                }
+            }
+            // Matched rules exist but no Category owns them — fall back to
+            // SILENT so an orphaned rule cannot crash the notifier hot path.
+            // The matched rule ids are still reported so Detail reason chips
+            // can surface them.
             return NotificationClassification(
-                decision = decision ?: NotificationDecision.SILENT,
-                matchedRuleIds = listOf(rule.id),
+                decision = NotificationDecision.SILENT,
+                matchedRuleIds = matchedRuleIds,
             )
         }
 
@@ -67,35 +99,35 @@ class NotificationClassifier(
     }
 
     /**
-     * Lift the matched [ruleId] to its owning Category (via
-     * [CategoryConflictResolver]) and map the winning action to a
-     * [NotificationDecision]. Returns null when no Category owns the rule —
-     * the classifier falls back to SILENT in that case so an orphaned rule
-     * cannot crash the notifier pipeline.
+     * Return the set of enabled rules that match [input], preserving the
+     * ordering from [rules] so downstream tie-breaks stay deterministic.
      */
-    private fun resolveCategoryDecision(
-        ruleId: String,
-        categories: List<Category>,
-    ): NotificationDecision? {
-        val owning = categories.filter { it.ruleIds.contains(ruleId) }
-        val winner = categoryConflictResolver.resolve(
-            matched = owning,
-            allCategories = categories,
-        ) ?: return null
-        return winner.action.toDecision()
+    private fun findMatchingRules(
+        input: ClassificationInput,
+        rules: List<RuleUiModel>,
+    ): List<RuleUiModel> {
+        val content = listOf(input.title, input.body).joinToString(" ")
+        return rules.filter { rule -> rule.enabled && matches(rule, input, content) }
     }
 
     /**
-     * Picks the user rule that applies to [input], delegating conflict
-     * resolution to [RuleConflictResolver].
+     * Collapse base vs override collisions within the matched set: when an
+     * override and its base both fired, drop the base so only the override
+     * contributes to Category selection. This preserves the Phase C
+     * contract exercised by `override_rule_wins_over_its_base_…` tests.
+     *
+     * Runs in O(n): we build the set of matched ids once and filter base
+     * rules whose id is referenced by a matched override's `overrideOf`.
      */
-    private fun findMatchingRule(
-        input: ClassificationInput,
-        rules: List<RuleUiModel>,
-    ): RuleUiModel? {
-        val content = listOf(input.title, input.body).joinToString(" ")
-        val matched = rules.filter { rule -> rule.enabled && matches(rule, input, content) }
-        return ruleConflictResolver.resolve(matched = matched, allRules = rules)
+    private fun collapseOverrides(matched: List<RuleUiModel>): List<RuleUiModel> {
+        if (matched.size <= 1) return matched
+        val matchedIds = matched.mapTo(mutableSetOf()) { it.id }
+        val shadowedBaseIds = matched
+            .mapNotNull { it.overrideOf }
+            .filter { baseId -> baseId in matchedIds }
+            .toSet()
+        if (shadowedBaseIds.isEmpty()) return matched
+        return matched.filterNot { it.id in shadowedBaseIds }
     }
 
     private fun matches(rule: RuleUiModel, input: ClassificationInput, content: String): Boolean =
@@ -135,10 +167,4 @@ class NotificationClassifier(
         return threshold > 0 && duplicateCountInWindow >= threshold
     }
 
-    private fun CategoryAction.toDecision(): NotificationDecision = when (this) {
-        CategoryAction.PRIORITY -> NotificationDecision.PRIORITY
-        CategoryAction.DIGEST -> NotificationDecision.DIGEST
-        CategoryAction.SILENT -> NotificationDecision.SILENT
-        CategoryAction.IGNORE -> NotificationDecision.IGNORE
-    }
 }

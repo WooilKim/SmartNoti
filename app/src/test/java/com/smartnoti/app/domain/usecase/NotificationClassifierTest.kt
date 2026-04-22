@@ -4,13 +4,24 @@ import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.ClassificationInput
 import com.smartnoti.app.domain.model.NotificationDecision
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
-import org.junit.Ignore
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+/**
+ * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P2
+ * Tasks 5+6+7 re-activate these tests. The classifier:
+ *   - matches all enabled rules,
+ *   - lifts every matched rule to any owning Category,
+ *   - delegates the action pick to [CategoryConflictResolver] (which applies
+ *     the rule-type specificity ladder APP > KEYWORD > PERSON > SCHEDULE >
+ *     REPEAT_BUNDLE, with an app-pin bonus, and the user-chosen drag order
+ *     as the tie-break).
+ *
+ * Each test that used to depend on `Rule.action` now wires the rule into a
+ * Category whose action matches the original expectation.
+ */
 class NotificationClassifierTest {
 
     private val classifier = NotificationClassifier(
@@ -20,8 +31,21 @@ class NotificationClassifierTest {
     )
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun schedule_rule_matches_hour_inside_same_day_window() {
+        val rule = RuleUiModel(
+            id = "r-schedule",
+            title = "업무 시간에는 Digest",
+            subtitle = "Digest로 묶기",
+            type = RuleTypeUi.SCHEDULE,
+            enabled = true,
+            matchValue = "9-18",
+        )
+        val category = category(
+            id = "cat-schedule",
+            action = CategoryAction.DIGEST,
+            ruleIds = listOf(rule.id),
+        )
+
         val result = classifier.classify(
             input = ClassificationInput(
                 packageName = "com.chat.app",
@@ -29,16 +53,8 @@ class NotificationClassifierTest {
                 body = "새 메시지가 도착했어요",
                 hourOfDay = 10,
             ),
-            rules = listOf(
-                RuleUiModel(
-                    id = "r-schedule",
-                    title = "업무 시간에는 Digest",
-                    subtitle = "Digest로 묶기",
-                    type = RuleTypeUi.SCHEDULE,
-                    enabled = true,
-                    matchValue = "9-18",
-                )
-            )
+            rules = listOf(rule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.DIGEST, result.decision)
@@ -47,6 +63,20 @@ class NotificationClassifierTest {
 
     @Test
     fun schedule_rule_matches_hour_inside_overnight_window() {
+        val rule = RuleUiModel(
+            id = "r-night",
+            title = "심야엔 조용히",
+            subtitle = "조용히 정리",
+            type = RuleTypeUi.SCHEDULE,
+            enabled = true,
+            matchValue = "23-7",
+        )
+        val category = category(
+            id = "cat-night",
+            action = CategoryAction.SILENT,
+            ruleIds = listOf(rule.id),
+        )
+
         val result = classifier.classify(
             input = ClassificationInput(
                 packageName = "com.shopping.app",
@@ -54,16 +84,8 @@ class NotificationClassifierTest {
                 body = "야간 할인 중이에요",
                 hourOfDay = 2,
             ),
-            rules = listOf(
-                RuleUiModel(
-                    id = "r-night",
-                    title = "심야엔 조용히",
-                    subtitle = "조용히 정리",
-                    type = RuleTypeUi.SCHEDULE,
-                    enabled = true,
-                    matchValue = "23-7",
-                )
-            )
+            rules = listOf(rule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.SILENT, result.decision)
@@ -71,59 +93,80 @@ class NotificationClassifierTest {
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
-    fun earlier_matching_rule_wins_when_multiple_rules_match() {
-        val input = ClassificationInput(
-            packageName = "com.chat.app",
-            title = "오늘 운영 현황",
-            body = "긴급 장애 대응이 필요해요"
+    fun earlier_category_wins_when_multiple_rules_match_same_type() {
+        // Two equal-specificity (KEYWORD) rules match; each belongs to its
+        // own Category. The Category with the lower `order` (dragged higher
+        // in the 분류 tab) wins via the Phase P2 Task 6 tie-break.
+        val ruleDigest = RuleUiModel(
+            id = "r-digest",
+            title = "운영 Digest",
+            subtitle = "Digest로 묶기",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "장애,긴급",
+        )
+        val rulePriority = RuleUiModel(
+            id = "r-priority",
+            title = "운영 긴급",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "장애,긴급",
+        )
+        val digestCategory = category(
+            id = "cat-digest",
+            action = CategoryAction.DIGEST,
+            ruleIds = listOf(ruleDigest.id),
+            order = 0, // user dragged this one to the top
+        )
+        val priorityCategory = category(
+            id = "cat-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(rulePriority.id),
+            order = 1,
         )
 
         val result = classifier.classify(
-            input = input,
-            rules = listOf(
-                RuleUiModel(
-                    id = "r-digest",
-                    title = "운영 Digest",
-                    subtitle = "Digest로 묶기",
-                    type = RuleTypeUi.KEYWORD,
-                    enabled = true,
-                    matchValue = "장애,긴급",
-                ),
-                RuleUiModel(
-                    id = "r-priority",
-                    title = "운영 긴급",
-                    subtitle = "항상 바로 보기",
-                    type = RuleTypeUi.KEYWORD,
-                    enabled = true,
-                    matchValue = "장애,긴급",
-                )
-            )
+            input = ClassificationInput(
+                packageName = "com.chat.app",
+                title = "오늘 운영 현황",
+                body = "긴급 장애 대응이 필요해요"
+            ),
+            rules = listOf(ruleDigest, rulePriority),
+            categories = listOf(digestCategory, priorityCategory),
         )
 
         assertEquals(NotificationDecision.DIGEST, result.decision)
-        assertEquals(listOf("r-digest"), result.matchedRuleIds)
+        // Both rules matched — the classifier reports every matched rule id
+        // so downstream surfaces (Detail reason tags) can still explain all
+        // the rules that fired.
+        assertEquals(setOf("r-digest", "r-priority"), result.matchedRuleIds.toSet())
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun user_person_rule_is_applied_before_default_logic() {
+        val rule = RuleUiModel(
+            id = "r1",
+            title = "고객",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.PERSON,
+            enabled = true,
+            matchValue = "고객",
+        )
+        val category = category(
+            id = "cat-person",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(rule.id),
+        )
+
         val result = classifier.classify(
             input = ClassificationInput(
                 sender = "고객",
                 packageName = "com.kakao.talk",
                 body = "회의 일정 확인 부탁드려요"
             ),
-            rules = listOf(
-                RuleUiModel(
-                    id = "r1",
-                    title = "고객",
-                    subtitle = "항상 바로 보기",
-                    type = RuleTypeUi.PERSON,
-                    enabled = true,
-                    matchValue = "고객",
-                )
-            )
+            rules = listOf(rule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
@@ -131,24 +174,29 @@ class NotificationClassifierTest {
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun keyword_rule_matches_any_keyword_in_comma_separated_list() {
+        val rule = RuleUiModel(
+            id = "r-keywords",
+            title = "운영 키워드",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "배포,장애,긴급",
+        )
+        val category = category(
+            id = "cat-keywords",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(rule.id),
+        )
+
         val result = classifier.classify(
             input = ClassificationInput(
                 packageName = "com.chat.app",
                 title = "오늘 운영 현황",
                 body = "새로운 장애 접수가 도착했어요"
             ),
-            rules = listOf(
-                RuleUiModel(
-                    id = "r-keywords",
-                    title = "운영 키워드",
-                    subtitle = "항상 바로 보기",
-                    type = RuleTypeUi.KEYWORD,
-                    enabled = true,
-                    matchValue = "배포,장애,긴급",
-                )
-            )
+            rules = listOf(rule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
@@ -234,24 +282,29 @@ class NotificationClassifierTest {
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun repeat_bundle_rule_overrides_default_repeat_handling_at_custom_threshold() {
+        val rule = RuleUiModel(
+            id = "r-repeat-priority",
+            title = "반복되면 바로 보기",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.REPEAT_BUNDLE,
+            enabled = true,
+            matchValue = "2",
+        )
+        val category = category(
+            id = "cat-repeat",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(rule.id),
+        )
+
         val result = classifier.classify(
             input = ClassificationInput(
                 packageName = "com.chat.app",
                 body = "같은 알림이 계속 와요",
                 duplicateCountInWindow = 2,
             ),
-            rules = listOf(
-                RuleUiModel(
-                    id = "r-repeat-priority",
-                    title = "반복되면 바로 보기",
-                    subtitle = "항상 바로 보기",
-                    type = RuleTypeUi.REPEAT_BUNDLE,
-                    enabled = true,
-                    matchValue = "2",
-                )
-            )
+            rules = listOf(rule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
@@ -272,26 +325,31 @@ class NotificationClassifierTest {
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun matched_rule_id_is_reported_even_when_classifier_signal_would_also_fire() {
         // VIP sender would otherwise promote to PRIORITY on its own, but a
         // matching user rule still takes precedence and its id is returned.
+        val rule = RuleUiModel(
+            id = "r-person-mom",
+            title = "엄마",
+            subtitle = "항상 바로 보기",
+            type = RuleTypeUi.PERSON,
+            enabled = true,
+            matchValue = "엄마",
+        )
+        val category = category(
+            id = "cat-mom",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(rule.id),
+        )
+
         val result = classifier.classify(
             input = ClassificationInput(
                 sender = "엄마",
                 packageName = "com.kakao.talk",
                 body = "오늘 저녁 몇 시에 와?",
             ),
-            rules = listOf(
-                RuleUiModel(
-                    id = "r-person-mom",
-                    title = "엄마",
-                    subtitle = "항상 바로 보기",
-                    type = RuleTypeUi.PERSON,
-                    enabled = true,
-                    matchValue = "엄마",
-                )
-            )
+            rules = listOf(rule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
@@ -301,17 +359,12 @@ class NotificationClassifierTest {
     // region Phase C Task 2 — hierarchical override preference
     //
     // When both a base rule and its override match the same notification, the
-    // override wins (plan `rules-ux-v2-inbox-restructure`). These tests
-    // exercise `NotificationClassifier` end-to-end rather than the resolver in
-    // isolation — the classifier must delegate to `RuleConflictResolver` so
-    // real notifications (and the Detail reason-tag chip) see override-aware
-    // behavior.
+    // override wins. These tests now lift the Category graph into the setup —
+    // the override rule belongs to the Category whose action the user wants
+    // to win.
 
     @Test
     fun override_rule_wins_over_its_base_when_both_match_user_payment_ad_example() {
-        // User-provided example: base "결제 → PRIORITY", override
-        // "결제+광고 → SILENT". A payment promo ad must be silenced, not
-        // surfaced as Priority.
         val basePayment = RuleUiModel(
             id = "base-payment",
             title = "결제",
@@ -328,6 +381,21 @@ class NotificationClassifierTest {
             enabled = true,
             matchValue = "광고",
             overrideOf = basePayment.id,
+        )
+        // Each rule lives in its own Category with the expected action. The
+        // override rule must win via the RuleConflictResolver override
+        // preference, so the SILENT Category is selected.
+        val priorityCategory = category(
+            id = "cat-payment-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(basePayment.id),
+            order = 0,
+        )
+        val silentCategory = category(
+            id = "cat-payment-ad-silent",
+            action = CategoryAction.SILENT,
+            ruleIds = listOf(adOverride.id),
+            order = 1,
         )
 
         val result = classifier.classify(
@@ -337,17 +405,18 @@ class NotificationClassifierTest {
                 body = "결제 광고 쿠폰이 도착했어요",
             ),
             rules = listOf(basePayment, adOverride),
+            categories = listOf(priorityCategory, silentCategory),
         )
 
         assertEquals(NotificationDecision.SILENT, result.decision)
+        // Override shadows its base (Phase C override-vs-base contract); only
+        // the override id is surfaced so Detail reason chips do not confuse
+        // the user with a rule that was overridden.
         assertEquals(listOf(adOverride.id), result.matchedRuleIds)
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun base_rule_applies_when_override_condition_is_absent() {
-        // Same rule pair as above. A payment-only notification (no 광고
-        // keyword) must fall through to the base rule — PRIORITY.
         val basePayment = RuleUiModel(
             id = "base-payment",
             title = "결제",
@@ -364,6 +433,16 @@ class NotificationClassifierTest {
             enabled = true,
             matchValue = "광고",
             overrideOf = basePayment.id,
+        )
+        val priorityCategory = category(
+            id = "cat-payment-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(basePayment.id),
+        )
+        val silentCategory = category(
+            id = "cat-payment-ad-silent",
+            action = CategoryAction.SILENT,
+            ruleIds = listOf(adOverride.id),
         )
 
         val result = classifier.classify(
@@ -373,6 +452,7 @@ class NotificationClassifierTest {
                 body = "결제 완료 안내",
             ),
             rules = listOf(basePayment, adOverride),
+            categories = listOf(priorityCategory, silentCategory),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
@@ -381,9 +461,6 @@ class NotificationClassifierTest {
 
     @Test
     fun override_wins_even_when_listed_before_its_base() {
-        // The override preference must not depend on list order. If an
-        // override is stored/persisted before its base, the classifier must
-        // still pick the override.
         val basePayment = RuleUiModel(
             id = "base-payment",
             title = "결제",
@@ -401,6 +478,16 @@ class NotificationClassifierTest {
             matchValue = "광고",
             overrideOf = basePayment.id,
         )
+        val priorityCategory = category(
+            id = "cat-payment-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(basePayment.id),
+        )
+        val silentCategory = category(
+            id = "cat-payment-ad-silent",
+            action = CategoryAction.SILENT,
+            ruleIds = listOf(adOverride.id),
+        )
 
         val result = classifier.classify(
             input = ClassificationInput(
@@ -408,8 +495,8 @@ class NotificationClassifierTest {
                 title = "결제 프로모션",
                 body = "결제 광고 쿠폰",
             ),
-            // Override listed FIRST on purpose.
             rules = listOf(adOverride, basePayment),
+            categories = listOf(priorityCategory, silentCategory),
         )
 
         assertEquals(NotificationDecision.SILENT, result.decision)
@@ -418,10 +505,6 @@ class NotificationClassifierTest {
 
     @Test
     fun override_is_ignored_when_its_base_did_not_fire() {
-        // If only the override matched (but not its base), the override still
-        // applies — but this is not "override vs base", it is just the
-        // override acting as a single matched rule. Verify the classifier
-        // does not require the base to fire for the override to work.
         val basePayment = RuleUiModel(
             id = "base-payment",
             title = "결제",
@@ -439,14 +522,20 @@ class NotificationClassifierTest {
             matchValue = "광고",
             overrideOf = basePayment.id,
         )
+        val silentCategory = category(
+            id = "cat-payment-ad-silent",
+            action = CategoryAction.SILENT,
+            ruleIds = listOf(adOverride.id),
+        )
 
         val result = classifier.classify(
             input = ClassificationInput(
                 packageName = "com.promo.app",
                 title = "광고 알림",
-                body = "새 광고가 도착했어요", // no "결제"
+                body = "새 광고가 도착했어요",
             ),
             rules = listOf(basePayment, adOverride),
+            categories = listOf(silentCategory),
         )
 
         assertEquals(NotificationDecision.SILENT, result.decision)
@@ -454,10 +543,7 @@ class NotificationClassifierTest {
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun disabled_override_does_not_win_and_base_rule_applies() {
-        // If the override is toggled off, it must not participate. The base
-        // remains the sole match.
         val basePayment = RuleUiModel(
             id = "base-payment",
             title = "결제",
@@ -471,9 +557,19 @@ class NotificationClassifierTest {
             title = "결제+광고",
             subtitle = "조용히",
             type = RuleTypeUi.KEYWORD,
-            enabled = false, // disabled
+            enabled = false,
             matchValue = "광고",
             overrideOf = basePayment.id,
+        )
+        val priorityCategory = category(
+            id = "cat-payment-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(basePayment.id),
+        )
+        val silentCategory = category(
+            id = "cat-payment-ad-silent",
+            action = CategoryAction.SILENT,
+            ruleIds = listOf(adOverride.id),
         )
 
         val result = classifier.classify(
@@ -483,6 +579,7 @@ class NotificationClassifierTest {
                 body = "결제 광고 쿠폰",
             ),
             rules = listOf(basePayment, adOverride),
+            categories = listOf(priorityCategory, silentCategory),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
@@ -491,18 +588,10 @@ class NotificationClassifierTest {
 
     // endregion
 
-    // region Plan `2026-04-21-ignore-tier-fourth-decision` Task 3 —
-    // rule-driven IGNORE routing.
-    //
-    // IGNORE must *only* be reachable through a matching user rule. The
-    // classifier cascade (VIP, priority keywords, quiet-hours shopping,
-    // repeat burst, default) must never auto-promote any notification to
-    // IGNORE — that would be too destructive. Overrides still apply via
-    // `RuleConflictResolver`: a base IGNORE rule may be overridden by an
-    // ALWAYS_PRIORITY override so the PRIORITY tier wins.
+    // region Plan `2026-04-21-ignore-tier-fourth-decision` —
+    // IGNORE routing through Category.action = IGNORE.
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun ignore_rule_match_routes_to_ignore_decision() {
         val ignoreRule = RuleUiModel(
             id = "r-ignore-ads",
@@ -512,6 +601,11 @@ class NotificationClassifierTest {
             enabled = true,
             matchValue = "광고",
         )
+        val category = category(
+            id = "cat-ignore-ads",
+            action = CategoryAction.IGNORE,
+            ruleIds = listOf(ignoreRule.id),
+        )
 
         val result = classifier.classify(
             input = ClassificationInput(
@@ -520,6 +614,7 @@ class NotificationClassifierTest {
                 body = "새 광고가 도착했어요",
             ),
             rules = listOf(ignoreRule),
+            categories = listOf(category),
         )
 
         assertEquals(NotificationDecision.IGNORE, result.decision)
@@ -528,27 +623,19 @@ class NotificationClassifierTest {
 
     @Test
     fun classifier_never_auto_promotes_to_ignore_without_a_rule() {
-        // Sweep: exercise every classifier fallback branch (VIP, priority
-        // keyword, quiet-hours shopping, repeat burst, plain default) and
-        // verify none of them produce IGNORE. Rule list is empty throughout.
         val inputs = listOf(
-            // VIP sender -> PRIORITY
             ClassificationInput(sender = "엄마", packageName = "com.kakao.talk", body = "오늘 저녁 몇 시야?"),
-            // Priority keyword -> PRIORITY
             ClassificationInput(packageName = "com.bank.app", body = "인증번호 123456"),
-            // Quiet-hours shopping -> DIGEST
             ClassificationInput(
                 packageName = "com.coupang.mobile",
                 body = "장바구니 할인",
                 quietHours = true,
             ),
-            // Repeat burst -> DIGEST
             ClassificationInput(
                 packageName = "com.news.app",
                 body = "속보",
                 duplicateCountInWindow = 5,
             ),
-            // Default fallback -> SILENT
             ClassificationInput(packageName = "com.social.app", body = "새로운 좋아요"),
         )
 
@@ -564,10 +651,7 @@ class NotificationClassifierTest {
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun always_priority_override_beats_base_ignore_rule() {
-        // "광고 앱 전부 무시, 단 COMPANY_APP 은 항상 바로 보기" pattern. Base IGNORE
-        // + override ALWAYS_PRIORITY both match -> override wins -> PRIORITY.
         val baseIgnore = RuleUiModel(
             id = "base-ignore-ads",
             title = "광고",
@@ -584,6 +668,16 @@ class NotificationClassifierTest {
             enabled = true,
             matchValue = "com.company.app",
             overrideOf = baseIgnore.id,
+        )
+        val ignoreCategory = category(
+            id = "cat-ignore-ads",
+            action = CategoryAction.IGNORE,
+            ruleIds = listOf(baseIgnore.id),
+        )
+        val priorityCategory = category(
+            id = "cat-company-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(priorityOverride.id),
         )
 
         val result = classifier.classify(
@@ -593,18 +687,17 @@ class NotificationClassifierTest {
                 body = "긴급 사내 광고 알림",
             ),
             rules = listOf(baseIgnore, priorityOverride),
+            categories = listOf(ignoreCategory, priorityCategory),
         )
 
         assertEquals(NotificationDecision.PRIORITY, result.decision)
+        // Override shadows its base (Phase C contract) — only the override
+        // id is surfaced.
         assertEquals(listOf(priorityOverride.id), result.matchedRuleIds)
     }
 
     @Test
-    @Ignore("Phase P2 restores with Category-driven action. Plan docs/plans/2026-04-22-categories-split-rules-actions.md Task 4 Step 3.")
     fun base_ignore_rule_still_wins_when_override_condition_absent() {
-        // Same rule pair as the override test above. A payload that only
-        // satisfies the base IGNORE rule (no matching override condition)
-        // must still route to IGNORE.
         val baseIgnore = RuleUiModel(
             id = "base-ignore-ads",
             title = "광고",
@@ -622,14 +715,25 @@ class NotificationClassifierTest {
             matchValue = "com.company.app",
             overrideOf = baseIgnore.id,
         )
+        val ignoreCategory = category(
+            id = "cat-ignore-ads",
+            action = CategoryAction.IGNORE,
+            ruleIds = listOf(baseIgnore.id),
+        )
+        val priorityCategory = category(
+            id = "cat-company-priority",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(priorityOverride.id),
+        )
 
         val result = classifier.classify(
             input = ClassificationInput(
-                packageName = "com.promo.app", // not the company app
+                packageName = "com.promo.app",
                 title = "광고",
                 body = "새 광고",
             ),
             rules = listOf(baseIgnore, priorityOverride),
+            categories = listOf(ignoreCategory, priorityCategory),
         )
 
         assertEquals(NotificationDecision.IGNORE, result.decision)
@@ -640,9 +744,6 @@ class NotificationClassifierTest {
 
     @Test
     fun no_rule_match_returns_empty_matched_rule_ids_when_rules_are_defined() {
-        // A rule is present but does not match. matchedRuleIds must be empty,
-        // so downstream persistence (ruleHitIds) does not conflate classifier
-        // signals with rule hits.
         val result = classifier.classify(
             input = ClassificationInput(
                 packageName = "com.social.app",
@@ -663,4 +764,165 @@ class NotificationClassifierTest {
         assertEquals(NotificationDecision.SILENT, result.decision)
         assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
+
+    // region Phase P2 Task 6 — rule-type specificity ladder lifted to Category
+    //
+    // APP > KEYWORD > PERSON > SCHEDULE > REPEAT_BUNDLE. A Category whose
+    // matched rule has a higher-ranked type wins over a Category with a
+    // lower-ranked matched type, regardless of drag order.
+
+    @Test
+    fun app_rule_category_beats_keyword_rule_category_despite_later_drag_order() {
+        // Both rules fire on the same notification. APP-type rule sits in a
+        // Category the user dragged LOW (order = 5); KEYWORD-type rule sits
+        // in a Category dragged HIGH (order = 0). The APP Category must
+        // still win because APP is more specific than KEYWORD.
+        val appRule = RuleUiModel(
+            id = "r-app-kakao",
+            title = "카카오톡",
+            subtitle = "앱 분류",
+            type = RuleTypeUi.APP,
+            enabled = true,
+            matchValue = "com.kakao.talk",
+        )
+        val keywordRule = RuleUiModel(
+            id = "r-keyword-ad",
+            title = "광고",
+            subtitle = "키워드 분류",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "광고",
+        )
+        val appCategory = category(
+            id = "cat-app",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(appRule.id),
+            order = 5,
+        )
+        val keywordCategory = category(
+            id = "cat-keyword",
+            action = CategoryAction.IGNORE,
+            ruleIds = listOf(keywordRule.id),
+            order = 0,
+        )
+
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.kakao.talk",
+                title = "친구",
+                body = "오늘 광고 이벤트 참여하세요",
+            ),
+            rules = listOf(appRule, keywordRule),
+            categories = listOf(keywordCategory, appCategory),
+        )
+
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+    }
+
+    @Test
+    fun keyword_rule_category_beats_person_rule_category() {
+        val keywordRule = RuleUiModel(
+            id = "r-keyword-otp",
+            title = "OTP",
+            subtitle = "키워드",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "OTP",
+        )
+        val personRule = RuleUiModel(
+            id = "r-person-mom",
+            title = "엄마",
+            subtitle = "사람",
+            type = RuleTypeUi.PERSON,
+            enabled = true,
+            matchValue = "엄마",
+        )
+        val keywordCategory = category(
+            id = "cat-kw",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(keywordRule.id),
+            order = 5,
+        )
+        val personCategory = category(
+            id = "cat-person",
+            action = CategoryAction.DIGEST,
+            ruleIds = listOf(personRule.id),
+            order = 0,
+        )
+
+        val result = classifier.classify(
+            input = ClassificationInput(
+                sender = "엄마",
+                packageName = "com.bank.app",
+                title = "인증",
+                body = "OTP 번호 123456",
+            ),
+            rules = listOf(keywordRule, personRule),
+            categories = listOf(personCategory, keywordCategory),
+        )
+
+        assertEquals(NotificationDecision.PRIORITY, result.decision)
+    }
+
+    @Test
+    fun schedule_rule_category_beats_repeat_bundle_rule_category() {
+        val scheduleRule = RuleUiModel(
+            id = "r-schedule",
+            title = "업무",
+            subtitle = "스케줄",
+            type = RuleTypeUi.SCHEDULE,
+            enabled = true,
+            matchValue = "9-18",
+        )
+        val repeatRule = RuleUiModel(
+            id = "r-repeat",
+            title = "반복",
+            subtitle = "반복묶음",
+            type = RuleTypeUi.REPEAT_BUNDLE,
+            enabled = true,
+            matchValue = "2",
+        )
+        val scheduleCategory = category(
+            id = "cat-schedule",
+            action = CategoryAction.DIGEST,
+            ruleIds = listOf(scheduleRule.id),
+            order = 5,
+        )
+        val repeatCategory = category(
+            id = "cat-repeat",
+            action = CategoryAction.PRIORITY,
+            ruleIds = listOf(repeatRule.id),
+            order = 0,
+        )
+
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.chat.app",
+                body = "같은 알림",
+                duplicateCountInWindow = 2,
+                hourOfDay = 10,
+            ),
+            rules = listOf(scheduleRule, repeatRule),
+            categories = listOf(repeatCategory, scheduleCategory),
+        )
+
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+    }
+
+    // endregion
+
+    private fun category(
+        id: String,
+        action: CategoryAction,
+        ruleIds: List<String>,
+        appPackageName: String? = null,
+        order: Int = 0,
+    ): Category = Category(
+        id = id,
+        name = id,
+        appPackageName = appPackageName,
+        ruleIds = ruleIds,
+        action = action,
+        order = order,
+    )
 }
