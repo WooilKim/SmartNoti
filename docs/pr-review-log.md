@@ -191,3 +191,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T16:38:23Z | #273 | plan-implementer | DEFER | CI Unit tests + debug APK pending |
 | 2026-04-22T16:46:00Z | #273 | plan-implementer | APPROVE+MERGE | debug-only FORCE_STATUS hook for priority-inbox recipe; CI green; merged cb43092 |
 | 2026-04-22T16:46:00Z | #274 | loop-monitor | DEFER | CI pending (Unit tests + debug APK IN_PROGRESS); re-check next sweep |
+| 2026-04-22T17:00:00Z | #274 | loop-monitor | ESCALATE | Scope contamination: branch cut off stale main pre-#251; diff includes 9 already-merged files alongside intended audit row. Awaiting human disposition (close+reopen fresh, or rebase). |
