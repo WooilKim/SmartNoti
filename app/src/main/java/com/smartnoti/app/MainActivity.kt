@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
 import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
+import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.navigation.AppNavHost
 import com.smartnoti.app.navigation.ReplacementNotificationEntry
 import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         pendingNotificationEntry.value = intent?.extractReplacementNotificationEntry()
         pendingDeepLinkRoute.value = intent?.extractDeepLinkRoute()
+        runSettingsMigrations()
         runRulesToCategoriesMigration()
         setContent {
             SmartNotiTheme {
@@ -56,6 +58,26 @@ class MainActivity : ComponentActivity() {
      * the rest of the app sees the migrated state within one DataStore
      * edit cycle.
      */
+    /**
+     * Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md` Task 4.
+     * One-shot migration that flips `suppressSourceForDigestAndSilent` to true
+     * on first launch (fresh or upgrade). Idempotent — guarded by the
+     * `suppress_source_migration_v1_applied` DataStore key inside
+     * `SettingsRepository.applyPendingMigrations`. The listener service also
+     * runs this on `onListenerConnected` so the migration completes before any
+     * post-upgrade notification is processed even if the user reaches the
+     * listener path before opening the activity.
+     */
+    private fun runSettingsMigrations() {
+        val repository = SettingsRepository.getInstance(applicationContext)
+        lifecycleScope.launch {
+            runCatching { repository.applyPendingMigrations() }
+                .onFailure { error ->
+                    Log.e(TAG, "Settings migrations failed", error)
+                }
+        }
+    }
+
     private fun runRulesToCategoriesMigration() {
         val runner = MigrateRulesToCategoriesRunner.create(applicationContext)
         lifecycleScope.launch {

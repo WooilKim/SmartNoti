@@ -76,6 +76,33 @@ class SettingsRepository private constructor(
         }
     }
 
+    /**
+     * One-shot data migrations. Safe to call multiple times — each migration
+     * is gated by its own boolean key so subsequent invocations short-circuit.
+     *
+     * Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md` Task 4:
+     * the v1 migration writes `suppressSourceForDigestAndSilent = true` once
+     * for every install (fresh or upgraded). Fresh installs already get the
+     * default-true from `SmartNotiSettings`, but writing it explicitly makes
+     * the on-disk state match what `observeSettings()` will report on the
+     * first read and prevents flicker if a future change splits read/default
+     * paths. Upgraded users who had previously toggled the flag OFF have
+     * their value overwritten — accepted trade-off documented in the plan
+     * (the old default created the duplicate-notification symptom).
+     *
+     * Call early (e.g. from `MainActivity.onCreate` or
+     * `SmartNotiNotificationListenerService.onListenerConnected`) so the
+     * migration completes before the listener processes its first
+     * notification post-upgrade.
+     */
+    suspend fun applyPendingMigrations() {
+        context.dataStore.edit { prefs ->
+            if (prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] == true) return@edit
+            prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = true
+            prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] = true
+        }
+    }
+
     suspend fun setPriorityAlertLevel(value: String) = setString(PRIORITY_ALERT_LEVEL, value)
 
     suspend fun setPriorityVibrationMode(value: String) = setString(PRIORITY_VIBRATION_MODE, value)
@@ -343,6 +370,12 @@ class SettingsRepository private constructor(
             longPreferencesKey("quick_start_applied_card_acknowledged_at_millis")
         private val CATEGORIES_MIGRATION_ANNOUNCEMENT_SEEN =
             booleanPreferencesKey("categories_migration_announcement_seen")
+        // Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md`
+        // Task 4: gate for the suppress-source default-on migration. Once
+        // true, `applyPendingMigrations()` no-ops and we respect whatever the
+        // user has set since.
+        private val SUPPRESS_SOURCE_MIGRATION_V1_APPLIED =
+            booleanPreferencesKey("suppress_source_migration_v1_applied")
 
         @Volatile private var instance: SettingsRepository? = null
 

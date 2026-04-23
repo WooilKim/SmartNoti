@@ -90,6 +90,16 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         notifier.ensureChannels()
         silentSummaryNotifier.ensureChannel()
         val repository = NotificationRepository.getInstance(applicationContext)
+        // Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md`
+        // Task 4: kick the suppress-source v1 migration before any
+        // observable starts. Idempotent — gated by the
+        // `suppress_source_migration_v1_applied` key. Running it here
+        // (in addition to MainActivity) covers the "listener boots before
+        // the activity is opened post-upgrade" path so the first
+        // post-upgrade notification sees the migrated value.
+        serviceScope.launch {
+            SettingsRepository.getInstance(applicationContext).applyPendingMigrations()
+        }
         storeSyncJob?.cancel()
         storeSyncJob = serviceScope.launch {
             repository.observeAll().collect { notifications ->
