@@ -1,11 +1,19 @@
 ---
 id: rules-ux-v2-inbox-restructure
 title: Rules UX v2 + Inbox restructure — hierarchical rules, reason-tag traceability, passthrough tab removal
-status: planned
+status: shipped
 owner: @wooilkim
 journey: priority-inbox, rules-management, notification-detail, home-overview
 created: 2026-04-21
+superseded-by:
+  - ../journeys/priority-inbox.md
+  - ../journeys/home-overview.md
+  - ../journeys/notification-detail.md
+  - ../journeys/rules-management.md
+  - ../journeys/notification-capture-classify.md
 ---
+
+> **Status note (2026-04-22 triage):** All three Phases shipped. Phase A Tasks 1–4 via #140/#141/#142/#143; Phase B Tasks 1–3 via #145/#146/#147; Phase C Tasks 1–6 via #148/#149/#150/#151/#152/#160 (rules-management Phase C journey sync also confirmed by sweep #164). Phase A Task 5 / Phase B Task 4 (Rules deep-link) journey wiring was rolled into the Phase C journey sync. Frontmatter flipped from `planned` to `shipped`.
 
 ## Motivation
 

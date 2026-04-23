@@ -1,11 +1,16 @@
 ---
 id: silent-tray-sender-grouping
 title: 시스템 tray 에서 숨긴 알림을 발신자 기준으로 그룹핑
-status: planned
+status: shipped
 owner: @wooilkim
 journey: silent-auto-hide
 created: 2026-04-21
+superseded-by:
+  - ../journeys/silent-auto-hide.md
+  - ../journeys/hidden-inbox.md
 ---
+
+> **Status note (2026-04-22 triage):** Tasks 1–5 shipped (Task 1 via #105, Task 2 via #116, Task 3 via #122, Task 4 via #127, Task 5 journey doc sync via #128, with follow-up sweep PASS recorded in #133). Task 6 verification recipe was executed during the sweep. Frontmatter flipped from `planned` to `shipped`.
 
 ## Motivation
 

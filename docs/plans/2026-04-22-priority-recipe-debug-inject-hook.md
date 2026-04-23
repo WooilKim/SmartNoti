@@ -1,6 +1,11 @@
 ---
-status: planned
+status: shipped
+superseded-by:
+  - ../journeys/priority-inbox.md
+  - ../journeys/notification-capture-classify.md
 ---
+
+> **Status note (2026-04-22 triage):** All Tasks shipped via PR #273 (`cb43092` — `DebugClassificationOverride` policy, `BuildConfig.DEBUG` guard in listener, `DebugInjectNotificationReceiver` debug-only manifest entry, priority-inbox recipe rewrite, journey Change log + Code pointers sync). Frontmatter flipped from `planned` to `shipped`.
 
 # Priority Recipe Debug-Inject Hook + Rule-Oblivious Verification
 
