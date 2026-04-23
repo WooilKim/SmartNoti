@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: shipped
 kind: meta-plan
 focus: audit-log race / backfill contamination
 related-files:
@@ -8,6 +8,7 @@ related-files:
 related-plans:
   - 2026-04-21-meta-audit-log-direct-append.md
   - 2026-04-22-meta-monitor-tester-self-merge-rubric-exclusion.md
+superseded-by: ../../.claude/rules/agent-loop.md#MP-1.1
 ---
 
 > **For Hermes:** This plan hardens `.claude/lib/audit-log-append.sh` so it survives concurrent monitor backfill PR diffs and re-converges on `origin/main`. It also clarifies the contract that loop-monitor backfills MUST go through the helper (not through ad-hoc PRs that race the helper). Carve-out per `agent-loop.md`: `.claude/` change → human review required, no agent self-merge.
@@ -30,7 +31,7 @@ related-plans:
 - **Reversibility:** revert this commit and monitor returns to opening backfill PRs; helper returns to its current retry behavior. No data migration. Existing rows stay.
 - **Race rarity assumption:** even after hardening, two concurrent helper invocations remain possible (parallel PM + monitor). The helper handles this via `MAX_RETRIES` (default 3, override via env). On exhaustion, the existing fallback path (push ops branch + open audit PR + exit 2) survives unchanged.
 
-## Task 1: Add failing test for the race scenario [IN PROGRESS]
+## Task 1: Add failing test for the race scenario
 
 **Objective:** Codify the regression — when `AUDIT_LOG_PRE_PUSH_HOOK` simulates an interleaving append on `origin/main` between branch cut and push, the helper must retry, re-cut, and succeed within `MAX_RETRIES`.
 
@@ -51,7 +52,7 @@ related-plans:
 
 **Definition of done:** Test exists, runs, and fails on current `main`'s helper.
 
-## Task 2: Harden helper retry semantics [IN PROGRESS]
+## Task 2: Harden helper retry semantics
 
 **Objective:** Make Task 1's test pass without weakening the existing dedupe/fallback contract.
 
@@ -71,7 +72,7 @@ related-plans:
 
 **Definition of done:** Task 1 test passes; existing dedupe + fallback paths unchanged (verify by reading existing tests if any, else by manual smoke).
 
-## Task 3: Route loop-monitor AUDIT_DRIFT backfill through the helper [IN PROGRESS]
+## Task 3: Route loop-monitor AUDIT_DRIFT backfill through the helper
 
 **Objective:** Eliminate the parallel "monitor opens its own backfill PR" path that produced #278 / #280. After this, monitor invokes `audit-log-append.sh` directly for the < 5-row backfill case.
 
@@ -88,7 +89,7 @@ related-plans:
 
 **Definition of done:** Reading loop-monitor's AUDIT_DRIFT section, an implementer would never open a backfill PR by hand — they would always invoke the helper.
 
-## Task 4: Document the new race contract [IN PROGRESS]
+## Task 4: Document the new race contract
 
 **Objective:** Make the "all audit-row writes go through one helper" invariant discoverable.
 
@@ -146,3 +147,4 @@ None — this is a meta-plan touching `.claude/` only. Owning surface is the aud
 ## Change log
 
 - 2026-04-22: Drafted by `gap-planner` after AUDIT_APPEND_RACE meta-issue surfaced ~10 ticks (incidents PR #278 BACKFILL_CONTAMINATION + PR #280 race-close). User pre-selected C1 (helper retry hardening) over C2 (monitor-via-helper full) and C3 (PM coordination state) for minimal scope.
+- 2026-04-22: Shipped by `plan-implementer`. Open questions resolved YES on both: (a) helper gained `--source <agent>` flag that stamps invoking agent into commit subject (row content untouched), (b) `--dedupe` became default with `--no-dedupe` opt-out (`--dedupe` preserved as no-op alias for caller back-compat). Task 1 added 5 race-stress tests (`.claude/lib/tests/audit-log-append-race-test.sh`); Task 2 extracted `cut_and_append` so every retry re-cuts against freshest `origin/main`, classified ALL push rejections as broad races, moved dedupe re-check to before every retry, added explicit freshness-assertion logging; Task 3 rewrote loop-monitor's AUDIT_DRIFT auto-fix to invoke the helper inline with `--source loop-monitor` (no separate backfill PR); Task 4 added MP-1.1 footnote under the PM direct-append bullet in `.claude/rules/agent-loop.md`. All 8 pre-existing helper tests + 5 new race tests pass. No Android code touched.
