@@ -193,3 +193,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T16:46:00Z | #274 | loop-monitor | DEFER | CI pending (Unit tests + debug APK IN_PROGRESS); re-check next sweep |
 | 2026-04-22T17:00:00Z | #274 | loop-monitor | ESCALATE | Scope contamination: branch cut off stale main pre-#251; diff includes 9 already-merged files alongside intended audit row. Awaiting human disposition (close+reopen fresh, or rebase). |
 | 2026-04-22T08:50:00Z | #276 | plan-implementer | DEFER | CI infrastructure failure (billing limit, not content). Docs-only diff scope OK, traceability strong (per-plan shipping PRs cited). Re-review next sweep. |
+| 2026-04-23T04:52:06Z | #276 | human(triage) | ESCALATE | Recurring CI infra block (Actions billing); 3rd sweep, escalated for user disposition |
