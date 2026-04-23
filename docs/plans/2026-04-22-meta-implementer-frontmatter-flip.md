@@ -1,8 +1,9 @@
 ---
-status: planned
+status: shipped
 type: meta
 related-agents:
   - .claude/agents/plan-implementer.md
+superseded-by: ../../.claude/agents/plan-implementer.md
 ---
 
 # Meta — `plan-implementer` flips plan frontmatter as part of its own feature PR
@@ -134,3 +135,4 @@ related-agents:
 ## Change log
 
 - 2026-04-22: Drafted in response to 6th-recurrence FRONTMATTER_DRIFT_RECURRING per `loop-orchestrator` Phase A report. User pre-recommended path A (smallest scope, fixes most-recurrent issue) and gap-planner concurred after reviewing the three candidate fix-paths. Two prior triage rounds (#276, #283) demonstrated the bulk-cleanup cost being externalized to gap-planner.
+- 2026-04-22: Shipped Tasks 1+2 (spec edit + retroactive sanity walk). Task 3 (live-tick verification) deferred to next `/journey-loop` tick post-merge per plan body. Open question on `Change log: "Shipped via PR #NNN"` line resolved YES — the audit-trail benefit outweighs the one-line cost; Step 6 in the implementer spec now requires it. Open question on meta-plan `superseded-by:` resolved per existing precedent (point at the agent/rule file the meta-plan modified). This plan's own frontmatter flipped per the new Step 6 (meta-demo).

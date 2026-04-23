@@ -31,7 +31,12 @@ Go task by task in the plan's order. For each task:
 3. If the task says "implement", make the smallest change that turns the failing tests green. Run the same focused Gradle command. Then run the full `./gradlew :app:testDebugUnitTest` to catch regressions.
 4. If the task says "verify end-to-end", run the ADB recipe it lists against `emulator-5554` (export `PATH=$HOME/Library/Android/sdk/platform-tools:$PATH`). Capture the output — paste the key dump / uiautomator excerpts into the PR body.
 5. If the task says "update journey docs", edit the journey exactly as the plan describes. Follow `docs-sync.md` — add Change log entry, remove resolved Known gap bullets, update Observable steps when behavior changes.
-6. Commit after every task with message `feat|fix: <task summary>` (one commit per task keeps review tractable).
+6. **Flip the plan's own frontmatter.** Before the final commit, edit the plan file you just implemented:
+   - Set `status:` to `shipped` if ALL in-scope tasks landed AND the related journey (or related agent/rule file for meta-plans) was updated; otherwise leave at `in-progress` (or whatever pre-existing partial state).
+   - Set `superseded-by:` to a relative path pointing at the related journey doc (e.g. `superseded-by: ../journeys/<journey-id>.md`). For meta-plans modifying `.claude/`, point at the agent/rule file the plan modified (e.g. `superseded-by: ../../.claude/agents/<agent>.md`), mirroring `2026-04-22-meta-inline-orchestration.md` and `2026-04-22-meta-monitor-tester-self-merge-rubric-exclusion.md`. If the plan has no Related journey AND `superseded-by:` is already set by the author, leave it; if absent, omit.
+   - Append a `Change log` entry to the plan: `- <YYYY-MM-DD>: Shipped via PR #<NNN>.` (use the PR number once known; if opening the PR is the final step, add the line immediately after `gh pr create` returns the URL and amend the last commit OR push a follow-up commit on the same branch before requesting review).
+   - Bundle this edit into the same commit as the journey-doc update (Step 5), or as a small separate commit immediately after if Step 5 was already committed. The PR that implements a plan MUST land the plan's frontmatter flip — never punt to a follow-up triage.
+7. Commit after every task with message `feat|fix: <task summary>` (one commit per task keeps review tractable).
 
 If a task's Steps are ambiguous or a Step assumes code that no longer exists, stop and report — do not improvise.
 
@@ -59,7 +64,7 @@ If a task's Steps are ambiguous or a Step assumes code that no longer exists, st
 - If a refactor for clarity feels necessary, stay in the files the plan listed. If you must touch a file outside the plan, surface it in the PR description as "collateral change" with justification — don't sneak it in.
 
 You must not touch:
-- Other plan files.
+- Other plan files (you may edit ONLY the plan you are implementing — specifically its frontmatter `status:`, `superseded-by:` fields and `Change log` entry per Step 6).
 - `.claude/` rules and agents.
 - `README.md`, repo-level docs, CI config — unless the plan explicitly asks.
 
@@ -85,3 +90,4 @@ PR: <url>
 - Never use `--no-verify`, `--force-push`, or `fallbackToDestructiveMigration` style escape hatches unless the plan explicitly authorizes them.
 - If the plan Risks section flags something and the actual situation triggers that risk, stop — tell the caller instead of guessing.
 - Never merge the PR. Human review is the trust boundary.
+- Never ship a plan PR without flipping the plan's `status:` to reflect the actual outcome (`shipped` if all tasks landed; `in-progress` if partially shipped). Stale `status: planned` after merge is a documented audit failure that triggers downstream cleanup work — not acceptable.
