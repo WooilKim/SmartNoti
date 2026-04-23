@@ -72,7 +72,20 @@ REVIEW=$(grep -oE '#[0-9]+' docs/pr-review-log.md | sort -u)
 
 **Evidence**: list the PR numbers missing rows in each log separately (auto-merge gaps vs pr-review gaps), so the auto-fix below knows which file to backfill.
 
-**Auto-fix (if < 5 missing rows total)**: open a small backfill PR on `ops/audit-backfill-<timestamp>` branch with the missing rows appended to the appropriate log file(s). Always `git fetch origin main && git checkout -b ops/audit-backfill-<ts> origin/main` first to avoid stale-base contamination (do NOT branch off whatever main happens to be locally). Follow the existing audit row format. Do NOT self-merge (PM handles next sweep per its rubric).
+**Auto-fix (if < 5 missing rows total)**: for each missing row, invoke the shared helper:
+
+```bash
+.claude/lib/audit-log-append.sh \
+  --log <auto-merge|pr-review> \
+  --row '<row>' \
+  --source loop-monitor
+```
+
+The helper handles the race + retry + fallback path (MP-1.1). It ff-pushes the row directly to `origin/main` on success, or — only if its retry loop exhausts (exit 2) — opens a fallback audit PR itself. Do NOT branch off `main` and open a backfill PR by hand; that path produced PR #278 (BACKFILL_CONTAMINATION) and PR #280 (race-close) when it ran in parallel with PM's helper-based appends.
+
+The `--source loop-monitor` stamp lets `loop-retrospective` distinguish monitor backfills from PM sweep appends.
+
+If the helper exits 2 (fallback PR opened), report `AUDIT_DRIFT auto-fix DEFERRED, fallback PR opened by helper` and let the next tick observe the PR via normal Phase A/B. Do NOT open a separate backfill PR.
 
 **Escalate (if ≥ 5 missing rows)**: report list to user — a systemic audit process issue beyond one tick's scope.
 
