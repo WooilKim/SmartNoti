@@ -200,3 +200,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-23T07:58:00Z | #278 | loop-monitor | DEFER | Initially APPROVE+ready-to-merge but my own audit-row append landed first on main and conflicted. Rebased branch + force-with-lease push succeeded; CI now re-running. Re-merge next sweep when green. |
 | 2026-04-23T07:55:00Z | #278 | loop-monitor | APPROVE+MERGE | Audit-backfill PR for #275 (2-line append-only); CI green; clean fresh-cut branch |
 | 2026-04-23T07:59:00Z | #279 | gap-planner | APPROVE+MERGE | Plan + Known-gap annotation; CI green; revised from prior-sweep ESCALATE — open question (1:1 vs grouping) decidable at implementation time, plan recommends 1:1 with Risks listing alternatives. |
+| 2026-04-23T04:41:42Z | #275 | loop-monitor | APPROVE+MERGE | Rubric exclusion update for tester docs-only self-merges; ops/** scope, append-only spec change, CI green |
