@@ -125,6 +125,14 @@ class OnboardingQuickStartSettingsApplierTest {
 
     @Test
     fun important_only_selection_does_not_blindly_suppress_all_captured_apps() {
+        // Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md`:
+        // the global suppress-source toggle is now ON by default for everyone
+        // (with empty `suppressedSourceApps` interpreted as opt-out semantics
+        // by NotificationSuppressionPolicy). This test no longer asserts the
+        // global toggle stays off — the original intent (the IMPORTANT_PRIORITY
+        // preset must NOT auto-build an allow-list of every captured package)
+        // is preserved by the empty `suppressedSourceApps` + single-rule
+        // assertions below.
         val result = applier.buildApplicationResult(
             existingRules = emptyList(),
             existingSettings = SmartNotiSettings(),
@@ -145,7 +153,6 @@ class OnboardingQuickStartSettingsApplierTest {
             ),
         )
 
-        assertFalse(result.settings.suppressSourceForDigestAndSilent)
         assertTrue(result.settings.suppressedSourceApps.isEmpty())
         assertEquals(1, result.rules.size)
     }

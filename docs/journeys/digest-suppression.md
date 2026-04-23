@@ -13,8 +13,8 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 ## Preconditions
 
 - 알림이 DIGEST 로 분류 (→ [notification-capture-classify](notification-capture-classify.md))
-- `SmartNotiSettings.suppressSourceForDigestAndSilent = true` — 전역 opt-in
-- `sbn.packageName` 이 `SmartNotiSettings.suppressedSourceApps` 에 이미 있거나, 이번 처리 시 `SuppressedSourceAppsAutoExpansionPolicy` 가 자동으로 추가 (아래 "Observable steps" 참고)
+- `SmartNotiSettings.suppressSourceForDigestAndSilent = true` — 전역 opt-in. **2026-04-24 부터 default = true** 이며 기존 설치자에게도 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션이 한 번 덮어쓴다 (의도적으로 OFF 했던 사용자는 다시 꺼야 함).
+- `SmartNotiSettings.suppressedSourceApps` 의미: **빈 set = 캡처된 모든 앱이 opt-in (opt-out 의미)**. 비어있지 않으면 그 set 이 화이트리스트로 동작. 이 의미 분기는 runtime 정책 안에만 존재 — 저장된 set 은 그대로.
 - 대상 알림이 protected 가 아님 (→ [protected-source-notifications](protected-source-notifications.md))
 
 ## Trigger
@@ -23,7 +23,7 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 ## Observable steps
 
-1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 현재 리스트에 app 이 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화.
+1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 현재 리스트에 app 이 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화. **`currentApps` 가 empty 인 경우는 이 단계가 skip 된다 — 빈 set 의 opt-out 의미가 이미 "모든 앱 포함" 을 보장하므로 굳이 단일 entry 로 좁힐 필요가 없음.**
 2. `NotificationSuppressionPolicy.shouldSuppressSourceNotification(...)` 가 확장된 리스트 기준으로 true 반환.
 3. `SourceNotificationRoutingPolicy.route(DIGEST, hidePersistent=*, suppress=true)` → `cancelSourceNotification=true, notifyReplacementNotification=true`.
 4. 리스너가 main thread 에서 `cancelNotification(sbn.key)` 호출 → 원본 알림 제거.
@@ -96,3 +96,4 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 - 2026-04-20: `SuppressedSourceAppsAutoExpansionPolicy` 추가 — 전역 opt-in 이 켜졌고 DIGEST 로 분류된 새 앱이 들어오면 자동으로 `suppressedSourceApps` 확장. onboarding 이후 게시되는 "(광고)" 류 알림이 원본 유지되던 문제 해소.
 - 2026-04-20: `NotificationReplacementIds.idFor` 에 notificationId 포함 — 같은 앱에서 서로 다른 내용의 DIGEST 가 동시에 게시될 때 replacement 가 서로 덮어쓰던 충돌 해소.
 - 2026-04-20: Settings 의 앱 선택 리스트에 "모두 선택" / "모두 해제" OutlinedButton 추가 — 대량 opt-in / opt-out 편의. 현재 필터로 보이는 앱만 영향 (숨겨진 앱의 선택 상태는 보존).
+- 2026-04-24: **신규/미설정 사용자에게 DIGEST/SILENT 가 이중으로 뜨던 증상 해소** — `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip 하고, `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션 (`suppress_source_migration_v1_applied` DataStore 키 게이트) 로 toggle 을 한 번 덮어씀. `SuppressedSourceAppsAutoExpansionPolicy` 는 `currentApps` 가 비어있을 때 no-op 가드를 추가해 의미 전환 (opt-out → 화이트리스트-of-one) 을 막음. 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.

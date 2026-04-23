@@ -69,6 +69,24 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
     }
 
     @Test
+    fun digest_on_unseen_app_with_empty_current_apps_does_not_expand() {
+        // Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md`
+        // Task 2 / Risks Q1: with empty `currentApps`, the suppression
+        // policy already treats every package as opted-in (opt-out
+        // semantics), so adding a single app here would silently shrink
+        // the suppression scope to an allow-list-of-one. Stay empty until
+        // the user explicitly narrows from Settings.
+        val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+            decision = NotificationDecision.DIGEST,
+            suppressSourceForDigestAndSilent = true,
+            packageName = "com.testshop",
+            currentApps = emptySet(),
+        )
+
+        assertNull(expanded)
+    }
+
+    @Test
     fun blank_package_is_ignored() {
         val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
             decision = NotificationDecision.DIGEST,

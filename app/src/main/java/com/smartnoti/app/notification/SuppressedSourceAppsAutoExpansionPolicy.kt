@@ -24,6 +24,14 @@ internal object SuppressedSourceAppsAutoExpansionPolicy {
         if (decision != NotificationDecision.DIGEST) return null
         if (packageName.isBlank()) return null
         if (packageName in currentApps) return null
+        // Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md`
+        // Task 2 / Risks Q1: when `currentApps` is empty,
+        // `NotificationSuppressionPolicy` already treats every package as
+        // opted-in (opt-out semantics). Auto-adding a single app here would
+        // silently flip the meaning to "allow-list of one" and shrink the
+        // suppression scope. Skip the expansion in that case so empty stays
+        // empty until the user explicitly narrows the scope from Settings.
+        if (currentApps.isEmpty()) return null
         return currentApps + packageName
     }
 }

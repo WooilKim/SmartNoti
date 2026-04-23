@@ -21,7 +21,14 @@ data class SmartNotiSettings(
     val silentVibrationMode: String = VibrationMode.OFF.name,
     val silentHeadsUpEnabled: Boolean = false,
     val silentLockScreenVisibility: String = LockScreenVisibilityMode.SECRET.name,
-    val suppressSourceForDigestAndSilent: Boolean = false,
+    // Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md` Task 4:
+    // default ON. Combined with the empty `suppressedSourceApps` set below
+    // and the empty-set semantic in `NotificationSuppressionPolicy`, this
+    // ensures fresh installs deliver the product promise — DIGEST/SILENT
+    // surface as a SmartNoti replacement instead of duplicating the
+    // original app's notification. Existing users get the same value
+    // injected once via `SettingsRepository.applyPendingMigrations()`.
+    val suppressSourceForDigestAndSilent: Boolean = true,
     val suppressedSourceApps: Set<String> = emptySet(),
     val hidePersistentNotifications: Boolean = true,
     val hidePersistentSourceNotifications: Boolean = false,
