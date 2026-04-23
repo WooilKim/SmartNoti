@@ -203,3 +203,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:50:00Z | #280 | loop-monitor | DEFER | APPROVE issued, but PM audit-row append for #280 hit main first and made the backfill diff CONFLICTING. Wrapper close+reopen flow expected. |
 | 2026-04-22T08:50:30Z | #281 | plan-implementer | DEFER | CI Unit tests + debug APK still PENDING. Re-review next sweep. |
 | 2026-04-22T08:50:00Z | #281 | plan-implementer | APPROVE+MERGE | onboarding quick-start seeds Categories; CI green; tests-first satisfied; merged |
+| 2026-04-22T08:50:00Z | #283 | plan-implementer | DEFER | CI pending (Unit tests + debug APK), docs-only triage round 2, well-understood pattern |
