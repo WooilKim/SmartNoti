@@ -1,6 +1,7 @@
 ---
-status: in-progress
+status: shipped
 related-journey: ignored-archive
+superseded-by: ../journeys/ignored-archive.md
 ---
 
 # Ignored-archive first-tap nav race fix
