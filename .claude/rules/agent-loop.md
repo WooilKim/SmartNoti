@@ -64,6 +64,7 @@ gap-planner   plan-implementer   journey-tester   ui-ux-inspector   code-health-
 - **관찰·제어**는 `loop-manager` 담당. 감사 로그 (`docs/auto-merge-log.md`, `docs/pr-review-log.md`) + 열린 PR + Known gap 을 읽어 상태 요약. 사용자는 `stop` / `resume` / `tune` 으로 개입 가능 — 모두 PR 로 수행, 직접 변경 없음.
 - `docs-sync.md` 가 여섯 agent 의 공통 규약. 모두 system prompt 에서 이 규칙을 읽고 따릅니다.
 - 각 agent 는 **PR 을 여는 것이 최대** (`project-manager` 는 리뷰 + audit row direct-append 까지, `loop-manager` 는 읽기 + ops PR 까지). `main` 에 직접 push 금지 — 예외는 `project-manager` 가 `.claude/lib/audit-log-append.sh` 로 append-only docs audit 행을 직접 ff-push 하는 한 경우 뿐 (MP-1, `docs/plans/2026-04-21-meta-audit-log-direct-append.md`). merge 는 자기 scope 안에서만 허용 (`journey-tester` / `ui-ux-inspector` 는 docs-only self-merge, 나머지는 사람 merge).
+  - **MP-1.1 (2026-04-22, `docs/plans/2026-04-22-meta-audit-append-race-helper-hardening.md`)**: `loop-monitor` AUDIT_DRIFT backfill (< 5 missing rows) 도 같은 helper 를 inline 호출 (`--source loop-monitor` 태그). 별도 backfill PR 은 helper 의 retry 가 exhaust 한 경우에만 helper 자신이 연다. Helper 는 dedupe default-on + 모든 push-rejection 을 broad race 로 classify + retry 마다 freshness re-assert 하도록 hardened. 결과: 단일 audit-row write path (PM / monitor 구분 없음) + AUDIT_APPEND_RACE class 해소.
 
 ## 오케스트레이션 옵션
 
