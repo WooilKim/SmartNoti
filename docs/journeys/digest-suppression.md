@@ -89,6 +89,7 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 ## Known gaps
 
 - Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피.
+- 2026-04-22 (journey-tester): #292 (A+C 디폴트 flip) 머지 직후 `cmd notification post` 기반 recipe 를 re-run 해도 여전히 `com.android.shell` ranker-group 의 NMS per-package 50건 quota + 누적 stale 알림 때문에 listener 가 end-to-end 로 DIGEST 대체를 수행하는 것을 라이브로 확인하기 어려움. 제품 동작 자체 (default ON + empty-set = 전체 opt-in) 는 implementer 의 ADB Scenario A 에서 PASS 확인됨. Recipe 를 `com.smartnoti.testnotifier` (별도 quota) 경유로 hardening 이 필요 — `gap-planner` 후보.
 
 ## Change log
 

@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — digest-suppression re-run post #292 still SKIP on emulator recipe, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | ⏭️ SKIP | Re-ran recipe after #292 (be1ab0c) merge to check whether the A+C default-flip + empty-set opt-out semantics resolves the long-standing live-recipe SKIP. Posted 3× `cmd notification post -S bigtext -t Promo VerifySweep0422-N '같은 광고 텍스트 할인 이벤트'` → `dumpsys notification --noredact` shows originals (`pkg=com.android.shell ... tag=VerifySweep0422-1/-2`, 3rd dropped by quota) still in tray alongside a pre-existing `pkg=com.smartnoti.app ... channel=smartnoti_replacement_digest_default_light_private_noheadsup` from earlier runs. Same root cause as the 2026-04-22 earlier sweep: `com.android.shell` ranker-group hits the NMS per-package 50-notification ceiling with accumulated stale test records, so fresh DIGEST posts can't be cleanly attributed to suppression path. #292 product fix itself was verified end-to-end by the implementer via ADB Scenario A (fresh-install `pm clear` + `FreshProm` post → only replacement remains) and PR review. `last-verified` unchanged (2026-04-21). Recipe-hardening (route via `com.smartnoti.testnotifier` with its own quota budget) remains the right gap-planner pickup to retire this persistent SKIP. Journey Known gaps updated to reflect the #292 fix is real but live recipe still blocked. |
+
+
 ### 2026-04-24 (plan-implementer — duplicate-notifications-suppress-defaults-ac shipped, emulator-5554)
 
 | Journey | Result | Notes |
