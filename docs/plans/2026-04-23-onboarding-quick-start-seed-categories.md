@@ -26,7 +26,7 @@ status: in-progress
 
 ---
 
-## Task 1: Add failing unit test for `OnboardingQuickStartCategoryApplier` contract
+## Task 1: Add failing unit test for `OnboardingQuickStartCategoryApplier` contract [IN PROGRESS via PR #281]
 
 **Objective:** RED-first. 새 컴포넌트가 quick-start 가 만든 룰별로 결정적 id / 적절한 action / order / null appPackage / ruleIds=[ruleId] 의 Category 를 produce 한다는 계약 고정.
 
@@ -41,7 +41,7 @@ status: in-progress
    - 동일 입력 두 번 호출 → 결과 동일 (deterministic).
 2. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.onboarding.OnboardingQuickStartCategoryApplierTest"` → 컴파일 실패 (RED).
 
-## Task 2: Implement `OnboardingQuickStartCategoryApplier`
+## Task 2: Implement `OnboardingQuickStartCategoryApplier` [IN PROGRESS via PR #281]
 
 **Objective:** Task 1 RED → GREEN.
 
@@ -55,7 +55,7 @@ status: in-progress
 4. id = `"cat-onboarding-${presetId.name.lowercase()}"`.
 5. 단위 테스트 GREEN 확인.
 
-## Task 3: Add failing test for applier wiring (Categories upsert called per preset)
+## Task 3: Add failing test for applier wiring (Categories upsert called per preset) [IN PROGRESS via PR #281]
 
 **Objective:** `OnboardingQuickStartSettingsApplier.applySelection` 이 quick-start rule upsert 와 동일 호출 안에서 `categoriesRepository.upsertCategory` 를 각 preset 만큼 호출한다는 계약을 RED 로 박는다.
 
@@ -68,7 +68,7 @@ status: in-progress
 3. 동일 selection 으로 두 번 적용해도 Category 개수가 누적되지 않는다 (idempotent).
 4. RED 확인 — 현재 applier 가 categoriesRepository 의존성 자체를 모름.
 
-## Task 4: Wire `CategoriesRepository` into `OnboardingQuickStartSettingsApplier`
+## Task 4: Wire `CategoriesRepository` into `OnboardingQuickStartSettingsApplier` [IN PROGRESS via PR #281]
 
 **Objective:** Task 3 GREEN 으로 만들기.
 
@@ -82,7 +82,7 @@ status: in-progress
 3. DI 컨테이너에서 새 의존성을 주입 (`AppContainer` 등에서 이미 살아있는 `CategoriesRepository` singleton 을 재사용).
 4. 단위 테스트 GREEN 확인. 기존 onboarding 관련 테스트 전부 그대로 PASS 인지 재실행.
 
-## Task 5: Update journey docs and ship
+## Task 5: Update journey docs and ship [IN PROGRESS via PR #281]
 
 **Objective:** 사용자 관측 동작이 바뀐 만큼 두 journey 문서를 동기화.
 
