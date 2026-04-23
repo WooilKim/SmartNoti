@@ -202,3 +202,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-23T07:59:00Z | #279 | gap-planner | APPROVE+MERGE | Plan + Known-gap annotation; CI green; revised from prior-sweep ESCALATE — open question (1:1 vs grouping) decidable at implementation time, plan recommends 1:1 with Risks listing alternatives. |
 | 2026-04-22T08:50:00Z | #280 | loop-monitor | DEFER | APPROVE issued, but PM audit-row append for #280 hit main first and made the backfill diff CONFLICTING. Wrapper close+reopen flow expected. |
 | 2026-04-22T08:50:30Z | #281 | plan-implementer | DEFER | CI Unit tests + debug APK still PENDING. Re-review next sweep. |
+| 2026-04-22T08:50:00Z | #281 | plan-implementer | APPROVE+MERGE | onboarding quick-start seeds Categories; CI green; tests-first satisfied; merged |
