@@ -31,7 +31,7 @@ superseded-by: ../../.claude/rules/agent-loop.md#MP-1.1
 - **Reversibility:** revert this commit and monitor returns to opening backfill PRs; helper returns to its current retry behavior. No data migration. Existing rows stay.
 - **Race rarity assumption:** even after hardening, two concurrent helper invocations remain possible (parallel PM + monitor). The helper handles this via `MAX_RETRIES` (default 3, override via env). On exhaustion, the existing fallback path (push ops branch + open audit PR + exit 2) survives unchanged.
 
-## Task 1: Add failing test for the race scenario
+## Task 1: Add failing test for the race scenario [SHIPPED via PR #287]
 
 **Objective:** Codify the regression — when `AUDIT_LOG_PRE_PUSH_HOOK` simulates an interleaving append on `origin/main` between branch cut and push, the helper must retry, re-cut, and succeed within `MAX_RETRIES`.
 
@@ -52,7 +52,7 @@ superseded-by: ../../.claude/rules/agent-loop.md#MP-1.1
 
 **Definition of done:** Test exists, runs, and fails on current `main`'s helper.
 
-## Task 2: Harden helper retry semantics
+## Task 2: Harden helper retry semantics [SHIPPED via PR #287]
 
 **Objective:** Make Task 1's test pass without weakening the existing dedupe/fallback contract.
 
@@ -72,7 +72,7 @@ superseded-by: ../../.claude/rules/agent-loop.md#MP-1.1
 
 **Definition of done:** Task 1 test passes; existing dedupe + fallback paths unchanged (verify by reading existing tests if any, else by manual smoke).
 
-## Task 3: Route loop-monitor AUDIT_DRIFT backfill through the helper
+## Task 3: Route loop-monitor AUDIT_DRIFT backfill through the helper [SHIPPED via PR #287]
 
 **Objective:** Eliminate the parallel "monitor opens its own backfill PR" path that produced #278 / #280. After this, monitor invokes `audit-log-append.sh` directly for the < 5-row backfill case.
 
@@ -89,7 +89,7 @@ superseded-by: ../../.claude/rules/agent-loop.md#MP-1.1
 
 **Definition of done:** Reading loop-monitor's AUDIT_DRIFT section, an implementer would never open a backfill PR by hand — they would always invoke the helper.
 
-## Task 4: Document the new race contract
+## Task 4: Document the new race contract [SHIPPED via PR #287]
 
 **Objective:** Make the "all audit-row writes go through one helper" invariant discoverable.
 
