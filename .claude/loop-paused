@@ -1,0 +1,3 @@
+Paused at: 2026-04-23T05:10:37Z
+Paused by: loop-manager (via user instruction)
+Reason: actions-billing — #276 CI blocked on GitHub Actions spending limit, 7 consecutive no-progress ticks; manual /journey-loop invocations are sufficient until billing restored, no value in self-scheduling.
