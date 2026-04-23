@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Onboarding quick-start: seed Categories alongside Rules

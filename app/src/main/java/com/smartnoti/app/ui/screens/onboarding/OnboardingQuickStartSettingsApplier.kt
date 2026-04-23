@@ -1,5 +1,6 @@
 package com.smartnoti.app.ui.screens.onboarding
 
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.first
 
 class OnboardingQuickStartSettingsApplier(
     private val ruleApplier: OnboardingQuickStartRuleApplier,
+    private val categoryApplier: OnboardingQuickStartCategoryApplier =
+        OnboardingQuickStartCategoryApplier(),
     private val classifier: NotificationClassifier = NotificationClassifier(
         vipSenders = DEFAULT_VIP_SENDERS,
         priorityKeywords = DEFAULT_PRIORITY_KEYWORDS,
@@ -22,6 +25,7 @@ class OnboardingQuickStartSettingsApplier(
     suspend fun applySelection(
         rulesRepository: RulesRepository,
         settingsRepository: SettingsRepository,
+        categoriesRepository: CategoriesRepository,
         notificationRepository: NotificationRepository,
         selectedPresetIds: Set<OnboardingQuickStartPresetId>,
     ) {
@@ -34,6 +38,42 @@ class OnboardingQuickStartSettingsApplier(
         rulesRepository.replaceAllRules(result.rules)
         settingsRepository.setSuppressSourceForDigestAndSilent(result.settings.suppressSourceForDigestAndSilent)
         settingsRepository.setSuppressedSourceApps(result.settings.suppressedSourceApps)
+
+        // Plan `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md` —
+        // mirror the rule seed in `CategoriesRepository` so 분류 탭 / Detail
+        // "분류 변경" 시트가 첫 진입부터 비어 있지 않고, `home-uncategorized-prompt`
+        // cover 가 의미 있게 동작한다. Rule upsert 가 끝난 *뒤* 에 카테고리를
+        // upsert 해 ruleIds 가 가리키는 rule 이 이미 영속화돼 있게 한다.
+        // Category id 가 `cat-onboarding-<presetId.lowercase>` 결정적이라
+        // 동일 selection 재적용은 in-place upsert 로 흡수돼 누적되지 않는다.
+        val mergedRulesByPresetId = mergedRulesByPresetId(result.rules, selectedPresetIds)
+        categoryApplier
+            .buildCategoriesByPresetId(mergedRulesByPresetId)
+            .forEach { category -> categoriesRepository.upsertCategory(category) }
+    }
+
+    /**
+     * Resolve the merged-rule (the one actually persisted in
+     * [RulesRepository.replaceAllRules] above) for each selected quick-start
+     * preset by matching on the preset draft's `(type, matchValue)`.
+     *
+     * Why match on identity instead of the raw draft id: `mergeRules` swaps
+     * the new rule's id for an existing user-owned rule's id when the
+     * `(type, matchValue)` collides, so `selectedPreset.toRule().id` may
+     * differ from what landed in storage. Using the merged rule's id keeps
+     * the Category's `ruleIds` in sync with the persisted Rules.
+     */
+    private fun mergedRulesByPresetId(
+        mergedRules: List<RuleUiModel>,
+        selectedPresetIds: Set<OnboardingQuickStartPresetId>,
+    ): Map<OnboardingQuickStartPresetId, RuleUiModel> {
+        val draftsByPresetId = ruleApplier.buildRulesByPresetId(selectedPresetIds)
+        return draftsByPresetId.mapNotNull { (presetId, draft) ->
+            val merged = mergedRules.firstOrNull { rule ->
+                rule.type == draft.type && rule.matchValue == draft.matchValue
+            } ?: return@mapNotNull null
+            presetId to merged
+        }.toMap()
     }
 
     fun buildApplicationResult(

@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
@@ -125,10 +126,17 @@ fun OnboardingScreen(onCompleted: () -> Unit) {
     val scope = rememberCoroutineScope()
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
+    val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
     val quickStartPresetBuilder = remember { OnboardingQuickStartPresetBuilder() }
     val quickStartRuleApplier = remember { OnboardingQuickStartRuleApplier(RuleDraftFactory()) }
-    val quickStartSettingsApplier = remember { OnboardingQuickStartSettingsApplier(quickStartRuleApplier) }
+    val quickStartCategoryApplier = remember { OnboardingQuickStartCategoryApplier() }
+    val quickStartSettingsApplier = remember {
+        OnboardingQuickStartSettingsApplier(
+            ruleApplier = quickStartRuleApplier,
+            categoryApplier = quickStartCategoryApplier,
+        )
+    }
     val selectionSummaryBuilder = remember { OnboardingQuickStartSelectionSummaryBuilder() }
     val quickStartPresets = remember { quickStartPresetBuilder.buildDefaultPresets() }
     val defaultSelectedPresetIds = remember(quickStartPresets) {
@@ -246,6 +254,7 @@ fun OnboardingScreen(onCompleted: () -> Unit) {
                                     quickStartSettingsApplier.applySelection(
                                         rulesRepository = rulesRepository,
                                         settingsRepository = settingsRepository,
+                                        categoriesRepository = categoriesRepository,
                                         notificationRepository = notificationRepository,
                                         selectedPresetIds = selectedPresetIdSet,
                                     )

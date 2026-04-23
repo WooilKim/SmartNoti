@@ -29,8 +29,9 @@ last-verified: 2026-04-22
 6. "이대로 시작할게요" 탭:
    1. `OnboardingQuickStartSettingsApplier.applySelection()` — DataStore 플래그 업데이트
    2. `OnboardingQuickStartRuleApplier` — `RulesRepository` 에 프리셋 룰 삽입
-   3. `SettingsRepository.setOnboardingCompleted(true)` — 온보딩 완료 플래그 저장
-   4. `OnboardingActiveNotificationBootstrapCoordinator.requestBootstrapForFirstOnboardingCompletion()` — bootstrap 요청 플래그 영속화 (1회성)
+   3. `OnboardingQuickStartCategoryApplier` — 동일 quick-start 셀렉션으로부터 1:1 Category 들을 만들어 `CategoriesRepository.upsertCategory` 로 영속화한다 (id = `cat-onboarding-<presetId.lowercase>` 결정적, `IMPORTANT_PRIORITY → PRIORITY` / `PROMO_QUIETING → DIGEST` / `REPEAT_BUNDLING → DIGEST`, `appPackageName = null`, `ruleIds = [mergedRuleId]`). Rule upsert 후에 호출되어 ruleIds 가 가리키는 rule 이 이미 store 에 있다.
+   4. `SettingsRepository.setOnboardingCompleted(true)` — 온보딩 완료 플래그 저장
+   5. `OnboardingActiveNotificationBootstrapCoordinator.requestBootstrapForFirstOnboardingCompletion()` — bootstrap 요청 플래그 영속화 (1회성)
 7. `AppNavHost` 가 Home 라우트로 navigate, `popUpTo(Onboarding) { inclusive = true }`.
 8. `SmartNotiNotificationListenerService.triggerOnboardingBootstrapIfConnected()` 가 즉시 bootstrap 을 시도. 서비스가 아직 바인딩 전이면 다음 `onListenerConnected` 콜백에서 `enqueueOnboardingBootstrapCheck()` 이 처리.
 9. `ActiveStatusBarNotificationBootstrapper.bootstrap(activeNotifications)` 가 현재 tray 에 존재하는 `StatusBarNotification[]` 을 순회하며, SmartNoti 자체 알림을 제외하고 하나씩 `processNotification` 호출 (→ [notification-capture-classify](notification-capture-classify.md)). 각 처리 직전에 `reconnectSweepCoordinator.recordProcessedByBootstrap(dedupKeyFor(sbn))` 로 dedup Set 에 먼저 기록 — 같은 reconnect 에서 이어 돌 sweep 이 중복 처리하지 않게 한다.
@@ -40,6 +41,7 @@ last-verified: 2026-04-22
 
 - `observeOnboardingCompleted()` 가 영구적으로 `true`.
 - RulesRepository 에 quick-start 프리셋 룰 저장됨.
+- CategoriesRepository 에 quick-start 가 만든 룰만큼의 1:1 Category 가 저장됨 (`cat-onboarding-<presetId.lowercase>` 결정적 id). Detail "분류 변경" 시트의 "기존 분류에 포함" 섹션이 첫 진입부터 비어 있지 않다.
 - Home/Priority/Digest/Hidden 탭에 기존 알림들이 분류 결과로 즉시 보임.
 - bootstrap 요청 플래그는 consume 되어 재실행되지 않음.
 
@@ -56,6 +58,7 @@ last-verified: 2026-04-22
 - `onboarding/OnboardingPermissions` — 권한 상태 snapshot
 - `ui/screens/onboarding/OnboardingQuickStartSettingsApplier`
 - `ui/screens/onboarding/OnboardingQuickStartRuleApplier`
+- `ui/screens/onboarding/OnboardingQuickStartCategoryApplier`
 - `notification/OnboardingActiveNotificationBootstrapCoordinator`
 - `notification/OnboardingActiveNotificationBootstrap` (`ActiveStatusBarNotificationBootstrapper`)
 - `notification/ListenerReconnectActiveNotificationSweepCoordinator` — reconnect sweep 파트너, `SweepDedupKey` 기준 dedup
@@ -70,6 +73,8 @@ last-verified: 2026-04-22
 - `OnboardingQuickStartPresetBuilderTest`
 - `OnboardingQuickStartRuleApplierTest`
 - `OnboardingQuickStartSettingsApplierTest`
+- `OnboardingQuickStartCategoryApplierTest`
+- `OnboardingQuickStartCategoriesWiringTest`
 - `OnboardingActiveNotificationBootstrapTest`
 - `ListenerReconnectActiveNotificationSweepTest`
 - `ListenerReconnectSweepRepositoryIntegrationTest`
@@ -108,3 +113,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-21: Reconnect sweep 경로 추가 문서화. `onListenerConnected` 가 매번 `enqueueOnboardingBootstrapCheck` → `enqueueReconnectSweep` 순으로 발화하며, bootstrapper 가 처리한 `SweepDedupKey` 를 sweep coordinator 에 기록해 중복 처리를 막는다. 권한 토글 등 일반 재접속에서도 tray 에 남은 미처리 알림이 메꿔진다 (plan `docs/plans/2026-04-21-listener-reconnect-active-notification-sweep.md`, PR #94 / #102 / #104)
 - 2026-04-22: **Launch crash 해소** — Categories Phase P1 이후 `LegacyRuleActionReader` 가 `preferencesDataStore("smartnoti_rules")` delegate 를 두 번 선언해 AndroidX 가 앱 기동 즉시 `IllegalStateException: There are multiple DataStores active for the same file` 로 크래시했고, 그 결과 `MigrateRulesToCategoriesRunner` 와 bootstrap 경로 전체가 실행 전에 사망. Fix: `RulesRepository` 를 단일 DataStore 소유자로 두고 `LegacyRuleActionReader` 가 그 handle 을 생성자 주입으로 받는다. Cold-launch 시 migration runner 가 크래시 없이 정상 수행 → bootstrap 재개. Robolectric regression (`RulesDataStoreSingleOwnerTest`). Plan: `docs/plans/2026-04-22-rules-datastore-dedup-fix.md` (this PR). `last-verified` 변경 없음 — onboarding recipe 전체 재실행은 별도 sweep 에서.
+- 2026-04-23: **Categories quick-start seed 추가** — `OnboardingQuickStartCategoryApplier` 가 quick-start 셀렉션으로부터 1:1 Category (`cat-onboarding-<presetId.lowercase>`) 들을 만들어 `OnboardingQuickStartSettingsApplier.applySelection` 안에서 rule upsert 직후 `CategoriesRepository.upsertCategory` 로 영속화한다. `IMPORTANT_PRIORITY → PRIORITY`, `PROMO_QUIETING → DIGEST`, `REPEAT_BUNDLING → DIGEST`. 결정적 id 로 idempotent — 동일 셀렉션 재적용은 in-place upsert. `CategoriesRepository` 가 비어 있던 첫-진입 UX gap (rules-feedback-loop 의 Path A 가 빈 리스트로 강제되던 현상) 해소. Robolectric coverage: `OnboardingQuickStartCategoriesWiringTest`. Plan: `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md` (this PR). `last-verified` 변경 없음 — ADB recipe 재실행은 다음 journey-tester sweep 에 위임.
