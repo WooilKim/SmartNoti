@@ -199,3 +199,4 @@ If a self-merged row caused a regression:
 | 2026-04-23T07:55:00Z | project-manager | #278 | loop-monitor: audit backfill of #275 (2-line append-only, fresh branch from main) | https://github.com/WooilKim/SmartNoti/actions/runs/24823224282 |
 | 2026-04-23T07:55:00Z | project-manager | #278 | loop-monitor: audit backfill of #275 (2-line append-only, fresh branch from main) | https://github.com/WooilKim/SmartNoti/actions/runs/24823647370 |
 | 2026-04-23T07:59:00Z | project-manager | #279 | gap-planner: onboarding-quick-start seed Categories alongside Rules plan + 1 Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24823503844 |
+| 2026-04-22T08:50:00Z | project-manager | #280 | loop-monitor: audit backfill of #275 (fresh re-cut, 2-line append-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24824075841 |
