@@ -1,3 +1,9 @@
+---
+status: shipped
+superseded-by: docs/journeys/digest-suppression.md
+shipped-via: "#TBD"
+---
+
 # Duplicate Notifications for Under-Configured Users — Suppress Defaults (A + C)
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.

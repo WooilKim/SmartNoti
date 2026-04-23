@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-24 (plan-implementer — duplicate-notifications-suppress-defaults-ac shipped, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression / silent-auto-hide | DRIFT FIXED | Plan `2026-04-24-duplicate-notifications-suppress-defaults-ac.md` (A+C hybrid) shipped: `SmartNotiSettings.suppressSourceForDigestAndSilent` default flipped `false → true` and `NotificationSuppressionPolicy` now treats empty `suppressedSourceApps` as opt-out semantics ("all captured packages opted-in"). Existing users get an in-place v1 one-shot migration via `SettingsRepository.applyPendingMigrations` gated by the `suppress_source_migration_v1_applied` DataStore key — anyone who had explicitly toggled OFF is overwritten (documented trade-off). `SuppressedSourceAppsAutoExpansionPolicy` learned a no-op guard for empty `currentApps` so the implicit narrowing (opt-out → allow-list-of-one) cannot fire. ADB Scenario A on emulator-5554: `pm clear com.smartnoti.app` → install debug APK → grant listener + POST_NOTIFICATIONS → walk onboarding → `cmd notification post -S bigtext -t Promo FreshProm "쿠폰 할인 오늘만"` → `dumpsys notification --noredact` shows the original `FreshProm` is gone and only `smartnoti_replacement_digest_default_light_private_noheadsup` remains. Scenarios B (upgrade-from-OFF overwritten) and C (idempotency post-user-toggle-OFF) covered exhaustively by the new `SettingsRepositoryMigrationTest`. Both digest-suppression / silent-auto-hide journeys updated (Preconditions + Change log); `last-verified` not bumped because the recipe sections were not re-run end-to-end. Resolves the long-standing "신규/미설정 사용자에게 DIGEST/SILENT 가 이중으로 뜬다" Known gap on `digest-suppression`. |
+
+
 ### 2026-04-22 (journey-tester — rules-feedback-loop end-to-end re-verify PASS, emulator-5554)
 
 | Journey | Result | Notes |
