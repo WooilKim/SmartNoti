@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+superseded-by: docs/journeys/digest-suppression.md
 ---
 
 # digest-suppression Verification Recipe via `com.smartnoti.testnotifier`
