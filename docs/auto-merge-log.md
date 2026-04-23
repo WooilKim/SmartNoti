@@ -196,4 +196,5 @@ If a self-merged row caused a regression:
 | 2026-04-22T16:13:18Z | project-manager | #272 | gap-planner: priority-inbox debug-inject hook plan + Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24789004649 |
 | 2026-04-22T16:46:00Z | project-manager | #273 | plan-implementer; debug-only FORCE_STATUS hook + recipe rewrite for priority-inbox journey | https://github.com/WooilKim/SmartNoti/actions/runs/24790453337 |
 | 2026-04-22T08:50:00Z | project-manager | #276 | docs(plans) frontmatter triage flip 7 plans to shipped | https://github.com/WooilKim/SmartNoti/actions/runs/24817850312 |
+| 2026-04-23T04:41:42Z | human(WooilKim) (loop-monitor rubric update; backfilled by loop-monitor) | #275 | ops(loop-monitor): exclude tester docs-only self-merges from pr-review-log AUDIT_DRIFT | https://github.com/WooilKim/SmartNoti/actions/runs/24807220746 |
 | 2026-04-23T07:55:00Z | project-manager | #278 | loop-monitor: audit backfill of #275 (2-line append-only, fresh branch from main) | https://github.com/WooilKim/SmartNoti/actions/runs/24823224282 |

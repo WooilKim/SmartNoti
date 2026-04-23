@@ -196,3 +196,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-23T04:52:06Z | #276 | human(triage) | ESCALATE | Recurring CI infra block (Actions billing); 3rd sweep, escalated for user disposition |
 | 2026-04-23T05:10:37Z | #277 | loop-manager | defer | loop-manager raised pause flag; other agents must hold until resume |
 | 2026-04-22T08:50:00Z | #276 | gap-planner | APPROVE | Docs-only frontmatter flip for 7 shipped plans; CI pass; PM merging |
+| 2026-04-23T04:41:42Z | #275 | human(WooilKim) | APPROVE+MERGE | ops(loop-monitor) rubric update: AUDIT_DRIFT exclusion for docs/journey-verify-* tester docs-only self-merges; merged 50ec629; backfilled by loop-monitor |
