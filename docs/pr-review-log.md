@@ -196,3 +196,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-23T04:52:06Z | #276 | human(triage) | ESCALATE | Recurring CI infra block (Actions billing); 3rd sweep, escalated for user disposition |
 | 2026-04-23T05:10:37Z | #277 | loop-manager | defer | loop-manager raised pause flag; other agents must hold until resume |
 | 2026-04-22T08:50:00Z | #276 | gap-planner | APPROVE | Docs-only frontmatter flip for 7 shipped plans; CI pass; PM merging |
+| 2026-04-23T07:55:00Z | #279 | gap-planner | ESCALATE | Plan body flags open user-intent question (1:1 Rule-Category mapping vs grouping); CI also PENDING. Awaiting human disposition. |
