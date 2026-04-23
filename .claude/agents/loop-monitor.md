@@ -55,13 +55,28 @@ Run each check. If a check fires, record the code + evidence. Multiple independe
 
 ### AUDIT_DRIFT
 
-**Check**: `gh pr list --state merged --limit 20 --json number,mergedAt --jq '.[].number'` vs `grep -oE '#[0-9]+' docs/auto-merge-log.md`. Any merged agent-origin PR missing a row that's older than 1 hour is drift.
+**Check**: cross-reference recent merges against BOTH audit logs:
 
-**Evidence**: list the PR numbers missing rows.
+- `docs/auto-merge-log.md`: every merged agent-origin PR (any branch pattern) MUST have a row older than 1 hour, or it's drift. This is the true audit ground truth — "did the loop actually merge this?"
+- `docs/pr-review-log.md`: every merged agent-origin PR **except** those whose branch matches `docs/journey-verify-*` MUST have a row older than 1 hour, or it's drift. The `docs/journey-verify-*` exclusion exists because journey-tester docs-only self-merges have no PM review verdict by design (per `.claude/agents/journey-tester.md` carve-out: docs-only + CI green + no human review requested + journey-only path = self-merge with no PM step). A missing pr-review row for a tester self-merge is intentionally absent, NOT drift.
 
-**Auto-fix (if < 5 missing rows)**: open a small backfill PR on `ops/audit-backfill-<timestamp>` branch with the missing rows appended to `docs/auto-merge-log.md`. Follow the existing audit row format. Do NOT self-merge (PM handles next sweep per its rubric).
+Run roughly:
+```bash
+MERGED=$(gh pr list --state merged --limit 20 --json number,headRefName,mergedAt)
+AUTO=$(grep -oE '#[0-9]+' docs/auto-merge-log.md | sort -u)
+REVIEW=$(grep -oE '#[0-9]+' docs/pr-review-log.md | sort -u)
+# For auto-merge-log: every merged PR ≥ 1h old must appear in AUTO.
+# For pr-review-log: every merged PR ≥ 1h old whose headRefName does NOT
+#   start with "docs/journey-verify-" must appear in REVIEW.
+```
+
+**Evidence**: list the PR numbers missing rows in each log separately (auto-merge gaps vs pr-review gaps), so the auto-fix below knows which file to backfill.
+
+**Auto-fix (if < 5 missing rows total)**: open a small backfill PR on `ops/audit-backfill-<timestamp>` branch with the missing rows appended to the appropriate log file(s). Always `git fetch origin main && git checkout -b ops/audit-backfill-<ts> origin/main` first to avoid stale-base contamination (do NOT branch off whatever main happens to be locally). Follow the existing audit row format. Do NOT self-merge (PM handles next sweep per its rubric).
 
 **Escalate (if ≥ 5 missing rows)**: report list to user — a systemic audit process issue beyond one tick's scope.
+
+**Carve-out source**: `.claude/agents/journey-tester.md` (docs-only self-merge gates). The exclusion narrowly covers branches starting with `docs/journey-verify-`. If a future agent adds a similar docs-only self-merge carve-out (e.g., a different `docs/<x>-*` pattern), update this section in the same PR that adds the carve-out — otherwise this rubric will fault on the new pattern.
 
 ### STUCK_PR
 
