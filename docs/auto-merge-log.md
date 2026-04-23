@@ -201,3 +201,4 @@ If a self-merged row caused a regression:
 | 2026-04-23T07:59:00Z | project-manager | #279 | gap-planner: onboarding-quick-start seed Categories alongside Rules plan + 1 Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24823503844 |
 | 2026-04-22T08:50:00Z | project-manager | #280 | loop-monitor: audit backfill of #275 (fresh re-cut, 2-line append-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24824075841 |
 | 2026-04-22T08:50:00Z | project-manager | #281 | onboarding seeds Categories alongside Rules in quick-start | https://github.com/WooilKim/SmartNoti/actions/runs/24824595031 |
+| 2026-04-23T08:37:25Z | journey-tester | #282 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24825361461/job/72659788355 |
