@@ -208,3 +208,4 @@ If a self-merged row caused a regression:
 | 2026-04-23T15:45:34Z | journey-tester | #288 | rules-feedback-loop | https://github.com/WooilKim/SmartNoti/actions/runs/24844491412/job/72727573615 |
 | 2026-04-23T16:01:37Z | project-manager | #289 | gap-planner: categories condition chips plan | https://github.com/WooilKim/SmartNoti/actions/runs/24845265057 |
 | 2026-04-23T16:21:46Z | project-manager | #290 | categories condition chips (formatter + 3 surfaces + journey sync + plan-flip) | https://github.com/WooilKim/SmartNoti/actions/runs/24846070583 |
+| 2026-04-23T16:32:42Z | project-manager | #291 | gap-planner plan: suppress defaults A+C for duplicate notifications | https://github.com/WooilKim/SmartNoti/actions/runs/24846553774 |
