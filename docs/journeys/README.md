@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — rules-feedback-loop end-to-end re-verify PASS, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | PASS | Fresh sender `AssignTest_003634` posted via `cmd notification post` → Home StatPill counted, card landed in 정리함 > 보관 중 > Shell 묶음. Detail shows single "분류 변경" CTA (no 4-button grid, no 무시 affordance — redesign intact). Sheet rendered "기존 분류에 포함" header + 3 seeded categories (중요 알림 PRIORITY / 프로모션 알림 DIGEST / 반복 알림 DIGEST) + "+ 새 분류 만들기" terminal row per spec. Path A: tap 중요 알림 → sheet dismissed, back on Detail. `run-as … cat files/datastore/smartnoti_rules.preferences_pb` shows new `PERSON:AssignTest_003634` rule; `smartnoti_categories.preferences_pb` shows `cat-onboarding-important_priority` ruleIds appended `…,PERSON:AssignTest_003634` with name/action/order unchanged (idempotent dedupe-append holds). Path B: second sender `PathBTest_003943` → "+ 새 분류 만들기" → editor prefilled (name=sender, action=즉시 전달 PRIORITY = dynamic-opposite of SILENT, pendingRule pre-checked) → 추가 → new category `cat-user-1776958835023\|PathBTest_003943\|PRIORITY\|3\|PERSON:PathBTest_003943` persists. Auto-reclassify: follow-up post on same sender bumped Home "즉시" StatPill 18 → 19 (PRIORITY auto-route via new Category). `last-verified` stays 2026-04-22 (already today). No drift. |
+
+
 ### 2026-04-23 (journey-tester — onboarding-bootstrap Categories seeding PASS post #281, emulator-5554)
 
 | Journey | Result | Notes |
