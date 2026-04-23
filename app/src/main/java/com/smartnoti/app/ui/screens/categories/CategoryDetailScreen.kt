@@ -32,6 +32,7 @@ import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.screens.categories.components.CategoryConditionChips
 
 /**
  * Category detail scaffold — plan
@@ -113,6 +114,14 @@ fun CategoryDetailScreen(
                     text = "규칙 ${memberRules.size}개 · 순서 ${category.order}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // Plan `2026-04-24-categories-condition-chips.md` Task 3:
+                // Detail expands every condition (no truncation) so the
+                // user can audit the full matcher chain before editing.
+                CategoryConditionChips(
+                    rules = memberRules,
+                    action = category.action,
+                    maxInline = Int.MAX_VALUE,
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

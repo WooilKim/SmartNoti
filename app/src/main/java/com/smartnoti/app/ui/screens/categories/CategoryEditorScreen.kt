@@ -41,6 +41,7 @@ import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.usecase.CategoryEditorPrefill
+import com.smartnoti.app.ui.screens.categories.components.CategoryConditionChips
 import kotlinx.coroutines.launch
 
 /**
@@ -279,6 +280,25 @@ fun CategoryEditorScreen(
                                 )
                             }
                         }
+
+                        // Plan `2026-04-24-categories-condition-chips.md`
+                        // Task 3: live preview of the resulting condition
+                        // chip row. Compose state recomposition makes this
+                        // update immediately as the user toggles chips, so
+                        // they see the final card copy before saving.
+                        val previewRules = remember(displayedRules, draftSelectedRuleIds) {
+                            displayedRules.filter { it.id in draftSelectedRuleIds }
+                        }
+                        Text(
+                            text = "미리보기",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        CategoryConditionChips(
+                            rules = previewRules,
+                            action = draftAction,
+                            maxInline = Int.MAX_VALUE,
+                        )
                     }
                 }
 
