@@ -209,3 +209,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-23T09:02:46Z | #284 | gap-planner | APPROVE+MERGE | meta-plan frontmatter-flip path A; CI green 2m40s |
 | 2026-04-22T08:50:00Z | #285 | plan-implementer | DEFER | CI pending (Unit tests + debug APK run 24826842769); .claude/agents/ change has no risk-signal — plan to merge on next sweep if CI green |
 | 2026-04-22T08:50:00Z | #285 | plan-implementer | ESCALATE | .claude/agents/ self-mod; CI green; human merge per agent-loop.md carve-out |
+| 2026-04-22T08:45:00Z | #286 | gap-planner | DEFER | CI pending (Unit tests + debug APK); plan-only docs add, 2 open questions deferred to implementer per #279/#284 pattern |
