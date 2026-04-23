@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+superseded-by: ../journeys/categories-management.md
 ---
 
 # Categories Condition Chips Plan

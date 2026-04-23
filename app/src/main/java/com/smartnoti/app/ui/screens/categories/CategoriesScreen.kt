@@ -40,9 +40,11 @@ import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.screens.categories.components.CategoryConditionChips
 import kotlinx.coroutines.launch
 
 /**
@@ -192,9 +194,17 @@ fun CategoriesScreen(
                     }
                 } else {
                     items(items = categories, key = { it.id }) { category ->
+                        // Plan `2026-04-24-categories-condition-chips.md`
+                        // Task 3: surface the matched-rule conditions inline
+                        // on the card so users see "조건 → 분류 → 액션"
+                        // before drilling into Detail. maxInline = 2 keeps
+                        // the row to one visual line on a phone-width card;
+                        // 3+ rules collapse to "외 N개".
+                        val memberRules = category.memberRulesIn(rules)
                         CategoryRow(
                             category = category,
                             ruleCount = category.ruleIds.size,
+                            memberRules = memberRules,
                             onClick = { detailTargetId = category.id },
                         )
                     }
@@ -248,6 +258,7 @@ private fun EditorOverlay(
 private fun CategoryRow(
     category: Category,
     ruleCount: Int,
+    memberRules: List<RuleUiModel>,
     onClick: () -> Unit,
 ) {
     SmartSurfaceCard(
@@ -255,45 +266,66 @@ private fun CategoryRow(
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Box(
-                modifier = Modifier.size(40.dp),
-                contentAlignment = Alignment.Center,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(
-                    Icons.Outlined.Category,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = category.name.ifBlank { "분류" },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                val subtitle = buildString {
-                    if (!category.appPackageName.isNullOrBlank()) {
-                        append(category.appPackageName)
-                        append(" · ")
-                    }
-                    append("규칙 ${ruleCount}개")
+                Box(
+                    modifier = Modifier.size(40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Outlined.Category,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = category.name.ifBlank { "분류" },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    val subtitle = buildString {
+                        if (!category.appPackageName.isNullOrBlank()) {
+                            append(category.appPackageName)
+                            append(" · ")
+                        }
+                        append("규칙 ${ruleCount}개")
+                    }
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                CategoryActionBadge(category.action)
             }
-            CategoryActionBadge(category.action)
+            CategoryConditionChips(
+                rules = memberRules,
+                action = category.action,
+                maxInline = 2,
+            )
         }
     }
+}
+
+/**
+ * Resolve this Category's [Category.ruleIds] against the live rules list,
+ * preserving the Category's own ordering so the chip output matches the
+ * order users see in the editor's multi-select.
+ */
+private fun Category.memberRulesIn(allRules: List<RuleUiModel>): List<RuleUiModel> {
+    if (ruleIds.isEmpty() || allRules.isEmpty()) return emptyList()
+    val byId = allRules.associateBy { it.id }
+    return ruleIds.mapNotNull { byId[it] }
 }
