@@ -107,6 +107,7 @@ adb shell cmd notification post -S bigtext -t "AssignTest_0421" FbTest2 "두 번
 
 - (2026-04-22 해소) "기존 분류에 포함" 섹션 헤더는 기존 Category 가 1건 이상일 때 렌더됨을 confirm (2026-04-22 sweep). 0건일 때는 헤더 없이 "+ 새 분류 만들기" terminal row 만 노출 — 의도된 동작.
 - **2026-04-22 관측 (orthogonal)**: 온보딩 quick-start ("이대로 시작할게요") 가 Rules DataStore 에는 16개 룰을 seed 하지만 Categories DataStore 는 비워둠 — `docs/journeys/onboarding-bootstrap.md` 의 "기본 Category 들이 주입됨" precondition 과 불일치. 본 journey 는 precondition (최소 1 Category) 을 Path B 로 self-satisfy 하여 무관하게 PASS 가능하지만, 첫 사용자가 Path A 를 시도하면 리스트가 비어 Path B 로 강제된다. onboarding-bootstrap journey 의 범위로 follow-up 필요.
+  → plan: `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md`
 - 시트 확정 후 사용자에게 토스트나 확인 UI 없음 (조용히 성공).
 - 자동 rule 유도는 PERSON / APP 만 지원 — KEYWORD / SCHEDULE / REPEAT_BUNDLE 기반 묶기는 제공하지 않음 (사용자가 원하면 editor 에서 추가해야 함).
 - Deterministic rule id 의 교차 Category 중복: 동일 sender 를 서로 다른 Category 두 곳에 연이어 할당하면 같은 rule.id 를 두 Category 가 `ruleIds` 에 갖게 된다. Classifier 는 `order` 드래그 tie-break 로 승자를 결정 — 사용자가 분류 탭에서 정한 순서가 그대로 지배한다. Bug 아님 (계약 명시).
