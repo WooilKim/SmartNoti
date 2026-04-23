@@ -197,3 +197,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-23T05:10:37Z | #277 | loop-manager | defer | loop-manager raised pause flag; other agents must hold until resume |
 | 2026-04-22T08:50:00Z | #276 | gap-planner | APPROVE | Docs-only frontmatter flip for 7 shipped plans; CI pass; PM merging |
 | 2026-04-23T07:55:00Z | #279 | gap-planner | ESCALATE | Plan body flags open user-intent question (1:1 Rule-Category mapping vs grouping); CI also PENDING. Awaiting human disposition. |
+| 2026-04-23T07:58:00Z | #278 | loop-monitor | DEFER | Initially APPROVE+ready-to-merge but my own audit-row append landed first on main and conflicted. Rebased branch + force-with-lease push succeeded; CI now re-running. Re-merge next sweep when green. |
