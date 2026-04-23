@@ -1,11 +1,17 @@
 ---
 id: silent-archive-vs-process-split
 title: 조용히 보관 vs 조용히 처리 — 두 하위 상태로 분리
-status: planned
+status: shipped
 owner: @wooilkim
 journey: silent-auto-hide
 created: 2026-04-21
+superseded-by:
+  - ../journeys/silent-auto-hide.md
+  - ../journeys/hidden-inbox.md
+  - ../journeys/notification-detail.md
 ---
+
+> **Status note (2026-04-22 triage):** Tasks 1–6 shipped (Task 1 via #91, Task 2 via #100, Task 3 via #103, Task 4 via #107, Task 5 via #110, Task 6 via #115 with follow-up drift fix in #125/#126/#130 captured by `2026-04-20-silent-archive-drift-fix.md`). Task 7 (visual audit) is a recurring `ui-ux-inspector` activity rather than a one-time deliverable. Frontmatter flipped from `planned` to `shipped`.
 
 ## Motivation
 

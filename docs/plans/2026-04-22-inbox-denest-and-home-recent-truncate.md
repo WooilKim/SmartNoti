@@ -1,9 +1,14 @@
 ---
-status: planned
+status: shipped
 related-journeys:
   - docs/journeys/home-overview.md
   - docs/journeys/inbox-unified.md
+superseded-by:
+  - ../journeys/home-overview.md
+  - ../journeys/inbox-unified.md
 ---
+
+> **Status note (2026-04-22 triage):** All Tasks shipped via PR #265 (`85fd8b3` — Task 0 RED tests + Task 1 Home recent truncation + Task 2 Inbox de-nest via `HiddenScreenMode.Standalone/Embedded`). Frontmatter flipped from `planned` to `shipped`.
 
 # 정리함 nested-tab 제거 + 홈 "방금 정리된 알림" 길이 제어
 

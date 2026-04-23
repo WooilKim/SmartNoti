@@ -1,11 +1,16 @@
 ---
 id: listener-reconnect-active-notification-sweep
 title: 리스너 재접속 시 활성 알림 재-스윕 — 권한 토글/리스너 disconnect 후 누락 메움
-status: planned
+status: shipped
 owner: @wooilkim
 journey: notification-capture-classify
 created: 2026-04-21
+superseded-by:
+  - ../journeys/notification-capture-classify.md
+  - ../journeys/onboarding-bootstrap.md
 ---
+
+> **Status note (2026-04-22 triage):** All five Tasks shipped (Tasks 1–3 via PRs #94/#102/#104, Task 4 via #112, Task 5 verification recipe was executed against the emulator during the implementation sweep). Frontmatter flipped from `planned` to `shipped` to remove drift; plan body retained as historical record.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 

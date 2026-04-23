@@ -1,9 +1,14 @@
 ---
-status: planned
+status: shipped
 kind: meta-plan
 focus: audit-log serialization / PR churn
 superseded-by:
+  - ../../.claude/agents/project-manager.md
+  - ../../.claude/rules/agent-loop.md
+  - ../../.claude/lib/audit-log-append.sh
 ---
+
+> **Status note (2026-04-22 triage):** Tasks 1+2 shipped via PR #234 (`f385ca5` PM spec routing + `c608159` `audit-log-append.sh` helper + tests + `4024420` agent-loop doc update). Task 3 (retrospective signal) and Task 4 (extend to tester/inspector) were explicitly marked deferred / out-of-scope in the plan body. The PM-row description in `.claude/rules/agent-loop.md` already references this meta-plan as MP-1. Frontmatter flipped from `planned` to `shipped`.
 
 # Meta-plan: audit-log direct-append (eliminate per-sweep PR churn)
 
