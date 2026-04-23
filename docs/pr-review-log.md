@@ -204,3 +204,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:50:30Z | #281 | plan-implementer | DEFER | CI Unit tests + debug APK still PENDING. Re-review next sweep. |
 | 2026-04-22T08:50:00Z | #281 | plan-implementer | APPROVE+MERGE | onboarding quick-start seeds Categories; CI green; tests-first satisfied; merged |
 | 2026-04-22T08:50:00Z | #283 | plan-implementer | DEFER | CI pending (Unit tests + debug APK), docs-only triage round 2, well-understood pattern |
+| 2026-04-23T08:46:30Z | #283 | project-manager (triage) | APPROVE+MERGE | docs-only triage round 2; 4 in-progress→shipped; CI green 2m49s |
