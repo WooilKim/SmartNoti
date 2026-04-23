@@ -211,3 +211,4 @@ If a self-merged row caused a regression:
 | 2026-04-23T16:32:42Z | project-manager | #291 | gap-planner plan: suppress defaults A+C for duplicate notifications | https://github.com/WooilKim/SmartNoti/actions/runs/24846553774 |
 | 2026-04-23T16:57:42Z | project-manager | #292 | A+C suppress defaults: default-on toggle + empty-set semantic + one-shot migration | https://github.com/WooilKim/SmartNoti/actions/runs/24847695572 |
 | 2026-04-22T17:50:00Z | journey-tester | #293 | digest-suppression (re-run post #292 still SKIP — recipe blocked by NMS quota on com.android.shell) | https://github.com/WooilKim/SmartNoti/actions/runs/24848219592 |
+| 2026-04-23T17:23:41Z | project-manager | #294 | gap-planner plan: digest-suppression testnotifier recipe + Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24848840865 |
