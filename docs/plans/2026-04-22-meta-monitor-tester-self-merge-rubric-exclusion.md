@@ -1,8 +1,9 @@
 ---
-status: in-progress
+status: shipped
 type: meta
 related-agents:
   - .claude/agents/loop-monitor.md
+superseded-by: ../../.claude/agents/loop-monitor.md
 ---
 
 # Meta — Monitor AUDIT_DRIFT rubric: exclude journey-tester docs-only self-merges from pr-review-log expectation

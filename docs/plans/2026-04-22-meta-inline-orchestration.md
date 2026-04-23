@@ -1,6 +1,7 @@
 ---
-status: in-progress
+status: shipped
 type: meta
+superseded-by: ../../.claude/commands/journey-loop.md
 ---
 
 # Meta — Inline loop-orchestrator into the `/journey-loop` wrapper

@@ -1,5 +1,6 @@
 ---
-status: in-progress
+status: shipped
+superseded-by: ../journeys/onboarding-bootstrap.md
 ---
 
 # Onboarding quick-start: seed Categories alongside Rules
