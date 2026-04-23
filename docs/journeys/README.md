@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-23 (journey-tester — onboarding-bootstrap Categories seeding PASS post #281, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| onboarding-bootstrap | PASS | Built fresh debug APK (post-merge of #281 b0574e8), reinstalled, `pm clear com.smartnoti.app`, granted listener + POST_NOTIFICATIONS, walked permissions → quick-start → "이대로 시작할게요". Inspected `files/datastore/smartnoti_categories.preferences_pb` via `run-as`: 3 deterministic Categories present — `cat-onboarding-important_priority` (action=PRIORITY, order=0, ruleIds=keyword:인증번호,결제,배송,출발), `cat-onboarding-promo_quieting` (action=DIGEST, order=1, keyword:광고,프로모션,쿠폰,...), `cat-onboarding-repeat_bundling` (action=DIGEST, order=2, repeat_bundle:3). Names (중요 알림 / 프로모션 알림 / 반복 알림) match Rule.title. Corresponding `smartnoti_rules.preferences_pb` carries the matching 3 rules. 1:1 mapping per plan default verified — Exit state "CategoriesRepository 에 quick-start 가 만든 룰만큼의 1:1 Category" holds. `last-verified` 2026-04-22 → 2026-04-23. |
+
+
 ### 2026-04-22 (journey-tester — onboarding-bootstrap end-to-end PASS post pm-clear, emulator-5554)
 
 | Journey | Result | Notes |
