@@ -207,3 +207,4 @@ If a self-merged row caused a regression:
 | 2026-04-23T14:18:58Z | project-manager | #286 | meta-plan: audit-append race helper hardening (C1) | https://github.com/WooilKim/SmartNoti/actions/runs/24840306145/job/72712029368 |
 | 2026-04-23T15:45:34Z | journey-tester | #288 | rules-feedback-loop | https://github.com/WooilKim/SmartNoti/actions/runs/24844491412/job/72727573615 |
 | 2026-04-23T16:01:37Z | project-manager | #289 | gap-planner: categories condition chips plan | https://github.com/WooilKim/SmartNoti/actions/runs/24845265057 |
+| 2026-04-23T16:21:46Z | project-manager | #290 | categories condition chips (formatter + 3 surfaces + journey sync + plan-flip) | https://github.com/WooilKim/SmartNoti/actions/runs/24846070583 |
