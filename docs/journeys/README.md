@@ -29,7 +29,7 @@
 ### Source notification routing (시스템 tray 조작)
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
+| [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-24 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-22 |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — silent-auto-hide re-verify post-#292 on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | PASS | Targeted re-verify after PR #292 (default-on `suppressSourceForDigestAndSilent` + empty-set = all-apps + v1 migration) which shares the SILENT/Digest cancel branch. `dumpsys notification --noredact` shows live root summary `smartnoti_silent_summary` with title `보관 중인 조용한 알림 26건`, text `탭: 보관함 열기 · 스와이프: 확인으로 처리`, importance=1 (MIN), vis=SECRET, category=status — matches Observable step 5 copy verbatim. Group summaries on `smartnoti_silent_group` channel — `Promo · 조용히 4건`, `FooBarSender · 조용히 2건`, `PathBTest_003943 · 조용히 2건`, `PathATest_0422 · 조용히 2건` — all N≥2, no singletons in tray (Q3-A planner threshold holds). Posted fresh `cmd notification post -S bigtext Promo … "오늘만 30% 할인 광고 알림"`; root count incremented 26→27 and `Promo` group 4→5 within 4s, source `shell_cmd` record retained in tray (ARCHIVED capture default per #125 — `cancelSourceNotification=false` for ARCHIVED branch confirmed live, demonstrating #292's policy change does not regress the ARCHIVED path). `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-22 (journey-tester — categories-management re-verify on emulator-5554)
