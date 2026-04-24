@@ -82,6 +82,7 @@ v1 은 `/journey-loop` 을 한 번 호출하면 시작됩니다. 중단하려면
 - `git push --force` / `git reset --hard` / `rm -rf` / `--no-verify` 금지 (rebase 충돌 해결 제외 — 그것도 `--force-with-lease`).
 - 제품 의도가 불분명한 결정은 agent 가 단독으로 내리지 않고 보고서에 open question 으로 올린다.
 - 테스트가 깨진 채로 커밋 금지.
+- **시계는 시스템에서 읽는다** — 모든 agent 는 task 시작 시 `date -u` 를 한 번 읽고 그 값을 사용. 모델 컨텍스트의 "오늘 날짜" 를 신뢰하지 않는다 (실제 UTC 보다 시간 단위로 뒤처질 수 있음). 자세한 근거 + protected surface 목록은 [`.claude/rules/clock-discipline.md`](clock-discipline.md). 감사 로그 row 는 `audit-log-append.sh --stamp-now` 가 column 1 을 자동으로 다시 stamping; 그 외 모든 date-write 지점은 이 규칙으로 보호.
 
 ## 실패 시 동작
 

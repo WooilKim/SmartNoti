@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-24
 type: meta
 related-agents:
   - .claude/lib/audit-log-append.sh
@@ -8,6 +9,8 @@ related-agents:
   - .claude/agents/plan-implementer.md
   - .claude/agents/project-manager.md
   - .claude/agents/loop-monitor.md
+superseded-by:
+  - .claude/rules/clock-discipline.md
 ---
 
 # Meta — Eliminate agent clock drift in audit timestamps and journey `last-verified` bumps
