@@ -51,7 +51,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
-| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-22 |
+| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-24 |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-24 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-22 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — categories-management re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| categories-management | PASS | v1 loop tick pick (2-day-stale; last-verified 2026-04-22). Tap BottomNav "분류" → list renders 3 categories ("중요 알림" 즉시 전달 / "프로모션 알림" Digest / "반복 알림" Digest), each with `규칙 1개` + `CategoryActionBadge` + inline `CategoryConditionChips` (text + content-desc both `조건: … → 즉시 전달|모아서 알림`). FAB clickable bounds `[642,1938][1038,2085]` above AppBottomBar (no inset clipping regression — 2026-04-22 fix holds). FAB tap → `CategoryEditorScreen` AlertDialog ("새 분류" / 분류 이름 / 전달 방식 dropdown default `즉시 전달 (PRIORITY)` / 연결할 앱 picker `특정 앱 없음` / Rule multi-select for all 3 rules / 미리보기 chip `조건 없음 → 즉시 전달` / 닫기·추가). Row tap → `CategoryDetailScreen` ("분류 상세" / 카테고리 이름 / `CategoryActionBadge` `즉시 전달` / 기본 정보 카드 with full `CategoryConditionChips` + `규칙 1개 · 순서 0` / 편집·삭제 / 소속 규칙 list). Observable steps 1-5 verified end-to-end. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — quiet-hours re-verify on emulator-5554)
