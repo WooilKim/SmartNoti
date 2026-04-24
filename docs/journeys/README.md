@@ -22,7 +22,7 @@
 ### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-22 |
+| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-24 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-22 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-21 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — notification-capture-classify re-verify post-#292/#287/#285 on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | PASS | v1 loop tick pick (2-day-stale; recent #292 suppress defaults / #287 audit helper / #285 frontmatter rule merged since last verify, capture path itself unchanged but suppress path tied in). Recipe ran on APK `lastUpdateTime=2026-04-24 01:44:11`: `cmd notification allow_listener` (idempotent), then `cmd notification post -S bigtext -t Bank CaptureClassifyTest_0424 "인증번호 123456을 입력하세요"`, launched `com.smartnoti.app/.MainActivity` and tapped Home tab. DB query via `run-as com.smartnoti.app sqlite3 databases/smartnoti.db` returned new row `com.android.shell:2020:CaptureClassifyTest_0424 | com.android.shell | Bank | 인증번호 | status=PRIORITY | ruleHitIds=keyword:인증번호,결제,배송,출발 | reasonTags=발신자 있음\|사용자 규칙\|중요 알림\|온보딩 추천\|중요 키워드` — confirms full Observable steps 1-10 (listener entry → coordinator → Rules+Categories+Settings snapshot → classifier rule match (`keyword:인증번호` etc.) → Category lift → CategoryConflictResolver → winning Category.action → NotificationDecision.PRIORITY → Repository upsert) and Exit state (`status ∈ {PRIORITY,DIGEST,SILENT,IGNORE}` row written, observable via repository flow). Home StatPill footer `전체 61건 보기` reflected accumulated capture count. PRIORITY classification cascade matches doc — keyword pre-rule heuristic resolved to PRIORITY despite no user-defined Bank rule (cumulative rule history from prior sweeps). #292 suppress-source default flip and #287/#285 docs/audit changes do not regress capture path — capture row write path unchanged. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — home-overview re-verify post-#290/#292 on emulator-5554)
