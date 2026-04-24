@@ -30,7 +30,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
-| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-21 |
+| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-22 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-22 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-22 (plan-implementer — digest-suppression recipe rewritten via com.smartnoti.testnotifier, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | PASS | Plan `2026-04-22-digest-suppression-testnotifier-recipe.md` shipped (docs-only). Recipe flipped from `cmd notification post` (pkg=com.android.shell, hit NMS per-package 50 quota) to `com.smartnoti.testnotifier` PROMO_DIGEST scenario (separate quota budget). Dry-run on emulator-5554: `adb install -r app-debug.apk` → `am start com.smartnoti.testnotifier/.MainActivity` → `input tap 301 1062` on "이 시나리오 보내기" under "프로모션 알림 1건 보내기" card. Post-tap `dumpsys notification --noredact | grep -E "pkg=com.smartnoti.(testnotifier|app)|smartnoti_replacement_digest"` confirms: no `com.smartnoti.testnotifier` "오늘만 특가 안내" payload remains (only pre-existing `ranker_group` placeholder + unrelated `important-1` tag); `com.smartnoti.app` has a fresh `smartnoti_replacement_digest_default_light_private_noheadsup` entry (id=-1158580653, not in pre-tap baseline). Suppress→replacement path verified live end-to-end. SmartNoti 측 코드 변경 없음 — journey recipe block + Known gap drainage + Change log + `last-verified` 2026-04-21 → 2026-04-22 뿐. Retires the persistent SKIP from the two 2026-04-22 earlier tester sweeps (shell quota saturation). |
 
 
 ### 2026-04-22 (journey-tester — digest-suppression re-run post #292 still SKIP on emulator recipe, emulator-5554)

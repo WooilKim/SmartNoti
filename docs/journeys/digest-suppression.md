@@ -3,7 +3,7 @@ id: digest-suppression
 title: 디제스트 자동 묶음 및 원본 교체
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-22
 ---
 
 ## Goal
@@ -71,26 +71,49 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 ## Verification recipe
 
 ```bash
-# 1. Settings 탭 → "원본 알림 자동 숨김" 섹션 → "자동 숨김" 토글 ON
-#    → 앱 선택 리스트에서 테스트 대상 앱 (예: com.android.shell) 체크
-#    ※ cmd notification 은 com.android.shell 패키지로 게시되므로 테스트에 적합
+# 0. 선결:
+#    - SmartNoti debug APK 설치 + onboarding 완료 시 PROMO_QUIETING 프리셋 선택
+#      (기본 키워드 룰 "쿠폰/세일/이벤트" 가 DIGEST 분기로 동작해야 함).
+#    - 전역 opt-in (suppressSourceForDigestAndSilent) 은 2026-04-24 이후 default ON.
+#    ※ testnotifier (com.smartnoti.testnotifier) 로 게시하면 shell ranker-group 의
+#      per-package quota 와 분리되어 누적 stale 알림 걱정 없이 검증 가능.
 
-# 2. Digest 로 분류되는 알림 게시 (중복 혹은 프로모션 키워드)
-for i in 1 2 3; do
-  adb shell cmd notification post -S bigtext -t "Promo" "SuppTest$i" "같은 광고 텍스트"
-done
+export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
+TESTNOTI="${TESTNOTI:-/Users/wooil/source/SmartNotiTestNotifier}"  # 본인 환경에 맞게 export
 
-# 3. 원본이 tray 에서 제거되고 SmartNoti replacement 가 게시됐는지 확인
-adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
+# 1. (최초 1회) testnotifier APK 빌드 + 설치
+[ -f "$TESTNOTI/app/build/outputs/apk/debug/app-debug.apk" ] \
+  || (cd "$TESTNOTI" && ./gradlew :app:assembleDebug)
+adb -s emulator-5554 install -r "$TESTNOTI/app/build/outputs/apk/debug/app-debug.apk"
 
-# 4. replacement 의 "Digest로 유지" 액션 탭 → Rules 탭에 app 룰 추가 확인
+# 2. MainActivity 진입
+adb -s emulator-5554 shell am start -n com.smartnoti.testnotifier/.MainActivity
+sleep 2
+
+# 3. PROMO_DIGEST 카드의 "이 시나리오 보내기" 버튼 탭
+#    좌표는 emulator skin 에 따라 다름 — 다음 한 줄로 재계산:
+#      adb -s emulator-5554 shell uiautomator dump /sdcard/ui.xml && \
+#        adb -s emulator-5554 shell cat /sdcard/ui.xml | tr '>' '\n' \
+#        | grep -B1 '프로모션 알림 1건' -A5 | grep -oE 'bounds="\[[0-9,]+\]\[[0-9,]+\]"'
+#    (참고: 기본 Pixel 에뮬레이터에서는 약 301,1062.)
+adb -s emulator-5554 shell input tap 301 1062
+sleep 2
+
+# 4. 원본 testnotifier 알림이 tray 에서 제거되고 SmartNoti replacement 가 새로 게시됐는지 확인
+adb -s emulator-5554 shell dumpsys notification --noredact \
+  | grep -E "pkg=com.smartnoti.(testnotifier|app)|smartnoti_replacement_digest" \
+  | head -20
+# 기대: com.smartnoti.testnotifier 의 "오늘만 특가 안내" payload 는 없고,
+#       com.smartnoti.app 의 smartnoti_replacement_digest_* 채널에 새 entry 가 생김.
+
+# 5. replacement 의 "Digest로 유지" 액션 탭 → Rules 탭에 com.smartnoti.testnotifier 룰 추가 확인
+
+# ※ 누적 quota 문제로 SKIP 하지 않는다 — testnotifier 는 shell 과 별개 quota budget 사용.
 ```
 
 ## Known gaps
 
 - Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피.
-- 2026-04-22 (journey-tester): #292 (A+C 디폴트 flip) 머지 직후 `cmd notification post` 기반 recipe 를 re-run 해도 여전히 `com.android.shell` ranker-group 의 NMS per-package 50건 quota + 누적 stale 알림 때문에 listener 가 end-to-end 로 DIGEST 대체를 수행하는 것을 라이브로 확인하기 어려움. 제품 동작 자체 (default ON + empty-set = 전체 opt-in) 는 implementer 의 ADB Scenario A 에서 PASS 확인됨. Recipe 를 `com.smartnoti.testnotifier` (별도 quota) 경유로 hardening 이 필요 — `gap-planner` 후보.
-  → plan: `docs/plans/2026-04-22-digest-suppression-testnotifier-recipe.md`
 
 ## Change log
 
@@ -98,4 +121,5 @@ adb shell dumpsys notification --noredact | grep smartnoti_replacement_digest
 - 2026-04-20: `SuppressedSourceAppsAutoExpansionPolicy` 추가 — 전역 opt-in 이 켜졌고 DIGEST 로 분류된 새 앱이 들어오면 자동으로 `suppressedSourceApps` 확장. onboarding 이후 게시되는 "(광고)" 류 알림이 원본 유지되던 문제 해소.
 - 2026-04-20: `NotificationReplacementIds.idFor` 에 notificationId 포함 — 같은 앱에서 서로 다른 내용의 DIGEST 가 동시에 게시될 때 replacement 가 서로 덮어쓰던 충돌 해소.
 - 2026-04-20: Settings 의 앱 선택 리스트에 "모두 선택" / "모두 해제" OutlinedButton 추가 — 대량 opt-in / opt-out 편의. 현재 필터로 보이는 앱만 영향 (숨겨진 앱의 선택 상태는 보존).
+- 2026-04-22: Verification recipe 를 `com.smartnoti.testnotifier` 의 `PROMO_DIGEST` 시나리오 경유로 재작성 — `com.android.shell` ranker-group 의 NMS per-package 50건 quota 와 누적 stale 알림 때문에 recipe 가 연속 SKIP 되던 증상 해소. SmartNoti 측 코드 변경 없음, journey recipe 블록 + Known gap bullet drainage 뿐. Plan: `docs/plans/2026-04-22-digest-suppression-testnotifier-recipe.md`. Dry-run PASS (emulator-5554): tap 후 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 는 tray 에 없고 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry 생성 확인.
 - 2026-04-24: **신규/미설정 사용자에게 DIGEST/SILENT 가 이중으로 뜨던 증상 해소** — `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip 하고, `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션 (`suppress_source_migration_v1_applied` DataStore 키 게이트) 로 toggle 을 한 번 덮어씀. `SuppressedSourceAppsAutoExpansionPolicy` 는 `currentApps` 가 비어있을 때 no-op 가드를 추가해 의미 전환 (opt-out → 화이트리스트-of-one) 을 막음. 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.
