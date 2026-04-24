@@ -3,7 +3,7 @@ id: digest-suppression
 title: 디제스트 자동 묶음 및 원본 교체
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal

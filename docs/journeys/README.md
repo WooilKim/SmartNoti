@@ -30,7 +30,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-21 |
-| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-22 |
+| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-24 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-22 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — digest-suppression PASS via testnotifier recipe rotation, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | PASS | Independent re-run of the post-#295 testnotifier recipe (2 days stale since implementer dry-run). `am start com.smartnoti.testnotifier/.MainActivity` → uiautomator confirms PROMO_DIGEST card "이 시나리오 보내기" bounds `[95,1009][507,1114]` → `input tap 301 1062`. Post-tap `dumpsys notification --noredact` shows: original `tag=promo-1` "오늘만 특가 안내" payload absent from `com.smartnoti.testnotifier` (only `ranker_group` summary + unrelated `important-1` from prior IMPORTANT scenario remain); fresh `com.smartnoti.app` record id=-1158580653 channel=`smartnoti_replacement_digest_default_light_private_noheadsup` with title "오늘만 특가 안내", subText "SmartNoti Test Notifier • Digest", body "원본 알림 숨김을 시도하고 Digest에 모아뒀어요 · 사용자 규칙 · 프로모션 알림". Observable steps 3–5 verified live. `last-verified` 2026-04-22 → 2026-04-24. Recipe rotation value confirmed — testnotifier path remains stable across days (no quota saturation). |
 
 
 ### 2026-04-22 (plan-implementer — digest-suppression recipe rewritten via com.smartnoti.testnotifier, emulator-5554)
