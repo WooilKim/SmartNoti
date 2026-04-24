@@ -23,7 +23,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-24 |
-| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-22 |
+| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-24 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
 
 ### Source notification routing (시스템 tray 조작)
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — duplicate-suppression re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| duplicate-suppression | PASS | v1 loop tick pick (2-day stale; last-verified 2026-04-22). Posted 3x identical `Shopping / Repeat$i / 한정 특가` notifications via `adb shell cmd notification post -S bigtext`. `dumpsys notification` confirms `com.smartnoti.app` emitted replacement digest entries on `smartnoti_replacement_digest_default_light_private_noheadsup` channel (ranker_group + 2 child records id=659924330/659924331), validating duplicate threshold (≥3) → DIGEST classification → digest-suppression replacement path. Observable steps 1-7 verified end-to-end via system tray dump. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — inbox-unified first-time verify on emulator-5554)

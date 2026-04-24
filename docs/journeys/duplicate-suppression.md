@@ -3,7 +3,7 @@ id: duplicate-suppression
 title: 중복 알림 감지 및 DIGEST 강등
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal
