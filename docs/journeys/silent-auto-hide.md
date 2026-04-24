@@ -3,7 +3,7 @@ id: silent-auto-hide
 title: 조용히 분류된 알림 — ARCHIVED / PROCESSED 하위 상태로 보관/처리
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal
@@ -142,4 +142,5 @@ adb shell am start -n com.smartnoti.app/.MainActivity \
 - 2026-04-21: **Per-sender / per-app 그룹 요약 도입** — `SilentGroupTrayPlanner` + `SilentHiddenSummaryNotifier.postGroupSummary/postGroupChild` 로 같은 sender (fallback: packageName) 에 속한 ARCHIVED 알림이 2건 이상일 때 `smartnoti_silent_group` 채널에서 group header + expanded children 으로 tray 에 렌더. 루트 요약 (`smartnoti_silent_summary`) 은 전체 count 용으로 유지. 그룹 summary 탭은 `DEEP_LINK_SENDER` / `DEEP_LINK_PACKAGE_NAME` extra 로 Hidden 화면의 해당 그룹 필터 진입. Observable steps 5~9 를 루트 요약 + 그룹 요약 듀얼 경로로 재작성, Exit state 에 2채널 tray 표현 반영, Code pointers 에 planner / policy / chain 추가, Known gaps 에 cross-status 그룹핑 · MessagingStyle 힌트 부재 항목 추가. 관련 plan: `docs/plans/2026-04-21-silent-tray-sender-grouping.md` Task 5. PR 이전 단계: #105 / #116 / #122 / #127.
 - 2026-04-21: **Capture 경로 ARCHIVED 기본값 배선 (drift fix)** — listener 가 SILENT decision 에 대해 `SourceNotificationRoutingPolicy.route(..., silentMode = SilentMode.ARCHIVED)` 를 호출해 신규 SILENT 캡처가 tray 원본을 유지하고 DB row 도 `silentMode = ARCHIVED` 로 영속화된다. protected / persistent 경로는 legacy `null` 유지. 이로써 Observable step 3 이 경고하던 "capture 기본값 미배선" Known gap 이 해소되어 "보관 중" 탭이 실제 유저 알림으로 채워지기 시작. 관련 plan: `docs/plans/2026-04-20-silent-archive-drift-fix.md` Task 1–2. PR #125.
 - 2026-04-21: **Detail "처리 완료로 표시" 가 tray cancel 연계 (drift fix)** — `markSilentProcessed(id)` 성공 후 `MarkSilentProcessedTrayCancelChain` 이 활성 listener 인스턴스에 `cancelNotification(sourceEntryKey)` 를 위임해 tray 원본도 제거된다. 활성 listener 가 없으면 best-effort no-op (DB 전이는 보존). Observable step 11 / Code pointers 는 이미 이 경로를 기술하고 있었고, 본 Change log 로 Known gap 해소를 기록. 관련 plan: `docs/plans/2026-04-20-silent-archive-drift-fix.md` Task 3. PR #126.
+- 2026-04-24: Verification re-run on emulator-5554 post-#292 (default-on suppression toggle + empty-set=all-apps + v1 migration). Live `dumpsys` confirmed root summary copy/channel/importance/vis, group summaries with N≥2 threshold (Promo=4, three other senders=2), and capture default ARCHIVED branch (source `shell_cmd` retained on fresh post; root count 26→27, Promo group 4→5 within 4s). PASS — Observable steps 1/3/5/7 and Exit state hold; #292's policy change does not regress the ARCHIVED path.
 - 2026-04-24: **SILENT 원본 cancel 경로의 default-on 보장** — `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경되고, `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션이 한 번 덮어씀. SILENT 도 같은 policy 분기를 사용하므로 신규/미설정 사용자에게도 capture 경로의 cancel 이 정상 작동한다 (PROCESSED 분기 — ARCHIVED 분기는 이미 cancel 을 건너뛰는 것이 의도). 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.
