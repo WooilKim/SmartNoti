@@ -3,7 +3,7 @@ id: rules-feedback-loop
 title: Detail "분류 변경" 으로 분류 학습
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal

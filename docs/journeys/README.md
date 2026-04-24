@@ -53,7 +53,7 @@
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-24 |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-24 |
-| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-22 |
+| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-24 |
 
 ## 아직 문서화하지 않은 영역
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — rules-feedback-loop date bump for 2026-04-22 PASS sweep)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | PASS | Date-bump only follow-up to PR #288 (rules-feedback-loop end-to-end PASS executed earlier today UTC; original sweep recorded `last-verified` as 2026-04-22 because the agent miscalculated the date). No re-execution — full Path A + Path B + auto-reclassify evidence already captured in the 2026-04-22 log entries above (fresh sender `AssignTest_003634`, datastore inspection of `smartnoti_rules.preferences_pb` + `smartnoti_categories.preferences_pb`). `last-verified` corrected 2026-04-22 → 2026-04-24 to reflect actual UTC date of the verification run. |
 
 
 ### 2026-04-24 (journey-tester — protected-source-notifications re-verify on emulator-5554)
