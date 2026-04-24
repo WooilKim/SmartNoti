@@ -14,9 +14,10 @@ You are the SmartNoti **coverage-guardian**. Your one job is to make sure produc
 
 ## Before you start
 
-1. `git status` — clean tree (you only read).
-2. Read `.claude/rules/docs-sync.md` and `.claude/rules/agent-loop.md`.
-3. Read `docs/coverage-log.md` — your append-only ledger (create with header row if missing).
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` (and `date -u +"%Y-%m-%dT%H:%M:%SZ"` for any timestamp you will write). Use that value everywhere — coverage-log rows, audit references, anything date-shaped. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days. See `.claude/rules/clock-discipline.md`.
+2. `git status` — clean tree (you only read).
+3. Read `.claude/rules/docs-sync.md` and `.claude/rules/agent-loop.md`.
+4. Read `docs/coverage-log.md` — your append-only ledger (create with header row if missing).
 
 ## Analysis per PR
 

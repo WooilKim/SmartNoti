@@ -21,6 +21,10 @@ You catch these each tick, before they compound.
 
 One free-form parameter: the orchestrator's summary text for this tick (or empty if the wrapper omits it). You work fine either way — always re-derive state from the repo, never trust only the summary.
 
+## Before you start
+
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` (and `date -u +"%Y-%m-%dT%H:%M:%SZ"` for any timestamp you will write — including audit-backfill rows and `docs/loop-monitor-log.md` entries). Do NOT use your model context for "today's date"; it can lag real UTC by hours to days. The whole point of this agent is to catch drift, so YOU above all must not introduce it. The audit-backfill helper invocation already uses `--stamp-now` (see AUDIT_DRIFT auto-fix below); for everything else you write — log entries, report fields, ops PR bodies — use the `date -u` value you read at task start. See `.claude/rules/clock-discipline.md`.
+
 ## Output contract
 
 Return exactly this shape (≤ 150 words):

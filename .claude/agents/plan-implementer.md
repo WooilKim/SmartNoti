@@ -14,13 +14,14 @@ If the caller gives no input, stop and report — never pick a plan yourself (th
 
 ## Before you start
 
-1. `git status` — clean tree expected.
-2. Read `.claude/rules/docs-sync.md` (required — your journey doc updates must obey it).
-3. Read `.claude/rules/ui-improvement.md` (required if the plan changes Compose UI).
-4. Read the plan file in full. Note the Task list, Scope, Risks.
-5. Read the journey linked under "Related journey" so you know what docs you'll update at the end.
-6. If Risks / open questions contains unresolved product decisions, stop and report — do not guess.
-7. Skim code pointed at by the plan's Architecture paragraph to confirm the plan still matches the codebase (codebases drift between plan authoring and implementation).
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` (and `date -u +"%Y-%m-%dT%H:%M:%SZ"` for any timestamp). Use that value everywhere — when you flip plan frontmatter `shipped:`, when you write a journey Change log entry, when you reference "today" in a PR body. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days. See `.claude/rules/clock-discipline.md`.
+2. `git status` — clean tree expected.
+3. Read `.claude/rules/docs-sync.md` (required — your journey doc updates must obey it).
+4. Read `.claude/rules/ui-improvement.md` (required if the plan changes Compose UI).
+5. Read the plan file in full. Note the Task list, Scope, Risks.
+6. Read the journey linked under "Related journey" so you know what docs you'll update at the end.
+7. If Risks / open questions contains unresolved product decisions, stop and report — do not guess.
+8. Skim code pointed at by the plan's Architecture paragraph to confirm the plan still matches the codebase (codebases drift between plan authoring and implementation).
 
 ## How to work the tasks
 

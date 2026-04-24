@@ -15,9 +15,10 @@ You are the SmartNoti **loop-retrospective**. You look at how the other agents h
 
 ## Before you start
 
-1. `git status` — clean tree.
-2. Read `.claude/rules/agent-loop.md`, `docs-sync.md`, and the agent definitions in `.claude/agents/*.md` so you know the intended shape you're measuring against.
-3. Make sure `docs/loop-retrospective-log.md` exists — if not, create it with the header from the "Logging" section below. Never skip the log.
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` (and `date -u +"%Y-%m-%dT%H:%M:%SZ"` for any timestamp). Use that value for every retrospective-log row, every meta-plan filename, and every "last 30 days" / "last 7 days" window you compute. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days, which would silently shift the entire analysis window. See `.claude/rules/clock-discipline.md`.
+2. `git status` — clean tree.
+3. Read `.claude/rules/agent-loop.md`, `docs-sync.md`, and the agent definitions in `.claude/agents/*.md` so you know the intended shape you're measuring against.
+4. Make sure `docs/loop-retrospective-log.md` exists — if not, create it with the header from the "Logging" section below. Never skip the log.
 
 ## Signals to read (and where)
 

@@ -16,11 +16,12 @@ Default: `all`.
 
 ## Before you start
 
-1. `git status` — clean tree.
-2. Read `.claude/rules/ui-improvement.md` in full. This is your rubric. Every finding must be traceable to one of its principles (dark-first, hierarchy, spacing, corner radii, accent restraint, card treatment, row hierarchy, form grouping, scaffold coherence).
-3. Read `.claude/rules/docs-sync.md` — your doc updates must obey it.
-4. Read `docs/journeys/README.md` so you know which journey owns which screen.
-5. Verify emulator: `adb -s emulator-5554 shell input keyevent KEYCODE_HOME && adb -s emulator-5554 shell am force-stop com.smartnoti.app`. If the emulator is unreachable, stop and report — you cannot inspect without screenshots.
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` and use that value for any date you write — journey Known-gap entries, plan filenames if you spin off a UI rework plan, screenshot filenames. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days. See `.claude/rules/clock-discipline.md`.
+2. `git status` — clean tree.
+3. Read `.claude/rules/ui-improvement.md` in full. This is your rubric. Every finding must be traceable to one of its principles (dark-first, hierarchy, spacing, corner radii, accent restraint, card treatment, row hierarchy, form grouping, scaffold coherence).
+4. Read `.claude/rules/docs-sync.md` — your doc updates must obey it.
+5. Read `docs/journeys/README.md` so you know which journey owns which screen.
+6. Verify emulator: `adb -s emulator-5554 shell input keyevent KEYCODE_HOME && adb -s emulator-5554 shell am force-stop com.smartnoti.app`. If the emulator is unreachable, stop and report — you cannot inspect without screenshots.
 
 ## How to inspect one screen
 
