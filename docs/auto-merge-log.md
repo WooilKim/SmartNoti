@@ -215,3 +215,4 @@ If a self-merged row caused a regression:
 | 2026-04-22T08:50:00Z | project-manager | #295 | docs: digest-suppression recipe via testnotifier | https://github.com/WooilKim/SmartNoti/actions/runs/24849306728/job/72745067660 |
 | 2026-04-24T02:29:57Z | journey-tester | #296 | digest-suppression (re-run post #295 testnotifier recipe — PASS) | https://github.com/WooilKim/SmartNoti/actions/runs/24869082783/job/72811483439 |
 | 2026-04-24T02:39:05Z | journey-tester | #297 | categories-management (re-verify on emulator-5554 — PASS) | https://github.com/WooilKim/SmartNoti/actions/runs/24869317730/job/72812184699 |
+| 2026-04-24T02:47:00Z | journey-tester | #298 | silent-auto-hide | https://github.com/WooilKim/SmartNoti/actions/runs/24869504018/job/72812743369 |
