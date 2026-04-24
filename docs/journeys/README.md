@@ -31,7 +31,7 @@
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-24 |
-| [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
+| [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-24 |
 
 ### Inboxes & UI
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — protected-source-notifications re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| protected-source-notifications | PASS | v1 loop tick pick (3-day-stale; last-verified 2026-04-21). Recipe A ran on emulator-5554 — `adb shell cmd notification post -S media -t "Player" MediaTest "미디어 스타일 테스트"` posted notification with `category=transport`. `dumpsys notification --noredact \| grep -B1 MediaTest` confirms `NotificationRecord(0x059d6bb5: pkg=com.android.shell ... id=2020 tag=MediaTest ... category=transport)` still present in active records + `mSoundNotificationKey=0\|com.android.shell\|2020\|MediaTest\|2000`, validating `ProtectedSourceNotificationDetector` category-based 보호 (`category ∈ {call, transport, navigation, alarm, progress}`) blocks SmartNoti's `cancelSourceNotification` path. Observable steps 1-4 verified end-to-end via tray dump (step 5 repository save covered by classifier unit tests). Recipe B (real YT Music playback) skipped — package installed but not actively playing. Recipe C (FLAG_FOREGROUND_SERVICE direct) inherently un-runnable per recipe note. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — persistent-notification-protection re-verify via unit tests)
