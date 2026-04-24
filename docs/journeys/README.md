@@ -50,7 +50,7 @@
 ### Categories, Rules & onboarding
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
+| [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-24 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-24 |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-24 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-24 |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — onboarding-bootstrap Exit-state re-verify on emulator-5554, non-destructive)
+
+| Journey | Result | Notes |
+|---|---|---|
+| onboarding-bootstrap | PASS | `pm clear` recipe step skipped (destructive — out of agent scope without user approval). Verified Exit state on already-onboarded emulator-5554 instead: `run-as com.smartnoti.app cat files/datastore/smartnoti_categories.preferences_pb` shows all three deterministic seeds present in correct order — `cat-onboarding-important_priority` (PRIORITY, order 0, ruleIds keyword `인증번호,결제,배송,출발`), `cat-onboarding-promo_quieting` (DIGEST, order 1, ruleIds keyword `광고,프로모션,쿠폰,세일,특가,이벤트,혜택`), `cat-onboarding-repeat_bundling` (DIGEST, order 2, ruleIds `repeat_bundle:3`). `smartnoti_settings.preferences_pb` shows `onboarding_completed` + `onboarding_active_notification_bootstrap_completed` flags both persisted, and bootstrap pending flag has been consumed (no longer present). Matches the documented Exit state in the journey doc 1:1 — no drift. `last-verified` 2026-04-23 → 2026-04-24 (per `clock-discipline.md` rule from #313, ground-truth `date -u` = 2026-04-24). |
 
 
 ### 2026-04-24 (journey-tester — rules-feedback-loop date bump for 2026-04-22 PASS sweep)
