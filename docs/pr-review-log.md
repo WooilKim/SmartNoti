@@ -224,3 +224,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:50:00Z | #295 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) |
 | 2026-04-22T08:50:00Z | #295 | plan-implementer | APPROVE+MERGE | docs digest-suppression testnotifier recipe; CI green |
 | 2026-04-24T04:40:00Z | #312 | gap-planner | DEFER | CI pending; open question on shared rule file flagged for user (Task 4) |
+| 2026-04-22T08:45:00Z | #312 | unknown | DEFER | CI pending |
