@@ -3,7 +3,7 @@ id: inbox-unified
 title: 정리함 통합 탭 (Digest + 보관 중 + 처리됨)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal

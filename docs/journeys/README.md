@@ -40,7 +40,7 @@
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-24 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | — |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-21 |
-| [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | — |
+| [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-24 |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — inbox-unified first-time verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | PASS | v1 loop tick pick (2-day stale per actual; last-verified 2026-04-22). ADB recipe end-to-end on emulator-5554. Posted 4 Coupang + 2 Promo notifications, launched app, tapped BottomNav "정리함" → `ScreenHeader` "정리함 / 알림 정리함 / Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요." + `InboxTabRow` 3 segments rendered (`Digest · 13건 / 보관 중 · 29건 / 처리됨 · 2건`). Default Digest segment shows `DigestGroupCard` ("SmartNoti Test Notifier 1건" preview). Tapping `보관 중 · 29건` segment (~540,480) → `HiddenNotificationsScreen` Embedded mode (header `1개 앱에서 29건을 보관 중이에요.` + bulk action `전체 숨긴 알림 모두 지우기` + Shell 29건 group), no inner ScreenHeader / ARCHIVED-PROCESSED row (Embedded confirmed). `처리됨 · 2건` segment (~870,480) → `1개 앱에서 2건을 처리했어요.` + Shell 2건 group. Observable steps 1-5 verified end-to-end (steps 6-8 detail/back-nav inferred from priority-inbox / notification-detail journeys; not re-driven this tick). DRIFT 없음. `last-verified` — → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — categories-management re-verify on emulator-5554)
