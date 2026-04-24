@@ -230,3 +230,4 @@ If a self-merged row caused a regression:
 | 2026-04-24T04:22:30Z | journey-tester | #310 | protected-source-notifications | https://github.com/WooilKim/SmartNoti/actions/runs/24872082615/job/72820554901 |
 | 2026-04-24T04:32:54Z | journey-tester | #311 | rules-feedback-loop | https://github.com/WooilKim/SmartNoti/actions/runs/24872254231 |
 | 2026-04-24T04:41:10Z | project-manager | #312 | meta-plan F3 agent clock drift fix | https://github.com/WooilKim/SmartNoti/actions/runs/24872479381 |
+| 2026-04-24T15:17:01Z | journey-tester | #314 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24896899716 |
