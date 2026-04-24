@@ -3,7 +3,7 @@ id: insight-drilldown
 title: 인사이트 드릴다운
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal
@@ -83,3 +83,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - 2026-04-20: 초기 인벤토리 문서화
 - 2026-04-22: v1 loop tick re-verify on emulator-5554 (PASS). Coupang × 5 + Shell duplicates → Home 의 `반복 알림 · N건` 칩 탭 → 반복 알림 drilldown (Digest 4/Silent 0, 24h), Shell 인사이트 카드 탭 → 앱 drilldown (Digest 9/Silent 11, 24h → Digest 6/Silent 7 on 3h range 전환). Eyebrow/title/ContextBadge/range chips/reason navigation/필터 리스트 전부 문서대로 렌더. Pre-Phase-C APK (lastUpdateTime=15:47 KST) 지만 insight drilldown 화면은 Phase A/B/C 변경과 무관해 contract 그대로 유효.
+- 2026-04-24: v1 loop tick re-verify on emulator-5554 (PASS). Coupang × 5 게시 후 Home 의 SmartNoti 인사이트 카드 (`Shell 알림 ...`) 탭 → InsightDrillDown for Shell, eyebrow `인사이트` + title `Shell 인사이트` + ContextBadge (`일반 인사이트`) + range chips (`최근 3시간`/`최근 24시간`/`전체`) + 24h Digest 5/Silent 9 + reason 차트 (`이 앱에서 가장 많이 보인 이유는 '조용한 시간'`) + reason navigation (조용한 시간 8건 / 반복 알림 4건 / 사용자 규칙 1건) + 필터 카드 리스트 모두 문서대로. `전체` 칩 전환 시 Digest 7/Silent 31 로 카운트 갱신 확인.
