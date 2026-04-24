@@ -45,7 +45,7 @@
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-22 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-22 |
-| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-22 |
+| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-24 |
 
 ### Categories, Rules & onboarding
 | ID | Title | Status | Last verified |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — insight-drilldown re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| insight-drilldown | PASS | v1 loop tick rotation pick (2-day-stale). Recipe ran: posted Coupang × 5 via `cmd notification post -S bigtext`, launched `com.smartnoti.app/.MainActivity`, Home rendered SmartNoti 인사이트 카드 (`Shell 알림 38개가 가장 많이 정리됐고…`). Tapped Shell app card → `InsightDrillDownScreen` for app=Shell with full Observable steps 1–10: eyebrow `인사이트` + title `Shell 인사이트` + ContextBadge `일반 인사이트` (GENERAL tone) + range chips `최근 3시간` / `최근 24시간` / `전체` + 24h Digest 5/Silent 9 counts + reason 차트 헤더 (`이 앱에서 가장 많이 보인 이유는 '조용한 시간'이에요.`) + reason navigation list (`조용한 시간 · 8건` / `반복 알림 · 4건` / `사용자 규칙 · 1건` 모두 `탭해서 자세히 보기` 보조 텍스트) + 필터링된 `NotificationCard` 리스트 (Shell/Promo/Digest/조용한 시간/반복 알림 메타데이터 칩). Range 칩 `전체` 탭 → 카운트 Digest 7/Silent 31, reason `조용한 시간 · 32건` 으로 즉시 갱신 — range 인자 핸들링 정상. Empty state path 미실행 (데이터 충분). `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — silent-auto-hide re-verify post-#292 on emulator-5554)
