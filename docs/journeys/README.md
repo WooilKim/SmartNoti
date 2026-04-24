@@ -39,7 +39,7 @@
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-24 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | — |
-| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-21 |
+| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — priority-inbox re-verify via debug-inject marker)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | PASS | v1 loop tick pick (last-verified 2026-04-23, 1-day stale per ground-truth `date -u` = 2026-04-24). `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg43000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB row `PriDbg43000\|PRIORITY\|디버그 주입` 확인 (sqlite via `run-as`). Home 카드 "검토 대기 22 / SmartNoti 가 건드리지 않은 알림 22건 / 검토하기" visible (count: 21→22 reflects injection). `검토하기` 탭 → PriorityScreen eyebrow "검토" + title "SmartNoti 가 건드리지 않은 알림" + subtitle + SmartSurfaceCard "검토 대기 22건" + 카드별 "이 판단을 바꿀까요?" + `→ Digest / → 조용히 / → 규칙 만들기` 3 버튼 노출. BottomNav 4 탭 (홈/정리함/분류/설정), Priority 탭 부재 재확인. Observable steps 1–7 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-23 → 2026-04-24 bump. |
 
 
 ### 2026-04-24 (journey-tester — onboarding-bootstrap Exit-state re-verify on emulator-5554, non-destructive)

@@ -3,7 +3,7 @@ id: priority-inbox
 title: 검토 대기 알림 (passthrough review)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-23
+last-verified: 2026-04-24
 ---
 
 ## Goal
@@ -128,3 +128,4 @@ adb -s emulator-5554 shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — Goal/Preconditions 에 "PRIORITY 는 `Category.action == PRIORITY` 의 결과" 를 명시. BottomNav 구성을 "홈/정리함/분류/설정" 으로 갱신 (plan `categories-split-rules-actions` Phase P3 Task 11 이후 `규칙` 탭 → Settings 서브메뉴로 이동). Observable steps / 시스템 tray 처리 / Delivery profile 섹션은 변경 없음 — PRIORITY routing 불변조건 (`cancelSource=false`) 은 아키텍처 교체와 무관하게 유지. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 (#236), P3 (#240). `last-verified` 변경 없음.
 - 2026-04-22: Debug-only `FORCE_STATUS` extras marker 추가 (`BuildConfig.DEBUG` 하에서만 `DebugClassificationOverride` 가 classifier 결과 override). `cmd notification post` 가 `--es` 를 지원하지 않고 self-package 알림이 `OnboardingActiveNotificationBootstrapper.shouldProcess` 에서 필터되는 두 제약 때문에, recipe 는 `app/src/debug/` source set 의 `DebugInjectNotificationReceiver` 가 broadcast 를 받아 `NotificationCaptureProcessor.process` → `DebugClassificationOverride.resolve(extras, ...)` → `NotificationRepository.save` 를 직접 호출하는 경로로 재설계. 누적 user rule (`person:엄마 → DIGEST`, `인증번호 → SILENT` 등) 이 PRIORITY 검증을 무력화하던 fragility 해결. Release APK 에는 receiver 와 marker 분기가 모두 absent / dead-strip. Plan: `docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md`.
 - 2026-04-23: ADB end-to-end 검증 PASS on emulator-5554. Fresh debug APK 설치 후 `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg66000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB row `status=PRIORITY, reasonTags=디버그 주입` 저장 확인. body 에 `인증번호` 키워드 (누적 SILENT 룰 트리거) 를 포함한 두 번째 케이스도 동일하게 PRIORITY 로 pin. Home `검토 대기 7 / SmartNoti 가 건드리지 않은 알림 7건` 카드 visibility 회복 확인 (uiautomator dump). `last-verified` 2026-04-21 → 2026-04-23 으로 bump. v1 loop tick re-verify (PASS via debug-inject marker).
+- 2026-04-24: v1 loop tick re-verify PASS on emulator-5554 (per `clock-discipline.md` ground-truth `date -u` = 2026-04-24). `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg43000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB row `PriDbg43000|PRIORITY|디버그 주입` 확인. Home 진입 후 passthrough card "검토 대기 22 / SmartNoti 가 건드리지 않은 알림 22건 / 검토하기" visible. `검토하기` 탭 → PriorityScreen eyebrow "검토" + title "SmartNoti 가 건드리지 않은 알림" + subtitle + SmartSurfaceCard "검토 대기 22건" + 카드별 "이 판단을 바꿀까요?" + `→ Digest / → 조용히 / → 규칙 만들기` 3 버튼 노출. BottomNav 4 탭 (홈/정리함/분류/설정) 재확인, Priority 탭 부재. Observable steps 1–7 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-23 → 2026-04-24 bump.
