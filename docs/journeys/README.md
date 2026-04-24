@@ -32,7 +32,7 @@
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-24 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-21 |
-| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-22 |
+| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-24 |
 
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — persistent-notification-protection re-verify via unit tests)
+
+| Journey | Result | Notes |
+|---|---|---|
+| persistent-notification-protection | PASS | v1 loop tick pick (2-day stale; last-verified 2026-04-22). Re-ran `PersistentNotificationPolicyTest` (7/7 PASS, 0.015s) covering bypass for 통화/내비/녹화 keywords, 충전 등 비-critical 알림 hide-allowed, and `protectCriticalPersistentNotifications=false` toggle 무시. End-to-end (real ongoing notification) skipped — `cmd notification post` 가 `FLAG_ONGOING_EVENT` 를 세팅하지 못하므로 recipe 자체가 unit-test path 를 권장. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — duplicate-suppression re-verify on emulator-5554)
