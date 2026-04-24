@@ -44,7 +44,7 @@
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-22 |
-| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-22 |
+| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-24 |
 
 ### Categories, Rules & onboarding
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — ignored-archive re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| ignored-archive | PASS | v1 loop tick pick (2-day-stale; last-verified 2026-04-22). Recipe ran on emulator-5554: navigated Settings tab → scrolled to "무시됨" card → toggled "무시된 알림 아카이브 표시" ON (checkable view bounds [859,1539][996,1665], `checked=false`→`true`). "무시됨 아카이브 열기" OutlinedButton appeared (text node bounds [391,1736][690,1785]) — matches Observable step 2-3 (showIgnoredArchive=true → AppNavHost re-composition no longer needed since route is unconditionally registered post-#199; toggle now only gates button visibility). Tapped button → `IgnoredArchiveScreen` mounted with eyebrow "아카이브" / title "무시됨" / subtitle "IGNORE 규칙이 매치된 알림은 여기에 쌓여요. 기본 뷰에는 나타나지 않아요." + EmptyState "무시된 알림이 없어요 / IGNORE 액션 규칙을 만들면 여기에 쌓이기 시작해요." — exact copy match for step 5 empty branch (DB has 0 IGNORE rows: `sqlite3 smartnoti.db 'SELECT status, COUNT(*) FROM notifications GROUP BY status;'` → `DIGEST\|11 PRIORITY\|20 SILENT\|32`, no IGNORE; only PRIORITY+DIGEST onboarding categories exist). Back nav → toggled OFF → "무시됨 아카이브 열기" button removed from Settings card (Exit state confirmed: route still registered per fix #199 but unreachable without button). Step 6 (populated branch) not exercised this sweep — no IGNORE category seeded; covered by 2026-04-21 sweep + repository unit tests. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — notification-capture-classify re-verify post-#292/#287/#285 on emulator-5554)

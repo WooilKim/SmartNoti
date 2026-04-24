@@ -3,7 +3,7 @@ id: ignored-archive
 title: 무시됨 아카이브 (opt-in IGNORE 뷰)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-24
 ---
 
 ## Goal
@@ -103,3 +103,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: post-fix verification — APK rebuild (`lastUpdateTime=2026-04-22 03:46:30`) 후 OFF→ON→즉시 버튼 탭 시퀀스 3회 반복. 크래시 0건, `IgnoredArchiveScreen` 정상 마운트 확인 (`보관 중 1건` 렌더). 직전 sweep 에서 보고된 `IllegalArgumentException: Navigation destination ... ignored_archive cannot be found` 재현 불가. `last-verified` 를 2026-04-22 로 갱신.
 - 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — Goal/Preconditions 에서 IGNORE 를 "Rule 의 속성" 대신 "`Category.action = IGNORE` 의 결과" 로 재정의. `observeIgnoredArchive` 의 필터 자체 (`status == NotificationStatusUi.IGNORE`) 는 불변. classifier cascade 가 Category.action 기반으로 바뀐 뒤에도 IGNORE status 생성 경로는 논리적으로 동일 (Rule 매치 → winning Category 의 action 적용). Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 (#236), P2 (#239). `last-verified` 는 변경 없음.
 - 2026-04-22: **Detail "무시" 버튼 제거 반영** — Detail 의 4-버튼 grid ("중요로 고정" / "Digest로 유지" / "조용히 유지" / "무시") 가 단일 "분류 변경" CTA 로 대체됨 (→ [notification-detail](notification-detail.md)). IGNORE 는 여전히 `Category.action == IGNORE` 경로로 생성 가능하지만 **Detail 피드백 경유 즉시 IGNORE 표시는 불가** — 사용자는 "분류 변경" → 기존 IGNORE Category 선택 혹은 "새 분류 만들기" 에서 action=IGNORE 선택을 거쳐야 후속 동일 알림이 IGNORE 로 라우팅된다. 아카이브 필터 / 진입 경로 / StatusBadge 계약은 불변. Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Tasks 2+6 (#245), Task 7 (this PR). `last-verified` 는 변경 없음.
+- 2026-04-24: verification sweep — emulator-5554 에서 Settings 진입 → "무시된 알림 아카이브 표시" 토글 OFF→ON 시 같은 카드에 "무시됨 아카이브 열기" OutlinedButton 노출 확인. 버튼 탭 → `IgnoredArchiveScreen` 마운트, eyebrow "아카이브" / title "무시됨" / subtitle "IGNORE 규칙이 매치된 알림은 여기에 쌓여요. 기본 뷰에는 나타나지 않아요." + EmptyState "무시된 알림이 없어요 / IGNORE 액션 규칙을 만들면 여기에 쌓이기 시작해요." 로 doc 와 일치 (현재 DB 에 IGNORE row 0건). 토글 OFF 복귀 → 버튼 제거 관측. PASS. `last-verified` 를 2026-04-24 로 갱신.
