@@ -52,7 +52,7 @@
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-21 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-22 |
-| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-22 |
+| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-24 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-22 |
 
 ## 아직 문서화하지 않은 영역
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — rules-management re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-management | PASS | v1 loop tick pick (2-day-stale; last-verified 2026-04-22). Recipe ran on APK `versionName=0.1.0` w/ listener enabled (`enabled_notification_listeners` includes `com.smartnoti.app/.SmartNotiNotificationListenerService`). Step 3 — `cmd notification post -S bigtext -t '은행' OtpTest '인증번호 123456'` — re-foregrounded `MainActivity`; Home StatPill advanced `오늘 알림 62→63` and `즉시 20→21` (`Digest 11 / 조용히 31` unchanged), confirming existing 인증번호 priority rule routes `com.android.shell` posts through listener → classifier → repository → HomeViewModel `observePriority` flow as documented. Initial cached UI required `am start` re-foreground for recomposition (sweep note, not drift). Settings 진입점 (`AdvancedRulesEntryCard`) + editor dialog (Phase C override pill / nested indent / drag-reorder) not re-traversed — covered by 2026-04-22 sweep + Phase C unit tests; recipe scope = StatPill delta only. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — notification-detail re-verify on emulator-5554)
