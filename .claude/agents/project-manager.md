@@ -170,8 +170,10 @@ Append one row to `docs/pr-review-log.md` for every review verdict (approve / re
 **Use the direct-append helper** — do NOT open a per-sweep audit PR anymore. Call:
 
 ```bash
-.claude/lib/audit-log-append.sh --log pr-review --row '| <ISO8601 UTC> | #<num> | <agent> | <verdict> | <notes> |' --dedupe
+.claude/lib/audit-log-append.sh --log pr-review --row '| PENDING_STAMP | #<num> | <agent> | <verdict> | <notes> |' --stamp-now
 ```
+
+`--stamp-now` makes the helper rewrite column 1 with `date -u` taken at append time, so the row's timestamp reflects actual UTC instead of your context wall clock (which can lag hours to days). Use the literal placeholder `PENDING_STAMP` (or any non-empty token) in column 1 — the helper will overwrite it.
 
 The helper creates a short-lived `ops/audit-log-*` branch, commits the row, and fast-forwards directly to `main` via `git push origin HEAD:main`, retrying on race (up to 3 attempts). Exit codes:
 
@@ -196,9 +198,11 @@ When you merge, append an audit row to `docs/auto-merge-log.md` BEFORE calling `
 ```bash
 .claude/lib/audit-log-append.sh \
   --log auto-merge \
-  --row '| <ISO8601 UTC> | project-manager | #<num> | <short scope summary> | <CI run URL> |' \
-  --dedupe
+  --row '| PENDING_STAMP | project-manager | #<num> | <short scope summary> | <CI run URL> |' \
+  --stamp-now
 ```
+
+As with the pr-review log, `--stamp-now` ensures column 1 reflects real UTC (not your context wall clock). Leave a placeholder like `PENDING_STAMP` in column 1; the helper rewrites it.
 
 The helper lands the row directly on `main` (no per-sweep audit PR). If it exits `2`, it opened a fallback audit PR on your behalf — treat as DEFERRED and pick it up next sweep. See the "Logging" section above for exit-code semantics.
 

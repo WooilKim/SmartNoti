@@ -77,13 +77,14 @@ REVIEW=$(grep -oE '#[0-9]+' docs/pr-review-log.md | sort -u)
 ```bash
 .claude/lib/audit-log-append.sh \
   --log <auto-merge|pr-review> \
-  --row '<row>' \
+  --row '| PENDING_STAMP | <rest of row> |' \
+  --stamp-now \
   --source loop-monitor
 ```
 
 The helper handles the race + retry + fallback path (MP-1.1). It ff-pushes the row directly to `origin/main` on success, or — only if its retry loop exhausts (exit 2) — opens a fallback audit PR itself. Do NOT branch off `main` and open a backfill PR by hand; that path produced PR #278 (BACKFILL_CONTAMINATION) and PR #280 (race-close) when it ran in parallel with PM's helper-based appends.
 
-The `--source loop-monitor` stamp lets `loop-retrospective` distinguish monitor backfills from PM sweep appends.
+`--stamp-now` makes the helper rewrite column 1 with `date -u` at append time, so the backfill row's timestamp is real UTC instead of your context wall clock (MP-3 clock-drift fix). Use the literal placeholder `PENDING_STAMP` in column 1; the helper overwrites it. The `--source loop-monitor` stamp lets `loop-retrospective` distinguish monitor backfills from PM sweep appends.
 
 If the helper exits 2 (fallback PR opened), report `AUDIT_DRIFT auto-fix DEFERRED, fallback PR opened by helper` and let the next tick observe the PR via normal Phase A/B. Do NOT open a separate backfill PR.
 
