@@ -226,3 +226,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-24T04:40:00Z | #312 | gap-planner | DEFER | CI pending; open question on shared rule file flagged for user (Task 4) |
 | 2026-04-22T08:45:00Z | #312 | unknown | DEFER | CI pending |
 | 2026-04-24T04:41:28Z | #312 | gap-planner | APPROVE+MERGE | meta-plan F3 clock drift fix; CI green |
+| 2026-04-24T04:54:13Z | #313 | plan-implementer | ESCALATE | Self-mod of project-manager.md (always-escalate trigger) + broad .claude/** sweep (helper + 11 agent specs + new rule); CI pending. Sweep #313. |
