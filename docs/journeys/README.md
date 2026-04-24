@@ -43,7 +43,7 @@
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | — |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-22 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-24 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-24 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — notification-detail re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | PASS | v1 loop tick pick (2-day-stale; last-verified 2026-04-22). Recipe ran on APK `lastUpdateTime=2026-04-24 01:44:11`: posted `cmd notification post -S bigtext -t 'DetailTest_0424' FbTest1 '분류 변경 테스트'` (DIGEST classified), navigated 정리함 tab → Digest sub-tab → Shell 묶음 preview row tap → Detail mounted. Observable steps 1-5 all PASS — `DetailTopBar`("알림 상세"), 알림 요약 카드 `StatusBadge=Digest`, "왜 이렇게 처리됐나요?" + 4 chips (`발신자 있음`/`사용자 규칙`/`프로모션 알림`/`온보딩 추천`), 온보딩 추천 카드, "어떻게 전달되나요?" 5 labels, "원본 알림 처리 상태" section, "이 알림 분류하기" + single `Button("분류 변경")`. Tap → `CategoryAssignBottomSheet` ("분류 변경" / "이 알림이 속할 분류를 고르거나 새 분류를 만들어요." / "기존 분류에 포함" + 3 categories (중요 알림/프로모션 알림/반복 알림) + terminal `+ 새 분류 만들기`). 경로 B verified — "새 분류 만들기" tap → `CategoryEditorScreen` prefill (name=`프로모션`, 전달 방식=`즉시 전달 (PRIORITY)` = DIGEST 소스 dynamic-opposite). DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — ignored-archive re-verify on emulator-5554)
