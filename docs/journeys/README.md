@@ -24,7 +24,7 @@
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-24 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-22 |
-| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-21 |
+| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
 
 ### Source notification routing (시스템 tray 조작)
 | ID | Title | Status | Last verified |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — quiet-hours re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | PASS | v1 loop tick pick (2-day-stale; last-verified 2026-04-22). Static-source + live-DB sweep on emulator-5554 (현재 시각 12:43 KST = `[23,7)` default 범위 밖, in-window post 불가하므로 historical row 검증). `NotificationClassifier.kt:90` (`if (input.packageName in shoppingPackages && input.quietHours) return DIGEST`) + `QuietHoursPolicy.kt:7-15` (same-day / overnight 분기) 가 Observable steps 1-3 과 일치, `SettingsRepository.kt:53-65` `currentNotificationContext` 가 `Calendar.HOUR_OF_DAY` + `QuietHoursPolicy(startHour,endHour)` 를 `NotificationContext` 로 묶어 주입하는 경로도 doc Code pointers 와 일치. Live DB `SELECT … WHERE reasonTags LIKE '%조용한%' ORDER BY postedAtMillis DESC LIMIT 3` → 가장 최근 `조용한 시간` tag row 3건 모두 `2026-04-24 02:02:09~11` (default quiet window 안) posted, packageName `com.android.shell`, status DIGEST/SILENT/SILENT — capture→classifier→repository 파이프라인이 quiet-hours 분기를 실제로 발화. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — rules-management re-verify on emulator-5554)
