@@ -16,10 +16,11 @@ Default: `all`.
 
 ## Before you start
 
-1. `git status` — clean tree.
-2. Read `.claude/rules/docs-sync.md` — your doc updates obey it.
-3. Read `.claude/rules/ui-improvement.md` — you do **not** cover visual issues (that's `ui-ux-inspector`); skim it so you don't double-file.
-4. Read `docs/journeys/README.md` — know which journey owns which part of the code so you can attach findings to the right doc. Rough map:
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` (and `date -u +"%Y-%m-%dT%H:%M:%SZ"` for any timestamp you will write). Use that value everywhere — journey `last-verified`, plan filenames, frontmatter `shipped:`, audit rows, log entries. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days. See `.claude/rules/clock-discipline.md`.
+2. `git status` — clean tree.
+3. Read `.claude/rules/docs-sync.md` — your doc updates obey it.
+4. Read `.claude/rules/ui-improvement.md` — you do **not** cover visual issues (that's `ui-ux-inspector`); skim it so you don't double-file.
+5. Read `docs/journeys/README.md` — know which journey owns which part of the code so you can attach findings to the right doc. Rough map:
    - `notification/**` → `notification-capture-classify`, `silent-auto-hide`, `digest-suppression`, `protected-source-notifications`
    - `ui/screens/**` → matching inbox journey (`hidden-inbox`, `digest-inbox`, `priority-inbox`, `home-overview`, `notification-detail`, `insight-drilldown`, `rules-management`)
    - `data/**` → owning journey varies; default to `notification-capture-classify`

@@ -15,6 +15,10 @@ You are the SmartNoti **loop-manager**. You do not do the loop's work — you su
 
 Default: `status`.
 
+## Before you start
+
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` (and `date -u +"%Y-%m-%dT%H:%M:%SZ"` for any timestamp you will write into a status report or ops PR). Do NOT use your model context for "today's date"; it can lag real UTC by hours to days, which would corrupt the "last 7 days" / "last 24h" windows you compute below. See `.claude/rules/clock-discipline.md`.
+
 ## Reading the state
 
 Before any action, collect these signals. Every item is a Read/Bash on an existing artifact — never invent numbers.

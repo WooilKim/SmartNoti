@@ -22,6 +22,13 @@
 #                cannot append the same row twice. Supply this only when you
 #                intentionally want duplicate rows (no current caller does).
 #   --dedupe     explicit no-op alias (pre-MP-1.1 callers may still pass it).
+#   --stamp-now  rewrite column 1 of the supplied row with `date -u` taken at
+#                the moment the helper runs. Use this when the calling agent
+#                cannot be trusted to know real UTC (the LLM context wall
+#                clock can lag hours to days). Requires the row to start with
+#                `| <placeholder> |` (any non-empty column 1 acts as a
+#                placeholder). On malformed rows the helper exits 1 with an
+#                explanatory message. Default OFF for backward compat.
 #
 # Exit codes:
 #   0  — row appended to main (or dedupe skip)
@@ -40,11 +47,12 @@ LOG_KIND=""
 ROW=""
 DEDUPE=1       # MP-1.1: dedupe is ON by default; callers can opt out.
 SOURCE_AGENT="" # optional --source stamp
+STAMP_NOW=0    # MP-3 (clock-drift): rewrite column 1 with real UTC.
 
 usage() {
   cat >&2 <<'EOF'
 Usage: audit-log-append.sh --log <auto-merge|pr-review> --row '<markdown row>' \
-                           [--source <agent-name>] [--no-dedupe]
+                           [--source <agent-name>] [--no-dedupe] [--stamp-now]
 EOF
 }
 
@@ -70,6 +78,10 @@ while [[ $# -gt 0 ]]; do
     --source)
       SOURCE_AGENT="${2:-}"
       shift 2
+      ;;
+    --stamp-now)
+      STAMP_NOW=1
+      shift
       ;;
     -h|--help)
       usage
@@ -108,6 +120,33 @@ log() {
   echo "audit-log-append: $*" >&2
 }
 
+# MP-3 (clock-drift): apply --stamp-now BEFORE the dedupe pre-check so the
+# row that hits dedupe + git is the post-stamp row.
+#
+# Dedupe semantics with --stamp-now: column 1 holds the timestamp; comparing
+# post-stamp full rows would never match (each call has a different second),
+# so dedupe instead compares everything AFTER column 1 (the row "body") against
+# any existing row on main, regardless of that row's column 1.
+#
+# Without --stamp-now, dedupe behavior is unchanged: full-row exact match.
+ROW_BODY=""           # body = "| col2 | col3 | ... |"  (only set if STAMP_NOW=1)
+if [[ $STAMP_NOW -eq 1 ]]; then
+  # The row must look like:  | <col1> | <col2> | ... |
+  # Validate by requiring at least two `|` separators with non-empty col1 between.
+  # Use bash regex over the literal row.
+  if [[ ! "$ROW" =~ ^\|[[:space:]]*[^|[:space:]][^|]*\|.*\|[[:space:]]*$ ]]; then
+    log "row missing timestamp column; --stamp-now requires column 1 to be a non-empty placeholder bracketed by '|' separators (got: $ROW)"
+    exit 1
+  fi
+  NOW_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  # Replace the first `| ... |` segment (column 1) with `| $NOW_TS |`.
+  # `${ROW#*|}` strips the leading `|`, then we strip the next `|...|` chunk
+  # to isolate the body (columns 2..N including the leading `|`).
+  REMAINDER="${ROW#*|}"          # strip leading `|`
+  ROW_BODY="|${REMAINDER#*|}"    # strip column 1 + its trailing `|`, re-prefix `|`
+  ROW="| ${NOW_TS} ${ROW_BODY}"
+fi
+
 # Must be run inside a git working tree.
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
   log "not inside a git work tree"
@@ -121,10 +160,22 @@ if ! git fetch --quiet origin main; then
 fi
 
 # Dedupe pre-check: if the row is already on origin/main, short-circuit.
+# - default mode: exact full-row match
+# - --stamp-now mode: any existing row whose body (columns 2+) matches ROW_BODY
 if [[ $DEDUPE -eq 1 ]]; then
-  if git show "origin/main:$TARGET_FILE" 2>/dev/null | grep -Fqx -- "$ROW"; then
-    log "dedupe: row already present on origin/main, skipping"
-    exit 0
+  if [[ $STAMP_NOW -eq 1 ]]; then
+    # Body match: any line ending in ROW_BODY counts as a duplicate, since
+    # column 1 will always differ by timestamp. Use grep -F with line anchor
+    # via a trailing-suffix match (rows are full lines).
+    if git show "origin/main:$TARGET_FILE" 2>/dev/null | grep -Fq -- "$ROW_BODY"; then
+      log "dedupe: row body already present on origin/main, skipping"
+      exit 0
+    fi
+  else
+    if git show "origin/main:$TARGET_FILE" 2>/dev/null | grep -Fqx -- "$ROW"; then
+      log "dedupe: row already present on origin/main, skipping"
+      exit 0
+    fi
   fi
 fi
 
@@ -225,9 +276,19 @@ while :; do
 
   # Dedupe re-check BEFORE re-cutting: if someone (possibly another helper
   # instance) appended our exact row in the meantime, short-circuit success.
-  if [[ $DEDUPE -eq 1 ]] && git show "origin/main:$TARGET_FILE" 2>/dev/null | grep -Fqx -- "$ROW"; then
-    log "dedupe: row appeared on origin/main during retry, skipping"
-    exit 0
+  # With --stamp-now we compare on body (column 2+), see initial dedupe block.
+  if [[ $DEDUPE -eq 1 ]]; then
+    if [[ $STAMP_NOW -eq 1 ]]; then
+      if git show "origin/main:$TARGET_FILE" 2>/dev/null | grep -Fq -- "$ROW_BODY"; then
+        log "dedupe: row body appeared on origin/main during retry, skipping"
+        exit 0
+      fi
+    else
+      if git show "origin/main:$TARGET_FILE" 2>/dev/null | grep -Fqx -- "$ROW"; then
+        log "dedupe: row appeared on origin/main during retry, skipping"
+        exit 0
+      fi
+    fi
   fi
 
   # Freshness assertion: origin/main SHOULD have advanced (we hit a non-ff);

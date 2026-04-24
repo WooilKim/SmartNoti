@@ -31,7 +31,7 @@ Do not. Two preconditions would have to change first:
 1. The Claude Code harness would need to support nested Agent tool calls in sub-agents (not currently the case as of 2026-04-22).
 2. A new meta-plan would need to weigh whether the ~1500-token-per-tick context savings justify re-introducing the indirection (the inlined approach has been working without issue).
 
-If both are true, restore this agent's body from git history (look for the pre-2026-04-22 version of this file) and shrink `journey-loop.md` back to its `[spawn loop-orchestrator → relay]` form.
+If both are true, restore this agent's body from git history (look for the pre-2026-04-22 version of this file) and shrink `journey-loop.md` back to its `[spawn loop-orchestrator → relay]` form. **When you do, also add the "Read the wall clock first" bullet from `.claude/rules/clock-discipline.md` to its "Before you start" section** — every agent that writes a date or timestamp must follow that rule (MP-3 clock-drift fix, 2026-04-24).
 
 ## Sub-agent palette of this file
 

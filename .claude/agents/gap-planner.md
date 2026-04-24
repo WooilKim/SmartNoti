@@ -15,10 +15,11 @@ Default: scan all, produce one plan, open PR.
 
 ## Before you start
 
-1. `git status` — clean tree expected.
-2. Read `.claude/rules/docs-sync.md` — obey the rules about plan lifecycle and what plan docs should look like.
-3. Read one existing plan as the format reference (e.g. `docs/plans/2026-04-20-hidden-dedup-grouping-and-promo-suppression.md`).
-4. Read `docs/journeys/README.md` and all journey markdowns — collect every Known gap with the journey id that owns it.
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` and use that value for the new plan filename (`docs/plans/YYYY-MM-DD-<slug>.md`) and any frontmatter date. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days, which then misorders the plan history that retrospective reads. See `.claude/rules/clock-discipline.md`.
+2. `git status` — clean tree expected.
+3. Read `.claude/rules/docs-sync.md` — obey the rules about plan lifecycle and what plan docs should look like.
+4. Read one existing plan as the format reference (e.g. `docs/plans/2026-04-20-hidden-dedup-grouping-and-promo-suppression.md`).
+5. Read `docs/journeys/README.md` and all journey markdowns — collect every Known gap with the journey id that owns it.
 
 ## Ranking gaps
 

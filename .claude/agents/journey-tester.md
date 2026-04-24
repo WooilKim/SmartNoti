@@ -17,10 +17,11 @@ If no input is given, default to `all`.
 
 ## Before you start
 
-1. `git status` — confirm clean working tree. If dirty, stop and report.
-2. Read `.claude/rules/docs-sync.md` — you must obey its rules about when to touch journey docs and what drift handling means.
-3. Read `docs/journeys/README.md` — know the full journey list and recent Verification log.
-4. Pick the target journey and read its full markdown file.
+1. **Read the wall clock first.** Run `date -u +"%Y-%m-%d"` and use that value for every `last-verified` bump and every Verification log entry you add. Do NOT use your model context for "today's date"; it can lag real UTC by hours to days, which would make every future session read a stale verification timestamp. See `.claude/rules/clock-discipline.md`.
+2. `git status` — confirm clean working tree. If dirty, stop and report.
+3. Read `.claude/rules/docs-sync.md` — you must obey its rules about when to touch journey docs and what drift handling means.
+4. Read `docs/journeys/README.md` — know the full journey list and recent Verification log.
+5. Pick the target journey and read its full markdown file.
 
 ## How to run a Verification recipe
 
