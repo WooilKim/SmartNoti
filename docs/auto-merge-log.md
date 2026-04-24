@@ -220,3 +220,4 @@ If a self-merged row caused a regression:
 | 2026-04-24T03:03:57Z | journey-tester | #300 | home-overview | https://github.com/WooilKim/SmartNoti/actions/runs/24869944154 |
 | 2026-04-24T03:12:27Z | journey-tester | #301 | notification-capture-classify | https://github.com/WooilKim/SmartNoti/actions/runs/24870173314/job/72814757983 |
 | 2026-04-24T03:23:02Z | journey-tester | #302 | ignored-archive | https://github.com/WooilKim/SmartNoti/actions/runs/24870450436/job/72815625819 |
+| 2026-04-24T03:30:00Z | journey-tester | #303 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24870709057/job/72816446713 |
