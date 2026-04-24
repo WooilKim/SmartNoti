@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-22 (journey-tester — categories-management re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| categories-management | PASS | v1 loop rotation pick (2-day-stale batch). BottomNav "분류" tap → 3 migrated categories rendered ("중요 알림" 즉시 전달 / "프로모션 알림" Digest / "반복 알림" Digest), each row showing `규칙 1개` + `CategoryActionBadge` chip + inline `CategoryConditionChips` (text and content-desc both `조건: 키워드=… → 즉시 전달|모아서 알림`). FAB clickable area at bounds `[642,1938][1038,2085]` sits above AppBottomBar (no inset clipping — 2026-04-22 FAB visibility fix confirmed). FAB tap opens `CategoryEditorScreen` AlertDialog "새 분류" with name field + 전달 방식 default `즉시 전달 (PRIORITY)` + 연결할 앱 (`특정 앱 없음`) + 3 Rule chips for multi-select + 미리보기 `CategoryConditionChips` (`조건 없음 → 즉시 전달`) + 닫기/추가. Row tap → `CategoryDetailScreen` "분류 상세" with category name, action chip, 기본 정보 + full `CategoryConditionChips`, 편집/삭제 buttons, 소속 규칙 list with `RuleRow`. Observable steps 1–5 all match. `last-verified` already 2026-04-22 (no bump); change-log entry appended. FAB label text was non-discoverable via uiautomator dump (NAF=true Compose node) — visual region + click target both functional. |
+
+
 ### 2026-04-24 (journey-tester — digest-suppression PASS via testnotifier recipe rotation, emulator-5554)
 
 | Journey | Result | Notes |
