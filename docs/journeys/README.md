@@ -37,7 +37,7 @@
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-21 |
+| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-24 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | — |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-21 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | — |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-24 (journey-tester — home-overview re-verify post-#290/#292 on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-overview | PASS | v1 loop tick pick (2-day-stale). Recipe ran: posted Mom/Coupang/Promo via `cmd notification post -S bigtext`, launched `com.smartnoti.app/.MainActivity`, tapped Home tab (128,2254). Home rendered all Observable steps intact: ScreenHeader (`SmartNoti` + `중요한 알림만 먼저 보여드리고 있어요`), **StatPill** `오늘 알림 60개 중 중요한 19개를 먼저 전달했어요` + `즉시 19 / Digest 10 / 조용히 31` — IGNORE not included (step-4 invariant holds after #292 default-on suppress-source flip; totals 19+10+31=60 matches hero). PassthroughReviewCard `검토 대기 19` + `검토하기` (step 5). Access InlineRow `연결됨 · 실제 알림이 연결되어 있어요` (step 6, connected path). InsightCard `SmartNoti 인사이트` + `지금까지 41개의 알림을 대신 정리했어요` + reason list (`조용한 시간 · 32건` / `반복 알림 · 7건` / `사용자 규칙 · 2건` each with `탭해서 자세히 보기`) — step 8 OK. TimelineCard `최근 흐름` + range chips + `최근 3시간 기준 9개의 알림이 정리됐어요` + peak `방금 전 · 정리 9건 · 즉시 1건` (step 9). Recent list `방금 정리된 알림` with 5 truncated rows (엄마 / Coupang×3 / 광고Promo) carrying Digest/즉시 전달 tier chips + reason chips (`프로모션 알림` / `반복 알림` / `중요한 사람` / `온보딩 추천`) and sender chip `발신자 있음` (step 10). Footer `전체 60건 보기` rendered at end (HomeRecentMoreRow). HomeUncategorizedAppsPromptCard not mounted (no Prompt from detector — full coverage). QuickStartAppliedCard not mounted (TTL/ack expired). PR #290's condition chips are scoped to Categories surfaces (not Home) and do not affect this journey; PR #292's suppress-source default flip does not alter Home StatPill routing — counts still sourced from `observePriority/observeDigest/observeAllFiltered` per Known-gap baseline. `last-verified` 2026-04-21 → 2026-04-24. |
 
 
 ### 2026-04-24 (journey-tester — insight-drilldown re-verify on emulator-5554)
