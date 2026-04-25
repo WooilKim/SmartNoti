@@ -122,9 +122,9 @@ fun CategoriesScreen(
                 rules = rules,
                 capturedApps = capturedApps,
                 onDismiss = { editorTarget = null },
-                onSaved = { savedId ->
+                onSaved = { savedCategory ->
                     editorTarget = null
-                    if (detailTargetId != null) detailTargetId = savedId
+                    if (detailTargetId != null) detailTargetId = savedCategory.id
                 },
                 onDelete = { deletedId ->
                     editorTarget = null
@@ -217,9 +217,9 @@ fun CategoriesScreen(
                 rules = rules,
                 capturedApps = capturedApps,
                 onDismiss = { editorTarget = null },
-                onSaved = { savedId ->
+                onSaved = { savedCategory ->
                     editorTarget = null
-                    if (detailTargetId != null) detailTargetId = savedId
+                    if (detailTargetId != null) detailTargetId = savedCategory.id
                 },
                 onDelete = { deletedId ->
                     editorTarget = null
@@ -238,7 +238,7 @@ private fun EditorOverlay(
     rules: List<com.smartnoti.app.domain.model.RuleUiModel>,
     capturedApps: List<com.smartnoti.app.data.local.CapturedAppSelectionItem>,
     onDismiss: () -> Unit,
-    onSaved: (String) -> Unit,
+    onSaved: (Category) -> Unit,
     onDelete: (String) -> Unit,
 ) {
     if (target != null) {

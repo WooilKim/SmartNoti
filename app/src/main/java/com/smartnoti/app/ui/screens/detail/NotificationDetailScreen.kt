@@ -15,6 +15,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Row
@@ -95,6 +98,12 @@ fun NotificationDetailScreen(
     val sourceSuppressionSummaryBuilder = remember { NotificationDetailSourceSuppressionSummaryBuilder() }
     val reasonSectionBuilder = remember { NotificationDetailReasonSectionBuilder() }
     val scope = rememberCoroutineScope()
+    // Plan `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` Task 2:
+    // single SnackbarHostState shared by the two reclassify call sites so
+    // both Path A (assign-to-existing) and Path B (created-new) can render a
+    // brief confirmation toast after the assign sheet / editor dismisses.
+    val snackbarHostState = remember { SnackbarHostState() }
+    val confirmationMessageBuilder = remember { DetailReclassifyConfirmationMessageBuilder() }
     val liveNotification by repository.observeNotification(notificationId).collectAsState(initial = null)
     val notification = liveNotification
     val rules by rulesRepository.observeRules().collectAsState(initial = emptyList<RuleUiModel>())
@@ -168,6 +177,8 @@ fun NotificationDetailScreen(
         item {
             DetailTopBar(title = "알림 상세", onBack = onBack)
         }
+        // SnackbarHost overlay below — Plan
+        // `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` Task 2.
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -414,6 +425,12 @@ fun NotificationDetailScreen(
             }
         }
     }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
+        )
     }
 
     if (showAssignSheet) {
@@ -426,11 +443,25 @@ fun NotificationDetailScreen(
             onDismiss = { showAssignSheet = false },
             onAssignToExisting = { categoryId ->
                 showAssignSheet = false
+                // Capture the categories snapshot at tap time so the
+                // confirmation copy resolves the destination name even if
+                // the categories Flow re-emits before the snackbar fires.
+                val snapshot = categories
                 scope.launch {
                     assignUseCase.assignToExisting(
                         notification = notification,
                         categoryId = categoryId,
                     )
+                    val message = confirmationMessageBuilder.build(
+                        outcome = DetailReclassifyOutcome.AssignedExisting(categoryId),
+                        categories = snapshot,
+                    )
+                    if (message != null) {
+                        snackbarHostState.showSnackbar(
+                            message = message,
+                            duration = SnackbarDuration.Short,
+                        )
+                    }
                 }
             },
             onCreateNewCategory = {
@@ -461,7 +492,29 @@ fun NotificationDetailScreen(
             rules = allRules,
             capturedApps = emptyList(),
             onDismiss = { pendingPrefill = null },
-            onSaved = { pendingPrefill = null },
+            onSaved = { savedCategory ->
+                pendingPrefill = null
+                // Plan
+                // `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md`
+                // Task 2: render the Path B "새 분류 만들었어요" confirmation
+                // using the just-persisted Category's name (not the
+                // categories Flow snapshot — it may not have re-emitted
+                // yet when this callback fires).
+                val message = confirmationMessageBuilder.build(
+                    outcome = DetailReclassifyOutcome.CreatedNew(
+                        categoryName = savedCategory.name,
+                    ),
+                    categories = categories,
+                )
+                if (message != null) {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = message,
+                            duration = SnackbarDuration.Short,
+                        )
+                    }
+                }
+            },
             onDelete = { /* no-op in New flow */ },
             prefill = prefill,
         )

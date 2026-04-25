@@ -96,7 +96,7 @@ class CategoryEditorSaveOrchestratorTest {
             order = 0,
         )
 
-        var savedId: String? = null
+        var savedCategory: Category? = null
         var onSavedInvoked = false
         var categoriesAtCallback: List<Category> = emptyList()
 
@@ -105,8 +105,8 @@ class CategoryEditorSaveOrchestratorTest {
             rulesRepository = rulesRepository,
             persisted = draft,
             pendingRule = null,
-            onSaved = { id ->
-                savedId = id
+            onSaved = { category ->
+                savedCategory = category
                 onSavedInvoked = true
                 // Synchronously observe — by contract, persist must already
                 // be flushed when this callback fires.
@@ -115,7 +115,7 @@ class CategoryEditorSaveOrchestratorTest {
         )
 
         assertTrue("onSaved was not invoked", onSavedInvoked)
-        assertEquals(draft.id, savedId)
+        assertEquals(draft.id, savedCategory?.id)
         assertEquals(1, categoriesAtCallback.size)
         assertEquals(draft.id, categoriesAtCallback.first().id)
 

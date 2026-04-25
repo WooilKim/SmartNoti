@@ -72,7 +72,11 @@ fun CategoryEditorScreen(
     rules: List<RuleUiModel>,
     capturedApps: List<CapturedAppSelectionItem>,
     onDismiss: () -> Unit,
-    onSaved: (String) -> Unit,
+    // Plan `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` Task 2:
+    // expose the persisted Category so the host (Detail) can render a
+    // confirmation snackbar with the new Category's name without having to
+    // wait for the categories Flow snapshot to round-trip post-save.
+    onSaved: (Category) -> Unit,
     onDelete: (String) -> Unit,
     prefill: CategoryEditorPrefill? = null,
 ) {
@@ -406,13 +410,13 @@ internal suspend fun saveCategoryDraft(
     rulesRepository: RulesRepository,
     persisted: Category,
     pendingRule: RuleUiModel?,
-    onSaved: (String) -> Unit,
+    onSaved: (Category) -> Unit,
 ) {
     if (pendingRule != null && pendingRule.id in persisted.ruleIds) {
         rulesRepository.upsertRule(pendingRule)
     }
     categoriesRepository.upsertCategory(persisted)
-    onSaved(persisted.id)
+    onSaved(persisted)
 }
 
 /**
