@@ -237,3 +237,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:45:00Z | #320 | plan-implementer | DEFER | CI 'Unit tests + debug APK' PENDING; re-check next sweep |
 | 2026-04-22T08:50:30Z | #320 | plan-implementer | APPROVE+MERGE | chip APP-label lookup; CI green; plan→shipped |
 | 2026-04-22T08:45:00Z | #322 | gap-planner | DEFER | CI pending |
+| 2026-04-25T10:20:00Z | #322 | gap-planner | APPROVE | scope+traceability+CI all green |
