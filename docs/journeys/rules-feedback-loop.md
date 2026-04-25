@@ -107,7 +107,7 @@ adb shell cmd notification post -S bigtext -t "AssignTest_0421" FbTest2 "두 번
 
 - (2026-04-22 해소) "기존 분류에 포함" 섹션 헤더는 기존 Category 가 1건 이상일 때 렌더됨을 confirm (2026-04-22 sweep). 0건일 때는 헤더 없이 "+ 새 분류 만들기" terminal row 만 노출 — 의도된 동작.
 - (2026-04-23 해소) 온보딩 quick-start 가 Categories DataStore 를 비워두던 첫-진입 drift 는 `OnboardingQuickStartCategoryApplier` 추가로 해소. 이제 quick-start 가 만든 룰별로 1:1 Category (`cat-onboarding-<presetId.lowercase>`, action 매핑 PRIORITY/DIGEST/DIGEST) 가 동일 트랜잭션에서 `CategoriesRepository` 에 seed 되어 Path A ("기존 분류에 포함") 가 첫 진입부터 비어 있지 않다. Plan: `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md`.
-- 시트 확정 후 사용자에게 토스트나 확인 UI 없음 (조용히 성공).
+- 시트 확정 후 사용자에게 토스트나 확인 UI 없음 (조용히 성공). → plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md`
 - 자동 rule 유도는 PERSON / APP 만 지원 — KEYWORD / SCHEDULE / REPEAT_BUNDLE 기반 묶기는 제공하지 않음 (사용자가 원하면 editor 에서 추가해야 함).
 - Deterministic rule id 의 교차 Category 중복: 동일 sender 를 서로 다른 Category 두 곳에 연이어 할당하면 같은 rule.id 를 두 Category 가 `ruleIds` 에 갖게 된다. Classifier 는 `order` 드래그 tie-break 로 승자를 결정 — 사용자가 분류 탭에서 정한 순서가 그대로 지배한다. Bug 아님 (계약 명시).
 - PrefillStore 프로세스 생존: 경로 B 의 Editor 전이 도중 프로세스가 죽으면 prefill 이 소실되고 Editor 는 빈 상태로 열린다. 재시도 시 문제 없음 (저장 이전까지 아무것도 persist 되지 않음).
