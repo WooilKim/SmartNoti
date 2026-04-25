@@ -239,3 +239,4 @@ If a self-merged row caused a regression:
 | 2026-04-25T10:05:05Z | journey-tester | #321 | categories-management | https://github.com/WooilKim/SmartNoti/actions/runs/24928369480/job/73002036944 |
 | 2026-04-25T10:20:00Z | project-manager | #322 | plan: Detail reclassify confirm toast | https://github.com/WooilKim/SmartNoti/actions/runs/24928552635 |
 | 2026-04-25T10:40:17Z | project-manager | #323 | Detail reclassify confirmation snackbar (plan-implementer) | https://github.com/WooilKim/SmartNoti/actions/runs/24928984275 |
+| 2026-04-25T10:50:55Z | journey-tester | #324 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24929165871 |
