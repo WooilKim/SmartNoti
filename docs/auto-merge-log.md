@@ -235,3 +235,4 @@ If a self-merged row caused a regression:
 | 2026-04-25T00:30:10Z | project-manager | #316 | D3 plan rule editor remove action dropdown | https://github.com/WooilKim/SmartNoti/actions/runs/24917554423 |
 | 2026-04-25T09:23:36Z | journey-tester | #318 | rules-management | https://github.com/WooilKim/SmartNoti/actions/runs/24927651833 |
 | 2026-04-25T09:37:57Z | project-manager | #319 | gap-planner plan: category chip APP-token app-label lookup (leverage 8) | https://github.com/WooilKim/SmartNoti/actions/runs/24927884054 |
+| 2026-04-22T08:50:00Z | project-manager | #320 | feat(categories): APP-token chip app-label lookup | https://github.com/WooilKim/SmartNoti/actions/runs/24928220814 |
