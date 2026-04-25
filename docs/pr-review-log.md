@@ -234,3 +234,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-25T00:50:00Z | #317 | plan-implementer | DEFER | Sweep #317 D3 impl: CI Unit tests + debug APK IN_PROGRESS — re-review next sweep |
 | 2026-04-22T08:45:00Z | #319 | gap-planner | DEFER | CI pending (Unit tests + debug APK) |
 | 2026-04-25T09:38:09Z | #319 | gap-planner | APPROVE | docs-only plan; CI green; leverage 8 |
+| 2026-04-22T08:45:00Z | #320 | plan-implementer | DEFER | CI 'Unit tests + debug APK' PENDING; re-check next sweep |
