@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+superseded-by: ../journeys/categories-management.md
 ---
 
 # Category Chip APP-Token Label Lookup Plan

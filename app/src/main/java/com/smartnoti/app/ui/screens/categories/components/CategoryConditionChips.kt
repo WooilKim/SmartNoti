@@ -50,7 +50,13 @@ fun CategoryConditionChips(
     text: CategoryConditionChipText,
     action: CategoryAction,
     modifier: Modifier = Modifier,
+    @Suppress("UNUSED_PARAMETER")
+    appLabelLookup: AppLabelLookup = LocalAppLabelLookup.current,
 ) {
+    // The text-based overload accepts (and ignores) appLabelLookup so call
+    // sites can pass the same lookup uniformly across both overloads. Token
+    // strings are already resolved at this point — see the rules-based
+    // overload below for the actual lookup forwarding.
     val plain = text.toPlainString()
     FlowRow(
         modifier = modifier
@@ -129,15 +135,18 @@ fun CategoryConditionChips(
     maxInline: Int,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
+    appLabelLookup: AppLabelLookup = LocalAppLabelLookup.current,
 ) {
     val text = CategoryConditionChipFormatter.format(
         rules = rules,
         action = action,
         maxInline = maxInline,
+        appLabelLookup = appLabelLookup,
     )
     CategoryConditionChips(
         text = text,
         action = action,
         modifier = modifier.padding(contentPadding),
+        appLabelLookup = appLabelLookup,
     )
 }

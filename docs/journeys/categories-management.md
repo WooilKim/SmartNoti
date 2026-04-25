@@ -33,7 +33,7 @@ last-verified: 2026-04-24
    - `CategoryActionBadge` — PRIORITY / DIGEST / SILENT / IGNORE 색상 구분 chip
    - 소속 Rule 수 (`category.ruleIds.size`)
    - drag handle (Task 6 의 `moveCategory(..., UP|DOWN)` 트리거)
-   - 그 아래 `CategoryConditionChips` (`maxInline = 2`) 가 추가돼 `조건: 키워드=세일 → 즉시 전달` 형태로 매칭 조건과 액션을 한 줄에 미리 보여준다. 조건 토큰이 3개 이상이면 첫 2개 + `외 N개` 로 축약된다. 카피는 `CategoryConditionChipFormatter` (pure) + `CategoryActionLabels` 가 단일 진입점.
+   - 그 아래 `CategoryConditionChips` (`maxInline = 2`) 가 추가돼 `조건: 키워드=세일 → 즉시 전달` 형태로 매칭 조건과 액션을 한 줄에 미리 보여준다. 조건 토큰이 3개 이상이면 첫 2개 + `외 N개` 로 축약된다. 카피는 `CategoryConditionChipFormatter` (pure) + `CategoryActionLabels` 가 단일 진입점. APP 타입 토큰은 사용자 친화 라벨 (예: `앱=카카오톡`) 로 보이고, 라벨 해석에 실패하면 `앱=<packageName>` 으로 fallback (production 은 `LocalAppLabelLookup` 가 `PackageManagerAppLabelLookup` 를 주입).
 4. Row 탭 → `CategoryDetailScreen` 진입 (동일 composable 스택, 뒤로가기 지원):
    - Category 요약 (이름 / 앱 / 액션)
    - 요약 카드 안에 `CategoryConditionChips` (`maxInline = Int.MAX_VALUE`) — 모든 조건 토큰을 펼쳐서 사용자가 매처 사슬 전체를 감사할 수 있다.
@@ -71,9 +71,11 @@ last-verified: 2026-04-24
 - `ui/screens/categories/CategoryEditorScreen` — AlertDialog 에디터 (신규/편집 공용)
 - `ui/screens/categories/CategoryEditorDraftValidator` — 이름 + Rule 최소 1개 검증
 - `ui/screens/categories/CategoryActionBadge` — PRIORITY/DIGEST/SILENT/IGNORE 색상 chip
-- `ui/screens/categories/components/CategoryConditionChipFormatter` — pure formatter for the inline `조건: ... → action` chip text. i18n 진입점.
-- `ui/screens/categories/components/CategoryConditionChips` — Compose chip row (card / detail / editor 공용)
+- `ui/screens/categories/components/CategoryConditionChipFormatter` — pure formatter for the inline `조건: ... → action` chip text. i18n 진입점. APP 토큰은 옵션 `appLabelLookup` 인자를 통해 user-facing label 로 해석.
+- `ui/screens/categories/components/CategoryConditionChips` — Compose chip row (card / detail / editor 공용). `LocalAppLabelLookup.current` 를 default 로 사용해 APP 토큰이 자동으로 라벨 해석을 받는다.
 - `ui/screens/categories/components/CategoryActionLabels` — chip-variant action 라벨 단일 상수
+- `ui/screens/categories/components/AppLabelLookup` — `fun interface AppLabelLookup` (SAM, packageName → label?) + production `PackageManagerAppLabelLookup`. lookup 실패 (NameNotFoundException) 시 `null` 반환 → formatter 가 raw matchValue 로 fallback.
+- `ui/screens/categories/components/LocalAppLabelLookup` — CompositionLocal. `MainActivity.setContent` 에서 production `PackageManagerAppLabelLookup(packageManager)` provide. preview/test 환경 default 는 `AppLabelLookup.Identity` (항상 raw 노출).
 - `data/categories/CategoriesRepository` — DataStore `smartnoti_categories`, `observeCategories` / `upsertCategory` / `deleteCategory` / `moveCategory`
 - `data/categories/CategoryStorageCodec` — JSON 직렬화
 - `data/categories/RuleToCategoryMigration` + `MigrateRulesToCategoriesRunner` — 첫 실행 1:1 자동 마이그레이션
@@ -89,7 +91,7 @@ last-verified: 2026-04-24
 - `CategoryEditorDraftValidatorTest` — 저장 버튼 enable/disable 로직
 - `CategoryConflictResolverTest` — specificity + tie-break 전체 케이스
 - `RuleToCategoryMigrationTest` — 1:1 변환 + 2회 실행 idempotent
-- `CategoryConditionChipFormatterTest` — chip 카피 형식 / 토큰 라벨 / 액션 라벨 / `외 N개` overflow / 빈 rule list 방어 케이스
+- `CategoryConditionChipFormatterTest` — chip 카피 형식 / 토큰 라벨 / 액션 라벨 / `외 N개` overflow / 빈 rule list 방어 케이스. APP 토큰 `appLabelLookup` 분기 (라벨 적용 / null fallback / blank fallback / blank matchValue lookup skip / PERSON·KEYWORD·SCHEDULE·REPEAT_BUNDLE 무영향 / 혼합 rule / default Identity backward-compat) 도 포함.
 
 ## Verification recipe
 
@@ -114,10 +116,11 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - Detail 화면이 "최근 이 Category 로 분류된 알림 preview" 를 아직 표시하지 않음 — 현재는 Rule 리스트 + 액션 chip 까지만. 후속 plan 대상.
 - Category 자동 추천 (ML / 휴리스틱) 미구현 — 사용자가 수동 생성만 가능.
 - Recipe 는 아직 ADB 로 end-to-end 검증되지 않음 (`last-verified` 비어 있음). 첫 journey-tester sweep 에서 스크린샷 + uiautomator dump 로 고정.
-- `CategoryConditionChips` 의 APP 토큰은 현재 `Rule.matchValue` (raw `com.kakao.talk` 같은 packageName) 를 그대로 노출 — `appLabelLookup` 주입으로 사용자 친화 라벨로 바꾸는 후속 plan 필요 (plan `2026-04-24-categories-condition-chips.md` open question). → plan: `docs/plans/2026-04-25-category-chip-app-label-lookup.md`
+- (resolved 2026-04-25, plan `docs/plans/2026-04-25-category-chip-app-label-lookup.md`) `CategoryConditionChips` 의 APP 토큰은 현재 `Rule.matchValue` (raw `com.kakao.talk` 같은 packageName) 를 그대로 노출 — `appLabelLookup` 주입으로 사용자 친화 라벨로 바꾸는 후속 plan 필요 (plan `2026-04-24-categories-condition-chips.md` open question). → 후속 plan: `docs/plans/2026-04-25-category-chip-app-label-lookup.md` (chip surface 한 곳만 적용; 카드 metadata line / Detail "연결된 앱 · ${packageName}" 은 동일 lookup 으로 후속 PR 가능).
 
 ## Change log
 
+- 2026-04-25: APP-토큰 라벨 해석 — plan `docs/plans/2026-04-25-category-chip-app-label-lookup.md`. `CategoryConditionChips` 가 더 이상 raw `앱=com.kakao.talk` 가 아닌 `앱=카카오톡` 같은 user-facing label 로 APP 토큰을 노출. `AppLabelLookup` SAM (`null` 반환 = 라벨 미상) + production `PackageManagerAppLabelLookup` (PackageManager 기반, `NameNotFoundException` → null) 신설. `LocalAppLabelLookup` CompositionLocal 을 `MainActivity.setContent` 에서 한 번 provide → 카드 / Detail / Editor 세 surface 가 모두 호출 사이트 변경 없이 자동 wiring (옵션 A — testability + 다른 surface 재사용 가용성 우선). ADB 검증 emulator-5554: `중요 알림` Category 에 `com.android.shell` APP rule 합류 후 카드 chip / Detail / Editor 미리보기 모두 `앱=Shell` 노출 (text + content-desc 동일). 라벨 해석 실패 fallback 은 unit test 의 `null/blank` 케이스로 검증. (PR 링크는 머지 시 채움.)
 - 2026-04-22: 신규 문서화 — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Tasks 8 + 9 (#238) 구현 결과물. `CategoriesScreen` + `CategoryDetailScreen` + `CategoryEditorScreen` + `CategoryEditorDraftValidator` shipped. `CategoriesRepository` (DataStore `smartnoti_categories`) + `CategoryConflictResolver` + `RuleToCategoryMigration` 은 Phase P1/P2 에서 선행 shipped (#236 / #239). BottomNav "분류" 탭은 Task 11 (#240) 에서 추가. `last-verified` 는 journey-tester 가 ADB recipe 를 실행해 확정할 때까지 비워둠 (per `.claude/rules/docs-sync.md`).
 - 2026-04-22: FAB 가시성 regression 수정 + empty-state inline CTA 추가 — plan `docs/plans/2026-04-22-categories-empty-state-inline-cta.md`. `CategoriesScreen` 의 `Box(fillMaxSize())` 루트가 부모 Scaffold `contentPadding` 을 소비하지 않아 FAB 가 AppBottomBar 뒤로 가려지던 문제를, 로컬 `Scaffold(floatingActionButton = ...)` 로 리팩토링해 해결. 같은 변경에서 `EmptyState` 에 옵셔널 `action` 슬롯 추가 + `CategoriesScreen` 의 empty 상태 본문 아래에 `"새 분류 만들기"` inline CTA 주입. FAB / CTA / editor 어휘를 모두 `CategoriesEmptyStateAction.LABEL = "새 분류 만들기"` 로 통일. (PR 링크는 머지 시 채움.)
 - 2026-04-24: 인라인 condition chip 추가 — plan `docs/plans/2026-04-24-categories-condition-chips.md`. 카드 / Detail / Editor 3 화면에 `CategoryConditionChips` 신설 → "조건: 키워드=세일 또는 보낸이=홍길동 → 즉시 전달" 형태로 매처와 액션을 한 줄에 노출. `CategoryConditionChipFormatter` (pure) + `CategoryActionLabels` 로 카피 단일화. 카드는 `maxInline = 2` (3+ 시 `외 N개`), Detail/Editor 는 펼침. ADB 검증 emulator-5554 — chip 텍스트와 content-desc 가 모두 정확히 렌더됐고 maxInline=2 가 phone-width 카드에 깔끔하게 들어맞음. APP 토큰의 raw packageName 노출은 후속 plan 으로 미룸. (PR 링크는 머지 시 채움.)
