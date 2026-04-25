@@ -100,7 +100,7 @@ adb shell cmd notification post -S bigtext -t "DetailTest_0421" FbTest2 "두 번
 
 ## Known gaps
 
-- 재분류 시 토스트/확인 UI 없음 (시트만 닫혀 UX 가 조용함).
+- 재분류 시 토스트/확인 UI 없음 (시트만 닫혀 UX 가 조용함). → plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md`
 - Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Settings → "고급 규칙 편집" 으로 수동 이동 필요 (Rules 탭 자체가 BottomNav 에서 제거됐음).
 - **대상 알림 row 즉시 상태 변경 부재** (redesign 2026-04-22): legacy 4-버튼은 `NotificationRepository.updateNotification` 으로 해당 row 의 status/reasonTags 를 즉시 덮어써 Home/리스트에 즉시 반영했으나, redesign 이후 이 경로는 Rule+Category 만 persist 하고 row 자체는 건드리지 않는다. 재분류 효과는 **후속 동일 sender/앱 알림** 에 대해 다음 tick 부터 발현. 이 UX 후퇴를 후속 plan 이 명시적 "이 알림도 지금 재분류" CTA 로 보완할지 결정 필요.
 - **per-action broadcast 경로 제거** (2026-04-22): `SmartNotiNotificationActionReceiver` 및 `SmartNotiNotifier.ACTION_*` 상수 4종이 삭제되어 replacement 알림 / 3rd-party notification action 경유 재분류 훅이 완전히 사라졌다. 재분류는 오직 Detail 의 "분류 변경" 시트 경유로만 가능 — tap-only UX 로 의도적 단순화.
