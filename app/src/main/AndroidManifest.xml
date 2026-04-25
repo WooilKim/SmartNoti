@@ -3,6 +3,26 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+      Android 11+ (API 30) package visibility. Without this <queries> block,
+      `PackageManager.getApplicationInfo(packageName, 0)` throws
+      NameNotFoundException for arbitrary installed packages even when the
+      package is present, which makes `PackageManagerAppLabelLookup`
+      (ui/screens/categories/components/AppLabelLookup.kt) silently fall back
+      to the raw packageName in Category condition chips
+      (e.g. `앱=com.android.youtube` instead of `앱=YouTube`). Declaring an
+      <intent> with action MAIN is the standard, narrowly-scoped pattern
+      recommended by https://developer.android.com/training/package-visibility
+      and only exposes apps that publish a launcher activity — service-only
+      packages remain invisible by design (out of scope of this plan, see
+      docs/plans/2026-04-25-android-queries-package-visibility.md Risks).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:label="SmartNoti"
