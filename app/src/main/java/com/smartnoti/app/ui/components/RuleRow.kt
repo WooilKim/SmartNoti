@@ -46,12 +46,15 @@ import com.smartnoti.app.ui.theme.BorderSubtle
  * Presentation flavor for [RuleRow]. Defaults to [Base]; Phase C hierarchical
  * rendering passes [Override] for nested child rows and [BrokenOverride] when
  * the base can't be resolved (see plan `rules-ux-v2-inbox-restructure` Phase C
- * Task 3).
+ * Task 3). Plan `2026-04-24-rule-editor-remove-action-dropdown.md` Task 6 adds
+ * [Unassigned] for the 미분류 bucket — Rules that no Category claims, which
+ * sit dormant until the user attaches them to a Category.
  */
 sealed interface RuleRowPresentation {
     data object Base : RuleRowPresentation
     data class Override(val baseTitle: String?) : RuleRowPresentation
     data class BrokenOverride(val reasonMessage: String) : RuleRowPresentation
+    data object Unassigned : RuleRowPresentation
 }
 
 @Composable
@@ -99,18 +102,28 @@ fun RuleRow(
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         RuleMetaChip(typeLabel(rule.type))
-                        // Plan 2026-04-21-ignore-tier-fourth-decision Task 5
-                        // step 5 — IGNORE is the lowest-presence tier, so its
-                        // action chip drops the solid fill for a border-only
-                        // neutral gray treatment per ui-improvement.md tone.
-                        RuleMetaChip(
-                            text = actionLabel(action),
-                            style = if (action == RuleActionUi.IGNORE) {
-                                RuleMetaChipStyle.BorderOnly
-                            } else {
-                                RuleMetaChipStyle.Filled
-                            },
-                        )
+                        // Plan 2026-04-24-rule-editor-remove-action-dropdown
+                        // Task 6: Unassigned rows replace the action chip with
+                        // a border-only "미분류" chip so users can spot the
+                        // dormant state at a glance. IGNORE keeps its
+                        // border-only treatment (Plan 2026-04-21-ignore-tier
+                        // Task 5 step 5) for the lowest-presence destructive
+                        // tier.
+                        if (presentation is RuleRowPresentation.Unassigned) {
+                            RuleMetaChip(
+                                text = "미분류",
+                                style = RuleMetaChipStyle.BorderOnly,
+                            )
+                        } else {
+                            RuleMetaChip(
+                                text = actionLabel(action),
+                                style = if (action == RuleActionUi.IGNORE) {
+                                    RuleMetaChipStyle.BorderOnly
+                                } else {
+                                    RuleMetaChipStyle.Filled
+                                },
+                            )
+                        }
                         if (!description.emphasisLabel.isNullOrBlank()) {
                             RuleMetaChip(description.emphasisLabel)
                         }
@@ -181,6 +194,20 @@ fun RuleRow(
 private fun RuleRowPresentationBanner(presentation: RuleRowPresentation) {
     when (presentation) {
         RuleRowPresentation.Base -> Unit
+        RuleRowPresentation.Unassigned -> {
+            Text(
+                text = "분류에 추가되기 전까지 비활성",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(999.dp),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
         is RuleRowPresentation.Override -> {
             val baseSuffix = presentation.baseTitle
                 ?.takeIf { it.isNotBlank() }

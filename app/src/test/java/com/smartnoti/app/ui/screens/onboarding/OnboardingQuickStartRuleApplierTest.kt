@@ -1,6 +1,5 @@
 package com.smartnoti.app.ui.screens.onboarding
 
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import org.junit.Assert.assertEquals
@@ -27,7 +26,6 @@ class OnboardingQuickStartRuleApplierTest {
                 title = "엄마",
                 matchValue = "엄마",
                 type = RuleTypeUi.PERSON,
-                action = RuleActionUi.ALWAYS_PRIORITY,
             ),
         )
 
@@ -58,7 +56,6 @@ class OnboardingQuickStartRuleApplierTest {
                 title = "예전 프로모션 규칙",
                 matchValue = "광고,프로모션,쿠폰,세일,특가,이벤트,혜택",
                 type = RuleTypeUi.KEYWORD,
-                action = RuleActionUi.DIGEST,
                 enabled = false,
             ),
         )
@@ -91,7 +88,6 @@ class OnboardingQuickStartRuleApplierTest {
                 title = "엄마",
                 matchValue = "엄마",
                 type = RuleTypeUi.PERSON,
-                action = RuleActionUi.ALWAYS_PRIORITY,
             ),
         )
 
