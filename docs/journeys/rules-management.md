@@ -36,10 +36,11 @@ last-verified: 2026-04-24
 6. 추가 / 편집 탭 → `AlertDialog` (rule editor) 열림:
    - 룰 타입 (`RuleTypeUi`: PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) 선택
    - 매치 값 입력 (타입별: 이름, 패키지, 키워드, 시간 범위, 반복 임계)
-   - 액션 선택 (`RuleActionUi`: 즉시 전달 / Digest / 조용히 / 무시 (즉시 삭제)) — **UI-level 편의 필드**. 저장 시 해당 Rule 용 1:1 Category 가 자동 upsert 되어 (`existingCategory` 가 없으면 신규 생성 / 있으면 action 만 갱신) 해당 action 을 반영. Rule 모델 자체에는 action 필드가 없음 (Phase P1 Task 4).
+   - **액션 선택은 더 이상 editor 안에서 묻지 않음 (plan `2026-04-24-rule-editor-remove-action-dropdown`).** Rule 은 순수 조건 매처이고 액션 (PRIORITY / DIGEST / SILENT / IGNORE) 은 owning Category 가 소유. "처리 방식" SectionLabel + dropdown + `draftAction` state + 저장 시 1:1 companion Category auto-upsert 로직 모두 제거됨.
    - "예외 규칙" 섹션 — "기존 규칙의 예외로 만들기" `Switch` + (ON 일 때) `RuleEditorOverrideOptionsBuilder` 가 만든 base 후보 dropdown. 후보가 없으면 switch 자체 비활성화.
    - `RuleEditorDraftValidator` 가 입력 유효성 검사 (빈 값/잘못된 시간 등), `RuleOverrideSupersetValidator` 가 draft 매치 조건이 선택된 base 의 superset 인지 검증 (KEYWORD 는 token 포함, 그 외는 strict equality) 하여 helper text 로 경고.
-   - 저장 → `RuleDraftFactory.create(..., overrideOf = ...)` 로 `RuleUiModel` 생성 → `rulesRepository.upsertRule(rule)` + `categoriesRepository.upsertCategory(category)` (rule id 를 포함한 Category 가 없으면 생성, 있으면 action 갱신). `RuleOverrideValidator` 가 self-reference / circular chain 을 감지하면 persist 없이 `Log.e` 후 reject.
+   - 저장 → `RuleDraftFactory.create(..., overrideOf = ...)` 로 `RuleUiModel` 생성 → `rulesRepository.upsertRule(rule)` 만 수행. **신규 Rule 인 경우** 저장 직후 `CategoryAssignBottomSheet` (ModalBottomSheet) 가 강제 노출되어 사용자에게 "이 규칙을 어떤 분류에 추가하시겠어요?" 를 묻고, 선택 시 `CategoriesRepository.appendRuleIdToCategory(categoryId, ruleId)` 로 분류에 합류시킴. **편집 모드** 는 sheet 를 띄우지 않음 (Rule 이 이미 Category 에 attach 돼 있다는 가정). sheet 를 닫으면 Rule 은 "미분류" draft 로 남고, 어떤 알림도 분류하지 않음 (`RuleCategoryActionIndex.actionFor` → null → classifier hot path 의 `owning` 리스트가 비어 SILENT 로 fall-through). `RuleOverrideValidator` 가 self-reference / circular chain 을 감지하면 persist 없이 `Log.e` 후 reject.
+   - 미분류 Rule 은 RulesScreen 의 액션 그룹 위에 별도 "미분류" 섹션으로 노출됨 (`RuleRowPresentation.Unassigned` + border-only "미분류" chip + "분류에 추가되기 전까지 비활성" 배너). 카드 탭 시 다시 sheet 가 열려 분류 합류를 재시도할 수 있음.
 7. 삭제 버튼 → `rulesRepository.deleteRule(id)`. 2026-04-22 plan `categories-runtime-wiring-fix` Task 5 (#245) 이후 `deleteRule` 이 Rule persist 후 `CategoriesRepository.onRuleDeleted(id)` 를 호출해 해당 rule id 를 모든 Category 의 `ruleIds` 에서 dedup 제거한다. `ruleIds` 가 비게 된 Category 는 **삭제하지 않고 보존** — 사용자가 분류 탭에서 "rule 없는 Category" 를 명시적으로 편집/삭제 결정.
 8. 순서 이동 → drag handle long-press + vertical drag (48dp step) 또는 arrow 버튼 → `rulesRepository.moveRule(id, direction)`. `RuleOrdering` 이 tier key (`overrideOf`) 가 동일한 가장 가까운 이웃까지만 swap 하도록 non-tier rows 를 skip — base 는 base 끼리, override 는 같은 base 를 공유하는 sibling 끼리만 우선순위가 바뀌고, 다른 tier 와는 절대 섞이지 않음. (Category 간 순서 변경은 [categories-management](categories-management.md) 의 drag-reorder 로 수행.)
 9. 활성 토글 → `rulesRepository.setRuleEnabled(id, enabled)`.
@@ -47,8 +48,8 @@ last-verified: 2026-04-24
 ## Exit state
 
 - DataStore 의 `smartnoti_rules` 에 룰 상태가 영속화됨.
-- DataStore 의 `smartnoti_categories` 에 해당 Rule 을 포함하는 Category 가 upsert 됨 (신규 Rule 이면 `cat-from-rule-<ruleId>` id 로 1:1 생성).
-- 이후 새로 게시되는 알림은 `RulesRepository.currentRules()` + `CategoriesRepository.currentCategories()` 를 통해 업데이트된 조건 + 액션을 참조 (→ [notification-capture-classify](notification-capture-classify.md)).
+- 사용자가 sheet 에서 분류를 선택했다면 DataStore 의 `smartnoti_categories` 의 해당 Category 의 `ruleIds` 에 Rule.id 가 dedup-append 됨. 닫았다면 Rule 은 "미분류" 상태로 남고 어떤 Category 의 `ruleIds` 에도 속하지 않음.
+- 이후 새로 게시되는 알림은 `RulesRepository.currentRules()` + `CategoriesRepository.currentCategories()` 를 통해 업데이트된 조건 + 액션을 참조 (→ [notification-capture-classify](notification-capture-classify.md)). 미분류 Rule 은 owning Category 가 없으므로 classifier 가 user-routed 결정을 만들지 않음 (→ heuristic chain → SILENT).
 
 ## Out of scope
 
@@ -78,9 +79,12 @@ last-verified: 2026-04-24
 - `data/categories/CategoriesRepository` — editor 저장 시 owning Category 를 upsert
 - `data/categories/CategoriesRepository#onRuleDeleted` — Rule 삭제 시 모든 Category 의 `ruleIds` 에서 dedup 제거 (empty `ruleIds` Category 는 보존)
 - `data/categories/RuleDeletedCascade` — pure helper, strip logic 단위 테스트 대상
-- `domain/usecase/RuleCategoryActionIndex` — rule id → owning Category.action 조회 (리스트 derive)
+- `domain/usecase/RuleCategoryActionIndex` — rule id → owning Category.action 조회 (리스트 derive). null 반환 = "미분류"
+- `domain/usecase/UnassignedRulesDetector` — pure helper. `(rules, categories) -> List<unassigned rules>` 로 미분류 bucket 계산 (RulesScreen 미분류 섹션이 사용)
+- `ui/components/RuleRow#RuleRowPresentation.Unassigned` — 미분류 row 의 border-only "미분류" chip + "분류에 추가되기 전까지 비활성" 배너
+- `ui/screens/rules/RulesScreen#CategoryAssignSheetContent` — 저장 직후 ModalBottomSheet 의 분류 선택 본문
 - `domain/model/Rule` — 순수 조건 매처 (action 필드 없음, Phase P1 Task 4)
-- `domain/model/RuleUiModel` — `RuleTypeUi`, `RuleActionUi` (UI 편의 enum, storage 용 아님), nullable `overrideOf`
+- `domain/model/RuleUiModel` — `RuleTypeUi`, `RuleActionUi` (UI 편의 enum, storage 용 아님 — list filter / grouping 에서 owning Category.action 을 derive 해 표시할 때만 사용), nullable `overrideOf`
 - `ui/screens/settings/SettingsScreen#AdvancedRulesEntryCard` — Settings 진입점 "고급 규칙 편집 열기"
 
 ## Tests
@@ -94,7 +98,10 @@ last-verified: 2026-04-24
 - `RuleOrderingTest` — tier-aware 이웃 swap
 - `RuleOverrideValidatorTest`
 - `RuleConflictResolverTest`
-- `RuleDraftFactoryTest` (있다면)
+- `RuleDraftFactoryTest` — `action` 파라미터 없는 시그니처 회귀 고정
+- `RuleCategoryActionIndexTest` — 미분류 (어떤 Category 도 claim 하지 않은) Rule id 가 null 반환
+- `RuleWithoutCategoryNoOpTest` — owning Category 없는 매치는 user-routed PRIORITY/DIGEST/IGNORE 로 promote 되지 않음 (heuristic chain → SILENT)
+- `UnassignedRulesDetectorTest` — RulesScreen 의 "미분류" 섹션 멤버십 helper
 - `RulesRepositoryDeleteCascadeTest` — `deleteRule` 이 Category.ruleIds 에서 id 를 제거하고 빈 `ruleIds` Category 는 보존함
 
 ## Verification recipe
@@ -102,12 +109,20 @@ last-verified: 2026-04-24
 ```bash
 # 1. Settings 탭 → "고급" 섹션 → "고급 규칙 편집 열기" 탭
 #    (BottomNav 에 "규칙" 탭은 더 이상 없음)
-# 2. "새 규칙 추가" → 키워드 "인증번호" + 액션 "즉시 전달" 저장
-#    → DataStore 에 Rule + cat-from-rule-<id> Category 동시 upsert
+# 2. "새 규칙 추가" → 키워드 "인증번호" 입력 후 "추가"
+#    → 액션 dropdown 은 더 이상 없음. 저장 직후 ModalBottomSheet 가
+#    "이 규칙을 어떤 분류에 추가하시겠어요?" 를 묻고 기존 분류 (예:
+#    "중요 알림") 를 선택 → CategoriesRepository.appendRuleIdToCategory
+#    로 분류에 합류
 # 3. 이후 동일 키워드 알림 게시
 adb shell cmd notification post -S bigtext -t "은행" OtpTest "인증번호 123456"
 # 4. Home 의 StatPill 즉시 카운트 증가 확인
 adb shell am start -n com.smartnoti.app/.MainActivity
+
+# 5. (대안) 저장 후 sheet 의 "나중에 분류에 추가" 를 눌러 Rule 을
+#    미분류로 남기면 → 동일 키워드 알림은 더 이상 즉시 전달로 routing
+#    되지 않음 (heuristic chain 으로 빠짐). RulesScreen 상단에 "미분류"
+#    섹션이 노출되며 border-only "미분류" chip 이 row 에 표시됨.
 ```
 
 ## Known gaps
@@ -119,7 +134,9 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - Recipe fragility — baseline 누적 (2026-04-21 cycle): rules-feedback-loop 경로로 upsert 된 `person:*` 룰이 `smartnoti_rules.preferences_pb` 에 영속화되어 이 recipe 의 "활성 규칙 N개" 헤더 baseline 이 cycle 에 따라 증가한다. 검증 시 추가/삭제 delta (N→N+1, N+1→N) 만 관측하고, 절대값(N) 은 테스트 환경 상태에 따라 달라질 수 있다.
 - ADB-only verification 으로는 override pill / nested tree indent / tier-aware drag-reorder 관찰 불가 (2026-04-22 sweep): (a) 현 recipe 가 override 룰을 만들지 않아 DB 에 nested 대상이 없고, (b) `adb shell input text` 가 한글 미지원이라 한글 base (`광고`, `엄마`, `중요 알림` 등) 를 strict-equality 로 override 하는 ASCII 값이 없으며, (c) same-value ASCII 시도 (e.g. `TestSender_0421_T12` → `TestSender_0421_T12`) 는 `RuleOverrideValidator` 의 SELF_REFERENCE 로 정상 reject. Phase C UI 재검증은 instrumentation test (`RulesScreenTest` 혹은 Compose UI test) 또는 사전-seed 된 override 룰이 포함된 fixture 로 이동하는 것이 안정적.
 - (resolved 2026-04-22, plan `categories-runtime-wiring-fix` Task 5 / #245) **Rule 삭제 시 Category.ruleIds cascade** — `deleteRule` 이 `CategoriesRepository.onRuleDeleted(id)` 를 호출해 해당 id 를 모든 Category 의 `ruleIds` 에서 dedup 제거. `ruleIds` 가 비게 된 Category 는 보존 (empty-Category GC 는 별도 과제). 더 이상 dangling reference 가 쌓이지 않음.
-- **Rule 조건 편집 시 action 변경**: Rule 의 action dropdown 편집은 `rulesRepository.upsertRule` + `categoriesRepository.upsertCategory` 두 개의 별도 persist 호출로 구성 — 원자성 없음. 프로세스 kill 이 그 사이에 끼면 Rule 만 갱신되고 Category 의 action 이 이전 값으로 남을 수 있음. 실제 재현 빈도는 낮지만 데이터 정합성 reasoning 상 언급.
+- (resolved 2026-04-24, plan `2026-04-24-rule-editor-remove-action-dropdown`) **Rule 조건 편집 시 action 변경** — editor 에서 action dropdown 자체가 사라졌고, 저장 경로가 `upsertRule` 단일 persist 만 호출하므로 두-개-persist 의 원자성 누락 문제 자체가 사라짐. action 변경은 이제 분류 탭 Category editor 에서 단일 `upsertCategory` 로만 가능.
+- **신규 미분류 Rule sheet 거부 흐름**: 사용자가 Rule 을 저장 후 sheet 에서 "나중에 분류에 추가" 를 눌러 Rule 을 미분류로 남기고, 다시 sheet 를 열기 위해 미분류 row 를 탭한 뒤 또 닫으면 — 미분류 상태가 silently 유지된다. 명시적 "이 Rule 은 영원히 미분류로 두겠다" 의도와 "sheet 를 깜빡 닫았다" 를 구분할 신호는 아직 없음. 후속 plan: explicit `draft: Boolean` storage flag.
+- **bulk 미분류 분류** 미지원 — 미분류 Rule N 개를 한 분류에 한꺼번에 할당하는 흐름은 현재 없음. 한 건씩 sheet 를 거쳐야 함. 후속 plan.
 
 ## Change log
 
@@ -131,3 +148,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: **Rule 삭제 cascade drift 해소** — `RulesRepository.deleteRule` 이 Rule persist 완료 후 `CategoriesRepository.onRuleDeleted(id)` 를 호출해 모든 Category 의 `ruleIds` 에서 해당 rule id 를 dedup 제거. `RuleDeletedCascade` pure helper 로 strip 로직 분리, `RulesRepositoryDeleteCascadeTest` 로 계약 고정. `ruleIds` 가 비게 된 Category 는 "rule-less" 상태로 보존 (empty-Category GC 는 별도 과제). 더 이상 dangling Rule id 가 Category 에 남지 않음. Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Task 5 (#245), Task 7 (this PR). `last-verified` 변경 없음.
 - 2026-04-22: **`smartnoti_rules` DataStore 단일 소유자 정리** — `LegacyRuleActionReader` 가 고유 `preferencesDataStore("smartnoti_rules")` delegate 를 선언해 AndroidX 의 "one delegate per file" 제약을 위반, 앱 launch 즉시 `IllegalStateException: There are multiple DataStores active for the same file …/smartnoti_rules.preferences_pb` 로 크래시. Fix: `RulesRepository` 가 유일 소유자로서 `internal val dataStore: DataStore<Preferences>` 로 handle 을 노출하고 `LegacyRuleActionReader` 는 생성자 주입으로 그 handle 을 받는다. `MigrateRulesToCategoriesRunner.create` 의 wiring 한 줄 (`LegacyRuleActionReader(rulesRepository.dataStore)`) 이 유일한 호출부. Robolectric regression (`RulesDataStoreSingleOwnerTest`) 로 회귀 고정. ADB cold-launch smoke PASS — logcat 에 `IllegalStateException` / `smartnoti_rules.preferences_pb` 흔적 없음, onboarding 권한 화면 정상 렌더. Plan: `docs/plans/2026-04-22-rules-datastore-dedup-fix.md` (this PR). `last-verified` 변경 없음.
 - 2026-04-24: v1 loop tick re-verify on emulator-5554 (APK `versionName=0.1.0`, listener enabled). Recipe step 3 — `cmd notification post -S bigtext -t '은행' OtpTest '인증번호 123456'` — relaunched `com.smartnoti.app/.MainActivity`; Home StatPill advanced `오늘 알림 62→63` and `즉시 20→21` (Digest 11 / 조용히 31 unchanged), confirming the existing keyword-인증번호 priority rule still routes `com.android.shell` posts through the listener → classifier → repository chain end-to-end. Initial second post showed cached pre-recompose UI; counts only updated after `am start` re-foregrounded MainActivity (HomeViewModel re-collected `observePriority`/`observeAllFiltered`). No change to Observable steps 1-9 / Exit state — Settings 진입점 (`AdvancedRulesEntryCard`) and editor dialog not re-traversed this sweep (covered by 2026-04-22 sweep + Phase C unit tests). DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-24.
+- 2026-04-24: **Rule editor 액션 dropdown 제거 + 미분류 draft 도입** — 고급 규칙 편집의 AlertDialog 에서 "처리 방식" SectionLabel + `EnumSelectorRow(RuleActionUi …)` + `draftAction` state + 저장 시 1:1 companion Category auto-upsert 블록을 hard remove. Rule 은 순수 조건 매처로만 살아남고, 저장 직후 `CategoryAssignBottomSheet` (ModalBottomSheet, 신규 Rule 한정) 가 강제 노출되어 기존 분류 하나를 선택하면 `CategoriesRepository.appendRuleIdToCategory` 로 합류. sheet 를 닫으면 Rule 은 "미분류" draft 로 남고 어떤 알림도 분류하지 않음 (storage 변경 없이 derive — `RuleCategoryActionIndex.actionFor` → null → classifier 의 `owning` empty → SILENT fall-through). RulesScreen 의 액션 그룹 위에 별도 "미분류" 섹션이 노출되며 `RuleRowPresentation.Unassigned` 가 border-only "미분류" chip + "분류에 추가되기 전까지 비활성" 배너로 렌더 — row 탭 시 다시 sheet 가 열림. `RuleDraftFactory.create()` 시그니처에서 `action` 파라미터를 제거 (onboarding preset 호출부 + 단위 테스트 동기화). 신규 helper `UnassignedRulesDetector` (pure) + `RuleRowPresentation.Unassigned`. 새 단위 테스트 4건 (`RuleDraftFactoryTest`, `RuleCategoryActionIndexTest`, `RuleWithoutCategoryNoOpTest`, `UnassignedRulesDetectorTest`) 으로 contract 고정. Plan: `docs/plans/2026-04-24-rule-editor-remove-action-dropdown.md` Tasks 1-7 (this PR). `last-verified` 변경 없음 — 미분류 sheet 의 ADB end-to-end 검증은 후속 sweep 에서 수행.

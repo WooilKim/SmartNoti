@@ -1,6 +1,7 @@
 ---
-status: planned
+status: shipped
 created: 2026-04-24
+superseded-by: docs/journeys/rules-management.md
 ---
 
 # Rule Editor — Remove Action Dropdown + Force Category Assignment (D3)
