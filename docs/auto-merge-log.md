@@ -232,3 +232,4 @@ If a self-merged row caused a regression:
 | 2026-04-24T04:41:10Z | project-manager | #312 | meta-plan F3 agent clock drift fix | https://github.com/WooilKim/SmartNoti/actions/runs/24872479381 |
 | 2026-04-24T15:17:01Z | journey-tester | #314 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24896899716 |
 | 2026-04-24T15:26:28Z | journey-tester | #315 | priority-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/24897311073 |
+| 2026-04-25T00:30:10Z | project-manager | #316 | D3 plan rule editor remove action dropdown | https://github.com/WooilKim/SmartNoti/actions/runs/24917554423 |
