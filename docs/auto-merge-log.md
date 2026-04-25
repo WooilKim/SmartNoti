@@ -237,3 +237,4 @@ If a self-merged row caused a regression:
 | 2026-04-25T09:37:57Z | project-manager | #319 | gap-planner plan: category chip APP-token app-label lookup (leverage 8) | https://github.com/WooilKim/SmartNoti/actions/runs/24927884054 |
 | 2026-04-22T08:50:00Z | project-manager | #320 | feat(categories): APP-token chip app-label lookup | https://github.com/WooilKim/SmartNoti/actions/runs/24928220814 |
 | 2026-04-25T10:05:05Z | journey-tester | #321 | categories-management | https://github.com/WooilKim/SmartNoti/actions/runs/24928369480/job/73002036944 |
+| 2026-04-25T10:20:00Z | project-manager | #322 | plan: Detail reclassify confirm toast | https://github.com/WooilKim/SmartNoti/actions/runs/24928552635 |
