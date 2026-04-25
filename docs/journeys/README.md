@@ -43,7 +43,7 @@
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-24 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-25 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-24 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-25 (journey-tester — notification-detail re-verify after #323 reclassify confirm snackbar)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | PASS | Re-verify post-#323 (`docs/plans/2026-04-24-detail-reclassify-confirm-toast.md`). APK `lastUpdateTime=2026-04-25 19:27:39`. 정리함 → SmartNoti Test Notifier Digest 묶음 preview row tap → Detail mount, Observable steps 1–5 PASS. Path A `중요 알림` row tap → 시트 dismiss + snackbar `"중요 알림 분류로 옮겼어요"` 렌더 (BottomNav 위, 자동 사라짐). Path B `+ 새 분류 만들기` → editor prefill (name="오늘만 특가 안내", action=Digest=opposite-of-PRIORITY) → name 을 `ToastBverify_0425` 로 교체 후 "추가" 저장 → snackbar `"새 분류 'ToastBverify_0425' 만들었어요"` 렌더. Path B cancel ("닫기") → snackbar 미등장 확인. 3 outcomes (`AssignedExisting` / `CreatedNew` / cancel) 전부 doc 의 Observable step 5.iii 와 일치. DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-25. |
 
 
 ### 2026-04-25 (journey-tester — categories-management re-verify after #320 APP-token label lookup)
