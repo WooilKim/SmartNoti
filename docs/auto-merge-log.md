@@ -241,3 +241,4 @@ If a self-merged row caused a regression:
 | 2026-04-25T10:40:17Z | project-manager | #323 | Detail reclassify confirmation snackbar (plan-implementer) | https://github.com/WooilKim/SmartNoti/actions/runs/24928984275 |
 | 2026-04-25T10:50:55Z | journey-tester | #324 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24929165871 |
 | 2026-04-25T23:34:03Z | journey-tester | #325 | home-overview | https://github.com/WooilKim/SmartNoti/actions/runs/24943239336 |
+| 2026-04-25T23:43:17Z | project-manager | #326 | gap-planner: Android <queries> package visibility plan | https://github.com/WooilKim/SmartNoti/actions/runs/24943392068 |
