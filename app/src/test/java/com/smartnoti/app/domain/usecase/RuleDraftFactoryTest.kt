@@ -1,25 +1,30 @@
 package com.smartnoti.app.domain.usecase
 
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+/**
+ * Plan `docs/plans/2026-04-24-rule-editor-remove-action-dropdown.md` Task 1+2:
+ * `RuleDraftFactory.create(...)` no longer accepts an `action` parameter — the
+ * action lives on the owning [com.smartnoti.app.domain.model.Category], not on
+ * the Rule itself, and the editor stops asking for it. Calls below pin the
+ * post-removal signature so a regression that re-adds the param fails the
+ * unit suite before the dialog regrows the dropdown.
+ */
 class RuleDraftFactoryTest {
 
     private val factory = RuleDraftFactory()
 
     @Test
-    fun creates_person_rule_draft_with_human_readable_subtitle() {
+    fun creates_person_rule_draft_without_action_input() {
         val draft = factory.create(
             title = "팀장",
             matchValue = "팀장",
             type = RuleTypeUi.PERSON,
-            action = RuleActionUi.ALWAYS_PRIORITY,
         )
 
         assertEquals("팀장", draft.title)
-        assertEquals("항상 바로 보기", draft.subtitle)
         assertEquals("팀장", draft.matchValue)
         assertEquals(RuleTypeUi.PERSON, draft.type)
         assertEquals(true, draft.enabled)
@@ -31,7 +36,6 @@ class RuleDraftFactoryTest {
             title = "  쿠팡  ",
             matchValue = "  com.coupang.mobile  ",
             type = RuleTypeUi.APP,
-            action = RuleActionUi.DIGEST,
         )
 
         assertEquals("쿠팡", draft.title)
@@ -45,7 +49,6 @@ class RuleDraftFactoryTest {
             title = "업무 긴급 키워드",
             matchValue = "  배포, 장애 , 배포 ,, 긴급 ",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
         )
 
         assertEquals("배포,장애,긴급", draft.matchValue)
@@ -58,7 +61,6 @@ class RuleDraftFactoryTest {
             title = "야간 근무",
             matchValue = " 23-7 ",
             type = RuleTypeUi.SCHEDULE,
-            action = RuleActionUi.DIGEST,
         )
 
         assertEquals("23-7", draft.matchValue)
@@ -71,7 +73,6 @@ class RuleDraftFactoryTest {
             title = "반복 푸시",
             matchValue = " 05회 ",
             type = RuleTypeUi.REPEAT_BUNDLE,
-            action = RuleActionUi.DIGEST,
         )
 
         assertEquals("5", draft.matchValue)
@@ -80,14 +81,12 @@ class RuleDraftFactoryTest {
 
     @Test
     fun override_of_is_threaded_through_to_the_created_rule() {
-        // Plan rules-ux-v2-inbox-restructure Phase C Task 4: rule editor
-        // dialog wires override-of into the factory so override creation
-        // yields the right data shape.
+        // Phase C Task 4 contract preserved: rule editor wires override-of into
+        // the factory so override creation yields the right data shape.
         val draft = factory.create(
             title = "광고 예외",
             matchValue = "광고",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.SILENT,
             overrideOf = "keyword:결제",
         )
 
@@ -100,7 +99,6 @@ class RuleDraftFactoryTest {
             title = "기본 규칙",
             matchValue = "결제",
             type = RuleTypeUi.KEYWORD,
-            action = RuleActionUi.ALWAYS_PRIORITY,
         )
 
         assertEquals(null, draft.overrideOf)

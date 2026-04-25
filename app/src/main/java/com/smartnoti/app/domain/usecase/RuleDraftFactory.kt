@@ -1,15 +1,23 @@
 package com.smartnoti.app.domain.usecase
 
-import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 
+/**
+ * Builds [RuleUiModel] drafts from rule editor input.
+ *
+ * Plan `docs/plans/2026-04-24-rule-editor-remove-action-dropdown.md` Task 2:
+ * the `action` parameter was removed. A Rule is a pure condition matcher;
+ * the action lives on the owning [com.smartnoti.app.domain.model.Category]
+ * and is selected after save via the post-save assignment sheet, not in the
+ * editor. Subtitle is intentionally left blank — RuleRow renders the action
+ * label by deriving it from the owning Category at presentation time.
+ */
 class RuleDraftFactory {
     fun create(
         title: String,
         matchValue: String,
         type: RuleTypeUi,
-        action: RuleActionUi,
         enabled: Boolean = true,
         existingId: String? = null,
         overrideOf: String? = null,
@@ -23,7 +31,7 @@ class RuleDraftFactory {
         return RuleUiModel(
             id = existingId ?: "${type.name.lowercase()}:$normalizedMatchValue",
             title = normalizedTitle,
-            subtitle = action.toSubtitle(),
+            subtitle = "",
             type = type,
             enabled = enabled,
             matchValue = normalizedMatchValue,
@@ -52,16 +60,5 @@ class RuleDraftFactory {
 
     private fun normalizeRepeatBundleThreshold(raw: String): String {
         return raw.filter(Char::isDigit).trimStart('0').ifEmpty { "0" }
-    }
-
-    private fun RuleActionUi.toSubtitle(): String = when (this) {
-        RuleActionUi.ALWAYS_PRIORITY -> "항상 바로 보기"
-        RuleActionUi.DIGEST -> "Digest로 묶기"
-        RuleActionUi.SILENT -> "조용히 정리"
-        RuleActionUi.CONTEXTUAL -> "상황에 따라 자동 분류"
-        // Copy finalized in Task 5 of plan
-        // `2026-04-21-ignore-tier-fourth-decision`. Stub text keeps drafts
-        // valid until the rule editor surfaces IGNORE to users.
-        RuleActionUi.IGNORE -> "무시 (즉시 삭제)"
     }
 }

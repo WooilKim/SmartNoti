@@ -27,15 +27,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,8 +63,8 @@ import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex
-import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex.Companion.toCategoryActionOrNull
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
+import com.smartnoti.app.domain.usecase.UnassignedRulesDetector
 import com.smartnoti.app.ui.components.RuleRow
 import com.smartnoti.app.ui.components.RuleRowPresentation
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -71,7 +74,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RulesScreen(
     contentPadding: PaddingValues,
@@ -92,6 +95,7 @@ fun RulesScreen(
     val listHierarchyBuilder = remember { RuleListHierarchyBuilder() }
     val overrideOptionsBuilder = remember { RuleEditorOverrideOptionsBuilder() }
     val overrideSupersetValidator = remember { RuleOverrideSupersetValidator() }
+    val unassignedRulesDetector = remember { UnassignedRulesDetector() }
     val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -102,12 +106,19 @@ fun RulesScreen(
     val categories by categoriesRepository.observeCategories()
         .collectAsStateWithLifecycle(initialValue = emptyList<Category>())
     // Plan `2026-04-22-categories-split-rules-actions.md` Phase P1 Task 4:
-    // Rule.action was removed. The editor / list / filter / grouping
-    // surfaces still reason about an action per rule, so we derive it by
-    // looking up the owning Category.
-    val ruleActions = remember(categories) {
-        val index = RuleCategoryActionIndex(categories)
-        rules.associate { rule -> rule.id to index.actionForOrDefault(rule.id) }
+    // Rule.action was removed. The list / filter / grouping surfaces still
+    // reason about an action per rule, so we derive it by looking up the
+    // owning Category. Plan `2026-04-24-rule-editor-remove-action-dropdown.md`
+    // Task 6 builds on the same index — rules with no owning Category fall
+    // into the "미분류" bucket rendered above the action groups.
+    val ruleActionsIndex = remember(categories) { RuleCategoryActionIndex(categories) }
+    val ruleActions = remember(rules, ruleActionsIndex) {
+        rules.mapNotNull { rule ->
+            ruleActionsIndex.actionFor(rule.id)?.let { rule.id to it }
+        }.toMap()
+    }
+    val unassignedRules = remember(rules, categories) {
+        unassignedRulesDetector.detect(rules, categories)
     }
     val listPresentation = remember(rules, ruleActions) {
         listPresentationBuilder.build(rules, ruleActions)
@@ -119,6 +130,12 @@ fun RulesScreen(
     val groupedVisibleRules = remember(visibleRules, ruleActions) {
         listGroupingBuilder.build(visibleRules, ruleActions)
     }
+    // Re-derive the unassigned subset against the current filter — when the
+    // user has selected a specific action chip we hide the 미분류 group so
+    // the filter is not visually contradicted.
+    val visibleUnassignedRules = remember(unassignedRules, selectedActionFilter) {
+        if (selectedActionFilter != null) emptyList() else unassignedRules
+    }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
     var showEditor by remember { mutableStateOf(false) }
@@ -126,19 +143,25 @@ fun RulesScreen(
     var draftTitle by remember { mutableStateOf("") }
     var draftMatchValue by remember { mutableStateOf("") }
     var draftType by remember { mutableStateOf(RuleTypeUi.PERSON) }
-    var draftAction by remember { mutableStateOf(RuleActionUi.ALWAYS_PRIORITY) }
     var scheduleStartHour by remember { mutableStateOf("9") }
     var scheduleEndHour by remember { mutableStateOf("18") }
     // Phase C Task 4: "기존 규칙의 예외로 만들기" switch + dropdown state.
     var draftOverrideEnabled by remember { mutableStateOf(false) }
     var draftOverrideOf by remember { mutableStateOf<String?>(null) }
 
+    // Plan `2026-04-24-rule-editor-remove-action-dropdown.md` Task 5: after
+    // saving a freshly created Rule we surface a ModalBottomSheet asking the
+    // user to attach it to a Category. The state lives on the screen so an
+    // inline dismissal leaves the rule as a 미분류 draft.
+    var pendingCategoryAssignmentRuleId by remember { mutableStateOf<String?>(null) }
+    val pendingCategoryAssignmentRule = pendingCategoryAssignmentRuleId
+        ?.let { id -> rules.firstOrNull { it.id == id } }
+
     fun startCreate() {
         editingRule = null
         draftTitle = ""
         draftMatchValue = ""
         draftType = RuleTypeUi.PERSON
-        draftAction = RuleActionUi.ALWAYS_PRIORITY
         scheduleStartHour = "9"
         scheduleEndHour = "18"
         draftOverrideEnabled = false
@@ -151,7 +174,6 @@ fun RulesScreen(
         draftTitle = rule.title
         draftMatchValue = rule.matchValue
         draftType = rule.type
-        draftAction = ruleActions[rule.id] ?: RuleActionUi.ALWAYS_PRIORITY
         if (rule.type == RuleTypeUi.SCHEDULE) {
             val parts = rule.matchValue.split('-')
             scheduleStartHour = parts.getOrNull(0).orEmpty().ifBlank { "9" }
@@ -262,6 +284,67 @@ fun RulesScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+        // Plan `2026-04-24-rule-editor-remove-action-dropdown.md` Task 6:
+        // surface 미분류 (unassigned) rules in their own group above the
+        // action-categorized groups. The group is hidden when an action
+        // filter is active so the user's filter intent isn't contradicted.
+        if (visibleUnassignedRules.isNotEmpty()) {
+            item(key = "group:unassigned") {
+                SectionLabel(
+                    title = "미분류",
+                    subtitle = "분류에 추가되기 전까지 어떤 알림도 분류하지 않아요. 카드를 탭하면 분류에 추가할 수 있어요.",
+                )
+            }
+            items(
+                items = visibleUnassignedRules,
+                key = { rule -> "unassigned:${rule.id}" },
+            ) { rule ->
+                val isHighlighted = rule.id == highlightedRuleId
+                val highlightColor by animateColorAsState(
+                    targetValue = if (isHighlighted) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0f)
+                    },
+                    animationSpec = tween(durationMillis = 400),
+                    label = "ruleHighlight",
+                )
+                Column(
+                    modifier = Modifier
+                        .let { mod ->
+                            if (isHighlighted) {
+                                mod.border(
+                                    width = 2.dp,
+                                    color = highlightColor,
+                                    shape = RoundedCornerShape(16.dp),
+                                )
+                            } else {
+                                mod
+                            }
+                        }
+                        .clickable { pendingCategoryAssignmentRuleId = rule.id },
+                ) {
+                    RuleRow(
+                        rule = rule,
+                        action = RuleActionUi.SILENT,
+                        onCheckedChange = { checked ->
+                            scope.launch { repository.setRuleEnabled(rule.id, checked) }
+                        },
+                        onMoveUpClick = {
+                            scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
+                        },
+                        onMoveDownClick = {
+                            scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
+                        },
+                        onEditClick = { startEdit(rule) },
+                        onDeleteClick = {
+                            scope.launch { repository.deleteRule(rule.id) }
+                        },
+                        presentation = RuleRowPresentation.Unassigned,
+                    )
+                }
             }
         }
         groupedVisibleRules.forEach { group ->
@@ -455,28 +538,13 @@ fun RulesScreen(
                             }
                         },
                     )
-                    SectionLabel(title = "처리 방식")
-                    // Plan 2026-04-21-ignore-tier-fourth-decision Task 5 step 1
-                    // — IGNORE joins the action dropdown. Copy deliberately
-                    // spells out "(즉시 삭제)" so the destructive outcome
-                    // reads at a glance; CONTEXTUAL stays off the editor
-                    // menu because it is system-picked, not user-authored.
-                    EnumSelectorRow(
-                        options = listOf(
-                            RuleActionUi.ALWAYS_PRIORITY,
-                            RuleActionUi.DIGEST,
-                            RuleActionUi.SILENT,
-                            RuleActionUi.IGNORE,
-                        ),
-                        selected = draftAction,
-                        label = { actionLabel(it) },
-                        onSelect = { draftAction = it },
-                    )
-                    // Plan rules-ux-v2-inbox-restructure Phase C Task 4. The
-                    // override section is collapsed by default so the common
-                    // "add a plain rule" flow stays uncluttered; it expands
-                    // into a base-rule dropdown + superset warning when the
-                    // switch is on.
+                    // Plan `2026-04-24-rule-editor-remove-action-dropdown.md`
+                    // Tasks 3+4: the editor no longer asks for a "처리 방식"
+                    // (action) here. A Rule is a pure condition matcher, the
+                    // action lives on the owning Category. After save, the
+                    // post-save sheet (Task 5) walks the user through picking
+                    // a Category — until then the rule sits in the 미분류
+                    // bucket and matches no notifications.
                     val overrideCandidates = remember(rules, editingRule?.id) {
                         overrideOptionsBuilder.build(
                             allRules = rules,
@@ -503,7 +571,6 @@ fun RulesScreen(
                                 title = draftTitle.ifBlank { "draft" },
                                 matchValue = previewMatchValue,
                                 type = draftType,
-                                action = draftAction,
                                 existingId = editingRule?.id,
                                 overrideOf = draftOverrideOf,
                             )
@@ -526,37 +593,24 @@ fun RulesScreen(
                             title = draftTitle,
                             matchValue = matchValue,
                             type = draftType,
-                            action = draftAction,
                             existingId = editingRule?.id,
                             enabled = editingRule?.enabled ?: true,
                             overrideOf = draftOverrideOf.takeIf { draftOverrideEnabled },
                         )
-                        // Plan `2026-04-22-categories-split-rules-actions.md`
-                        // Phase P1 Task 4: the rule itself no longer carries
-                        // an action. Upsert a 1:1 Category alongside so the
-                        // selected `draftAction` survives. Category id mirrors
-                        // the migration's `cat-from-rule-<ruleId>` scheme so
-                        // a subsequent migration pass stays idempotent.
-                        val draftCategoryAction = draftAction.toCategoryActionOrNull()
+                        // Plan `2026-04-24-rule-editor-remove-action-dropdown.md`
+                        // Tasks 4+5: persist the rule only — the silent 1:1
+                        // companion-Category auto-upsert is gone. For brand-new
+                        // rules we trigger the post-save assignment sheet so the
+                        // user can pick (or create) a Category. Editing an
+                        // existing rule keeps the dialog-close behavior — the
+                        // rule already has its owning Category from the prior
+                        // assignment, and re-prompting on every edit would be
+                        // noise.
+                        val isNewRule = editingRule == null
                         scope.launch {
                             repository.upsertRule(newRule)
-                            if (draftCategoryAction != null) {
-                                val existingCategory = categoriesRepository.currentCategories()
-                                    .firstOrNull { it.ruleIds.contains(newRule.id) }
-                                val category = Category(
-                                    id = existingCategory?.id ?: "cat-from-rule-${newRule.id}",
-                                    name = existingCategory?.name ?: newRule.matchValue.ifBlank { newRule.title },
-                                    appPackageName = if (newRule.type == RuleTypeUi.APP) {
-                                        newRule.matchValue
-                                    } else {
-                                        existingCategory?.appPackageName
-                                    },
-                                    ruleIds = existingCategory?.ruleIds?.takeIf { it.contains(newRule.id) }
-                                        ?: listOf(newRule.id),
-                                    action = draftCategoryAction,
-                                    order = existingCategory?.order ?: 0,
-                                )
-                                categoriesRepository.upsertCategory(category)
+                            if (isNewRule) {
+                                pendingCategoryAssignmentRuleId = newRule.id
                             }
                         }
                         showEditor = false
@@ -579,6 +633,133 @@ fun RulesScreen(
             }
         )
     }
+
+    // Plan `2026-04-24-rule-editor-remove-action-dropdown.md` Task 5: Category
+    // assignment sheet. ModalBottomSheet preserves context (the rules list
+    // stays underneath) so the user can dismiss with "나중에" and the rule
+    // simply lingers in the 미분류 bucket. Tapping a Category appends the
+    // rule's id to that Category's `ruleIds`, which immediately retires the
+    // rule from 미분류 (RuleCategoryActionIndex picks up the new ownership).
+    if (pendingCategoryAssignmentRule != null) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { pendingCategoryAssignmentRuleId = null },
+            sheetState = sheetState,
+        ) {
+            CategoryAssignSheetContent(
+                rule = pendingCategoryAssignmentRule,
+                categories = categories,
+                onCategorySelected = { categoryId ->
+                    scope.launch {
+                        categoriesRepository.appendRuleIdToCategory(
+                            categoryId = categoryId,
+                            ruleId = pendingCategoryAssignmentRule.id,
+                        )
+                    }
+                    pendingCategoryAssignmentRuleId = null
+                },
+                onDismiss = { pendingCategoryAssignmentRuleId = null },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryAssignSheetContent(
+    rule: RuleUiModel,
+    categories: List<Category>,
+    onCategorySelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(
+            text = "이 규칙을 어떤 분류에 추가하시겠어요?",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = "“${rule.title.ifBlank { rule.matchValue }}” 규칙은 분류에 추가되기 전까지 어떤 알림도 분류하지 않아요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (categories.isEmpty()) {
+            Text(
+                text = "아직 만들어진 분류가 없어요. 분류 탭에서 새 분류를 만든 뒤 다시 규칙을 추가해 보세요.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                categories.forEach { category ->
+                    CategoryAssignRow(
+                        category = category,
+                        onClick = { onCategorySelected(category.id) },
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(onClick = onDismiss) {
+                Text("나중에 분류에 추가")
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryAssignRow(
+    category: Category,
+    onClick: () -> Unit,
+) {
+    SmartSurfaceCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = category.name.ifBlank { "분류" },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "규칙 ${category.ruleIds.size}개 · ${categoryActionLabel(category.action)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "추가",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+private fun categoryActionLabel(action: com.smartnoti.app.domain.model.CategoryAction): String = when (action) {
+    com.smartnoti.app.domain.model.CategoryAction.PRIORITY -> "즉시 전달"
+    com.smartnoti.app.domain.model.CategoryAction.DIGEST -> "Digest"
+    com.smartnoti.app.domain.model.CategoryAction.SILENT -> "조용히"
+    com.smartnoti.app.domain.model.CategoryAction.IGNORE -> "무시"
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -709,17 +890,6 @@ private fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.KEYWORD -> "키워드"
     RuleTypeUi.SCHEDULE -> "시간"
     RuleTypeUi.REPEAT_BUNDLE -> "반복"
-}
-
-private fun actionLabel(action: RuleActionUi): String = when (action) {
-    RuleActionUi.ALWAYS_PRIORITY -> "즉시 전달"
-    RuleActionUi.DIGEST -> "Digest"
-    RuleActionUi.SILENT -> "조용히"
-    RuleActionUi.CONTEXTUAL -> "상황별"
-    // Task 5 of plan `2026-04-21-ignore-tier-fourth-decision` finalizes the
-    // editor copy — "(즉시 삭제)" spells out the destructive outcome so a
-    // user tapping the chip understands it is not another "조용히" tier.
-    RuleActionUi.IGNORE -> "무시 (즉시 삭제)"
 }
 
 private fun matchLabelFor(type: RuleTypeUi): String = when (type) {
