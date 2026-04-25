@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+superseded-by: ../journeys/notification-detail.md
 ---
 
 # Detail "분류 변경" Confirmation Snackbar Plan
