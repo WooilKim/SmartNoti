@@ -37,7 +37,7 @@
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-24 |
+| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-25 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | — |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-25 (journey-tester — home-overview re-verify on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-overview | PASS | v1 loop tick pick (last-verified 2026-04-24, 1-day stale per UTC `date -u` = 2026-04-25). APK `lastUpdateTime=2026-04-25 19:27:39`. Recipe ran on emulator-5554: 3 test notifications posted (Mom/Coupang/Promo), `am start MainActivity` + tap `홈` BottomNav. UI dump confirms full render top→bottom: HomeUncategorizedAppsPromptCard ("새 앱 3개가 알림을 보내고 있어요" + 분류 만들기 / 나중에), ScreenHeader ("SmartNoti / 중요한 알림만 먼저 보여드리고 있어요"), StatPill ("오늘 알림 77개 중 중요한 30개..." + 즉시 30 / Digest 14 / 조용히 33 — IGNORE excluded per spec), HomePassthroughReviewCard ("검토 대기 30" + 검토하기 — priority>0 gate), inline access row ("연결됨 / 실제 알림이 연결되어 있어요" — connected → inline strip, not full card per Task 10 declutter), InsightCard ("일반 인사이트" + Shell 46건 + 조용한 시간 30/반복 8/사용자 규칙 5 chips), 방금 정리된 알림 5 cards + `전체 77건 보기` HomeRecentMoreRow footer (DEFAULT_CAPACITY=5 cap verified). QuickStartAppliedCard absent (expected — TTL/ack gate已 consumed days ago). Observable steps 1–10 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-25. |
 
 
 ### 2026-04-25 (journey-tester — notification-detail re-verify after #323 reclassify confirm snackbar)
