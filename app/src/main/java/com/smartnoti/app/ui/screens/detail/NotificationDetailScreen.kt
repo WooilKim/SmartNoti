@@ -429,6 +429,10 @@ fun NotificationDetailScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                // Respect the parent Scaffold's bottom inset (BottomNav)
+                // so the snackbar lifts above the navigation bar instead
+                // of hiding behind it.
+                .padding(contentPadding)
                 .padding(16.dp),
         )
     }
