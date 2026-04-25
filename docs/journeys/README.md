@@ -52,7 +52,7 @@
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-24 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-24 |
-| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-24 |
+| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-25 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-24 |
 
 ## 아직 문서화하지 않은 영역
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-25 (journey-tester — rules-management D3 ADB end-to-end on emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-management | PASS | Verifies #317 D3 (`rule-editor-remove-action-dropdown`). APK rebuilt 2026-04-25 09:40, installed via `adb install -r`. Settings → "고급 규칙 편집 열기" → Rules screen → "새 규칙 추가" 다이얼로그가 `기본 정보 / 규칙 타입 / 예외 규칙` 3개 섹션만 노출 — 이전의 "처리 방식" SectionLabel + RuleActionUi dropdown 부재 확인. Keyword 타입 + 이름 `VerifyTest_0425` + 매치값 `verifyotp` 저장 → 즉시 ModalBottomSheet "이 규칙을 어떤 분류에 추가하시겠어요?" + 3개 기존 분류 + "나중에 분류에 추가" CTA 노출. Skip → "활성 규칙 3→4" + 액션 그룹 위 "미분류" 섹션이 border-only "미분류" chip + "분류에 추가되기 전까지 비활성" 배너로 렌더. 미분류 카드 재탭 → 동일 sheet 재오픈. Sheet 에서 "중요 알림" 옆 "추가" → "미분류" 섹션 사라지고 "즉시 전달 1→2" 로 합류. 테스트 후 신규 Rule 삭제로 baseline 복원. Observable steps 6 (sheet flow + 미분류 섹션 + 카드 재탭) 모두 doc 과 1:1 일치. DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-25. |
 
 
 ### 2026-04-24 (journey-tester — priority-inbox re-verify via debug-inject marker)
