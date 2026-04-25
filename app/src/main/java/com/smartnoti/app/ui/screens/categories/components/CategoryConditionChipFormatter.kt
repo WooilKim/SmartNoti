@@ -34,8 +34,9 @@ object CategoryConditionChipFormatter {
         rules: List<RuleUiModel>,
         action: CategoryAction,
         maxInline: Int,
+        appLabelLookup: AppLabelLookup = AppLabelLookup.Identity,
     ): CategoryConditionChipText {
-        val allTokens = rules.map { tokenFor(it) }
+        val allTokens = rules.map { tokenFor(it, appLabelLookup) }
         val (visibleTokens, overflow) = if (allTokens.size > maxInline && maxInline >= 0) {
             val visible = allTokens.take(maxInline)
             val rest = allTokens.size - visible.size
@@ -54,7 +55,7 @@ object CategoryConditionChipFormatter {
         )
     }
 
-    private fun tokenFor(rule: RuleUiModel): String {
+    private fun tokenFor(rule: RuleUiModel, appLabelLookup: AppLabelLookup): String {
         val value = rule.matchValue.trim()
         val labelKey = when (rule.type) {
             RuleTypeUi.PERSON -> "보낸이"
@@ -63,7 +64,17 @@ object CategoryConditionChipFormatter {
             RuleTypeUi.SCHEDULE -> "시간"
             RuleTypeUi.REPEAT_BUNDLE -> return "반복묶음"
         }
-        return if (value.isEmpty()) labelKey else "$labelKey=$value"
+        if (value.isEmpty()) return labelKey
+        // Plan `2026-04-25-category-chip-app-label-lookup.md` Task 2: only
+        // APP tokens consult the lookup; resolved label wins when non-blank,
+        // otherwise we fall back to the raw matchValue so the chip never
+        // shows an empty value.
+        val display = if (rule.type == RuleTypeUi.APP) {
+            appLabelLookup.labelFor(value)?.takeIf { it.isNotBlank() } ?: value
+        } else {
+            value
+        }
+        return "$labelKey=$display"
     }
 
     internal const val PREFIX_DEFAULT = "조건:"

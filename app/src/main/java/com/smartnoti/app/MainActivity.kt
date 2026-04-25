@@ -5,7 +5,10 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
 import com.smartnoti.app.data.settings.SettingsRepository
@@ -15,6 +18,8 @@ import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
 import com.smartnoti.app.navigation.Routes
 import com.smartnoti.app.notification.SilentHiddenSummaryNotifier
 import com.smartnoti.app.notification.SmartNotiNotifier
+import com.smartnoti.app.ui.screens.categories.components.LocalAppLabelLookup
+import com.smartnoti.app.ui.screens.categories.components.PackageManagerAppLabelLookup
 import com.smartnoti.app.ui.theme.SmartNotiTheme
 import kotlinx.coroutines.launch
 
@@ -30,12 +35,24 @@ class MainActivity : ComponentActivity() {
         runRulesToCategoriesMigration()
         setContent {
             SmartNotiTheme {
-                AppNavHost(
-                    pendingNotificationEntry = pendingNotificationEntry.value,
-                    onPendingNotificationConsumed = { pendingNotificationEntry.value = null },
-                    pendingDeepLinkRoute = pendingDeepLinkRoute.value,
-                    onPendingDeepLinkRouteConsumed = { pendingDeepLinkRoute.value = null },
-                )
+                // Plan `2026-04-25-category-chip-app-label-lookup.md` Task 3:
+                // bind the production AppLabelLookup at the setContent
+                // boundary so every Categories surface (chips today, more
+                // surfaces in follow-up plans) reads `LocalAppLabelLookup
+                // .current` without re-instantiating PackageManager
+                // wrappers per recomposition.
+                val packageManager = LocalContext.current.packageManager
+                val appLabelLookup = remember(packageManager) {
+                    PackageManagerAppLabelLookup(packageManager)
+                }
+                CompositionLocalProvider(LocalAppLabelLookup provides appLabelLookup) {
+                    AppNavHost(
+                        pendingNotificationEntry = pendingNotificationEntry.value,
+                        onPendingNotificationConsumed = { pendingNotificationEntry.value = null },
+                        pendingDeepLinkRoute = pendingDeepLinkRoute.value,
+                        onPendingDeepLinkRouteConsumed = { pendingDeepLinkRoute.value = null },
+                    )
+                }
             }
         }
     }

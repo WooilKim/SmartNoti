@@ -147,6 +147,127 @@ class CategoryConditionChipFormatterTest {
         assertEquals(listOf("앱=com.kakao.talk"), result.tokens)
     }
 
+    // --- Plan `2026-04-25-category-chip-app-label-lookup.md` Task 1 ---------
+    // APP rule lookup contract: when `appLabelLookup` resolves the
+    // packageName to a non-blank label, the chip uses the label; otherwise
+    // (null / blank / non-APP token) the existing raw-matchValue behaviour
+    // wins. lookup is plumbed only — formatter stays Compose-free.
+
+    @Test
+    fun `APP rule uses appLabelLookup result when label is non-blank`() {
+        val lookup = AppLabelLookup { pkg -> if (pkg == "com.kakao.talk") "카카오톡" else null }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(rule("r1", RuleTypeUi.APP, "com.kakao.talk")),
+            action = CategoryAction.PRIORITY,
+            maxInline = 2,
+            appLabelLookup = lookup,
+        )
+        assertEquals(listOf("앱=카카오톡"), result.tokens)
+    }
+
+    @Test
+    fun `APP rule falls back to raw matchValue when lookup returns null`() {
+        val lookup = AppLabelLookup { _ -> null }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(rule("r1", RuleTypeUi.APP, "com.kakao.talk")),
+            action = CategoryAction.PRIORITY,
+            maxInline = 2,
+            appLabelLookup = lookup,
+        )
+        assertEquals(listOf("앱=com.kakao.talk"), result.tokens)
+    }
+
+    @Test
+    fun `APP rule falls back to raw matchValue when lookup returns blank`() {
+        val lookup = AppLabelLookup { _ -> "   " }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(rule("r1", RuleTypeUi.APP, "com.kakao.talk")),
+            action = CategoryAction.PRIORITY,
+            maxInline = 2,
+            appLabelLookup = lookup,
+        )
+        assertEquals(listOf("앱=com.kakao.talk"), result.tokens)
+    }
+
+    @Test
+    fun `APP rule with blank matchValue keeps bare 앱 label without invoking lookup`() {
+        var invoked = false
+        val lookup = AppLabelLookup { _ ->
+            invoked = true
+            "should-not-appear"
+        }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(rule("r1", RuleTypeUi.APP, "   ")),
+            action = CategoryAction.PRIORITY,
+            maxInline = 2,
+            appLabelLookup = lookup,
+        )
+        assertEquals(listOf("앱"), result.tokens)
+        assertEquals(false, invoked)
+    }
+
+    @Test
+    fun `PERSON rule ignores appLabelLookup mapping`() {
+        val lookup = AppLabelLookup { _ -> "카카오톡" }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(rule("r1", RuleTypeUi.PERSON, "엄마")),
+            action = CategoryAction.PRIORITY,
+            maxInline = 2,
+            appLabelLookup = lookup,
+        )
+        assertEquals(listOf("보낸이=엄마"), result.tokens)
+    }
+
+    @Test
+    fun `KEYWORD SCHEDULE REPEAT_BUNDLE rules ignore appLabelLookup`() {
+        val lookup = AppLabelLookup { _ -> "안녕" }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(
+                rule("r1", RuleTypeUi.KEYWORD, "세일"),
+                rule("r2", RuleTypeUi.SCHEDULE, "22:00-07:00"),
+                rule("r3", RuleTypeUi.REPEAT_BUNDLE, "ignored"),
+            ),
+            action = CategoryAction.DIGEST,
+            maxInline = Int.MAX_VALUE,
+            appLabelLookup = lookup,
+        )
+        assertEquals(
+            listOf("키워드=세일", "시간=22:00-07:00", "반복묶음"),
+            result.tokens,
+        )
+    }
+
+    @Test
+    fun `mixed rules apply lookup only to APP token`() {
+        val lookup = AppLabelLookup { pkg -> if (pkg == "com.kakao.talk") "카카오톡" else null }
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(
+                rule("r1", RuleTypeUi.APP, "com.kakao.talk"),
+                rule("r2", RuleTypeUi.PERSON, "엄마"),
+                rule("r3", RuleTypeUi.KEYWORD, "세일"),
+            ),
+            action = CategoryAction.DIGEST,
+            maxInline = Int.MAX_VALUE,
+            appLabelLookup = lookup,
+        )
+        assertEquals(
+            listOf("앱=카카오톡", "보낸이=엄마", "키워드=세일"),
+            result.tokens,
+        )
+    }
+
+    @Test
+    fun `default formatter call without lookup keeps raw APP packageName`() {
+        // Backward-compat: existing call sites that don't pass a lookup
+        // still see the raw matchValue, identical to v1 behaviour.
+        val result = CategoryConditionChipFormatter.format(
+            rules = listOf(rule("r1", RuleTypeUi.APP, "com.kakao.talk")),
+            action = CategoryAction.PRIORITY,
+            maxInline = 2,
+        )
+        assertEquals(listOf("앱=com.kakao.talk"), result.tokens)
+    }
+
     @Test
     fun `KEYWORD rule with blank matchValue falls back to bare 키워드 token`() {
         // Defensive: validators normally block empty matchValue, but the
