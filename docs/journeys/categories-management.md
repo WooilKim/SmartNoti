@@ -3,7 +3,7 @@ id: categories-management
 title: 분류 (Category) CRUD + drag-reorder + 액션 선택
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-24
+last-verified: 2026-04-25
 ---
 
 ## Goal
@@ -120,6 +120,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Change log
 
+- 2026-04-25: v1 loop tick re-verify on emulator-5554 (PASS) post-#320. `am start` → BottomNav `분류` tap → 3 categories rendered. `중요 알림` row 의 inline `CategoryConditionChips` content-desc 가 `조건: 키워드=인증번호,결제,배송,출발 또는 앱=Shell → 즉시 전달` 로 정확히 노출 (text 토큰도 `앱=Shell`). Detail 진입 → 동일 chip + 펼침 카드 모두 `앱=Shell` (메타데이터 line `APP · com.android.shell` raw packageName 은 documented out-of-scope). `편집` → `CategoryEditorScreen` AlertDialog 미리보기 chip 도 `앱=Shell` 로 즉시 렌더. 즉, 카드 / Detail / Editor 세 surface 모두 #320 의 `LocalAppLabelLookup` 자동 wiring 가 작동. Observable steps 1-5 verified, 별도 DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-25 bump.
 - 2026-04-25: APP-토큰 라벨 해석 — plan `docs/plans/2026-04-25-category-chip-app-label-lookup.md`. `CategoryConditionChips` 가 더 이상 raw `앱=com.kakao.talk` 가 아닌 `앱=카카오톡` 같은 user-facing label 로 APP 토큰을 노출. `AppLabelLookup` SAM (`null` 반환 = 라벨 미상) + production `PackageManagerAppLabelLookup` (PackageManager 기반, `NameNotFoundException` → null) 신설. `LocalAppLabelLookup` CompositionLocal 을 `MainActivity.setContent` 에서 한 번 provide → 카드 / Detail / Editor 세 surface 가 모두 호출 사이트 변경 없이 자동 wiring (옵션 A — testability + 다른 surface 재사용 가용성 우선). ADB 검증 emulator-5554: `중요 알림` Category 에 `com.android.shell` APP rule 합류 후 카드 chip / Detail / Editor 미리보기 모두 `앱=Shell` 노출 (text + content-desc 동일). 라벨 해석 실패 fallback 은 unit test 의 `null/blank` 케이스로 검증. (PR 링크는 머지 시 채움.)
 - 2026-04-22: 신규 문서화 — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Tasks 8 + 9 (#238) 구현 결과물. `CategoriesScreen` + `CategoryDetailScreen` + `CategoryEditorScreen` + `CategoryEditorDraftValidator` shipped. `CategoriesRepository` (DataStore `smartnoti_categories`) + `CategoryConflictResolver` + `RuleToCategoryMigration` 은 Phase P1/P2 에서 선행 shipped (#236 / #239). BottomNav "분류" 탭은 Task 11 (#240) 에서 추가. `last-verified` 는 journey-tester 가 ADB recipe 를 실행해 확정할 때까지 비워둠 (per `.claude/rules/docs-sync.md`).
 - 2026-04-22: FAB 가시성 regression 수정 + empty-state inline CTA 추가 — plan `docs/plans/2026-04-22-categories-empty-state-inline-cta.md`. `CategoriesScreen` 의 `Box(fillMaxSize())` 루트가 부모 Scaffold `contentPadding` 을 소비하지 않아 FAB 가 AppBottomBar 뒤로 가려지던 문제를, 로컬 `Scaffold(floatingActionButton = ...)` 로 리팩토링해 해결. 같은 변경에서 `EmptyState` 에 옵셔널 `action` 슬롯 추가 + `CategoriesScreen` 의 empty 상태 본문 아래에 `"새 분류 만들기"` inline CTA 주입. FAB / CTA / editor 어휘를 모두 `CategoriesEmptyStateAction.LABEL = "새 분류 만들기"` 로 통일. (PR 링크는 머지 시 채움.)

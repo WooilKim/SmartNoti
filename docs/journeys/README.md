@@ -51,7 +51,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-24 |
-| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-24 |
+| [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-25 |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-25 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-24 |
 
@@ -64,6 +64,13 @@
 - Notification access 권한 재요청 UX — `onboarding-bootstrap` 이 일부 커버
 
 ## Verification log
+
+
+### 2026-04-25 (journey-tester — categories-management re-verify after #320 APP-token label lookup)
+
+| Journey | Result | Notes |
+|---|---|---|
+| categories-management | PASS | Re-verify post-#320 (`feat(categories): resolve APP-token packageNames to user-facing app labels`). `am start` → BottomNav `분류` tap. List 3 categories: `중요 알림` content-desc 가 `조건: 키워드=인증번호,결제,배송,출발 또는 앱=Shell → 즉시 전달` 로 정확히 렌더 (token text 도 `앱=Shell`, `com.android.shell` raw 노출 없음). Detail (`중요 알림` row tap) → 펼친 chip 동일 `앱=Shell`; Edit AlertDialog 미리보기 chip 도 `앱=Shell` 즉시 렌더. 카드 / Detail / Editor 세 surface 모두 `LocalAppLabelLookup` 자동 wiring 작동. Detail 메타데이터 `APP · com.android.shell` raw line 은 documented out-of-scope (chip surface 한 곳만 적용 plan). Observable steps 1–5 verified, DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-25. |
 
 
 ### 2026-04-25 (journey-tester — rules-management D3 ADB end-to-end on emulator-5554)
