@@ -114,7 +114,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - Detail 화면이 "최근 이 Category 로 분류된 알림 preview" 를 아직 표시하지 않음 — 현재는 Rule 리스트 + 액션 chip 까지만. 후속 plan 대상.
 - Category 자동 추천 (ML / 휴리스틱) 미구현 — 사용자가 수동 생성만 가능.
 - Recipe 는 아직 ADB 로 end-to-end 검증되지 않음 (`last-verified` 비어 있음). 첫 journey-tester sweep 에서 스크린샷 + uiautomator dump 로 고정.
-- `CategoryConditionChips` 의 APP 토큰은 현재 `Rule.matchValue` (raw `com.kakao.talk` 같은 packageName) 를 그대로 노출 — `appLabelLookup` 주입으로 사용자 친화 라벨로 바꾸는 후속 plan 필요 (plan `2026-04-24-categories-condition-chips.md` open question).
+- `CategoryConditionChips` 의 APP 토큰은 현재 `Rule.matchValue` (raw `com.kakao.talk` 같은 packageName) 를 그대로 노출 — `appLabelLookup` 주입으로 사용자 친화 라벨로 바꾸는 후속 plan 필요 (plan `2026-04-24-categories-condition-chips.md` open question). → plan: `docs/plans/2026-04-25-category-chip-app-label-lookup.md`
 
 ## Change log
 
