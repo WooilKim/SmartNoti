@@ -36,6 +36,7 @@ last-verified: 2026-04-24
 5. `"분류 변경"` 탭 → `CategoryAssignBottomSheet` 모달 바텀시트 오픈. 내부 동작 및 후속 플로우는 [rules-feedback-loop](rules-feedback-loop.md) 에 위임. 요약:
    - 상단 "기존 분류에 포함" — 사용자 Category 리스트 (`Category.order` 오름차순). 한 Category row 탭 시 `AssignNotificationToCategoryUseCase.assignToExisting` 이 자동 rule (PERSON if sender else APP) 을 upsert + 해당 Category 의 `ruleIds` 에 dedup append. Category 의 `action` / `name` / `order` 는 불변.
    - 하단 "새 분류 만들기" — `buildPrefillForNewCategory` 로 `CategoryEditorPrefill` 조립 (`name=sender-or-appName`, `appPackageName=packageName if APP rule`, `pendingRule=PERSON/APP rule`, `defaultAction=현재 Category action 의 dynamic-opposite` — DIGEST/SILENT/IGNORE → PRIORITY, PRIORITY → DIGEST, 소유 Category 없으면 PRIORITY). `AppNavHost` 가 `PrefillStore` 경유로 `CategoryEditorScreen` 으로 navigate — editor 저장 시에만 Rule + Category 가 persist (취소 시 아무것도 쓰이지 않음).
+   - 시트 dismiss 직후 화면 하단 (BottomNav 위) 에 짧은 confirmation snackbar 가 한 번 표시된다 — 경로 A `"<카테고리명> 분류로 옮겼어요"`, 경로 B `"새 분류 '<카테고리명>' 만들었어요"`. 경로 B 에서 editor 를 cancel 하면 snackbar 는 표시되지 않는다.
 6. 재분류 효과는 **다음 tick** 에 관측됨 — 이 경로는 대상 알림 row 자체의 status / reasonTags 를 즉시 업데이트하지 않는다. 동일 sender/앱으로 들어오는 후속 알림이 새로 묶인 Category 의 action 으로 자동 분류된다 (→ [notification-capture-classify](notification-capture-classify.md)).
 
 ## Exit state
@@ -55,7 +56,8 @@ last-verified: 2026-04-24
 
 ## Code pointers
 
-- `ui/screens/detail/NotificationDetailScreen` — 단일 "분류 변경" Button + `CategoryAssignBottomSheet` 호스팅
+- `ui/screens/detail/NotificationDetailScreen` — 단일 "분류 변경" Button + `CategoryAssignBottomSheet` 호스팅 + Path A/B 후 confirmation `SnackbarHost` (BottomNav 인셋 위에 띄움)
+- `ui/screens/detail/DetailReclassifyConfirmationMessageBuilder` — `AssignedExisting(categoryId)` / `CreatedNew(categoryName)` outcome 을 사용자 노출 한국어 카피로 변환 (race / blank 시 null → 무표시)
 - `ui/notification/CategoryAssignBottomSheet` — ModalBottomSheet ("기존 분류에 포함" 리스트 + "새 분류 만들기" terminal row)
 - `ui/notification/ChangeCategorySheetState` — 시트의 pure state 모델 (Category.order 오름차순)
 - `domain/usecase/AssignNotificationToCategoryUseCase` — `assignToExisting` + `buildPrefillForNewCategory` + 자동 rule 유도
@@ -74,6 +76,7 @@ last-verified: 2026-04-24
 - `AssignNotificationToCategoryUseCaseTest` — 경로 A PERSON / APP 분기 + idempotent dedupe
 - `CreateCategoryFromNotificationPrefillTest` — prefill 필드 + dynamic-opposite default action
 - `ChangeCategorySheetStateTest` — Category.order 정렬 + "새 분류 만들기" row 합성
+- `DetailReclassifyConfirmationMessageBuilderTest` — Path A/B 카피 합성 + race / blank fallback (null = 무표시)
 - `NotificationDetailDeliveryProfileSummaryBuilderTest` (있다면)
 
 ## Verification recipe
@@ -100,7 +103,7 @@ adb shell cmd notification post -S bigtext -t "DetailTest_0421" FbTest2 "두 번
 
 ## Known gaps
 
-- 재분류 시 토스트/확인 UI 없음 (시트만 닫혀 UX 가 조용함). → plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md`
+- (resolved 2026-04-25, plan 2026-04-24-detail-reclassify-confirm-toast) 재분류 시 토스트/확인 UI 없음 (시트만 닫혀 UX 가 조용함). → plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md`
 - Detail 내부에서 "룰 보기" 바로가기 부재 — 룰이 저장됐는지 즉시 확인하려면 Settings → "고급 규칙 편집" 으로 수동 이동 필요 (Rules 탭 자체가 BottomNav 에서 제거됐음).
 - **대상 알림 row 즉시 상태 변경 부재** (redesign 2026-04-22): legacy 4-버튼은 `NotificationRepository.updateNotification` 으로 해당 row 의 status/reasonTags 를 즉시 덮어써 Home/리스트에 즉시 반영했으나, redesign 이후 이 경로는 Rule+Category 만 persist 하고 row 자체는 건드리지 않는다. 재분류 효과는 **후속 동일 sender/앱 알림** 에 대해 다음 tick 부터 발현. 이 UX 후퇴를 후속 plan 이 명시적 "이 알림도 지금 재분류" CTA 로 보완할지 결정 필요.
 - **per-action broadcast 경로 제거** (2026-04-22): `SmartNotiNotificationActionReceiver` 및 `SmartNotiNotifier.ACTION_*` 상수 4종이 삭제되어 replacement 알림 / 3rd-party notification action 경유 재분류 훅이 완전히 사라졌다. 재분류는 오직 Detail 의 "분류 변경" 시트 경유로만 가능 — tap-only UX 로 의도적 단순화.
@@ -116,4 +119,5 @@ adb shell cmd notification post -S bigtext -t "DetailTest_0421" FbTest2 "두 번
 - 2026-04-22: **Rule/Category 분리 아키텍처** 반영 — "이 알림 학습시키기" 4개 버튼의 내부 처리 계약에 "Category 는 자동 생성되지 않음" 을 명시. 피드백 액션은 여전히 `NotificationRepository.updateNotification` + `RulesRepository.upsertRule` 두 write 만 수행 — 즉시 UI 반영은 보장되나 classifier hot path 의 자동 재적용은 해당 Rule 을 소유한 Category 가 있을 때만. "무시" 버튼 의미도 "Category.action = IGNORE 지향" 으로 copy 정렬. Trigger 에서 "Priority/Digest/Hidden 탭" 표현을 "검토 대기 / 정리함 (통합)" 로 갱신. Plan: `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1 Tasks 1-4 (#236), P3 Tasks 10-11 (#240). `last-verified` 는 후속 ADB sweep 이 Category-free feedback path 를 재검증할 때까지 갱신 없음.
 - 2026-04-22: journey-tester end-to-end re-verify (emulator-5554, APK `lastUpdateTime=2026-04-22 17:29:33`) — `cmd notification post -S bigtext -t 'DetailTest_0422' FbTest1 '분류 변경 테스트'` → DIGEST 분류 → 정리함 → Digest 묶음 → Shell 번들 드릴 → Detail 마운트. Observable steps 1–4 모두 관측: `DetailTopBar` "알림 상세" + 뒤로가기, 알림 요약 카드 `StatusBadge=Digest`, "왜 이렇게 처리됐나요?" chip row (`반복 알림` / `발신자 있음`), "어떻게 전달되나요?" 4개 라벨 (전달 모드·Digest / 소리·조용히 / 진동·없음 / Heads-up·꺼짐 / 잠금화면·내용 일부), "SmartNoti 가 본 신호", "이 알림 분류하기" 카드 + 단일 `Button("분류 변경")` 렌더. 버튼 탭 → `CategoryAssignBottomSheet` 오픈 (타이틀 "분류 변경" / "이 알림이 속할 분류를 고르거나 새 분류를 만들어요." / terminal row `+ 새 분류 만들기`; 기존 Category 없어 상단 리스트 비어 있음). 경로 B 검증 — "새 분류 만들기" 탭 → `CategoryEditorScreen` prefill 오픈 (`전달 방식 = 즉시 전달 (PRIORITY)` = DIGEST 소스의 dynamic-opposite, Observable step 5.ii 증명). DRIFT 없음.
 - 2026-04-24: journey-tester end-to-end re-verify (emulator-5554, APK `lastUpdateTime=2026-04-24 01:44:11`) — `cmd notification post -S bigtext -t 'DetailTest_0424' FbTest1 '분류 변경 테스트'` → DIGEST 분류 → 정리함 → Digest 묶음 → Shell 번들 preview row 탭 → Detail 마운트. Observable steps 1–5 모두 PASS: `DetailTopBar` "알림 상세" + 뒤로가기, 알림 요약 카드 `StatusBadge=Digest`, "왜 이렇게 처리됐나요?" + 4개 chip (`발신자 있음` / `사용자 규칙` / `프로모션 알림` / `온보딩 추천`), 온보딩 추천 카드, "어떻게 전달되나요?" + 5개 라벨, "원본 알림 처리 상태" 섹션, "이 알림 분류하기" 카드 + 단일 `Button("분류 변경")` 렌더. 버튼 탭 → `CategoryAssignBottomSheet` (타이틀 "분류 변경" / 부제 "이 알림이 속할 분류를 고르거나 새 분류를 만들어요." / "기존 분류에 포함" 헤더 + 3개 Category row (중요 알림 / 프로모션 알림 / 반복 알림) + terminal `+ 새 분류 만들기`). 경로 B 검증 — "새 분류 만들기" 탭 → `CategoryEditorScreen` prefill (name="프로모션", 전달 방식="즉시 전달 (PRIORITY)" = DIGEST 소스의 dynamic-opposite). DRIFT 없음.
+- 2026-04-25: **재분류 confirmation snackbar 추가** — Detail "분류 변경" 시트 dismiss 직후 화면 하단 (BottomNav 위) 에 짧은 Material3 `Snackbar` 가 한 번 표시된다. 경로 A `"<카테고리명> 분류로 옮겼어요"`, 경로 B (editor 저장 후) `"새 분류 '<카테고리명>' 만들었어요"`. 경로 B cancel 시 표시되지 않음. 메시지 합성은 신규 `DetailReclassifyConfirmationMessageBuilder` (pure Kotlin, race / blank 시 null → 무표시) 가 담당. `CategoryEditorScreen.onSaved` 시그니처가 `(String) -> Unit` 에서 `(Category) -> Unit` 으로 확장 — Detail 이 persist 직후 카테고리 이름을 categories Flow round-trip 없이 즉시 읽을 수 있게. `CategoriesScreen` 호출 사이트도 동시 갱신. ADB 검증: 경로 A "프로모션 알림" / "반복 알림" 탭 후 snackbar 캡처, 경로 B "ToastVerify" 신규 분류 저장 후 snackbar 캡처, 경로 B cancel 시 미등장 모두 PASS. Plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` (this PR). `last-verified` 변경 없음 — full Verification recipe 재실행은 다음 journey-tester sweep.
 - 2026-04-22: **Detail "분류 변경" 단일 CTA redesign** — "이 알림 학습시키기" 카드의 4-버튼 grid ("중요로 고정" / "Digest로 보내기" / "조용히 처리" / "무시") 와 `IgnoreConfirmationDialog` / 3초 undo 스낵바 / Detail 호출 경로 `NotificationFeedbackPolicy.applyAction` 을 전부 제거. 대체: 단일 `Button("분류 변경")` → `CategoryAssignBottomSheet` (기존 분류 리스트 + "새 분류 만들기" terminal row). 경로 A = `AssignNotificationToCategoryUseCase.assignToExisting` (기존 Category 의 `ruleIds` append, action 불변). 경로 B = `buildPrefillForNewCategory` → `CategoryEditorPrefill` → `PrefillStore` → `CategoryEditorScreen` seed (`defaultAction` = 현재 Category action 의 dynamic-opposite). Replacement 알림 per-action 버튼 4종 제거 (tap-only), `SmartNotiNotificationActionReceiver` + manifest `<receiver>` 삭제, `SmartNotiNotifier.ACTION_*` 상수 4종 삭제. 재분류 효과는 후속 동일 알림에 대해 다음 tick 부터 발현 (대상 row status 즉시 갱신 X). Plan: `docs/plans/2026-04-22-categories-runtime-wiring-fix.md` Tasks 2-6 (#245), Task 7 (this PR). `last-verified` 는 ADB 검증 전까지 bump 하지 않음 (per `.claude/rules/docs-sync.md`).
