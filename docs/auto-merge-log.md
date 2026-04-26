@@ -258,3 +258,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T02:04:17Z | project-manager | #338 | feat(detail): scaffold QuietHoursExplainerBuilder (Tasks 1-2/6 of quiet-hours-explainer-copy plan) | https://github.com/WooilKim/SmartNoti/actions/runs/24945808270 |
 | 2026-04-26T02:21:44Z | project-manager | #339 | quiet-hours explainer wired into NotificationDetailScreen (plan 2026-04-26-quiet-hours-explainer-copy Tasks 3-6); plan frontmatter pre-flipped to shipped while PR open — informational, self-corrects on merge | https://github.com/WooilKim/SmartNoti/actions/runs/24946124608 |
 | 2026-04-26T02:32:47Z | journey-tester | #340 | quiet-hours | https://github.com/WooilKim/SmartNoti/actions/runs/24946305252 |
+| 2026-04-26T02:43:18Z | project-manager | #341 | gap-planner plan: debug-inject package_name extra (quiet-hours testability) | https://github.com/WooilKim/SmartNoti/actions/runs/24946460390 |
