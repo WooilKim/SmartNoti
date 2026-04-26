@@ -346,3 +346,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T17:56:25Z | #405 | plan-implementer | DEFER | CI Unit tests + debug APK pending (run 24963230081) |
 | 2026-04-26T17:59:33Z | #405 | plan-implementer | APPROVE | quietHoursPackages persistence Tasks 1-2; CI green on re-sweep |
 | 2026-04-26T18:06:14Z | #406 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) — re-check next sweep |
+| 2026-04-26T18:09:48Z | #406 | plan-implementer | APPROVE+MERGE | re-sweep CI green; plan #404 Tasks 3-4-5 classifier per-call shoppingPackagesOverride + onboarding SSOT; merge 995dd1f |
