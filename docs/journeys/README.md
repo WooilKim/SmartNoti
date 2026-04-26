@@ -23,7 +23,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-24 |
-| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-24 |
+| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-26 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
 
 ### Source notification routing (시스템 tray 조작)
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — duplicate-suppression Settings dropdowns end-to-end post-#354, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| duplicate-suppression | PASS | First end-to-end ADB sweep after PR #354 (eb15c59 `feat/duplicate-threshold-window-settings`) shipped Settings dropdowns. Settings → "운영 도구처럼 명확하게 조정" 카드 → "중복 알림 묶기" row visible with default `반복 3회 / 최근 10분`. Threshold AssistChip dropdown lists exactly `반복 2/3/4/5/7/10회` (1 hidden as designed); window dropdown lists `5/10/15/30/60분`. Selected `반복 2회` → tapped two distinct-tag bigtext shell notifications with identical title+body (`ProbeTagY1`/`ProbeTagY2` "이중 검증 본문 동일 새내용") → `dumpsys notification --noredact` "원본 알림 숨김" replacement count grew 10→12 (DIGEST + replacement pair) confirming 2nd occurrence demoted. Reset to `반복 3회` → posted two distinct-tag duplicates (`ProbeTagX1`/`ProbeTagX2`) → replacement count unchanged 10→10 (SILENT path holds at boundary). TestNotifier "반복 알림 3건 보내기" scenario also fired DIGEST under threshold=2 (3 reposts, replacement bigText "원본 알림 숨김을 시도하고 Digest에 모아뒀어요 · 반복 알림"). Same-tag `cmd notification post` (key replacement) does NOT trip duplicate detection — matches Observable step 4 "같은 sourceEntryKey 의 재게시면 count 증가 없음". DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26. |
 
 ### 2026-04-26 (journey-tester — quiet-hours positive-case ADB capture post-#346, emulator-5554)
 
