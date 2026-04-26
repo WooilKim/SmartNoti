@@ -1,6 +1,7 @@
 package com.smartnoti.app.data.settings
 
 import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.VibrationMode
 
@@ -65,26 +66,9 @@ data class SmartNotiSettings(
     // quiet-hours has no candidates and the branch never fires (intentional —
     // the master switch and the candidate set are orthogonal control points).
     val quietHoursPackages: Set<String> = DEFAULT_QUIET_HOURS_PACKAGES,
-    // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3:
-    // master toggle for auto-dismissing SmartNoti-posted replacement /
-    // summary notifications (DIGEST replacement, SILENT group summary,
-    // SILENT group child) after `replacementAutoDismissMinutes` minutes.
-    // Default ON because the originating product ask was "tray 에 누적되지
-    // 않게 일정 시간 뒤 자동으로 사라지게". Existing users get this default
-    // injected once via `SettingsRepository.applyPendingMigrations()`.
-    // OFF restores legacy behavior (notification stays in tray until the
-    // user swipes). PRIORITY originals are never affected — they live
-    // outside SmartNoti's tray-write contract.
     val replacementAutoDismissEnabled: Boolean = true,
-    // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3:
-    // minutes the replacement / summary stays in the tray before
-    // NotificationManager auto-cancels via
-    // `NotificationCompat.Builder.setTimeoutAfter`. Default 30 follows the
-    // Android docs example value and matches "잠깐 보고 알아채면 충분" UX.
-    // Settings UI exposes a 5 / 15 / 30 / 60 / 180 preset. The
-    // `ReplacementNotificationTimeoutPolicy` guards against `<= 0`
-    // defensively even though the picker never offers it.
     val replacementAutoDismissMinutes: Int = 30,
+    val inboxSortMode: String = InboxSortMode.RECENT.name,
 ) {
     companion object {
         // Single source of truth for the quiet-hours-eligible default set.
