@@ -327,3 +327,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T19:23:42Z | project-manager | #412 | docs-only meta-plan add (feature-reporter not-loaded graceful skip) | https://github.com/WooilKim/SmartNoti/actions/runs/24964920596 |
 | 2026-04-26T23:16:06Z | project-manager | #414 | docs(plans): tray auto-dismiss timeout + inbox sort selector | https://github.com/WooilKim/SmartNoti/actions/runs/24969474721 |
 | 2026-04-26T23:31:50Z | project-manager | #415 | tray auto-dismiss Tasks 1-2 (helper + notifier wiring + settings fields) | https://github.com/WooilKim/SmartNoti/actions/runs/24969698046 |
+| 2026-04-26T23:45:44Z | project-manager | #416 | feat(inbox-sort): InboxSortMode + planner + settings (Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24969818237 |
