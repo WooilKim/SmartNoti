@@ -243,3 +243,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-22T08:45:00Z | #326 | gap-planner | DEFER | CI pending (Unit tests + debug APK) |
 | 2026-04-25T23:43:30Z | #326 | gap-planner | APPROVE+MERGE | queries plan, CI green |
 | 2026-04-22T08:50:00Z | #327 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) |
+| 2026-04-26T00:00:10Z | #327 | plan-implementer | APPROVE+MERGE | Android <queries> manifest fix; CI green; in-scope plan-implementer files |
