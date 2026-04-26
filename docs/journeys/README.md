@@ -30,7 +30,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
-| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-24 |
+| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-26 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-24 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — digest-suppression rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | PASS | Oldest active journey by `last-verified` (2026-04-24 → 2026-04-26). emulator-5554, `com.smartnoti.app` + `com.smartnoti.testnotifier` both installed. testnotifier `PROMO_DIGEST` 카드 ([95,1009][507,1114] center 301,1062) tap → dumpsys 결과: 원본 testnotifier 의 "오늘만 특가 안내" payload 가 active list 에서 제거되고 동일 title 이 `com.smartnoti.app` `smartnoti_replacement_digest_default_light_private_noheadsup` 채널 (importance=3, AutoCancel) 에 새 entry 로 게시됨. Observable steps 1–5 (auto-expansion → suppress 판정 → cancel 원본 → notify replacement) + Exit state (tray 원본 제거, replacement 1건 잔존) 일치. DRIFT 없음. |
 
 ### 2026-04-26 (journey-tester — home-uncategorized-prompt first end-to-end ADB sweep, emulator-5554)
 
