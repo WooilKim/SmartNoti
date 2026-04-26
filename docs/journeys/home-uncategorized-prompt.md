@@ -105,7 +105,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - `cmd notification post` 는 기본 `com.android.shell` 단일 packageName 으로 쌓이므로 실기기 / 여러 테스트 앱 환경이 없으면 THRESHOLD=3 을 충족시키기 어려움. 재현성 때문에 journey-tester recipe 는 실제 `com.smartnoti.testnotifier` 같은 extra 앱 설치 후 검증하는 편이 안정적.
 - 카드 copy 가 `sampleAppLabels` 를 ", " 로 join 하여 라벨 길면 긴 줄로 줄바꿈 — FlowRow 등 레이아웃 조정은 후속 UI polish.
-- "분류 만들기" 는 현재 `Routes.Categories` 만 열고 editor 자동 오픈은 하지 않음 — 사용자가 FAB 를 한 번 더 탭해야 editor 진입. 전용 wizard 가 shipped 되면 바로 app-preset 이 채워진 상태로 진입할 예정 (plan Task 10 wizard 부분은 scaffold 범위).
+- "분류 만들기" 는 현재 `Routes.Categories` 만 열고 editor 자동 오픈은 하지 않음 — 사용자가 FAB 를 한 번 더 탭해야 editor 진입. 전용 wizard 가 shipped 되면 바로 app-preset 이 채워진 상태로 진입할 예정 (plan Task 10 wizard 부분은 scaffold 범위). → plan: `docs/plans/2026-04-26-uncategorized-prompt-editor-autoopen.md`
 - ~~Recipe end-to-end 는 journey-tester 가 ADB 로 검증 전 (`last-verified` 비어 있음).~~ **Resolved 2026-04-26**: emulator-5554 ADB 로 PASS 확인 (Verification log 참고).
 - `UncategorizedAppsDetector` 는 `Category.appPackageName` 으로만 커버 판정 — KEYWORD 타입 Rule 만 소속된 Category 는 커버리지 기여 없음. 의도된 동작이지만 사용자 입장에서는 "키워드 Category 가 있어도 카드가 계속 뜬다" 고 느낄 수 있음.
 
