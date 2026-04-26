@@ -41,7 +41,7 @@
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-26 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
-| [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
+| [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — digest-inbox rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-inbox | PASS | Oldest by `last-verified` (2026-04-22 → 2026-04-26), deprecated journey but still owns legacy `Routes.Digest` deep-link composable + `DigestGroupCard` rendering contract. emulator-5554, APK `lastUpdateTime=2026-04-26 15:43:43`. Recipe: 4× `cmd notification post -S bigtext -t Coupang Deal{i}` (post via `cmd notification` 이라 `pkg=com.android.shell` → 기존 Shell 그룹 count 13 → 17 흡수) → BottomNav `정리함` (407,2274) → inbox-unified host 의 Digest 서브탭. `Shell 17건` `DigestGroupCard` 렌더 — 앱명 + count badge + summary `Shell 관련 알림 17건` + `최근 묶음 미리보기` + `탭하면 원본 알림 상세를 확인할 수 있어요`. preview row tap → `알림 상세` + `왜 이렇게 처리됐나요?` + `전달 모드 · Digest 묶음 전달` (Routes.Detail.create deep-link). Observable steps 1–5 + Exit state 모두 일치. DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-26. |
 
 ### 2026-04-26 (journey-tester — home-overview rotation sweep, emulator-5554)
 

@@ -4,7 +4,7 @@ title: 정리함 인박스 (legacy — Digest 전용)
 status: deprecated
 superseded-by: docs/journeys/inbox-unified.md
 owner: @wooilkim
-last-verified: 2026-04-22
+last-verified: 2026-04-26
 ---
 
 > **Deprecated 2026-04-22** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 Digest 전용 화면은 `정리함` 통합 탭 ([inbox-unified](inbox-unified.md)) 의 "Digest" 서브탭으로 호스팅된다. `Routes.Digest` 는 replacement notification contentIntent deep-link 타겟으로 계속 사용되어 `DigestScreen` composable 자체는 유지되지만, 1차 진입 경로 + Observable steps 의 owner 는 inbox-unified 다. 이 문서는 레거시 탭 직접 진입 경로와 DigestScreen 단독 동작 계약에 대한 기록으로 남긴다.
@@ -86,3 +86,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: Fresh APK (`lastUpdateTime=2026-04-22 03:46:30`, post-IGNORE) ADB end-to-end 검증 — Observable steps 1–5 + Exit state 전부 일치. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신.
 - 2026-04-22: **Deprecated** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 정리함 통합 탭 ([inbox-unified](inbox-unified.md)) 이 Digest + 보관 중 + 처리됨 세그먼트를 통합 소유한다. `Routes.Digest` 는 tray deep-link 용으로 유지. 문서는 참조용으로 남김.
 - 2026-04-26: Plan `2026-04-26-inbox-bundle-preview-see-all` ship — `DigestGroupCard` preview 가 inline expansion 지원 ("전체 보기 · ${remaining}건 더" CTA). Legacy Digest 진입 경로 (`Routes.Digest` deep-link) 도 동일 컴포넌트를 공유하므로 `items.size > 3` 그룹의 4번째 이후 row Detail 진입 가능. 활성 contract 는 [inbox-unified](inbox-unified.md).
+- 2026-04-26: Rotation sweep (deprecated journey, oldest by `last-verified`). emulator-5554, APK `lastUpdateTime=2026-04-26 15:43:43`. Recipe: 4× `cmd notification post -S bigtext -t Coupang Deal{i}` (모두 `pkg=com.android.shell` 로 posting → 기존 Shell 그룹에 흡수, count 13 → 17) → BottomNav `정리함` (407,2274) → inbox-unified host 의 Digest 서브탭 default. `Shell 17건` `DigestGroupCard` 렌더 (앱명 + count badge + summary `Shell 관련 알림 17건` + `최근 묶음 미리보기` + `탭하면 원본 알림 상세를 확인할 수 있어요`). 다른 그룹 (`SmartNoti Test Notifier 3건`) 도 같은 컴포넌트로 렌더. preview row tap (540,1000) → `알림 상세` + `왜 이렇게 처리됐나요?` + `전달 모드 · Digest 묶음 전달` (Routes.Detail.create deep-link). Observable steps 1–5 + Exit state 모두 일치 (legacy `Routes.Digest` composable + `DigestGroupCard` contract 무손상). DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-26.
