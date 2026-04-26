@@ -26,7 +26,7 @@ status: in-progress
 
 ---
 
-## Task 1: Failing unit test for package_name extra substitution
+## Task 1: Failing unit test for package_name extra substitution [IN PROGRESS via PR #342]
 
 **Objective:** Lock the contract that the receiver, given a `package_name` extra, builds a `CapturedNotificationInput` whose `packageName` matches the extra (and whose `sourceEntryKey` reflects it). Lock the negative case: extra absent → `SYNTHETIC_PACKAGE` retained.
 
@@ -42,7 +42,7 @@ status: in-progress
    - **Optional `app_name`:** broadcast with `--es app_name "Coupang"` → row's `appName` / `sender` reflect that label; absence keeps `SmartNotiDebugTester`.
 3. Tests should be red against current `main`. Run `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.debug.DebugInjectNotificationReceiverTest"` to confirm failure.
 
-## Task 2: Add the extra parsing + substitution
+## Task 2: Add the extra parsing + substitution [IN PROGRESS via PR #342]
 
 **Objective:** Make Task 1 tests green with the smallest possible diff.
 
