@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Settings 화면에 Quiet Hours 시작/종료 시간 editor 추가 Plan
