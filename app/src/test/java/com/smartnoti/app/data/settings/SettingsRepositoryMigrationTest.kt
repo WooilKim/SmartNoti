@@ -99,4 +99,61 @@ class SettingsRepositoryMigrationTest {
         )
         assertTrue(settings.suppressSourceForDigestAndSilent)
     }
+
+    /**
+     * Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+     *
+     * v2 migration: stamps auto-dismiss defaults (ON / 30 min) on first run.
+     */
+    @Test
+    fun fresh_install_v2_migration_stamps_auto_dismiss_defaults() = runBlocking {
+        repository.applyPendingMigrations()
+
+        val settings = repository.observeSettings().first()
+        assertTrue(
+            "Fresh install must see auto-dismiss enabled by default",
+            settings.replacementAutoDismissEnabled,
+        )
+        assertEquals(
+            "Fresh install must see the 30-minute default",
+            30,
+            settings.replacementAutoDismissMinutes,
+        )
+    }
+
+    @Test
+    fun v2_migration_is_idempotent_and_respects_post_migration_user_choice() = runBlocking {
+        repository.applyPendingMigrations()
+        assertTrue(repository.observeSettings().first().replacementAutoDismissEnabled)
+
+        // Power user disables the feature after the first migration.
+        repository.setReplacementAutoDismissEnabled(false)
+        repository.setReplacementAutoDismissMinutes(15)
+
+        // Subsequent migration call must NOT overwrite the user's choices.
+        repository.applyPendingMigrations()
+
+        val settings = repository.observeSettings().first()
+        assertFalse(
+            "Second migration must respect the user's later OFF choice",
+            settings.replacementAutoDismissEnabled,
+        )
+        assertEquals(
+            "Second migration must respect the user's later minutes choice",
+            15,
+            settings.replacementAutoDismissMinutes,
+        )
+    }
+
+    @Test
+    fun set_replacement_auto_dismiss_minutes_coerces_to_minimum_one() = runBlocking {
+        repository.setReplacementAutoDismissMinutes(0)
+        assertEquals(1, repository.observeSettings().first().replacementAutoDismissMinutes)
+
+        repository.setReplacementAutoDismissMinutes(-7)
+        assertEquals(1, repository.observeSettings().first().replacementAutoDismissMinutes)
+
+        repository.setReplacementAutoDismissMinutes(60)
+        assertEquals(60, repository.observeSettings().first().replacementAutoDismissMinutes)
+    }
 }

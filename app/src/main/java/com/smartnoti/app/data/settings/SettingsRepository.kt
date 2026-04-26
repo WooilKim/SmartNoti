@@ -50,6 +50,10 @@ class SettingsRepository private constructor(
                 duplicateDigestThreshold = prefs[DUPLICATE_DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
                 duplicateWindowMinutes = prefs[DUPLICATE_WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
                 quietHoursPackages = prefs[QUIET_HOURS_PACKAGES] ?: defaults.quietHoursPackages,
+                replacementAutoDismissEnabled = prefs[REPLACEMENT_AUTO_DISMISS_ENABLED]
+                    ?: defaults.replacementAutoDismissEnabled,
+                replacementAutoDismissMinutes = prefs[REPLACEMENT_AUTO_DISMISS_MINUTES]
+                    ?: defaults.replacementAutoDismissMinutes,
             )
         }
     }
@@ -209,9 +213,55 @@ class SettingsRepository private constructor(
      */
     suspend fun applyPendingMigrations() {
         context.dataStore.edit { prefs ->
-            if (prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] == true) return@edit
-            prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = true
-            prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] = true
+            if (prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] != true) {
+                prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = true
+                prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] = true
+            }
+            // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+            // v2 one-shot migration: stamp the auto-dismiss defaults (ON / 30
+            // min) once for every install — fresh installs already get these
+            // from `SmartNotiSettings` defaults, but materializing them on disk
+            // makes `observeSettings()` reflect a stable value before the user
+            // ever opens the toggle. Existing users see the default ON since
+            // they have never seen this surface before. Once the user touches
+            // either control, their explicit choice persists and the gated
+            // re-run short-circuits (idempotent).
+            if (prefs[REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED] != true) {
+                val defaults = SmartNotiSettings()
+                prefs[REPLACEMENT_AUTO_DISMISS_ENABLED] = defaults.replacementAutoDismissEnabled
+                prefs[REPLACEMENT_AUTO_DISMISS_MINUTES] = defaults.replacementAutoDismissMinutes
+                prefs[REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED] = true
+            }
+        }
+    }
+
+    /**
+     * Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+     *
+     * Master toggle for auto-dismissing SmartNoti-posted replacement / summary
+     * notifications. OFF restores legacy behavior (notification stays in the
+     * tray until the user swipes). The notifier reads the latest snapshot via
+     * [observeSettings] so the next post-after-the-write picks up the change.
+     */
+    suspend fun setReplacementAutoDismissEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[REPLACEMENT_AUTO_DISMISS_ENABLED] = enabled
+        }
+    }
+
+    /**
+     * Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+     *
+     * Persists the auto-dismiss duration in minutes. The Settings UI offers a
+     * `5 / 15 / 30 / 60 / 180` preset; the setter coerces to `>= 1` so a
+     * programmatic 0 / negative value cannot disable the feature without the
+     * user toggling [setReplacementAutoDismissEnabled] OFF.
+     * [ReplacementNotificationTimeoutPolicy] additionally guards `<= 0` at
+     * read time as defense-in-depth.
+     */
+    suspend fun setReplacementAutoDismissMinutes(minutes: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[REPLACEMENT_AUTO_DISMISS_MINUTES] = minutes.coerceAtLeast(1)
         }
     }
 
@@ -596,6 +646,21 @@ class SettingsRepository private constructor(
         // truth shared with `OnboardingQuickStartSettingsApplier`).
         private val QUIET_HOURS_PACKAGES =
             stringSetPreferencesKey("quiet_hours_packages")
+        // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+        // Master toggle (default ON) and duration in minutes (default 30) for
+        // SmartNoti-posted replacement / summary auto-dismiss. The notifier
+        // threads these into `ReplacementNotificationTimeoutPolicy` which
+        // returns the timeout the builder hands to
+        // `NotificationCompat.Builder.setTimeoutAfter`.
+        private val REPLACEMENT_AUTO_DISMISS_ENABLED =
+            booleanPreferencesKey("replacement_auto_dismiss_enabled")
+        private val REPLACEMENT_AUTO_DISMISS_MINUTES =
+            intPreferencesKey("replacement_auto_dismiss_minutes")
+        // Gate for the v2 one-shot migration that stamps the auto-dismiss
+        // defaults. Once true, the migration short-circuits and respects any
+        // user-driven changes.
+        private val REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED =
+            booleanPreferencesKey("replacement_auto_dismiss_migration_v2_applied")
 
         @Volatile private var instance: SettingsRepository? = null
 

@@ -295,6 +295,17 @@ fun SettingsScreen(
                 onProtectCriticalPersistentNotificationsChange = { enabled ->
                     scope.launch { repository.setProtectCriticalPersistentNotifications(enabled) }
                 },
+                // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+                // Two callbacks for the auto-dismiss controls — toggle the
+                // master switch + persist the selected duration. The notifier
+                // reads the latest snapshot via the listener's settings flow,
+                // so the next post after the write picks up the change.
+                onReplacementAutoDismissEnabledChange = { enabled ->
+                    scope.launch { repository.setReplacementAutoDismissEnabled(enabled) }
+                },
+                onReplacementAutoDismissMinutesChange = { minutes ->
+                    scope.launch { repository.setReplacementAutoDismissMinutes(minutes) }
+                },
                 onSuppressedSourceAppToggle = { packageName, enabled ->
                     // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 6.
                     // Toggling OFF must persist sticky-exclude intent so the
@@ -629,6 +640,53 @@ private fun DuplicateWindowPicker(
                         text = { Text(option.label) },
                         onClick = {
                             onSelected(option.minutes)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+ *
+ * Duration picker for the auto-dismiss timeout. Mirrors the
+ * `DuplicateWindowPicker` AssistChip + DropdownMenu pattern so the visual tone
+ * stays consistent with the other Settings dropdowns.
+ */
+@Composable
+private fun ReplacementAutoDismissDurationPicker(
+    spec: ReplacementAutoDismissPickerSpec,
+    onMinutesSelected: (Int) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = spec.options.firstOrNull { it.minutes == spec.selectedMinutes }?.label
+        ?: ReplacementAutoDismissPickerSpecBuilder.labelFor(spec.selectedMinutes)
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = "자동 정리 시간",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box {
+            AssistChip(
+                onClick = { expanded = true },
+                label = { Text(selectedLabel) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                spec.options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            onMinutesSelected(option.minutes)
                             expanded = false
                         },
                     )
@@ -1697,10 +1755,19 @@ private fun SuppressionManagementCard(
     onHidePersistentNotificationsChange: (Boolean) -> Unit,
     onHidePersistentSourceNotificationsChange: (Boolean) -> Unit,
     onProtectCriticalPersistentNotificationsChange: (Boolean) -> Unit,
+    // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+    onReplacementAutoDismissEnabledChange: (Boolean) -> Unit,
+    onReplacementAutoDismissMinutesChange: (Int) -> Unit,
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
     onSuppressedSourceAppsReplace: (Set<String>) -> Unit,
     onSuppressedSourceAppsBulkExcludeChange: (Set<String>, Boolean) -> Unit,
 ) {
+    val autoDismissPickerSpec = remember(
+        settings.replacementAutoDismissEnabled,
+        settings.replacementAutoDismissMinutes,
+    ) {
+        ReplacementAutoDismissPickerSpecBuilder().build(settings)
+    }
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         val insightTokens = remember(settings.suppressSourceForDigestAndSilent, summary) {
             insightSummaryBuilder.buildTokens(
@@ -1783,6 +1850,32 @@ private fun SuppressionManagementCard(
                         "고정 알림 예외 보호를 끄면 중요한 live-state 알림도 일반 고정 알림처럼 숨겨질 수 있어요."
                     },
                 )
+                // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
+                // Auto-dismiss controls live alongside the persistent-notification
+                // tray toggles because both are about "what stays in the tray
+                // and for how long". The picker stays present even when the
+                // toggle is OFF (dimmed via `enabled = autoDismissPickerSpec.enabled`)
+                // so the user understands the duration is still configured.
+                SettingsToggleRow(
+                    title = "SmartNoti 알림 자동 정리",
+                    checked = autoDismissPickerSpec.enabled,
+                    onCheckedChange = onReplacementAutoDismissEnabledChange,
+                    subtitle = if (autoDismissPickerSpec.enabled) {
+                        "Digest·조용히 대체 알림이 ${
+                            ReplacementAutoDismissPickerSpecBuilder.labelFor(
+                                autoDismissPickerSpec.selectedMinutes,
+                            )
+                        } 후 알림 트레이에서 자동으로 사라져요. 정리함 기록은 그대로 남아요."
+                    } else {
+                        "사용자가 직접 스와이프하기 전까지 SmartNoti 가 게시한 대체 알림이 트레이에 머물러요."
+                    },
+                )
+                if (autoDismissPickerSpec.enabled) {
+                    ReplacementAutoDismissDurationPicker(
+                        spec = autoDismissPickerSpec,
+                        onMinutesSelected = onReplacementAutoDismissMinutesChange,
+                    )
+                }
             }
         }
         ExpandableSettingsSubsection(
