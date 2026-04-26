@@ -83,6 +83,26 @@ Spawn prompt template:
 
 Capture PM verdicts.
 
+### Step 4.5 — Feature report (conditional)
+
+If Phase B's PM merged any PR this tick, scan its diff for plan-frontmatter flips of the form `status: planned` → `status: shipped`:
+
+```bash
+for sha in <merged-shas>; do
+  git show "$sha" -- 'docs/plans/*.md' | grep -E '^\+status: shipped' && echo "$sha"
+done
+```
+
+If at least one such flip is detected AND the affected plan is NOT a `kind: meta-plan` (check the plan's frontmatter — meta plans are loop infrastructure, not user-facing features):
+
+Spawn `feature-reporter` (via Agent tool, `subagent_type: feature-reporter`) with the prompt:
+
+> `update — plan(s) flipped to status: shipped this tick: <plan-slug-list>. Fold them into docs/feature-report.md per your spec. Open one PR. Reply ≤ 100 words.`
+
+If feature-reporter opens a PR, the next tick's Phase B PM will sweep it (docs-only carve-out — auto-merge expected). If feature-reporter returns NOOP, that's logged but no PR opens.
+
+If no plan flipped this tick, skip Step 4.5 entirely. Do NOT spawn feature-reporter speculatively — its trigger is a real shipped feature, not idle ticks.
+
 ### Step 5 — Loop monitor
 
 Re-fetch HEAD post Phase A/B (since tester / PM may have merged PRs).
