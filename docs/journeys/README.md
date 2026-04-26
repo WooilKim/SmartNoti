@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — home-overview rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-overview | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-25 → 2026-04-26). emulator-5554, fresh APK `lastUpdateTime=2026-04-26 15:43:43`. Recipe (`cmd notification post` × 3 + `am start MainActivity`) + Home tab tap → UI dump 결과 — Step 3 `ScreenHeader` "SmartNoti" + "중요한 알림만 먼저 보여드리고 있어요" 정확. Step 4 `StatPill` "오늘 알림 52개 중 중요한 10개를 먼저 전달했어요" + 칩 (`즉시 10 / Digest 20 / 조용히 22`) live count. Step 5 `HomePassthroughReviewCard` (`priorityCount=10 > 0`) "검토 대기 10" + "검토하기" mount. Step 6 connected `HomeNotificationAccessInlineRow` "연결됨" 1-row (Task 10 declutter 일치). Step 8 `InsightCard` 활성 — Shell 앱 33건 + 반복 알림 11건 / 사용자 규칙 4건 / 프로모션 알림 4건 reason chip 3개. Step 11 BottomNav 4-tab "홈 / 정리함 / 분류 / 설정". Step 2 (uncategorized prompt) 는 24h snooze persist 로 비표시 — 의도된 declutter. DRIFT 없음. `last-verified` 2026-04-25 → 2026-04-26. |
+
 ### 2026-04-26 (journey-tester — protected-source-notifications rotation sweep, emulator-5554)
 
 | Journey | Result | Notes |

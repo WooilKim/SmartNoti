@@ -3,7 +3,7 @@ id: home-overview
 title: 홈 개요 (요약 + 인사이트)
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-25
+last-verified: 2026-04-26
 ---
 
 ## Goal
@@ -92,3 +92,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-21: IGNORE (무시) 4번째 분류 tier 가 Home 의 기본 뷰에서 제외되도록 배선 — StatPill / 최근 알림 리스트 / QuickActionCard / Insight/Timeline 집계 모두 `observePriority` · `observeDigest` · `observeAllFiltered` 를 사용하므로 `status=IGNORE` row 는 자동 필터 아웃. `SuppressionInsightsBuilder` / `InsightDrillDownSummaryBuilder` 는 `ignoredCount` 를 별도 스트림으로 계산해 DIGEST/SILENT 와 분리 집계 (#185 `9a5b4b9`, plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` Task 6). IGNORE row 는 [ignored-archive](ignored-archive.md) 에서만 노출. `last-verified` 는 ADB 검증 전까지 bump 하지 않음.
 - 2026-04-22: Plan `inbox-denest-and-home-recent-truncate` (PR pending) shipped — "방금 정리된 알림" 이 `HomeRecentNotificationsTruncation` (DEFAULT_CAPACITY=5) 로 head 5건 + `HomeRecentMoreRow` ("전체 N건 보기 →") footer 로 truncate. footer 탭 시 `Routes.Inbox` 로 이동. Observable step 10 + Code pointers + Known gaps 갱신. `last-verified` 는 ADB smoke 로 검증된 구간만 (Home truncate + Inbox de-nest + standalone deep-link 회귀 없음) 동일 일자 유지.
 - 2026-04-22: Plan `categories-split-rules-actions` Phase P3 Task 10 (#240) declutter 반영 — 최상단에 `HomeUncategorizedAppsPromptCard` 가 `UncategorizedAppsDetection.Prompt` 일 때만 mount (→ [home-uncategorized-prompt](home-uncategorized-prompt.md)). Access card 는 connected 시 `HomeNotificationAccessInlineRow` 1-row 로 축소 (disconnected 시에만 full card). 기존 `QuickActionCard × 2` ("중요 알림" / "정리함") 제거 — BottomNav 의 `정리함` 탭이 대체. `HomeQuickStartAppliedCard` 는 7일 TTL + tap-to-ack gate (`HomeQuickStartAppliedVisibility`) 추가. `HomePassthroughReviewCard` / `InsightCard` / `TimelineCard` 는 count 0 시 mount 생략. Observable steps / Code pointers 전면 갱신. `last-verified` 는 declutter 재검증 전까지 현 일자 유지.
+- 2026-04-26: ADB end-to-end re-verification (emulator-5554, fresh APK `lastUpdateTime=2026-04-26 15:43:43`). Home 탭 진입 후 UI dump 결과 — Step 3 `ScreenHeader` "SmartNoti" + "중요한 알림만 먼저 보여드리고 있어요" 정확 렌더, Step 4 `StatPill` "오늘 알림 52개 중 중요한 10개를 먼저 전달했어요" + `즉시 10 / Digest 20 / 조용히 22` chip 카운트 live 반영, Step 5 `HomePassthroughReviewCard` (`priorityCount=10 > 0`) "검토 대기 10" + "검토하기" mount, Step 6 connected `HomeNotificationAccessInlineRow` "연결됨" + "실제 알림이 연결되어 있어요" 1-row 강등, Step 8 `InsightCard` 활성 (가장 많은 앱 = Shell, 주된 이유 = 반복 알림 + 3개 reason chip), Step 11 BottomNav 4-tab "홈 / 정리함 / 분류 / 설정". Step 2 (uncategorized prompt) 는 24h snooze persist 로 비표시 — 의도된 declutter. DRIFT 없음. `last-verified: 2026-04-25 → 2026-04-26`.
