@@ -263,3 +263,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T03:12:04Z | project-manager | #343 | docs(debug-inject) ship Tasks 3-6 — quiet-hours recipe + cross-journey note + live ADB + plan flip | https://github.com/WooilKim/SmartNoti/actions/runs/24946945927 |
 | 2026-04-26T03:32:50Z | project-manager | #345 | gap-planner — Settings quiet-hours hour pickers plan + journey gap (c) annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24947264604 |
 | 2026-04-26T03:49:42Z | project-manager | #346 | feat(settings): quiet-hours hour pickers (plan 2026-04-26) | https://github.com/WooilKim/SmartNoti/actions/runs/24947563107 |
+| 2026-04-26T04:03:27Z | journey-tester | #347 | quiet-hours | https://github.com/WooilKim/SmartNoti/actions/runs/24947767114 |
