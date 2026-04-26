@@ -4,7 +4,7 @@ title: 숨긴 알림 인박스 (Hidden 화면) — 보관 / 처리 탭 분리
 status: deprecated
 superseded-by: docs/journeys/inbox-unified.md
 owner: @wooilkim
-last-verified: 2026-04-21
+last-verified: 2026-04-26
 ---
 
 > **Deprecated 2026-04-22** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 Hidden 화면은 독립 deep-link 타겟으로는 남아 있으나 (silent summary contentIntent 용), 1차 사용자 진입 경로는 `정리함` 통합 탭의 "보관 중" / "처리됨" 서브탭이다. 현재 동작 계약은 [inbox-unified](inbox-unified.md) 가 소유한다. 이 문서는 tray deep-link 경로 + `HiddenNotificationsScreen` 내부 세그먼트 계약에 대한 기록으로 남긴다 — 신규 기능 작성 시에는 inbox-unified 를 기준으로 갱신하거나 통합하라.
@@ -133,3 +133,4 @@ adb shell uiautomator dump /sdcard/ui4.xml && adb shell cat /sdcard/ui4.xml | gr
 - 2026-04-21: **ADB verification on fresh APK (post-IGNORE) PASS** — emulator-5554 에서 cold-start deep-link (`am force-stop` → `am start -e DEEP_LINK_ROUTE hidden`) 후 Recipe 5단계 전부 일치: (1) 헤더 `보관 10건 · 처리 3건` + 기본 탭 "보관 중" 선택, (2) "처리됨" tap 후 요약 서브카피 `이미 확인했거나…` 1건 관측, (3) 보관/처리 두 탭 모두 초기 `최근 묶음 미리보기` 0건 (collapsed 계약), (4) Archived 그룹 헤더 tap 후 `최근 묶음 미리보기` + bulk action row (`모두 중요로 복구` / `모두 지우기`) 노출. IGNORE row 는 두 탭 어디에도 누출 없음 (`toHiddenGroups` 의 `status == SILENT` 선필터 binary 상 동작 증명). 직전 change-log 가 남겨둔 "ADB 검증 전까지 bump 하지 않음" 보류 해소.
 - 2026-04-22: **Deprecated** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 `정리함` 통합 탭 ([inbox-unified](inbox-unified.md)) 이 기본 진입 경로를 소유한다. `Routes.Hidden` 은 silent summary / 그룹 summary deep-link 타겟으로 계속 사용됨. 문서는 참조용으로 남김.
 - 2026-04-26: Plan `2026-04-26-inbox-bundle-preview-see-all` ship — `DigestGroupCard` (보관 중 / 처리됨 그룹) preview 가 inline expansion 지원 ("전체 보기 · ${remaining}건 더" CTA, `rememberSaveable` 로 그룹별 `showAll` 영속). Standalone deep-link 진입 경로 (`Routes.Hidden`) 도 동일 컴포넌트를 공유하므로 `items.size > 3` 그룹의 4번째 이후 row Detail 진입 가능. ADB 검증 (Coupang 5건 → 처리됨 탭 expand → CTA → all 5 → row tap → Detail → back → 상태 복원 → 토글) 은 [inbox-unified](inbox-unified.md) Change log 에 기록.
+- 2026-04-26: **ADB verification PASS (rotation sweep)** — emulator-5554 cold-start `am force-stop` → `am start -e DEEP_LINK_ROUTE hidden` 후 Recipe 5단계 전부 통과: 헤더 `보관 16건 · 처리 6건` + 기본 탭 "보관 중" 선택, "처리됨 · 6건" 탭 tap 후 요약 서브카피 `이미 확인했거나…` 1건, 두 탭 모두 초기 collapsed (`최근 묶음 미리보기` 0건), Coupang 5건 그룹 헤더 tap 후 expand → preview 라벨 + `전체 보기 · 2건 더` CTA (2026-04-26 see-all 시퀀스 회귀 확인) + bulk action row (`모두 중요로 복구` / `모두 지우기`) 노출. `last-verified` 2026-04-21 → 2026-04-26.
