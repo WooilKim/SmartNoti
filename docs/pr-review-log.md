@@ -285,3 +285,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T10:45:31Z | #371 | plan-implementer | ESCALATE | SELF_MOD on .claude/agents/plan-implementer.md (Step 6 + Safety) + CI pending; routed to human review per agent-loop carve-out |
 | 2026-04-26T11:41:27Z | #371 | plan-implementer | escalate | SELF_MOD .claude/agents/plan-implementer.md; CI green now but already escalated to human awaiting disposition |
 | 2026-04-26T11:41:29Z | #372 | plan-implementer | escalate | SELF_MOD .claude/agents/loop-monitor.md + new .claude/lib/monitor-log-append.sh helper; CI pending; awaits human |
+| 2026-04-26T11:52:05Z | #373 | loop-monitor-ops | DEFER | docs-only ops flush (monitor-log + retrospective-log append-only); CI Unit tests + debug APK PENDING; mirrors #350/#351 carve-out; revisit next sweep |
