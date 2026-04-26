@@ -38,7 +38,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-25 |
-| [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | — |
+| [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-26 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — home-uncategorized-prompt first end-to-end ADB sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-uncategorized-prompt | PASS | First end-to-end ADB verification since 2026-04-22 ship (was `last-verified: —`). emulator-5554, 알림 환경: com.android.shell + com.smartnoti.testnotifier + com.coupang.mobile (3 distinct uncovered packages, threshold met). 홈 탭 진입 → LazyColumn 최상단에 `HomeUncategorizedAppsPromptCard` mount: ContextBadge "분류 제안" + Title "새 앱 3개가 알림을 보내고 있어요" + Body "Shell, SmartNoti Test Notifier, Coupang 앱을 분류하시겠어요?" + 두 CTA "분류 만들기" / "나중에" 모두 정확히 렌더 (Observable steps 1–3 일치). "나중에" 탭 → 카드 즉시 unmount, Home 본문 (StatPill / 인사이트 카드) 그대로 유지 (step 5). `am force-stop com.smartnoti.app` + 재기동 → 카드 다시 안 뜸 (24h snooze 가 DataStore 에 persist, step 6 일치). DRIFT 없음 — `UncategorizedAppsDetector.Prompt` + `HomeUncategorizedAppsPromptCard` + `SettingsRepository.setUncategorizedPromptSnoozeUntilMillis` 모두 doc 과 일치. Known gaps "Recipe end-to-end 는 journey-tester 가 ADB 로 검증 전" 항목 resolved 로 마킹. `last-verified` — → 2026-04-26. |
 
 ### 2026-04-26 (journey-tester — rules-management explicit draft flag end-to-end post-#357, emulator-5554)
 
