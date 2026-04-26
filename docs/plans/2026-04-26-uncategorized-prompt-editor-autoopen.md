@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/home-uncategorized-prompt.md
 ---
 
 # Home Uncategorized-Prompt — Auto-open Editor with App Preset
