@@ -304,3 +304,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T13:48:43Z | #383 | plan-implementer | APPROVE | Tasks 3-5 of plan 2026-04-26-rules-bulk-assign-unassigned.md (multi-select state + RulesScreen chrome); CI green; comment-verdict (single-account) |
 | 2026-04-26T13:48:45Z | #384 | meta | ESCALATE | feature-reporter agent + slash command + agent-loop.md/journey-loop.md updates — SELF_MOD .claude/** carve-out (precedent #371/#372); CI pending |
 | 2026-04-26T14:13:08Z | #385 | plan-implementer | DEFER | CI IN_PROGRESS (run 24958675698); plan #381 final Tasks 6-7-8 sheet wiring + journey sync + frontmatter→shipped; re-check next sweep |
+| 2026-04-26T14:16:12Z | #385 | plan-implementer | APPROVE | re-sweep: CI flipped to SUCCESS. plan #381 Tasks 6-7-8 bulk sheet wiring + Path B (DIGEST default) + journey sync + plan flipped to shipped |
