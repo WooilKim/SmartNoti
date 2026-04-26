@@ -77,7 +77,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Known gaps
 
 - PRIORITY 분류 알림은 드릴다운 대상이 아님.
-- range 선택이 URL 인자에 반영되어 back-stack 복원 시 초기값으로 돌아감.
+- range 선택이 URL 인자에 반영되어 back-stack 복원 시 초기값으로 돌아감. → plan: `docs/plans/2026-04-26-insight-drilldown-range-state-survival.md`
 
 ## Change log
 
