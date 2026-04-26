@@ -297,3 +297,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T13:23:30Z | project-manager | #381 | gap-planner plan: rules bulk-assign-unassigned | https://github.com/WooilKim/SmartNoti/actions/runs/24957626517 |
 | 2026-04-26T13:32:43Z | project-manager | #382 | plan #381 Tasks 1-2: BulkAssignRulesToCategoryUseCase + tests | https://github.com/WooilKim/SmartNoti/actions/runs/24957788948 |
 | 2026-04-26T13:48:52Z | project-manager | #383 | bulk-assign multi-select state + RulesScreen chrome (plan 2026-04-26 Tasks 3-5) | https://github.com/WooilKim/SmartNoti/actions/runs/24958014082 |
+| 2026-04-26T14:16:15Z | project-manager | #385 | plan #381 Tasks 6-7-8 bulk-assign rules to category (Path A + Path B DIGEST default) + journey sync + plan shipped flip | https://github.com/WooilKim/SmartNoti/actions/runs/24958675698 |
