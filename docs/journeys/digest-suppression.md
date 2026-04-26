@@ -23,7 +23,7 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 ## Observable steps
 
-1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 현재 리스트에 app 이 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화. **`currentApps` 가 empty 인 경우는 이 단계가 skip 된다 — 빈 set 의 opt-out 의미가 이미 "모든 앱 포함" 을 보장하므로 굳이 단일 entry 로 좁힐 필요가 없음.**
+1. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(...)` 가 decision=DIGEST 이고 전역 opt-in 이 켜졌으며 현재 리스트에 app 이 없으면 `currentApps + packageName` 반환. 리스너가 즉시 `settingsRepository.setSuppressedSourceApps(expanded)` 로 영속화. **`currentApps` 가 empty 인 경우는 이 단계가 skip 된다 — 빈 set 의 opt-out 의미가 이미 "모든 앱 포함" 을 보장하므로 굳이 단일 entry 로 좁힐 필요가 없음.** **사용자가 Settings 의 "숨길 앱 선택" 에서 명시적으로 uncheck 한 앱은 `suppressedSourceAppsExcluded` 에 sticky 하게 들어가 이 단계에서 자동 제외된다 — 다음 DIGEST 알림이 와도 다시 추가되지 않음.**
 2. `NotificationSuppressionPolicy.shouldSuppressSourceNotification(...)` 가 확장된 리스트 기준으로 true 반환.
 3. `SourceNotificationRoutingPolicy.route(DIGEST, hidePersistent=*, suppress=true)` → `cancelSourceNotification=true, notifyReplacementNotification=true`.
 4. 리스너가 main thread 에서 `cancelNotification(sbn.key)` 호출 → 원본 알림 제거.
@@ -52,12 +52,14 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 
 - `notification/SourceNotificationRoutingPolicy` — DIGEST 분기
 - `notification/NotificationSuppressionPolicy` — opt-in 판정
-- `notification/SuppressedSourceAppsAutoExpansionPolicy` — 새 앱 자동 추가 규칙
+- `notification/SuppressedSourceAppsAutoExpansionPolicy` — 새 앱 자동 추가 규칙 (sticky-exclude 가드 포함)
+- `ui/screens/settings/SettingsSuppressedAppPresentationBuilder` — `suppressedSourceApps` × `suppressedSourceAppsExcluded` 의 effective `isSelected` 룰 (excluded 가 우선)
+- `data/settings/SettingsRepository#setSuppressedSourceAppExcluded` / `#setSuppressedSourceAppsExcludedBulk` — sticky-exclude DataStore 토글
 - `notification/SmartNotiNotifier#notifySuppressedNotification` — replacement 빌더
 - `notification/ReplacementNotificationTextFormatter` — 본문 포맷
 - `notification/ReplacementNotificationChannelRegistry` — 채널 선택
 - `notification/SmartNotiNotificationActionReceiver` — 액션 수신
-- `data/settings/SettingsModels` — `suppressSourceForDigestAndSilent`, `suppressedSourceApps`
+- `data/settings/SettingsModels` — `suppressSourceForDigestAndSilent`, `suppressedSourceApps`, `suppressedSourceAppsExcluded`
 
 ## Tests
 
@@ -113,7 +115,7 @@ adb -s emulator-5554 shell dumpsys notification --noredact \
 
 ## Known gaps
 
-- Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피. → plan: `docs/plans/2026-04-26-digest-suppression-sticky-exclude-list.md`
+- (resolved 2026-04-26, plan `2026-04-26-digest-suppression-sticky-exclude-list`) Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가했었음. 이제는 `SmartNotiSettings.suppressedSourceAppsExcluded` 가 sticky 의지를 보존하고 `SuppressedSourceAppsAutoExpansionPolicy` 가 이 set 의 멤버에 대해 항상 expansion 을 차단한다. UI 토글 OFF/ON 은 `SettingsRepository#setSuppressedSourceAppExcluded` (atomic) 를 경유하며, "모두 해제" 도 `setSuppressedSourceAppsExcludedBulk` 로 sticky 의지를 보존한다.
 
 ## Change log
 
@@ -124,3 +126,4 @@ adb -s emulator-5554 shell dumpsys notification --noredact \
 - 2026-04-22: Verification recipe 를 `com.smartnoti.testnotifier` 의 `PROMO_DIGEST` 시나리오 경유로 재작성 — `com.android.shell` ranker-group 의 NMS per-package 50건 quota 와 누적 stale 알림 때문에 recipe 가 연속 SKIP 되던 증상 해소. SmartNoti 측 코드 변경 없음, journey recipe 블록 + Known gap bullet drainage 뿐. Plan: `docs/plans/2026-04-22-digest-suppression-testnotifier-recipe.md`. Dry-run PASS (emulator-5554): tap 후 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 는 tray 에 없고 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry 생성 확인.
 - 2026-04-26: ADB verification PASS (emulator-5554) — testnotifier `PROMO_DIGEST` 시나리오 tap 후 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 가 active list 에서 사라지고 동일 title 이 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry (importance=3, AutoCancel) 로 게시됨. Observable steps 1–7 + Exit state 일치, DRIFT 없음.
 - 2026-04-24: **신규/미설정 사용자에게 DIGEST/SILENT 가 이중으로 뜨던 증상 해소** — `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip 하고, `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션 (`suppress_source_migration_v1_applied` DataStore 키 게이트) 로 toggle 을 한 번 덮어씀. `SuppressedSourceAppsAutoExpansionPolicy` 는 `currentApps` 가 비어있을 때 no-op 가드를 추가해 의미 전환 (opt-out → 화이트리스트-of-one) 을 막음. 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.
+- 2026-04-26: **사용자가 Settings 에서 명시적으로 uncheck 한 앱은 sticky 제외** — `SmartNotiSettings.suppressedSourceAppsExcluded` 신규 set 도입. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull` 이 이 set 의 멤버에 대해 항상 expansion 차단. Settings UI 토글 OFF 는 `SettingsRepository#setSuppressedSourceAppExcluded(_, true)` (atomic — 두 set 동시 update), ON 은 excluded clear + suppressedSourceApps add. "모두 해제" 는 `setSuppressedSourceAppsExcludedBulk` 로 sticky 의지 보존. 마이그레이션 noop (default emptySet). 관련 plan: `docs/plans/2026-04-26-digest-suppression-sticky-exclude-list.md` (shipped via #395 / #396 / 본 PR).
