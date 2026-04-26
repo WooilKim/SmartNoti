@@ -330,3 +330,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T16:33:57Z | #397 | plan-implementer | APPROVE | Tasks 5-8 ship plan #394 (listener + Settings UI + tests + journey + plan frontmatter); Task 9 ADB deferred per Risks Q5; CI green |
 | 2026-04-26T16:42:24Z | #398 | gap-planner | DEFER | CI pending (Unit tests + debug APK); plan-doc-only PR, will re-evaluate next sweep |
 | 2026-04-26T16:46:26Z | #398 | gap-planner | DEFER | CI re-running after flaky NotificationRepositoryDigestBulkActionsTest HttpURLConnection failure (recurrence of network flake); wrapper re-ran failed job, run pending |
+| 2026-04-26T16:50:01Z | #398 | gap-planner | APPROVE+MERGE | re-sweep; CI re-run flipped to SUCCESS after flaky NotificationRepositoryDigestBulkActionsTest cleared; docs-only plan |
