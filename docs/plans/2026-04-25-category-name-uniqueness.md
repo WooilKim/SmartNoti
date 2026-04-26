@@ -1,5 +1,7 @@
 ---
-status: in-progress
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/categories-management.md
 ---
 
 # Category 이름 고유성 검증 + Editor 저장 차단 Plan
@@ -192,3 +194,9 @@ status: in-progress
 ## Related journey
 
 - [categories-management](../journeys/categories-management.md) — Known gaps 첫 bullet ("Category 이름 고유성 미보장 (id 가 primary key 이므로 중복 이름 허용).") 을 해소. 본 PR ship 후 해당 bullet 을 (resolved …) 로 마킹하고 Change log 에 PR 링크 추가.
+
+---
+
+## Change log
+
+- 2026-04-26: Backfilled status:shipped post-merge — STALE_FRONTMATTER incident, original PR #330 (merged 2026-04-26T00:46:27Z).

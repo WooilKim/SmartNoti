@@ -1,5 +1,7 @@
 ---
-status: in-progress
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/categories-management.md
 ---
 
 # Category Detail "최근 이 분류로 분류된 알림" preview Plan
@@ -185,3 +187,9 @@ status: in-progress
 ## Related journey
 
 - [`docs/journeys/categories-management.md`](../journeys/categories-management.md) — Known gap "Detail 화면이 '최근 이 Category 로 분류된 알림 preview' 를 아직 표시하지 않음 — 현재는 Rule 리스트 + 액션 chip 까지만. 후속 plan 대상." 이 본 plan 으로 해소된다 (Task 6 에서 Known gap → Change log 이동).
+
+---
+
+## Change log
+
+- 2026-04-26: Backfilled status:shipped post-merge — STALE_FRONTMATTER incident, original PR #333 (merged 2026-04-26T01:25:03Z).
