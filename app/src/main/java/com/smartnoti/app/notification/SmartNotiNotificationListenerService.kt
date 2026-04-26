@@ -344,6 +344,11 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 suppressSourceForDigestAndSilent = settings.suppressSourceForDigestAndSilent,
                 packageName = sbn.packageName,
                 currentApps = settings.suppressedSourceApps,
+                // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md`
+                // Task 5 will wire this to `settings.suppressedSourceAppsExcluded`
+                // once the field lands (Task 3). For Tasks 1-2 the empty set
+                // preserves prior behavior exactly.
+                excludedApps = emptySet(),
             )
         } else {
             null
