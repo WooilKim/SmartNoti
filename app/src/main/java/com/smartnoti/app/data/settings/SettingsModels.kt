@@ -57,4 +57,22 @@ data class SmartNotiSettings(
     // fires when the user has neither a matching rule nor a priority keyword.
     val duplicateDigestThreshold: Int = 3,
     val duplicateWindowMinutes: Int = 10,
-)
+    // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2:
+    // Set of packageNames the classifier treats as quiet-hours-eligible.
+    // Default mirrors the previously-hardcoded `setOf("com.coupang.mobile")`
+    // in `NotificationClassifier`'s constructor wiring so existing users see
+    // identical behavior; the UI lets them add/remove freely. Empty set means
+    // quiet-hours has no candidates and the branch never fires (intentional —
+    // the master switch and the candidate set are orthogonal control points).
+    val quietHoursPackages: Set<String> = DEFAULT_QUIET_HOURS_PACKAGES,
+) {
+    companion object {
+        // Single source of truth for the quiet-hours-eligible default set.
+        // `OnboardingQuickStartSettingsApplier` reads from here so the
+        // onboarding boost-list and the persisted settings default cannot
+        // drift apart. See plan
+        // `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
+        // Task 4 for the SSOT consolidation rationale.
+        val DEFAULT_QUIET_HOURS_PACKAGES: Set<String> = setOf("com.coupang.mobile")
+    }
+}
