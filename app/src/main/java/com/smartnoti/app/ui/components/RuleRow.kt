@@ -49,12 +49,21 @@ import com.smartnoti.app.ui.theme.BorderSubtle
  * Task 3). Plan `2026-04-24-rule-editor-remove-action-dropdown.md` Task 6 adds
  * [Unassigned] for the 미분류 bucket — Rules that no Category claims, which
  * sit dormant until the user attaches them to a Category.
+ *
+ * Plan `2026-04-26-rule-explicit-draft-flag.md` Task 5 splits [Unassigned]
+ * into two intent-aware tones via the [Unassigned.isParked] flag:
+ *  - `isParked = false` (default) — "작업 필요" sub-bucket, accent-toned
+ *    border-only chip + "분류에 추가되기 전까지 비활성" banner. Same loud
+ *    treatment the historical 미분류 row had.
+ *  - `isParked = true` — "보류" sub-bucket, quieter neutral border-only
+ *    chip + "사용자가 보류함 — 필요 시 작업으로 끌어올리세요" banner so
+ *    explicitly parked rows do not shout on every Rules screen mount.
  */
 sealed interface RuleRowPresentation {
     data object Base : RuleRowPresentation
     data class Override(val baseTitle: String?) : RuleRowPresentation
     data class BrokenOverride(val reasonMessage: String) : RuleRowPresentation
-    data object Unassigned : RuleRowPresentation
+    data class Unassigned(val isParked: Boolean = false) : RuleRowPresentation
 }
 
 @Composable
@@ -110,8 +119,13 @@ fun RuleRow(
                         // Task 5 step 5) for the lowest-presence destructive
                         // tier.
                         if (presentation is RuleRowPresentation.Unassigned) {
+                            // Plan `2026-04-26-rule-explicit-draft-flag` Task 5
+                            // — parked rules (explicit "보류") get a quieter
+                            // "보류" chip, action-needed drafts keep the
+                            // historical "미분류" label so existing users
+                            // recognize the loud sub-bucket.
                             RuleMetaChip(
-                                text = "미분류",
+                                text = if (presentation.isParked) "보류" else "미분류",
                                 style = RuleMetaChipStyle.BorderOnly,
                             )
                         } else {
@@ -194,9 +208,14 @@ fun RuleRow(
 private fun RuleRowPresentationBanner(presentation: RuleRowPresentation) {
     when (presentation) {
         RuleRowPresentation.Base -> Unit
-        RuleRowPresentation.Unassigned -> {
+        is RuleRowPresentation.Unassigned -> {
+            val bannerText = if (presentation.isParked) {
+                "사용자가 보류함 · 필요 시 작업으로 끌어올리세요"
+            } else {
+                "분류에 추가되기 전까지 비활성"
+            }
             Text(
-                text = "분류에 추가되기 전까지 비활성",
+                text = bannerText,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -65,7 +65,7 @@ import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.usecase.AssignRuleToCategoryUseCase
 import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
-import com.smartnoti.app.domain.usecase.UnassignedRulesDetector
+import com.smartnoti.app.domain.usecase.UnassignedRulesPartitioner
 import com.smartnoti.app.ui.components.RuleRow
 import com.smartnoti.app.ui.components.RuleRowPresentation
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -96,7 +96,11 @@ fun RulesScreen(
     val listHierarchyBuilder = remember { RuleListHierarchyBuilder() }
     val overrideOptionsBuilder = remember { RuleEditorOverrideOptionsBuilder() }
     val overrideSupersetValidator = remember { RuleOverrideSupersetValidator() }
-    val unassignedRulesDetector = remember { UnassignedRulesDetector() }
+    // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 5 — partitions the
+    // [UnassignedRulesDetector] output into "작업 필요" (`draft = true`) and
+    // "보류" (`draft = false`). Pure helper so the split re-derives on every
+    // recompose without owning state.
+    val unassignedRulesPartitioner = remember { UnassignedRulesPartitioner() }
     // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 3+4: every Category
     // routing path (sheet "추가" + future card-level wiring) goes through
     // this single use case so the `draft = true → false` flip can never
@@ -128,8 +132,8 @@ fun RulesScreen(
             ruleActionsIndex.actionFor(rule.id)?.let { rule.id to it }
         }.toMap()
     }
-    val unassignedRules = remember(rules, categories) {
-        unassignedRulesDetector.detect(rules, categories)
+    val unassignedPartition = remember(rules, categories) {
+        unassignedRulesPartitioner.partition(rules, categories)
     }
     val listPresentation = remember(rules, ruleActions) {
         listPresentationBuilder.build(rules, ruleActions)
@@ -141,11 +145,17 @@ fun RulesScreen(
     val groupedVisibleRules = remember(visibleRules, ruleActions) {
         listGroupingBuilder.build(visibleRules, ruleActions)
     }
-    // Re-derive the unassigned subset against the current filter — when the
-    // user has selected a specific action chip we hide the 미분류 group so
-    // the filter is not visually contradicted.
-    val visibleUnassignedRules = remember(unassignedRules, selectedActionFilter) {
-        if (selectedActionFilter != null) emptyList() else unassignedRules
+    // Re-derive each sub-bucket against the current filter — when the user
+    // has selected a specific action chip we hide BOTH 미분류 sub-sections
+    // so the filter is not visually contradicted. Plan
+    // `2026-04-26-rule-explicit-draft-flag.md` Task 5: empty sub-buckets
+    // do not emit headers (regression guard against the historical
+    // unconditional "미분류" SectionLabel).
+    val visibleActionNeededRules = remember(unassignedPartition, selectedActionFilter) {
+        if (selectedActionFilter != null) emptyList() else unassignedPartition.actionNeeded
+    }
+    val visibleParkedRules = remember(unassignedPartition, selectedActionFilter) {
+        if (selectedActionFilter != null) emptyList() else unassignedPartition.parked
     }
     val scope = remember { CoroutineScope(Dispatchers.IO) }
 
@@ -297,65 +307,91 @@ fun RulesScreen(
                 )
             }
         }
-        // Plan `2026-04-24-rule-editor-remove-action-dropdown.md` Task 6:
-        // surface 미분류 (unassigned) rules in their own group above the
-        // action-categorized groups. The group is hidden when an action
-        // filter is active so the user's filter intent isn't contradicted.
-        if (visibleUnassignedRules.isNotEmpty()) {
-            item(key = "group:unassigned") {
+        // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 5: split the
+        // single "미분류" group into two intent-aware sub-sections. Both are
+        // hidden when an action filter is active, and an empty sub-bucket
+        // emits no header (regression guard against the historical
+        // unconditional "미분류" SectionLabel).
+        //
+        //   - "작업 필요" (`draft = true`) — accent-toned default treatment,
+        //     row tap re-opens the assignment sheet so the user can finish
+        //     routing the draft.
+        //   - "보류" (`draft = false`) — quieter neutral treatment, row tap
+        //     still re-opens the sheet for re-evaluation, plus an
+        //     in-card "작업으로 끌어올리기" affordance that flips draft back
+        //     to true so the row jumps into the loud sub-section.
+        if (visibleActionNeededRules.isNotEmpty()) {
+            item(key = "group:unassigned-action-needed") {
                 SectionLabel(
-                    title = "미분류",
+                    title = "작업 필요",
                     subtitle = "분류에 추가되기 전까지 어떤 알림도 분류하지 않아요. 카드를 탭하면 분류에 추가할 수 있어요.",
                 )
             }
             items(
-                items = visibleUnassignedRules,
-                key = { rule -> "unassigned:${rule.id}" },
+                items = visibleActionNeededRules,
+                key = { rule -> "unassigned-action-needed:${rule.id}" },
             ) { rule ->
-                val isHighlighted = rule.id == highlightedRuleId
-                val highlightColor by animateColorAsState(
-                    targetValue = if (isHighlighted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0f)
+                UnassignedRuleRowSlot(
+                    rule = rule,
+                    isParked = false,
+                    isHighlighted = rule.id == highlightedRuleId,
+                    onRowTap = { pendingCategoryAssignmentRuleId = rule.id },
+                    onPromoteToActionNeeded = null,
+                    onCheckedChange = { checked ->
+                        scope.launch { repository.setRuleEnabled(rule.id, checked) }
                     },
-                    animationSpec = tween(durationMillis = 400),
-                    label = "ruleHighlight",
+                    onMoveUp = {
+                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
+                    },
+                    onMoveDown = {
+                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
+                    },
+                    onEdit = { startEdit(rule) },
+                    onDelete = {
+                        scope.launch { repository.deleteRule(rule.id) }
+                    },
                 )
-                Column(
-                    modifier = Modifier
-                        .let { mod ->
-                            if (isHighlighted) {
-                                mod.border(
-                                    width = 2.dp,
-                                    color = highlightColor,
-                                    shape = RoundedCornerShape(16.dp),
-                                )
-                            } else {
-                                mod
-                            }
-                        }
-                        .clickable { pendingCategoryAssignmentRuleId = rule.id },
-                ) {
-                    RuleRow(
-                        rule = rule,
-                        action = RuleActionUi.SILENT,
-                        onCheckedChange = { checked ->
-                            scope.launch { repository.setRuleEnabled(rule.id, checked) }
-                        },
-                        onMoveUpClick = {
-                            scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
-                        },
-                        onMoveDownClick = {
-                            scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
-                        },
-                        onEditClick = { startEdit(rule) },
-                        onDeleteClick = {
-                            scope.launch { repository.deleteRule(rule.id) }
-                        },
-                        presentation = RuleRowPresentation.Unassigned,
-                    )
-                }
+            }
+        }
+        if (visibleParkedRules.isNotEmpty()) {
+            item(key = "group:unassigned-parked") {
+                SectionLabel(
+                    title = "보류",
+                    subtitle = "사용자가 보류한 규칙이에요. 다시 작업이 필요하면 \"작업으로 끌어올리기\"를 누르세요.",
+                )
+            }
+            items(
+                items = visibleParkedRules,
+                key = { rule -> "unassigned-parked:${rule.id}" },
+            ) { rule ->
+                UnassignedRuleRowSlot(
+                    rule = rule,
+                    isParked = true,
+                    isHighlighted = rule.id == highlightedRuleId,
+                    onRowTap = { pendingCategoryAssignmentRuleId = rule.id },
+                    onPromoteToActionNeeded = {
+                        // Plan Task 5 step 3 — flipping draft back to true
+                        // routes the row into the louder "작업 필요" group.
+                        // Routes through `upsertRule` (not a dedicated
+                        // setter) because this is the only path that flips
+                        // false → true, and adding a one-call-site setter
+                        // would bloat the repository surface area.
+                        scope.launch { repository.upsertRule(rule.copy(draft = true)) }
+                    },
+                    onCheckedChange = { checked ->
+                        scope.launch { repository.setRuleEnabled(rule.id, checked) }
+                    },
+                    onMoveUp = {
+                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.UP) }
+                    },
+                    onMoveDown = {
+                        scope.launch { repository.moveRule(rule.id, RuleMoveDirection.DOWN) }
+                    },
+                    onEdit = { startEdit(rule) },
+                    onDelete = {
+                        scope.launch { repository.deleteRule(rule.id) }
+                    },
+                )
             }
         }
         groupedVisibleRules.forEach { group ->
@@ -695,6 +731,80 @@ fun RulesScreen(
                 },
                 onDismiss = { pendingCategoryAssignmentRuleId = null },
             )
+        }
+    }
+}
+
+/**
+ * Compose slot that renders a single 미분류 row in either the "작업 필요" or
+ * "보류" sub-section. Plan
+ * `docs/plans/2026-04-26-rule-explicit-draft-flag.md` Task 5.
+ *
+ * Rendered as a [Column] (not a `Card`) so the existing [RuleRow] card +
+ * accent-border highlight overlay continue to compose cleanly. When
+ * [isParked] is true an extra small `TextButton` sits below the row offering
+ * "작업으로 끌어올리기" so users can promote a parked rule back to the loud
+ * "작업 필요" sub-bucket without having to walk through the post-save sheet
+ * a second time.
+ */
+@Composable
+private fun UnassignedRuleRowSlot(
+    rule: RuleUiModel,
+    isParked: Boolean,
+    isHighlighted: Boolean,
+    onRowTap: () -> Unit,
+    onPromoteToActionNeeded: (() -> Unit)?,
+    onCheckedChange: (Boolean) -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val highlightColor by animateColorAsState(
+        targetValue = if (isHighlighted) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0f)
+        },
+        animationSpec = tween(durationMillis = 400),
+        label = "ruleHighlight",
+    )
+    Column(
+        modifier = Modifier
+            .let { mod ->
+                if (isHighlighted) {
+                    mod.border(
+                        width = 2.dp,
+                        color = highlightColor,
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                } else {
+                    mod
+                }
+            }
+            .clickable(onClick = onRowTap),
+    ) {
+        RuleRow(
+            rule = rule,
+            action = RuleActionUi.SILENT,
+            onCheckedChange = onCheckedChange,
+            onMoveUpClick = onMoveUp,
+            onMoveDownClick = onMoveDown,
+            onEditClick = onEdit,
+            onDeleteClick = onDelete,
+            presentation = RuleRowPresentation.Unassigned(isParked = isParked),
+        )
+        if (isParked && onPromoteToActionNeeded != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onPromoteToActionNeeded) {
+                    Text("작업으로 끌어올리기")
+                }
+            }
         }
     }
 }
