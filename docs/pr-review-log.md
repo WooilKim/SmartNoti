@@ -362,3 +362,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T19:27:19Z | #413 | plan-implementer | ESCALATE | SELF_MOD .claude/** — Step 4.5 gate + loop-monitor rubric + agent-loop.md registry subsection; precedent #344/#352/#371/#372/#384 |
 | 2026-04-26T23:13:59Z | #414 | gap-planner | DEFER | CI pending (Unit tests + debug APK) — re-check next sweep |
 | 2026-04-26T23:16:14Z | #414 | gap-planner | APPROVE+MERGE | docs-only, 2 new plan files, CI green, no risk signals |
+| 2026-04-26T23:32:03Z | #415 | plan-implementer | APPROVE | tray auto-dismiss Tasks 1-2; CI green; merged |
