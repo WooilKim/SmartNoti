@@ -205,6 +205,89 @@ class SmartNotiNotificationListenerServiceCategoryInjectionTest {
         assertEquals(NotificationDecision.DIGEST, ui.status.toDecision())
     }
 
+    /**
+     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 3.
+     *
+     * Pin that the dynamic `SmartNotiSettings.quietHoursPackages` snapshot the
+     * coordinator loads on every call reaches the classifier and replaces the
+     * constructor-baked default. The fixture's classifier is constructed with
+     * `shoppingPackages = emptySet()` so the only way DIGEST can fire on the
+     * `com.baemin` quiet-hours notification is via the per-call override that
+     * the processor pulls from `settings.quietHoursPackages`.
+     */
+    @Test
+    fun coordinator_forwards_settings_quiet_hours_packages_to_classifier() = runBlocking {
+        val processor = NotificationCaptureProcessor(
+            classifier = NotificationClassifier(
+                vipSenders = emptySet(),
+                priorityKeywords = emptySet(),
+                // Constructor default is empty — the only way DIGEST fires is
+                // through the dynamic override threaded from settings.
+                shoppingPackages = emptySet(),
+            ),
+            deliveryProfilePolicy = DeliveryProfilePolicy(),
+        )
+        val coordinator = NotificationProcessingCoordinator(
+            loadRules = { emptyList() },
+            loadCategories = { emptyList() },
+            loadSettings = {
+                SmartNotiSettings(quietHoursPackages = setOf("com.baemin"))
+            },
+            processor = processor,
+        )
+
+        val ui = coordinator.process(
+            CapturedNotificationInput(
+                packageName = "com.baemin",
+                appName = "배민",
+                sender = null,
+                title = "쿠폰",
+                body = "오늘의 쿠폰이 도착했어요",
+                postedAtMillis = 1_700_000_000_000L,
+                quietHours = true,
+                duplicateCountInWindow = 0,
+            )
+        )
+
+        assertEquals(NotificationDecision.DIGEST, ui.status.toDecision())
+    }
+
+    @Test
+    fun coordinator_quiet_hours_branch_does_not_fire_for_non_member_when_settings_set_is_empty() = runBlocking {
+        val processor = NotificationCaptureProcessor(
+            classifier = NotificationClassifier(
+                vipSenders = emptySet(),
+                priorityKeywords = emptySet(),
+                shoppingPackages = setOf("com.coupang.mobile"),
+            ),
+            deliveryProfilePolicy = DeliveryProfilePolicy(),
+        )
+        val coordinator = NotificationProcessingCoordinator(
+            loadRules = { emptyList() },
+            loadCategories = { emptyList() },
+            loadSettings = {
+                // User cleared the picker — quiet-hours has no candidates.
+                SmartNotiSettings(quietHoursPackages = emptySet())
+            },
+            processor = processor,
+        )
+
+        val ui = coordinator.process(
+            CapturedNotificationInput(
+                packageName = "com.coupang.mobile",
+                appName = "쿠팡",
+                sender = null,
+                title = "할인",
+                body = "장바구니 상품이 할인 중이에요",
+                postedAtMillis = 1_700_000_000_000L,
+                quietHours = true,
+                duplicateCountInWindow = 0,
+            )
+        )
+
+        assertEquals(NotificationDecision.SILENT, ui.status.toDecision())
+    }
+
     @Test
     fun coordinator_forwards_user_threshold_to_classifier_raising_to_five() = runBlocking {
         val processor = NotificationCaptureProcessor(

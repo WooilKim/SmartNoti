@@ -267,6 +267,88 @@ class NotificationClassifierTest {
         assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
+    // region Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 3
+    //
+    // Pin that the classifier's quiet-hours branch fires against a *dynamic*
+    // `shoppingPackages` set passed per-classify (Architecture (B) — mirrors
+    // the per-input `duplicateThreshold` pattern). The constructor-provided
+    // set still applies when no override is supplied so legacy call sites
+    // and the unit-test fixture above stay on the historical default.
+
+    @Test
+    fun dynamic_shopping_packages_override_promotes_baemin_to_digest_during_quiet_hours() {
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.baemin",
+                body = "오늘의 쿠폰",
+                quietHours = true,
+            ),
+            shoppingPackagesOverride = setOf("com.baemin"),
+        )
+
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
+    }
+
+    @Test
+    fun dynamic_shopping_packages_override_excludes_coupang_when_set_replaces_default() {
+        // Override = {com.baemin}. Coupang is no longer in the active set so
+        // the quiet-hours branch must NOT fire — even though the constructor
+        // fixture still lists Coupang, the override fully replaces it.
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.coupang.mobile",
+                body = "장바구니 상품 할인",
+                quietHours = true,
+            ),
+            shoppingPackagesOverride = setOf("com.baemin"),
+        )
+
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
+    }
+
+    @Test
+    fun empty_shopping_packages_override_disables_quiet_hours_branch_for_any_package() {
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.coupang.mobile",
+                body = "장바구니 상품 할인",
+                quietHours = true,
+            ),
+            shoppingPackagesOverride = emptySet(),
+        )
+
+        assertEquals(NotificationDecision.SILENT, result.decision)
+    }
+
+    @Test
+    fun multi_package_shopping_override_promotes_each_member_during_quiet_hours() {
+        val override = setOf("com.coupang.mobile", "com.baemin")
+
+        val coupang = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.coupang.mobile",
+                body = "쿠팡 할인",
+                quietHours = true,
+            ),
+            shoppingPackagesOverride = override,
+        )
+        val baemin = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.baemin",
+                body = "배민 쿠폰",
+                quietHours = true,
+            ),
+            shoppingPackagesOverride = override,
+        )
+
+        assertEquals(NotificationDecision.DIGEST, coupang.decision)
+        assertEquals(NotificationDecision.DIGEST, baemin.decision)
+    }
+
+    // endregion
+
     @Test
     fun repeated_notifications_go_to_digest() {
         val result = classifier.classify(

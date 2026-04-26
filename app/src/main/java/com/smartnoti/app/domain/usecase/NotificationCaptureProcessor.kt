@@ -39,6 +39,14 @@ class NotificationCaptureProcessor(
             ),
             rules = rules,
             categories = categories,
+            // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
+            // Task 4: thread the user-editable picker output into the
+            // classifier's quiet-hours branch so add/remove from the Settings
+            // sub-row takes effect on the very next notification. Replaces
+            // the historical `setOf("com.coupang.mobile")` constructor
+            // hardcode. Architecture (B) per-call override mirrors the
+            // adjacent `duplicateThreshold` pattern.
+            shoppingPackagesOverride = settings.quietHoursPackages,
         )
         val decision = classification.decision
         val deliveryProfile = deliveryProfilePolicy.resolve(

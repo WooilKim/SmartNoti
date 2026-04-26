@@ -88,7 +88,16 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             classifier = NotificationClassifier(
                 vipSenders = setOf("엄마", "팀장"),
                 priorityKeywords = setOf("인증번호", "OTP", "결제"),
-                shoppingPackages = setOf("com.coupang.mobile"),
+                // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
+                // Task 4: the constructor value is now a fallback used only
+                // when the processor passes `shoppingPackagesOverride = null`.
+                // The hot path (NotificationCaptureProcessor.process) always
+                // forwards `settings.quietHoursPackages` so this default never
+                // wins in production — but pointing at the SSOT keeps the
+                // safety net aligned with the Settings default if a future
+                // call site forgets the override.
+                shoppingPackages = com.smartnoti.app.data.settings.SmartNotiSettings
+                    .DEFAULT_QUIET_HOURS_PACKAGES,
             ),
             deliveryProfilePolicy = DeliveryProfilePolicy(),
         )
