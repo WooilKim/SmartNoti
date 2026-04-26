@@ -17,7 +17,7 @@ last-verified: 2026-04-26
 
 ## Trigger
 
-사용자가 하단 네비 "**분류**" 탭 탭 → `Routes.Categories` 네비게이션.
+사용자가 하단 네비 "**분류**" 탭 탭 → `Routes.Categories` 네비게이션. 외부 진입점도 같은 route 를 공유 — Home 의 "새 앱 분류 유도 카드" "분류 만들기" 가 `Routes.Categories.create(prefillPackage, prefillLabel)` 로 nav-arg 두 개 (앱 package + 라벨) 를 흘려주면 `CategoriesScreen` 이 첫 composition 에서 editor 다이얼로그를 prefill 된 채 자동 오픈한다 (single-consume; → [home-uncategorized-prompt](home-uncategorized-prompt.md)).
 
 ## Observable steps
 
@@ -86,7 +86,7 @@ last-verified: 2026-04-26
 - `data/categories/RuleToCategoryMigration` + `MigrateRulesToCategoriesRunner` — 첫 실행 1:1 자동 마이그레이션
 - `domain/model/Category` + `CategoryAction` — 4-value enum
 - `domain/usecase/CategoryConflictResolver` — 매칭 분류 집합에서 승자 선택 (app-pin 보너스 + rule-type 사다리 + `order` 동점)
-- `navigation/Routes#Categories`, `navigation/BottomNavItem` ("분류" 라벨)
+- `navigation/Routes#Categories`, `navigation/BottomNavItem` ("분류" 라벨). `Routes.Categories.create(prefillPackage, prefillLabel)` 가 두 query-arg 를 조립; 둘 다 비어 있으면 bare `"categories"` 로 collapse 해 BottomNav / popUpTo 매칭에 영향 없음. `CategoriesScreen.prefillPackage`/`prefillLabel` 가 nav-arg 를 받아 `LaunchedEffect` 로 editor 자동 오픈 + `rememberSaveable("uncategorizedPrefillConsumed")` 로 single-consume.
 
 ## Tests
 
@@ -128,6 +128,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Change log
 
+- 2026-04-26: 외부 deep-link 진입점 추가 (Home 의 "새 앱 분류 유도 카드" → `Routes.Categories.create(prefillPackage, prefillLabel)` → `CategoriesScreen` 이 nav-arg 로 editor 자동 오픈 + first-sample app prefill) — plan `docs/plans/2026-04-26-uncategorized-prompt-editor-autoopen.md` (#409 + #410 + Task 6 wiring PR). `CategoriesScreen` 시그니처에 `prefillPackage` / `prefillLabel` 두 nullable 인자 추가, `rememberSaveable("uncategorizedPrefillConsumed")` 로 single-consume. FAB / row / Detail 진입 경로는 회귀 없음 (bare `categories` URL 이 새 패턴에 정상 매칭).
 - 2026-04-26: CategoryDetail 에 "최근 분류된 알림" preview 추가 (5건 cap) — plan `docs/plans/2026-04-26-category-detail-recent-notifications-preview.md`. 신규 pure `CategoryRecentNotificationsSelector.select(...)` (`category.ruleIds ∩ notification.matchedRuleIds` → `postedAtMillis` desc → `take(limit=5)`) + pure `formatRelative(nowMillis, eventMillis)` ("방금" / "N분 전" / "N시간 전" / "N일 전") + private `CategoryRecentNotificationItem` 압축 row composable (앱 라벨 / 제목 / 본문 1줄 truncate / 상대 시간 + content-desc `"$title, $relative, 탭하면 알림 상세로 이동"`). `CategoriesScreen` 이 `NotificationRepository.observeAllFiltered(hidePersistentNotifications)` 를 collect 해서 셀렉터 결과를 props 로 주입. `AppNavHost` 가 `onOpenNotification` 을 `Routes.Detail.create(id)` 로 위임. ADB 검증 emulator-5554 (PASS): `중요 알림` Category Detail 에 3건 (Ship → 2분 전, PayTest → 2분 전, OtpTest 순) preview row 노출, content-desc 정확히 매칭, 첫 row 탭 시 `NotificationDetailScreen` 진입 + 뒤로가기 시 Categories 리스트 복귀. 빈 매치 (예: `프로모션 알림`) 는 "아직 이 분류로 분류된 알림이 없어요." empty 카피만 노출. (PR 링크는 머지 시 채움.)
 - 2026-04-26: Category 이름 고유성 검증 + Editor 저장 차단 — plan `docs/plans/2026-04-25-category-name-uniqueness.md`. 신규 pure `CategoryNameUniqueness.evaluate(...)` (trim + case-insensitive, Edit 흐름은 자기 id 제외) + `CategoryEditorDraftValidator.nameAvailable(...)` 분리 메서드 (옵션 B; 기존 `canSave` 4 테스트 무영향). `CategoryEditorScreen` 의 이름 `OutlinedTextField` 가 `isError = (status == DUPLICATE)` + `supportingText` "이미 사용 중인 이름이에요" 를 surface 하고 저장 버튼은 `canSave && nameAvailable` 단일 게이트로 결정. ADB 검증 emulator-5554: 신규 흐름에서 "ToastVerify" 입력 → inline 에러 빨간색 표시 + `추가` 버튼 `enabled=false`; "ToastVerifyX" 로 한 글자 추가 → 에러 사라짐. case-insensitive: "toastverify" → DUPLICATE. Edit 흐름: 기존 "ToastVerify" Category 편집 진입 시 이름 그대로 두면 `저장` 버튼 `enabled=true` (자기 id 제외). 마이그레이션 미실행 — 이미 영속화된 중복 이름 Category 는 자동 정리되지 않음 (현재 user 데이터에 그런 케이스 없음 확인). (PR 링크는 머지 시 채움.)
 - 2026-04-25: APP-토큰 라벨 가시성 보강 — plan `docs/plans/2026-04-25-android-queries-package-visibility.md`. AndroidManifest 에 `<queries><intent action=MAIN></queries>` 선언 → `PackageManagerAppLabelLookup` 가 Android 11+ 에서도 launcher 활동을 가진 임의 사용자 앱 (예: YouTube) 의 라벨을 정상 해석. chip 이 더 이상 raw `com.google.android.youtube` 로 fallback 되지 않음. ADB 검증 emulator-5554: `중요 알림` Category 에 `com.google.android.youtube` APP rule (이름 `YT`) 합류 후 Detail 의 펼친 chip 이 `앱=YouTube` 로 노출 (text 직접 확인). 카드 chip 은 `maxInline=2` 이라 `외 2개` 로 가려졌지만 동일 lookup 경로. listener 쪽 `SmartNotiNotificationListenerService` 의 라벨 해석 코드는 변경 없음 (notification-access grant 로 이미 성공하던 경로). Manifest 누락이 근본 원인이었으며, regression 방지로 `PackageManagerVisibilityContractTest` (pure JVM, manifest XML 파싱) 1건 추가 — Option A (instrumented) 는 CI 에 connectedDebugAndroidTest 러너가 없어 Option B 채택. (PR 링크는 머지 시 채움.)

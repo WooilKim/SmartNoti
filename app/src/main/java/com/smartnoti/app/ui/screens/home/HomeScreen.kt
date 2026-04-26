@@ -101,7 +101,7 @@ fun HomeScreen(
     onNotificationAccessClick: () -> Unit,
     onRulesClick: () -> Unit,
     onInsightClick: (String) -> Unit,
-    onCreateCategoryClick: () -> Unit = {},
+    onCreateCategoryClick: (prefillPackage: String?, prefillLabel: String?) -> Unit = { _, _ -> },
     onSeeAllRecent: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -207,7 +207,16 @@ fun HomeScreen(
             item {
                 HomeUncategorizedAppsPromptCard(
                     prompt = detection,
-                    onCreateCategory = onCreateCategoryClick,
+                    onCreateCategory = {
+                        // Plan `2026-04-26-uncategorized-prompt-editor-autoopen`
+                        // Task 6: extract the first uncovered sample (newest-first
+                        // per detector contract) so the Categories tab can
+                        // auto-open the editor pre-populated with that app. The
+                        // pure helper centralises the "blank package == no
+                        // prefill" rule for this and any future entry point.
+                        val prefill = HomeUncategorizedPromptPrefillExtractor.extract(detection)
+                        onCreateCategoryClick(prefill?.packageName, prefill?.label)
+                    },
                     onSnooze = {
                         coroutineScope.launch {
                             val deadline = System.currentTimeMillis() + HomeUncategorizedPromptSnooze.TWENTY_FOUR_HOURS_MILLIS
