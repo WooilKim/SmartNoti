@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — onboarding-bootstrap rotation sweep, SKIP)
+
+| Journey | Result | Notes |
+|---|---|---|
+| onboarding-bootstrap | SKIP | A.1 rotation pick (oldest `last-verified` 2026-04-24 vs other 18 at 2026-04-26, gap ≥ 1 day). Recipe step 1 is `adb shell pm clear com.smartnoti.app` which is destructive per `journey-tester` agent safety rules — wipes all app state + NotificationListener permission grant. Skipped without explicit caller confirmation. Recipe itself flags the warning at line 85. `last-verified` unchanged. Suggested: run manually next session (sweep schedule allows), or carve out a non-destructive sub-recipe (e.g. inspect already-bootstrapped tray on a freshly-onboarded device) for autonomous verification. |
+
 ### 2026-04-26 (journey-tester — digest-inbox rotation sweep, emulator-5554)
 
 | Journey | Result | Notes |
