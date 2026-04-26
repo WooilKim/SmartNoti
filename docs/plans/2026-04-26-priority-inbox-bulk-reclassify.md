@@ -30,7 +30,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for `BulkPassthroughReviewReclassifyDispatcher`
+## Task 1: Add failing tests for `BulkPassthroughReviewReclassifyDispatcher` [IN PROGRESS via PR #387]
 
 **Objective:** 새 dispatcher 의 계약을 unit test 로 고정.
 
@@ -47,7 +47,7 @@ status: planned
    - **partial failure mid-loop**: 두 번째 notification 의 updateNotification 이 throw 하면 dispatcher 가 throw 를 propagate, 첫 번째 notification 은 이미 persist 된 상태로 유지. assertion: 첫 row 의 persist record 존재, 두 번째 row 의 persist 시도되고 throw, 세 번째 row 는 호출되지 않음.
 3. `./gradlew :app:testDebugUnitTest --tests "*.BulkPassthroughReviewReclassifyDispatcherTest"` → RED 확인.
 
-## Task 2: Implement `BulkPassthroughReviewReclassifyDispatcher`
+## Task 2: Implement `BulkPassthroughReviewReclassifyDispatcher` [IN PROGRESS via PR #387]
 
 **Objective:** Task 1 의 테스트를 GREEN 으로.
 
