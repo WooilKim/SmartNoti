@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Quiet hours 적용 사유를 사용자에게 명시적으로 설명 Plan
@@ -31,7 +31,7 @@ status: planned
 
 ---
 
-## Task 1: Failing tests for `QuietHoursExplainerBuilder`
+## Task 1: Failing tests for `QuietHoursExplainerBuilder` [IN PROGRESS via PR #338]
 
 **Objective:** explainer 의 합성/필터 규칙을 unit test 로 고정. 테스트 표면이 가장 명확한 곳부터 짠다.
 
@@ -48,7 +48,7 @@ status: planned
    - `reasonTags = ["조용한 시간", "사용자 규칙"]`, `status = DIGEST` → null (사용자 규칙이 더 결정적이므로 quiet-hours 는 부수 신호로 간주). 이 분기를 추가할지 여부는 implementer 가 한 번 더 검토 — 단순화하고 싶으면 본 케이스는 explainer 노출도 허용하고 본문에 "다른 룰도 함께 적용됨" 정도의 부연 카피를 붙이는 안도 가능. PR 본문에 채택 안 명시.
 2. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.QuietHoursExplainerBuilderTest"` → 모두 RED.
 
-## Task 2: Implement `QuietHoursExplainerBuilder`
+## Task 2: Implement `QuietHoursExplainerBuilder` [IN PROGRESS via PR #338]
 
 **Objective:** Task 1 테스트 모두 GREEN.
 
