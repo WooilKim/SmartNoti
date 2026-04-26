@@ -3,7 +3,7 @@ id: digest-suppression
 title: 디제스트 자동 묶음 및 원본 교체
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-24
+last-verified: 2026-04-26
 ---
 
 ## Goal
@@ -122,4 +122,5 @@ adb -s emulator-5554 shell dumpsys notification --noredact \
 - 2026-04-20: `NotificationReplacementIds.idFor` 에 notificationId 포함 — 같은 앱에서 서로 다른 내용의 DIGEST 가 동시에 게시될 때 replacement 가 서로 덮어쓰던 충돌 해소.
 - 2026-04-20: Settings 의 앱 선택 리스트에 "모두 선택" / "모두 해제" OutlinedButton 추가 — 대량 opt-in / opt-out 편의. 현재 필터로 보이는 앱만 영향 (숨겨진 앱의 선택 상태는 보존).
 - 2026-04-22: Verification recipe 를 `com.smartnoti.testnotifier` 의 `PROMO_DIGEST` 시나리오 경유로 재작성 — `com.android.shell` ranker-group 의 NMS per-package 50건 quota 와 누적 stale 알림 때문에 recipe 가 연속 SKIP 되던 증상 해소. SmartNoti 측 코드 변경 없음, journey recipe 블록 + Known gap bullet drainage 뿐. Plan: `docs/plans/2026-04-22-digest-suppression-testnotifier-recipe.md`. Dry-run PASS (emulator-5554): tap 후 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 는 tray 에 없고 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry 생성 확인.
+- 2026-04-26: ADB verification PASS (emulator-5554) — testnotifier `PROMO_DIGEST` 시나리오 tap 후 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 가 active list 에서 사라지고 동일 title 이 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry (importance=3, AutoCancel) 로 게시됨. Observable steps 1–7 + Exit state 일치, DRIFT 없음.
 - 2026-04-24: **신규/미설정 사용자에게 DIGEST/SILENT 가 이중으로 뜨던 증상 해소** — `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip 하고, `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션 (`suppress_source_migration_v1_applied` DataStore 키 게이트) 로 toggle 을 한 번 덮어씀. `SuppressedSourceAppsAutoExpansionPolicy` 는 `currentApps` 가 비어있을 때 no-op 가드를 추가해 의미 전환 (opt-out → 화이트리스트-of-one) 을 막음. 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.
