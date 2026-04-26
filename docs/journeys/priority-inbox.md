@@ -32,8 +32,9 @@ PRIORITY 로 분류된 알림을 **"SmartNoti 가 건드리지 않은 알림"** 
 4. 리스트 상단에 `SmartSurfaceCard` — "검토 대기 N건" + 보조 설명.
 5. LazyColumn 이 status = PRIORITY 인 `NotificationUiModel` 리스트를 카드로 표시. IGNORE row 는 `observePriorityFiltered` 가 `status == PRIORITY` 로 선필터하므로 여기에 포함되지 않음 — IGNORE 는 [ignored-archive](ignored-archive.md) 전용. 각 카드 아래에는 `PassthroughReclassifyActions` 영역이 함께 렌더 — "이 판단을 바꿀까요?" 라벨 + `→ Digest` / `→ 조용히` OutlinedButton 두 개 + `→ 규칙 만들기` TextButton.
 6. 사용자가 `→ Digest` / `→ 조용히` 탭 → `PassthroughReviewReclassifyDispatcher.reclassify` 가 `NotificationFeedbackPolicy` 로 상태를 바꿔 `NotificationRepository.updateNotification()` 수행 (규칙 생성은 하지 않음).
+6a. 사용자가 카드를 long-press → `PriorityScreenMultiSelectState.enterSelection` 으로 multi-select 모드 진입. 상단에 `PriorityMultiSelectActionBar` (`"N개 선택됨"` + `→ Digest` + `→ 조용히` + `취소`) 가 mount 되고 카드별 인라인 `PassthroughReclassifyActions` 는 hidden. 활성 모드에서 카드 본문 탭은 toggle (Detail navigation 은 모드 종료 후로 미룸). `→ Digest` / `→ 조용히` 탭 → `BulkPassthroughReviewReclassifyDispatcher.bulk` 가 선택된 row 마다 단일 dispatcher 를 ordered 호출 → snackbar `"알림 N건을 Digest 로 옮겼어요"` / `"알림 N건을 조용히로 옮겼어요"` (persistedCount > 0 인 경우만) → selection clear + ActionBar 사라짐 + persisted row 가 list 에서 동시 사라짐. NOOP-only (모든 row 가 이미 target status) 케이스는 snackbar 미등장 + selection 유지로 사용자가 다시 시도 가능.
 7. 사용자가 `→ 규칙 만들기` 탭 → `onCreateRuleClick(notification)` 을 통해 rules feedback flow 로 연결.
-8. 사용자가 카드 본문 탭 → `Routes.Detail.create(notificationId)` 로 navigate (→ notification-detail).
+8. 사용자가 카드 본문 탭 → `Routes.Detail.create(notificationId)` 로 navigate (→ notification-detail). multi-select 활성 시에는 toggle 로 분기되어 Detail 진입 안 함.
 
 ## 시스템 tray 처리
 
@@ -62,9 +63,12 @@ PRIORITY 로 분류된 알림을 **"SmartNoti 가 건드리지 않은 알림"** 
 
 ## Code pointers
 
-- `ui/screens/priority/PriorityScreen` — 검토 화면 본체, 인라인 액션 포함
+- `ui/screens/priority/PriorityScreen` — 검토 화면 본체, 인라인 액션 포함, multi-select 모드 지원
+- `ui/screens/priority/PriorityMultiSelectActionBar` — multi-select 활성 시 상단 ActionBar (`N개 선택됨` + bulk CTA + 취소)
+- `ui/screens/priority/PriorityScreenMultiSelectState` — pure state machine (enterSelection / toggle / cancel / clear)
 - `ui/components/HomePassthroughReviewCard` — Home 진입 카드
-- `domain/usecase/PassthroughReviewReclassifyDispatcher` — 인라인 재분류 로직
+- `domain/usecase/PassthroughReviewReclassifyDispatcher` — 단일 row 인라인 재분류 로직
+- `domain/usecase/BulkPassthroughReviewReclassifyDispatcher` — N 건 ordered loop wrapper, NOOP/IGNORED/UPDATED 카운터 반환
 - `domain/usecase/NotificationFeedbackPolicy` — 상태 전이
 - `data/local/NotificationRepository#observePriorityFiltered`
 - `domain/usecase/DeliveryProfilePolicy`
@@ -109,9 +113,57 @@ adb -s emulator-5554 shell am start -n com.smartnoti.app/.MainActivity
 # 5. 예: "→ Digest" 탭 → 카드가 리스트에서 사라지고 Home count 가 감소, Digest 탭에 추가됨
 ```
 
+## Bulk reclassify verification recipe
+
+```bash
+# 사전: emulator-5554 + debug APK + listener 권한, plan 2026-04-26-priority-inbox-bulk-reclassify.
+
+# 1. 4 PRIORITY rows seed (sequential — rapid loops 가 dedup window 와 충돌 가능)
+for i in 1 2 3 4; do
+  adb -s emulator-5554 shell am broadcast \
+    -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver \
+    -a com.smartnoti.debug.INJECT_NOTIFICATION \
+    --es title "BlkPri$i" --es body "bulk seed $i" --es force_status PRIORITY
+  sleep 1
+done
+
+# 2. DB 확인 — 4건 모두 status=PRIORITY, reasonTags="디버그 주입"
+adb -s emulator-5554 exec-out run-as com.smartnoti.app sh -c \
+  "sqlite3 databases/smartnoti.db \"SELECT title,status,reasonTags FROM notifications WHERE title LIKE 'BlkPri%';\""
+
+# 3. 앱 진입 → Home `검토 대기 N` 카드 → `검토하기` 탭 → PriorityScreen 진입.
+adb -s emulator-5554 shell am start -n com.smartnoti.app/.MainActivity
+
+# 4. 첫 BlkPri1 카드 long-press → multi-select 진입 + ActionBar `1개 선택됨 / → Digest / → 조용히 / 취소` 노출.
+#    (Compose `combinedClickable` 의 long-press 임계값 때문에 `adb input swipe` 로는 트리거가 어렵고
+#    실기기/에뮬레이터 GUI 로 확인 권장. 자동화 시 Espresso `longClick()` 또는 uiautomator2 사용.)
+
+# 5. 나머지 BlkPri2/3/4 본문 탭 toggle → ActionBar `4개 선택됨` 갱신 시각 확인.
+adb -s emulator-5554 shell uiautomator dump /sdcard/ui.xml
+adb -s emulator-5554 exec-out cat /sdcard/ui.xml | grep -oE '"[^"]*(선택됨|→ Digest|→ 조용히|취소)[^"]*"'
+
+# 6. ActionBar `→ Digest` 탭 → 기대값:
+#    - snackbar `"알림 4건을 Digest 로 옮겼어요"` (≈ 4s)
+#    - 4개 row 가 PriorityScreen 에서 즉시 사라짐
+#    - SmartSurfaceCard `검토 대기 ${N-4}건` 갱신
+#    - Home `검토 대기 ${N-4}` count 동기 갱신
+#    - 정리함 Digest 서브탭 진입 → 4 row DIGEST 라우팅 확인
+adb -s emulator-5554 exec-out run-as com.smartnoti.app sh -c \
+  "sqlite3 databases/smartnoti.db \"SELECT title,status FROM notifications WHERE title LIKE 'BlkPri%';\""
+#    → 4 rows 모두 status=DIGEST
+
+# 7. `→ 조용히` 경로 동일 패턴 — BlkSil1..4 seed → multi-select → `→ 조용히`
+#    → snackbar `"알림 4건을 조용히로 옮겼어요"` + Hidden 보관 중 탭에서 4건 확인.
+
+# 8. NOOP 케이스 — 이미 DIGEST 인 row 1건만 selection → `→ Digest`
+#    → snackbar 미등장 + selection 유지 (사용자가 다시 시도 가능). DB row 변동 없음.
+
+# 9. baseline 복원 — `cmd notification cancel` 또는 디버그 reset 으로 검증용 row 정리.
+```
+
 ## Known gaps
 
-- 검토 화면 자체에 일괄 처리(모두 읽음/모두 재분류) 액션 없음 — 여전히 카드별 처리. → plan: `docs/plans/2026-04-26-priority-inbox-bulk-reclassify.md`
+- (resolved 2026-04-26, plan 2026-04-26-priority-inbox-bulk-reclassify) 검토 화면 자체에 일괄 처리(모두 읽음/모두 재분류) 액션 없음 — 여전히 카드별 처리. → plan: `docs/plans/2026-04-26-priority-inbox-bulk-reclassify.md` (long-press multi-select + bulk → Digest / → 조용히 + snackbar 구현; 모두 읽음 / 모두 IGNORE 는 별도 plan)
 - `PriorityScreen` / `PassthroughReclassifyActions` 의 Compose UI 테스트 부재.
 - Verification recipe 의 `엄마` 고정값이 rules-feedback-loop sweep 이후 남은 `person:엄마 → DIGEST` rule 에 의해 DIGEST 로 라우팅되어 검증이 무효화될 수 있어 은행/인증번호 경로로 변경됨. 사용자 환경에 따라 다른 키워드가 필요할 수 있음.
 - 2026-04-22: 위 fragility 가 `은행` + `인증번호` 경로에서도 재현됨 (journey-tester sweep). 누적된 user rules 가 `reasonTags=사용자 규칙|인증번호|중요 키워드` 매칭으로 status 를 SILENT 로 강등시켜 PRIORITY 가 0 건으로 떨어지면 `HomePassthroughReviewCard` 가 hidden 되어 recipe 의 Observable steps 1, 4–8 검증 불가. Recipe 를 unique non-keyword sender + per-sweep rule reset 또는 test-only PRIORITY injection hook 으로 재설계 필요.
@@ -129,4 +181,5 @@ adb -s emulator-5554 shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: Debug-only `FORCE_STATUS` extras marker 추가 (`BuildConfig.DEBUG` 하에서만 `DebugClassificationOverride` 가 classifier 결과 override). `cmd notification post` 가 `--es` 를 지원하지 않고 self-package 알림이 `OnboardingActiveNotificationBootstrapper.shouldProcess` 에서 필터되는 두 제약 때문에, recipe 는 `app/src/debug/` source set 의 `DebugInjectNotificationReceiver` 가 broadcast 를 받아 `NotificationCaptureProcessor.process` → `DebugClassificationOverride.resolve(extras, ...)` → `NotificationRepository.save` 를 직접 호출하는 경로로 재설계. 누적 user rule (`person:엄마 → DIGEST`, `인증번호 → SILENT` 등) 이 PRIORITY 검증을 무력화하던 fragility 해결. Release APK 에는 receiver 와 marker 분기가 모두 absent / dead-strip. Plan: `docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md`.
 - 2026-04-23: ADB end-to-end 검증 PASS on emulator-5554. Fresh debug APK 설치 후 `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg66000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB row `status=PRIORITY, reasonTags=디버그 주입` 저장 확인. body 에 `인증번호` 키워드 (누적 SILENT 룰 트리거) 를 포함한 두 번째 케이스도 동일하게 PRIORITY 로 pin. Home `검토 대기 7 / SmartNoti 가 건드리지 않은 알림 7건` 카드 visibility 회복 확인 (uiautomator dump). `last-verified` 2026-04-21 → 2026-04-23 으로 bump. v1 loop tick re-verify (PASS via debug-inject marker).
 - 2026-04-24: v1 loop tick re-verify PASS on emulator-5554 (per `clock-discipline.md` ground-truth `date -u` = 2026-04-24). `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg43000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB row `PriDbg43000|PRIORITY|디버그 주입` 확인. Home 진입 후 passthrough card "검토 대기 22 / SmartNoti 가 건드리지 않은 알림 22건 / 검토하기" visible. `검토하기` 탭 → PriorityScreen eyebrow "검토" + title "SmartNoti 가 건드리지 않은 알림" + subtitle + SmartSurfaceCard "검토 대기 22건" + 카드별 "이 판단을 바꿀까요?" + `→ Digest / → 조용히 / → 규칙 만들기` 3 버튼 노출. BottomNav 4 탭 (홈/정리함/분류/설정) 재확인, Priority 탭 부재. Observable steps 1–7 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-23 → 2026-04-24 bump.
+- 2026-04-26: **Bulk reclassify shipped** (plan `2026-04-26-priority-inbox-bulk-reclassify`, PRs #387 + #388 + #389 + this PR). PriorityScreen 카드 long-press → multi-select 모드 + 상단 `PriorityMultiSelectActionBar` (`N개 선택됨` + `→ Digest` + `→ 조용히` + `취소`) → 선택된 row 일괄 재분류 + snackbar `"알림 N건을 Digest 로 옮겼어요"` / `"알림 N건을 조용히로 옮겼어요"`. 신규 도메인 컴포넌트 `BulkPassthroughReviewReclassifyDispatcher` (단일 dispatcher 위임, NOOP/IGNORED/UPDATED 카운터 반환) + pure state `PriorityScreenMultiSelectState` (Compose 외부 회귀 비용 최소화). 카드 본문 탭은 multi-select 활성 시 toggle, 비활성 시 Detail navigation (Gmail 식 가구현 — Apple 식 leading-checkbox 후보는 PR 본문에서 사용자 결정 대기). Observable steps 6a + Bulk verification recipe 추가. Smoke test: 4 PRIORITY rows seed via debug-inject hook, PriorityScreen 진입 + 카드/액션 노출 확인. Compose `combinedClickable` long-press 는 `adb input swipe` 로 트리거 불가 — 실기기 GUI 또는 uiautomator2 검증 권장 (next journey-tester rotation).
 - 2026-04-26: v1 loop tick re-verify PASS on emulator-5554 (`date -u` = 2026-04-26). `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg13000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB `PriDbg13000|PRIORITY|디버그 주입`. Home passthrough card "검토 대기 34 / SmartNoti 가 건드리지 않은 알림 34건 / 검토하기" visible. Tap → PriorityScreen eyebrow "검토" + title "SmartNoti 가 건드리지 않은 알림" + subtitle + SmartSurfaceCard "검토 대기 34건" + 카드별 "이 판단을 바꿀까요?" + `→ Digest / → 조용히 / → 규칙 만들기` 노출. BottomNav 4탭 (홈/정리함/분류/설정), Priority 탭 부재. Observable steps 1–7 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26 bump.
