@@ -123,9 +123,27 @@ fun CategoryEditorScreen(
     var appMenuExpanded by remember { mutableStateOf(false) }
     var confirmingDelete by remember { mutableStateOf(false) }
 
+    // Plan `docs/plans/2026-04-25-category-name-uniqueness.md` Task 3 —
+    // uniqueness gate. Recomputed on every keystroke so the inline error
+    // and disabled save button stay in sync; the underlying `evaluate`
+    // is pure and bounded by `categories.size` so cost is negligible.
+    val existingNames = remember(categories) {
+        categories.map { it.id to it.name }
+    }
+    val nameStatus = remember(draftName, existingNames, editingCategory) {
+        CategoryNameUniqueness.evaluate(
+            candidate = draftName,
+            currentCategoryId = editingCategory?.id,
+            existing = existingNames,
+        )
+    }
     val canSave = validator.canSave(
         name = draftName,
         selectedRuleIds = draftSelectedRuleIds.toList(),
+    ) && validator.nameAvailable(
+        name = draftName,
+        existing = existingNames,
+        currentCategoryId = editingCategory?.id,
     )
 
     val title = if (editingCategory == null) "새 분류" else "분류 편집"
@@ -146,6 +164,15 @@ fun CategoryEditorScreen(
                     onValueChange = { draftName = it },
                     label = { Text("분류 이름") },
                     singleLine = true,
+                    isError = nameStatus == CategoryNameStatus.DUPLICATE,
+                    supportingText = {
+                        if (nameStatus == CategoryNameStatus.DUPLICATE) {
+                            Text(
+                                text = "이미 사용 중인 이름이에요",
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
