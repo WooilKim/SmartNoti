@@ -324,3 +324,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T18:50:34Z | project-manager | #409 | Routes.Categories prefill encoding + helper + 4 unit tests | https://github.com/WooilKim/SmartNoti/actions/runs/24964262014 |
 | 2026-04-26T19:01:54Z | project-manager | #410 | plan #408 Tasks 3-4-5: nav prefill auto-open + lock + resolver tests | https://github.com/WooilKim/SmartNoti/actions/runs/24964470565 |
 | 2026-04-26T19:13:17Z | project-manager | #411 | plan #408 final Tasks 6-10 — Home prefill extractor + nav wiring + journey docs + plan flip shipped (8th same-day shipped plan) | https://github.com/WooilKim/SmartNoti/actions/runs/24964715736 |
+| 2026-04-26T19:23:42Z | project-manager | #412 | docs-only meta-plan add (feature-reporter not-loaded graceful skip) | https://github.com/WooilKim/SmartNoti/actions/runs/24964920596 |
