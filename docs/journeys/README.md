@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — home-uncategorized-prompt partial verify, render path SKIP)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-uncategorized-prompt | SKIP | Highest-leverage pick (`last-verified` empty since 2026-04-22 first doc). emulator-5554 partial verification of detector inputs: `smartnoti_categories.preferences_pb` shows 5 categories with `appPackageName` pin only on 2 packages (`com.android.shell`, `com.google.android.youtube` via `중요 알림`). DB recent (≤7d) packages = `com.android.shell` (74, covered), `com.smartnoti.testnotifier` (2, uncovered), `com.smartnoti.debug.tester` (1, uncovered) — uncoveredCount=2 < THRESHOLD=3. Home dump confirms no `HomeUncategorizedAppsPromptCard` rendered (no `새 앱`/`분류 만들기`/`나중에` strings present). `smartnoti_settings.preferences_pb` lacks `uncategorized_prompt_snooze_until_millis` field → snooze is expired (None reason = below-threshold, not snooze). Detector "None when uncoveredCount < 3" branch matches Observable step 2 inverse + Exit-state "uncoveredCount < 3 → 카드 자동 숨김" claim. SKIP for end-to-end render path (steps 3–5 — render / "분류 만들기" tap / "나중에" snooze persist) because recipe needs ≥3 distinct uncovered packageNames and `cmd notification post` only emits `com.android.shell` (documented Known gap line 106). Installing additional test apps to seed the third package is out of agent scope without explicit caller approval. `last-verified` left empty per docs-sync rule (only real recipe execution bumps it). |
+
+
 ### 2026-04-26 (journey-tester — silent-auto-hide re-verify post-#327 manifest queries)
 
 | Journey | Result | Notes |
