@@ -1,6 +1,8 @@
 package com.smartnoti.app.ui.screens.rules
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -75,7 +77,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun RulesScreen(
     contentPadding: PaddingValues,
@@ -178,6 +180,16 @@ fun RulesScreen(
     val pendingCategoryAssignmentRule = pendingCategoryAssignmentRuleId
         ?.let { id -> rules.firstOrNull { it.id == id } }
 
+    // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Tasks 4+5 — bulk
+    // assign multi-select state. `multiSelectState` drives the selection
+    // chrome (long-press to enter, tap to toggle inside the active bucket,
+    // ActionBar to commit). `pendingBulkAssignmentRuleIds` is set when the
+    // user taps "분류 추가" on the ActionBar — Task 6 will hand it to the
+    // shared bottom sheet so the existing single-rule sheet code stays
+    // untouched.
+    var multiSelectState by remember { mutableStateOf(RulesScreenMultiSelectState()) }
+    var pendingBulkAssignmentRuleIds by remember { mutableStateOf<List<String>?>(null) }
+
     fun startCreate() {
         editingRule = null
         draftTitle = ""
@@ -244,6 +256,24 @@ fun RulesScreen(
                 title = "내 규칙",
                 subtitle = "중요 연락, 앱, 키워드, 시간대를 운영 규칙처럼 정리해 알림 흐름을 직접 제어할 수 있어요.",
             )
+        }
+        // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Task 5 step 4 —
+        // Multi-select ActionBar mounts inside the LazyColumn flow when at
+        // least one 미분류 row is selected. Sticky overlay would clash with
+        // the screen's existing scroll padding rhythm; the in-flow card
+        // also makes selection state easy to dismiss by scrolling away.
+        if (multiSelectState.activeBucket != null) {
+            item(key = "bulk-multi-select-action-bar") {
+                RulesMultiSelectActionBar(
+                    selectedCount = multiSelectState.selectedRuleIds.size,
+                    onAssignToCategoryClick = {
+                        pendingBulkAssignmentRuleIds = multiSelectState.selectedRuleIds.toList()
+                    },
+                    onCancelClick = {
+                        multiSelectState = multiSelectState.cancel()
+                    },
+                )
+            }
         }
         item {
             SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
@@ -331,11 +361,29 @@ fun RulesScreen(
                 items = visibleActionNeededRules,
                 key = { rule -> "unassigned-action-needed:${rule.id}" },
             ) { rule ->
+                val bucket = RulesScreenMultiSelectState.Bucket.ACTION_NEEDED
+                val isInOwnBucket = multiSelectState.isInSelectionMode(bucket)
+                val isSelected = isInOwnBucket && rule.id in multiSelectState.selectedRuleIds
                 UnassignedRuleRowSlot(
                     rule = rule,
                     isParked = false,
                     isHighlighted = rule.id == highlightedRuleId,
-                    onRowTap = { pendingCategoryAssignmentRuleId = rule.id },
+                    isSelected = isSelected,
+                    onRowTap = {
+                        if (isInOwnBucket) {
+                            multiSelectState = multiSelectState.toggle(bucket, rule.id)
+                        } else if (multiSelectState.activeBucket == null) {
+                            // Sister bucket inactive too — default sheet flow.
+                            pendingCategoryAssignmentRuleId = rule.id
+                        }
+                        // Else: other bucket is in selection mode; tap is a
+                        // no-op so the user can't accidentally cross intents.
+                    },
+                    onLongPress = {
+                        if (multiSelectState.activeBucket == null) {
+                            multiSelectState = multiSelectState.enterSelection(bucket, rule.id)
+                        }
+                    },
                     onPromoteToActionNeeded = null,
                     onCheckedChange = { checked ->
                         scope.launch { repository.setRuleEnabled(rule.id, checked) }
@@ -364,11 +412,26 @@ fun RulesScreen(
                 items = visibleParkedRules,
                 key = { rule -> "unassigned-parked:${rule.id}" },
             ) { rule ->
+                val bucket = RulesScreenMultiSelectState.Bucket.PARKED
+                val isInOwnBucket = multiSelectState.isInSelectionMode(bucket)
+                val isSelected = isInOwnBucket && rule.id in multiSelectState.selectedRuleIds
                 UnassignedRuleRowSlot(
                     rule = rule,
                     isParked = true,
                     isHighlighted = rule.id == highlightedRuleId,
-                    onRowTap = { pendingCategoryAssignmentRuleId = rule.id },
+                    isSelected = isSelected,
+                    onRowTap = {
+                        if (isInOwnBucket) {
+                            multiSelectState = multiSelectState.toggle(bucket, rule.id)
+                        } else if (multiSelectState.activeBucket == null) {
+                            pendingCategoryAssignmentRuleId = rule.id
+                        }
+                    },
+                    onLongPress = {
+                        if (multiSelectState.activeBucket == null) {
+                            multiSelectState = multiSelectState.enterSelection(bucket, rule.id)
+                        }
+                    },
                     onPromoteToActionNeeded = {
                         // Plan Task 5 step 3 — flipping draft back to true
                         // routes the row into the louder "작업 필요" group.
@@ -747,6 +810,7 @@ fun RulesScreen(
  * "작업 필요" sub-bucket without having to walk through the post-save sheet
  * a second time.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun UnassignedRuleRowSlot(
     rule: RuleUiModel,
@@ -759,6 +823,8 @@ private fun UnassignedRuleRowSlot(
     onMoveDown: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    isSelected: Boolean = false,
+    onLongPress: () -> Unit = {},
 ) {
     val highlightColor by animateColorAsState(
         targetValue = if (isHighlighted) {
@@ -769,6 +835,20 @@ private fun UnassignedRuleRowSlot(
         animationSpec = tween(durationMillis = 400),
         label = "ruleHighlight",
     )
+    // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Task 5 step 3 —
+    // selected rows in multi-select mode draw an accent border so the
+    // user can see what is in their bulk action set. Drawn on the slot
+    // wrapper (not on RuleRow itself) so the existing `RuleRow` visual
+    // contract stays intact.
+    val selectionBorderColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0f)
+        },
+        animationSpec = tween(durationMillis = 200),
+        label = "ruleSelectionBorder",
+    )
     Column(
         modifier = Modifier
             .let { mod ->
@@ -778,11 +858,20 @@ private fun UnassignedRuleRowSlot(
                         color = highlightColor,
                         shape = RoundedCornerShape(16.dp),
                     )
+                } else if (isSelected) {
+                    mod.border(
+                        width = 2.dp,
+                        color = selectionBorderColor,
+                        shape = RoundedCornerShape(16.dp),
+                    )
                 } else {
                     mod
                 }
             }
-            .clickable(onClick = onRowTap),
+            .combinedClickable(
+                onClick = onRowTap,
+                onLongClick = onLongPress,
+            ),
     ) {
         RuleRow(
             rule = rule,
