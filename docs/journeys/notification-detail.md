@@ -28,7 +28,7 @@ last-verified: 2026-04-26
 3. 대상 알림이 null 이면 `EmptyState("알림을 찾을 수 없어요", ...)` 를 보여주고 return.
 4. 존재하면 섹션 순서대로 렌더링:
    - 알림 요약 카드 — appName, sender/title, body, `StatusBadge(status)`
-   - "왜 이렇게 처리됐나요?" — `ReasonChipRow(reasonTags)` (FlowRow 이므로 줄바꿈)
+   - "왜 이렇게 처리됐나요?" — `ReasonChipRow(reasonTags)` (FlowRow 이므로 줄바꿈). 그 아래에 (조건부) `QuietHoursExplainerBuilder` 가 합성한 "지금 적용된 정책" sub-section 한 줄 카피 — DIGEST + `조용한 시간` reasonTag + `사용자 규칙` 미동시-매치이면 노출 (→ [quiet-hours](quiet-hours.md))
    - (선택) 온보딩 추천 반영 카드 — `NotificationDetailOnboardingRecommendationSummaryBuilder`
    - (선택) "어떻게 전달되나요?" — `NotificationDetailDeliveryProfileSummaryBuilder` 결과. 전달 모드/소리/진동/Heads-up/잠금화면 라벨
    - (선택) "원본 알림 처리 상태" — `NotificationDetailSourceSuppressionSummaryBuilder` 결과 (원본 상태 / 대체 알림 여부)
