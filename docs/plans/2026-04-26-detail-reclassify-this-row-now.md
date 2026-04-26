@@ -45,7 +45,7 @@ status: planned
    - `IGNORE → NotificationStatusUi.IGNORE`
 2. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.CategoryActionToNotificationStatusMapperTest"` → RED 확인.
 
-## Task 2: Add failing tests for new "apply category action to current row" use case
+## Task 2: Add failing tests for new "apply category action to current row" use case [SHIPPED via PR (Tasks 2-3 bundle)]
 
 **Objective:** Use case 가 (a) status 를 mapper 에 따라 갱신, (b) reasonTags 에 `"사용자 분류"` (또는 implementer 가 결정한 라벨) 를 dedup 추가, (c) 다른 모든 필드 (title/body/sender 등) 는 보존 한다는 계약을 unit test 로 고정.
 
@@ -63,7 +63,7 @@ status: planned
 2. Use case 는 `Ports` 인터페이스 (Test 가 fake 주입) 를 가지며 production 은 `NotificationRepository.updateNotification` 에 위임.
 3. RED 확인.
 
-## Task 3: Implement mapper + use case
+## Task 3: Implement mapper + use case [SHIPPED via PR (Tasks 2-3 bundle); mapper part already shipped via PR #377]
 
 **Objective:** Tasks 1, 2 를 GREEN 으로.
 
