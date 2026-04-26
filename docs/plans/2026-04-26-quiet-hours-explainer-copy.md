@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Quiet hours 적용 사유를 사용자에게 명시적으로 설명 Plan
