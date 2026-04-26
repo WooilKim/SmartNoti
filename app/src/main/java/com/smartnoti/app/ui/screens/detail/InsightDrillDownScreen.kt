@@ -24,12 +24,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -83,9 +82,18 @@ fun InsightDrillDownScreen(
     val reasonNavigationBuilder = remember { InsightDrillDownReasonNavigationModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
     val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
-    var selectedRange by rememberSaveable(initialRange) {
-        mutableStateOf(InsightDrillDownRange.fromRouteValue(initialRange))
+    // Plan 2026-04-26-insight-drilldown-range-state-survival Task 2:
+    // hoist the chip selection into a pure holder whose `rememberSaveable`
+    // key is static so URL-arg shake (Detail back-stack restore) does not
+    // reset user choice. `onRouteArgsChanged` re-applies the URL arg only
+    // while the user has not yet selected anything.
+    val rangeState = rememberSaveable(saver = InsightDrillDownRangeState.Saver) {
+        InsightDrillDownRangeState(initialRouteValue = initialRange)
     }
+    LaunchedEffect(initialRange) {
+        rangeState.onRouteArgsChanged(initialRouteValue = initialRange)
+    }
+    val selectedRange = rangeState.currentRange
     val filter = remember(filterType, filterValue) {
         when (filterType) {
             "app" -> InsightDrillDownFilter.App(appName = filterValue)
@@ -204,17 +212,17 @@ fun InsightDrillDownScreen(
                     InsightRangeChip(
                         range = InsightDrillDownRange.RECENT_3_HOURS,
                         selectedRange = selectedRange,
-                        onRangeSelected = { selectedRange = it },
+                        onRangeSelected = { rangeState.select(it) },
                     )
                     InsightRangeChip(
                         range = InsightDrillDownRange.RECENT_24_HOURS,
                         selectedRange = selectedRange,
-                        onRangeSelected = { selectedRange = it },
+                        onRangeSelected = { rangeState.select(it) },
                     )
                     InsightRangeChip(
                         range = InsightDrillDownRange.ALL,
                         selectedRange = selectedRange,
-                        onRangeSelected = { selectedRange = it },
+                        onRangeSelected = { rangeState.select(it) },
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

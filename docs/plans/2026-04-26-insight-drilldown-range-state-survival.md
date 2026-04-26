@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Insight Drill-down Range Selection Survives Detail Round-trip
@@ -24,7 +24,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for range state survival
+## Task 1: Add failing tests for range state survival [IN PROGRESS via PR #402]
 
 **Objective:** 두 가지 회귀 시나리오를 테스트로 고정해 fix 검증의 grounding 을 만든다.
 
@@ -40,7 +40,7 @@ status: planned
 2. **Test B — `routeValue` 전파 contract**: holder 의 `currentRange.routeValue` 가 `Routes.Insight.createForReason(...)` 의 `range` 파라미터로 들어갔을 때, 빌드된 URL 이 사용자가 마지막에 선택한 값을 query 로 포함함 확인. 4 range 값 × 2 source 값의 조합으로 parameterize.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.detail.InsightDrillDownRangeStateTest"` 가 RED 인 상태로 commit (helper 미구현이라 컴파일 실패가 정상 — RED).
 
-## Task 2: Extract pure-Kotlin range state holder
+## Task 2: Extract pure-Kotlin range state holder [IN PROGRESS via PR #402]
 
 **Objective:** Compose 외부에서 단위 테스트 가능한 pure holder 를 추출해 `rememberSaveable` 회귀를 다시는 막는다.
 
