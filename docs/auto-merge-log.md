@@ -276,3 +276,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T06:51:46Z | journey-tester | #358 | rules-management | https://github.com/WooilKim/SmartNoti/actions/runs/24950486966 |
 | 2026-04-26T07:19:04Z | journey-tester | #359 | home-uncategorized-prompt | https://github.com/WooilKim/SmartNoti/actions/runs/24950961637 |
 | 2026-04-26T07:31:29Z | journey-tester | #360 | digest-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24951170326 |
+| 2026-04-26T07:43:30Z | journey-tester | #361 | ignored-archive | https://github.com/WooilKim/SmartNoti/actions/runs/24951383858 |
