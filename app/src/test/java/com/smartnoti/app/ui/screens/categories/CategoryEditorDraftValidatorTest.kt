@@ -47,4 +47,54 @@ class CategoryEditorDraftValidatorTest {
         )
         assertTrue(canSave)
     }
+
+    // Plan `docs/plans/2026-04-25-category-name-uniqueness.md` Task 3
+    // — uniqueness branch added via separate [nameAvailable] predicate
+    // (option B). Editor combines the two gates with `&&`.
+
+    @Test
+    fun nameAvailable_new_flow_with_duplicate_name_is_false() {
+        val available = validator.nameAvailable(
+            name = "프로모션",
+            existing = listOf("cat-existing" to "프로모션"),
+            currentCategoryId = null,
+        )
+        assertFalse(available)
+    }
+
+    @Test
+    fun nameAvailable_new_flow_with_unique_name_is_true() {
+        val available = validator.nameAvailable(
+            name = "신규",
+            existing = listOf("cat-existing" to "프로모션"),
+            currentCategoryId = null,
+        )
+        assertTrue(available)
+    }
+
+    @Test
+    fun nameAvailable_edit_flow_keeping_own_name_is_true() {
+        val available = validator.nameAvailable(
+            name = "프로모션",
+            existing = listOf(
+                "cat-promo" to "프로모션",
+                "cat-other" to "광고",
+            ),
+            currentCategoryId = "cat-promo",
+        )
+        assertTrue(available)
+    }
+
+    @Test
+    fun nameAvailable_edit_flow_renaming_into_other_row_is_false() {
+        val available = validator.nameAvailable(
+            name = "광고",
+            existing = listOf(
+                "cat-promo" to "프로모션",
+                "cat-other" to "광고",
+            ),
+            currentCategoryId = "cat-promo",
+        )
+        assertFalse(available)
+    }
 }
