@@ -267,3 +267,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T04:15:26Z | project-manager | #348 | gap-planner plan: inbox bundle preview "전체 보기" CTA | https://github.com/WooilKim/SmartNoti/actions |
 | 2026-04-26T04:37:34Z | project-manager | #349 | inbox bundle "전체 보기" CTA — DigestGroupCard preview-cap removal + see-all toggle (5/5 tasks) | https://github.com/WooilKim/SmartNoti/actions/runs/24948309327 |
 | 2026-04-26T04:45:51Z | project-manager | #350 | ops: land 26 loop-monitor tick rows (clean working tree) | https://github.com/WooilKim/SmartNoti/actions/runs/24948444852 |
+| 2026-04-26T05:04:24Z | project-manager | #351 | ops loop-monitor: land 2 additional tick rows (take 2) +meta-plan ask, docs-only +2/-0 | https://github.com/WooilKim/SmartNoti/actions/runs/24948613452 |
