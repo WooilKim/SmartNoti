@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — ignored-archive rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| ignored-archive | PASS | Rotation re-verification (oldest non-deprecated journey by `last-verified`, was 2026-04-24). emulator-5554, cold-start `am force-stop com.smartnoti.app` → 설정 탭 (936,2274) → 스크롤하여 "무시된 알림 아카이브 표시" 카드 노출. 토글 OFF→ON tap (927,440) → 같은 카드에 "무시됨 아카이브 열기" OutlinedButton ([391,574][690,623]) 등장 (Trigger 일치). 버튼 tap → `IgnoredArchiveScreen` 마운트, dump 결과 eyebrow `아카이브` / title `무시됨` / subtitle `IGNORE 규칙이 매치된 알림은 여기에 쌓여요. 기본 뷰에는 나타나지 않아요.` + EmptyState `무시된 알림이 없어요` + `IGNORE 액션 규칙을 만들면 여기에 쌓이기 시작해요.` 정확히 렌더 (Observable steps 1–5 empty-state 분기 일치, 현재 DB IGNORE row 0건). 뒤로가기 → 토글 OFF tap → 같은 카드에서 "무시됨 아카이브 열기" 사라짐 (Exit state 일치). 비파괴 — 토글은 verification 후 OFF 로 복원. DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26. |
+
 ### 2026-04-26 (journey-tester — digest-suppression rotation sweep, emulator-5554)
 
 | Journey | Result | Notes |
