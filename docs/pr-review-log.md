@@ -365,3 +365,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T23:32:03Z | #415 | plan-implementer | APPROVE | tray auto-dismiss Tasks 1-2; CI green; merged |
 | 2026-04-26T23:32:09Z | #416 | plan-implementer | DEFER | inbox-sort Tasks 1-2; CI pending |
 | 2026-04-26T23:46:03Z | #416 | plan-implementer | APPROVE+DEFER | Tasks 1-2 inbox-sort: contents approved (enum + planner + 8 tests + settings migration, CI green, no risk signals) but mergeStateStatus=DIRTY — needs rebase before merge |
+| 2026-04-26T23:46:06Z | #417 | plan-implementer | DEFER | CI Unit tests + debug APK pending — re-review next sweep |
