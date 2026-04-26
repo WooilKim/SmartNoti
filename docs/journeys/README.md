@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — hidden-inbox rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | PASS | Oldest by `last-verified` (2026-04-21 → 2026-04-26). Deprecated journey but still owns silent-summary deep-link contract. emulator-5554 cold-start (`am force-stop` → `am start -e DEEP_LINK_ROUTE hidden`) → header `보관 16건 · 처리 6건` + 기본 탭 "보관 중" PASS, "처리됨 · 6건" tab tap → 요약 서브카피 `이미 확인했거나…` 1건 PASS, 두 탭 모두 초기 collapsed (`최근 묶음 미리보기` 0건) PASS, Coupang 5건 그룹 헤더 tap → expand 후 preview + `전체 보기 · 2건 더` CTA + bulk action row (`모두 중요로 복구` / `모두 지우기`) PASS. 2026-04-26 inbox-bundle-preview-see-all 회귀 확인. DRIFT 없음. |
+
 ### 2026-04-26 (journey-tester — persistent-notification-protection rotation sweep, JVM unit test)
 
 | Journey | Result | Notes |
