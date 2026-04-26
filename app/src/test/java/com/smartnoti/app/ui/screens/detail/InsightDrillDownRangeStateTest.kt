@@ -106,11 +106,10 @@ class InsightDrillDownRangeStateTest {
         val original = InsightDrillDownRangeState(initialRouteValue = "recent_3_hours")
         original.select(InsightDrillDownRange.ALL)
 
-        val saved = with(InsightDrillDownRangeState.Saver) {
-            FakeSaverScope.save(original)
-        }
+        val saver = InsightDrillDownRangeState.Saver
+        val saved = with(saver) { FakeSaverScope.save(original) }
         requireNotNull(saved) { "Saver returned null for non-default state" }
-        val restored = InsightDrillDownRangeState.Saver.restore(saved)
+        val restored = saver.restore(saved)
         requireNotNull(restored) { "Saver failed to restore" }
 
         assertEquals(InsightDrillDownRange.ALL, restored.currentRange)
@@ -123,18 +122,10 @@ class InsightDrillDownRangeStateTest {
 }
 
 /**
- * `androidx.compose.runtime.saveable.SaverScope` is a `fun interface` that just
- * returns whether a value can be saved. The unit test runs outside Compose so
- * we provide a permissive scope that approves everything.
+ * `androidx.compose.runtime.saveable.SaverScope` is a `fun interface` that
+ * just returns whether a value can be saved. The unit test runs outside
+ * Compose so we provide a permissive scope that approves everything.
  */
 private object FakeSaverScope : androidx.compose.runtime.saveable.SaverScope {
     override fun canBeSaved(value: Any): Boolean = true
-
-    fun <Original, Saveable : Any> save(
-        value: Original,
-    ): Saveable? {
-        @Suppress("UNCHECKED_CAST")
-        val saver = InsightDrillDownRangeState.Saver as androidx.compose.runtime.saveable.Saver<Original, Saveable>
-        return with(saver) { save(value) }
-    }
 }
