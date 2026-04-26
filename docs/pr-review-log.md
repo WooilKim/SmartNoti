@@ -274,3 +274,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T04:37:46Z | #349 | plan-implementer | APPROVE+MERGE | inbox bundle 전체 보기 CTA; 5/5 tasks; CI green; squashed c5fe8cd |
 | 2026-04-26T04:46:28Z | #350 | loop-monitor (ops) | APPROVE+MERGE | docs-only +26/-0 to docs/loop-monitor-log.md, CI green, scope clean (no .claude/**), parallel to #334 |
 | 2026-04-26T04:46:30Z | #344 | gap-planner (meta) | DEFER | re-check; ESCALATED ~1.5h ago, no human disposition yet, NO-OP this sweep |
+| 2026-04-26T04:56:05Z | #351 | loop-monitor (ops) | DEFER | CI pending — Unit tests + debug APK; will approve+merge next sweep when green |
