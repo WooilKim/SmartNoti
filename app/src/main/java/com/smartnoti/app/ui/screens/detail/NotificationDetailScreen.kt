@@ -42,7 +42,9 @@ import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.model.SilentMode
+import com.smartnoti.app.domain.usecase.ApplyCategoryActionToNotificationUseCase
 import com.smartnoti.app.domain.usecase.AssignNotificationToCategoryUseCase
+import com.smartnoti.app.domain.usecase.CategoryActionToNotificationStatusMapper
 import com.smartnoti.app.domain.usecase.CategoryEditorPrefill
 import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendationSummaryBuilder
@@ -137,6 +139,23 @@ fun NotificationDetailScreen(
                     categoriesRepository.appendRuleIdToCategory(categoryId, ruleId)
                 }
             },
+        )
+    }
+    // Plan `docs/plans/2026-04-26-detail-reclassify-this-row-now.md` Tasks 4–5:
+    // after the Path A (existing Category) or Path B (newly-created Category)
+    // write completes, also rewrite the currently-displayed row's
+    // `status` + `reasonTags` so list views reflect the user's choice
+    // immediately. The legacy 4-button layout did this synchronously; the
+    // 2026-04-22 redesign dropped it and snackbar copy alone made the
+    // behavior feel ambiguous.
+    val applyToCurrentRowUseCase = remember(repository) {
+        ApplyCategoryActionToNotificationUseCase(
+            ports = object : ApplyCategoryActionToNotificationUseCase.Ports {
+                override suspend fun updateNotification(notification: com.smartnoti.app.domain.model.NotificationUiModel) {
+                    repository.updateNotification(notification)
+                }
+            },
+            mapper = CategoryActionToNotificationStatusMapper(),
         )
     }
     val reasonSections = remember(notification, rules) {
@@ -505,6 +524,17 @@ fun NotificationDetailScreen(
                         notification = notification,
                         categoryId = categoryId,
                     )
+                    // Plan
+                    // `docs/plans/2026-04-26-detail-reclassify-this-row-now.md`
+                    // Task 4: also rewrite the current row's status to the
+                    // destination Category's action so the list view
+                    // reflects the user's tap immediately. `snapshot` is
+                    // captured at tap time; if the Category has since been
+                    // deleted (race) we fall back to snackbar-only.
+                    val destinationAction = snapshot.firstOrNull { it.id == categoryId }?.action
+                    if (destinationAction != null) {
+                        applyToCurrentRowUseCase.apply(notification, destinationAction)
+                    }
                     val message = confirmationMessageBuilder.build(
                         outcome = DetailReclassifyOutcome.AssignedExisting(categoryId),
                         categories = snapshot,
@@ -559,8 +589,17 @@ fun NotificationDetailScreen(
                     ),
                     categories = categories,
                 )
-                if (message != null) {
-                    scope.launch {
+                scope.launch {
+                    // Plan
+                    // `docs/plans/2026-04-26-detail-reclassify-this-row-now.md`
+                    // Task 5: also rewrite the current row's status to the
+                    // newly-created Category's action so list views
+                    // reflect the user's choice immediately. `savedCategory`
+                    // is the just-persisted entity from the editor save
+                    // path so its action is authoritative even before
+                    // the categories Flow re-emits.
+                    applyToCurrentRowUseCase.apply(notification, savedCategory.action)
+                    if (message != null) {
                         snackbarHostState.showSnackbar(
                             message = message,
                             duration = SnackbarDuration.Short,
