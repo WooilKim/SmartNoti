@@ -283,3 +283,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T08:25:01Z | journey-tester | #365 | rules-feedback-loop | https://github.com/WooilKim/SmartNoti/actions/runs/24952119101 |
 | 2026-04-26T08:33:34Z | journey-tester | #366 | persistent-notification-protection | https://github.com/WooilKim/SmartNoti/actions/runs/24952265807 |
 | 2026-04-26T08:42:57Z | journey-tester | #367 | hidden-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/24952442309 |
+| 2026-04-26T08:52:31Z | journey-tester | #368 | protected-source-notifications | https://github.com/WooilKim/SmartNoti/actions/runs/24952615628 |
