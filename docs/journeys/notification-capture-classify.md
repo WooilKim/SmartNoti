@@ -84,6 +84,7 @@ last-verified: 2026-04-24
 - `data/local/NotificationRepository#save`
 - `data/local/NotificationEntity` — Room 스키마
 - `notification/DebugClassificationOverride` — **debug-only** classifier override (extras marker `com.smartnoti.debug.FORCE_STATUS` → `NotificationStatusUi`). `BuildConfig.DEBUG == true` 빌드의 `processNotification` 만 호출하며 release 빌드에서는 dead-strip. Recipe-side helper `app/src/debug/.../DebugInjectNotificationReceiver` 가 broadcast 를 받아 marker 가 baked-in 된 `Bundle` 로 resolver 를 호출 — production classifier path 는 변경 없음. Priority-inbox journey-tester recipe 전용 — 다른 journey 의 검증에 사용하지 말 것 (plan `docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md`)
+- Debug-only inject receiver supports optional `--es package_name <pkg>` and `--es app_name <label>` extras (debug APK only) so verification recipes can pin the saved row's `packageName` / `appName` and exercise package-gated classifier branches (e.g. quiet-hours `shoppingPackages`). `force_status` 와 독립적 — 둘 중 하나, 둘 다, 또는 둘 다 omit 가능. See `app/src/debug/java/com/smartnoti/app/debug/DebugInjectNotificationReceiver.kt` and plan `docs/plans/2026-04-26-debug-inject-package-name-extra.md`.
 
 ## Tests
 
