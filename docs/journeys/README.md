@@ -43,7 +43,7 @@
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-25 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-24 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — notification-detail rule-chip drift correction)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | PASS | gap-planner 가 surfaced doc drift: Known gaps 의 "Detail 내부에서 '룰 보기' 바로가기 부재" 항목이 stale (`RuleHitChipRow` + `onRuleClick → Routes.Rules.create(highlightRuleId=…)` 이미 shipped, `NotificationDetailScreen.kt:239-241` + `AppNavHost.kt:339-346`). emulator-5554 `date -u`=2026-04-26. baseline `cmd notification post DetailTest_0426 RuleHitTest` → Home 의 PayTest (rule hit 보유) 카드 탭 → Detail 진입 → "왜 이렇게 처리됐나요?" 카드의 "적용된 규칙" 서브섹션에 "Shell" rule chip clickable 렌더 ([92,1292][218,1418]) → chip 탭 → Rules 화면 (4개 룰 리스트 "오늘만 특가 안내", "YT", "프로모션 알림", "반복 알림") 으로 navigate 확인. Known gaps 항목 resolved 마킹 + Change log drift-correction 엔트리 추가. `last-verified` 2026-04-25 → 2026-04-26. |
 
 ### 2026-04-26 (journey-tester — priority-inbox re-verify via debug-inject marker)
 
