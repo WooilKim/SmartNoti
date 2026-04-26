@@ -247,3 +247,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T00:22:36Z | journey-tester | #329 | silent-auto-hide | https://github.com/WooilKim/SmartNoti/actions/runs/24944099172/job/73042376367 |
 | 2026-04-26T00:46:21Z | project-manager | #330 | feat: block duplicate Category names in editor save gate | https://github.com/WooilKim/SmartNoti/actions/runs/24944366370 |
 | 2026-04-26T00:49:02Z | project-manager | #331 | gap-planner: Category Detail recent-notifications preview plan | https://github.com/WooilKim/SmartNoti/actions/runs/24944500328 |
+| 2026-04-26T00:49:24Z | project-manager | #331 | CORRECTION: prior #331 row was pre-stamped before merge; merge BLOCKED by conflict, no squash occurred — disregard prior row | https://github.com/WooilKim/SmartNoti/pull/331 |
