@@ -307,3 +307,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T14:16:12Z | #385 | plan-implementer | APPROVE | re-sweep: CI flipped to SUCCESS. plan #381 Tasks 6-7-8 bulk sheet wiring + Path B (DIGEST default) + journey sync + plan flipped to shipped |
 | 2026-04-26T14:24:05Z | #386 | gap-planner | DEFER | CI pending (Unit tests + debug APK) at review time; plan-doc-only addition, will re-check next sweep |
 | 2026-04-26T14:27:58Z | #386 | gap-planner | APPROVE | docs-only plan; CI green; merged via squash |
+| 2026-04-26T14:33:51Z | #387 | plan-implementer | DEFER | CI pending (Unit tests + debug APK, run 24959102965); plan #386 Tasks 1-2, scope confirmed (domain use case + tests + plan task-checkbox tick); re-review next sweep |
