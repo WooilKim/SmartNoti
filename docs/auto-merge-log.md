@@ -322,3 +322,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T18:30:14Z | project-manager | #407 | quiet-hours shoppingPackages Settings picker (plan #404 Tasks 6-9) | https://github.com/WooilKim/SmartNoti/actions/runs/24963849865 |
 | 2026-04-26T18:42:40Z | project-manager | #408 | docs(plans): plan for uncategorized prompt editor auto-open w/ app preset | https://github.com/WooilKim/SmartNoti/actions/runs/24964094765 |
 | 2026-04-26T18:50:34Z | project-manager | #409 | Routes.Categories prefill encoding + helper + 4 unit tests | https://github.com/WooilKim/SmartNoti/actions/runs/24964262014 |
+| 2026-04-26T19:01:54Z | project-manager | #410 | plan #408 Tasks 3-4-5: nav prefill auto-open + lock + resolver tests | https://github.com/WooilKim/SmartNoti/actions/runs/24964470565 |
