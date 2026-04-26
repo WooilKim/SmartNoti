@@ -7,6 +7,7 @@ import android.content.Context
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import com.smartnoti.app.data.local.NotificationEntity
+import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.usecase.SilentGroupKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -35,6 +36,12 @@ class SilentHiddenSummaryNotifierGroupingTest {
     private lateinit var notifier: SilentHiddenSummaryNotifier
     private lateinit var systemNm: NotificationManager
 
+    // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
+    // existing grouping tests don't care about the timeout; pass the
+    // default settings so the auto-dismiss policy returns 30 minutes for
+    // SILENT but the assertions in this file remain unaffected.
+    private val testSettings = SmartNotiSettings()
+
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
@@ -55,6 +62,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
             count = 2,
             preview = listOf(silentEntity("m1", "com.kakao.talk", "엄마", "잘 지내?")),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
 
         val channel = systemNm.getNotificationChannel(SmartNotiNotifier.CHANNEL_SILENT_GROUP)
@@ -74,6 +82,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
                 silentEntity("m2", "com.android.mms", "엄마", "답장해"),
             ),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
 
         val active = active()
@@ -95,12 +104,14 @@ class SilentHiddenSummaryNotifierGroupingTest {
             count = 2,
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
 
         notifier.postGroupChild(
             notificationId = 7_001L,
             entity = silentEntity("m1", "com.kakao.talk", "엄마", "잘 지내?"),
             key = key,
+            settings = testSettings,
         )
 
         val active = active()
@@ -123,12 +134,14 @@ class SilentHiddenSummaryNotifierGroupingTest {
             count = 2,
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
         notifier.postGroupSummary(
             key = promo,
             count = 3,
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
         assertEquals(2, active().size)
 
@@ -160,6 +173,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
             count = 2,
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
         assertEquals(1, active().size)
 
@@ -168,6 +182,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
             count = 0,
             preview = emptyList(),
             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+            settings = testSettings,
         )
 
         assertEquals(0, active().size)
@@ -186,6 +201,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
             notificationId = 42L,
             entity = silentEntity("m1", "com.kakao.talk", "엄마", "잘 지내?"),
             key = key,
+            settings = testSettings,
         )
 
         assertNotNull(
@@ -199,7 +215,7 @@ class SilentHiddenSummaryNotifierGroupingTest {
         // Regression guard: the pre-existing `post(count)` path must stay on the
         // `smartnoti_silent_summary` channel so Task 2 doesn't accidentally reroute the archived
         // summary into the group channel.
-        notifier.post(count = 2)
+        notifier.post(count = 2, settings = testSettings)
 
         val active = active()
         assertEquals(1, active.size)
