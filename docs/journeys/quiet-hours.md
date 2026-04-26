@@ -73,12 +73,35 @@ last-verified: 2026-04-26
 #    reasonTags 에 "quiet hours" 관련 태그가 있는지 Detail 에서 확인
 ```
 
+## 4. Positive-case end-to-end (debug APK only)
+
+`DebugInjectNotificationReceiver` 가 `--es package_name <pkg>` + `--es app_name <label>` extras 를 받아 classifier 의 package-gated 분기 (예: `shoppingPackages = setOf("com.coupang.mobile")`) 를 발화시킬 수 있다 (plan `docs/plans/2026-04-26-debug-inject-package-name-extra.md`). `force_status` 는 omit 해서 real classifier 가 결정하도록 둔다.
+
+```bash
+# 사전: Settings 의 조용한 시간 창을 현재 시각이 포함되도록 조정 (위 step 1 동일).
+
+# 쇼핑앱 packageName 으로 broadcast — force_status 미전달 → real classifier 분기 실행.
+adb -s emulator-5554 shell am broadcast \
+  -a com.smartnoti.debug.INJECT_NOTIFICATION \
+  -p com.smartnoti.app \
+  --es title "QuietHrsPositive$(date +%s)" \
+  --es body "쇼핑 알림 (조용한 시간 분기 기대)" \
+  --es package_name com.coupang.mobile \
+  --es app_name "Coupang"
+
+# 기대: status=DIGEST, reasonTags 에 "조용한 시간" 포함 + "사용자 규칙" 미포함.
+#       Detail 진입 시 classifierSignals chip row 아래 "지금 적용된 정책"
+#       sub-section 이 한 줄 카피로 렌더.
+adb -s emulator-5554 exec-out run-as com.smartnoti.app sqlite3 \
+  databases/smartnoti.db \
+  "SELECT status,reasonTags FROM notifications WHERE title LIKE 'QuietHrsPositive%' ORDER BY postedAtMillis DESC LIMIT 1;"
+```
+
 ## Known gaps
 
 - `shoppingPackages` 가 classifier 생성자에 하드코딩 (`setOf("com.coupang.mobile")`) — 사용자가 카테고리를 확장할 수 없음.
 - (resolved 2026-04-26, plan `2026-04-26-quiet-hours-explainer-copy`) Quiet hours 가 적용되었다는 것을 Detail 의 reasonTags 로만 확인 가능. UI 에서 "quiet hours 때문에 숨김" 같은 명시적 설명 부재. → plan: `docs/plans/2026-04-26-quiet-hours-explainer-copy.md`
-- Positive-case ADB end-to-end capture (DIGEST + `조용한 시간` + no `사용자 규칙` Detail 진입 + "지금 적용된 정책" sub-section 라이브 관측) 가 현재 setup 에서 불가능. 두 가지 blocker: (a) 정리함 inbox 의 Digest/보관 bundle preview 가 가장 최근 rows 만 노출 → 과거 quiet-hours rows 로 직접 navigation 경로 부재, (b) `DebugInjectNotificationReceiver` 가 packageName 을 `com.smartnoti.debug.tester` 로 hardcode → classifier 의 quiet-hours 분기 (`packageName in setOf("com.coupang.mobile")`) 를 발화시키지 못함. 우회: receiver 의 `--es package_name` 지원 추가 또는 bundle preview 에 "전체 보기" 진입점. 현재는 6/6 unit test (overnight + same-day + null gates) + negative-case 라이브 검증 + DB-level 데이터 존재 확인으로 등가 증거 확보.
-  → plan: `docs/plans/2026-04-26-debug-inject-package-name-extra.md` (drains blocker (b); (a) remains open)
+- Positive-case ADB end-to-end capture: blocker (b) 해소 — `DebugInjectNotificationReceiver` 가 `--es package_name <pkg>` + `--es app_name <label>` extras 를 지원하면서 classifier 의 quiet-hours 분기 (`packageName in setOf("com.coupang.mobile")`) 를 직접 발화시킬 수 있다 (plan `docs/plans/2026-04-26-debug-inject-package-name-extra.md`, Verification recipe step 4 참고). 남은 blocker (a): 정리함 inbox 의 Digest/보관 bundle preview 가 가장 최근 rows 만 노출 → 과거 quiet-hours rows 의 Detail UI 로 직접 navigation 경로 부재. 우회 후보: bundle preview 에 "전체 보기" 진입점 추가. 새 broadcast 로 즉시 in-window row 를 만들면 Detail navigation 도 라이브 관측 가능.
 
 ## Change log
 
@@ -87,4 +110,5 @@ last-verified: 2026-04-26
 - 2026-04-22: Static-source + live-DB sweep. JDK 미설치로 unit test 실행 불가 → `NotificationClassifier.kt:90` (`if (input.packageName in shoppingPackages && input.quietHours) return DIGEST`) 와 `QuietHoursPolicy.kt:7-15` (same-day / overnight 분기) 가 Observable steps 1-3 과 일치함을 소스 수준에서 재확인. emulator 현재 시각 00:34 KST → default `[23,7)` 범위 안. `run-as com.smartnoti.app sqlite3 smartnoti.db 'SELECT DISTINCT reasonTags FROM notifications;'` 결과에 실제로 `조용한 시간` tag 가 살아 있는 row 존재 (분류 파이프라인이 quiet-hours 분기를 실제로 발화 중). `SettingsRepository.kt:57-60` 가 `quietHoursEnabled` + `QuietHoursPolicy(startHour,endHour)` 를 묶어 `currentNotificationContext` 로 주입하는 경로도 doc Code pointers 와 일치. DRIFT 없음. `last-verified` 를 2026-04-21 → 2026-04-22 갱신.
 - 2026-04-24: v1 loop tick pick (2-day-stale; last-verified 2026-04-22). Static-source + live-DB sweep on emulator-5554 (현재 시각 12:43 KST = `[23,7)` default 범위 밖, 새 in-window post 불가하므로 historical row 검증). `NotificationClassifier.kt:90` (`if (input.packageName in shoppingPackages && input.quietHours) return DIGEST`) 와 `QuietHoursPolicy.kt:7-15` (same-day: `hourOfDay in startHour until endHour`, overnight: `hourOfDay >= startHour || hourOfDay < endHour`) 가 Observable steps 1-3 과 byte-for-byte 일치. `SettingsRepository.kt:53-65` `currentNotificationContext` 가 `Calendar.HOUR_OF_DAY` + `QuietHoursPolicy(startHour,endHour)` 를 `NotificationContext` 로 묶어 주입하는 경로도 doc Code pointers ("data/settings/SettingsRepository#currentNotificationContext — 시각 → quietHours 플래그") 와 일치. Live DB 쿼리 `run-as com.smartnoti.app sqlite3 databases/smartnoti.db "SELECT packageName,status,datetime(postedAtMillis/1000,'unixepoch','localtime'),reasonTags FROM notifications WHERE reasonTags LIKE '%조용한%' ORDER BY postedAtMillis DESC LIMIT 3;"` → 가장 최근 `조용한 시간` tag row 3건 모두 `2026-04-24 02:02:09~11` (default `[23,7)` quiet window 안) posted, status DIGEST/SILENT/SILENT, packageName `com.android.shell` — capture→classifier→repository 파이프라인이 quiet-hours 분기를 실제로 발화시켰음을 확인 (Exit state "DIGEST 분류로 DB 에 저장됨" 충족; SILENT 는 다른 분기에서 결정되더라도 quiet hours reasonTag 는 `NotificationCaptureProcessor.buildReasonTags` 가 quietHours 컨텍스트에 따라 부착하므로 step 1-2 발화 증거로 충분). DRIFT 없음. `last-verified` 를 2026-04-22 → 2026-04-24 갱신.
 - 2026-04-26: Plan `2026-04-26-quiet-hours-explainer-copy` Tasks 3-6 ship — Detail 의 "왜 이렇게 처리됐나요?" 카드 안 classifierSignals chip row 아래에 `QuietHoursExplainerBuilder` 로 합성한 "지금 적용된 정책" sub-section 추가 (예: "지금이 조용한 시간(23시~익일 7시)이라 자동으로 모아뒀어요."). `사용자 규칙` 동시-매치 케이스는 explainer null 처리 (사용자 규칙이 더 결정적이므로 잘못된 인과 설명 방지). Tasks 1-2 (builder + 6/6 unit tests) 는 PR #338 (5d418a9) 로 선행 ship; Tasks 3-6 은 후속 PR. ADB negative-case 검증 on emulator-5554: (a) `사용자 규칙 + 조용한 시간` reasonTags 가진 SmartNoti Test Notifier "오늘만 특가 안내" Detail → sub-section 미노출 (HIGHER_PRECEDENCE_TAGS suppression 확인), (b) `조용한 시간` 미포함 `Repeat3` Shopping/한정 Detail → sub-section 미노출 (tag-gate 확인). Positive case (DIGEST + `조용한 시간` + no `사용자 규칙`) 는 inbox 의 bundle preview 가 가장 최근 row 만 노출하는 제약 때문에 직접 navigation 불가 — 6/6 unit test (overnight + same-day + null gates) + 동일한 wiring 패턴 (`NotificationDetailDeliveryProfileSummaryBuilder` 등) 의 라이브 동작이 동등 증거. DRIFT 없음. `last-verified` 는 verification recipe 를 처음부터 다시 돌리지 않았으므로 갱신 보류.
+- 2026-04-26: Plan `2026-04-26-debug-inject-package-name-extra` Tasks 3-4 ship — Verification recipe section 에 "## 4. Positive-case end-to-end (debug APK only)" 추가 (debug receiver 의 `--es package_name com.coupang.mobile --es app_name "Coupang"` broadcast 로 real classifier 의 shopping + quiet-hours 분기 발화). Known gaps 에서 blocker (b) (`DebugInjectNotificationReceiver` packageName hardcode) 를 해소된 항목으로 다시 표기, 남은 blocker (a) (bundle preview 의 historical row navigation 부재) 만 재기술. `notification-capture-classify.md` Code pointers 에는 cross-journey 노트 추가. `last-verified` 는 Task 5 의 라이브 ADB 실행 후 갱신.
 - 2026-04-26 (post-#339 follow-up sweep): Re-attempt of positive-case ADB capture on emulator-5554 (KST 11:24, default `[23,7)` window 밖). Live DB confirms 3 historical rows satisfying positive precondition (DIGEST + `조용한 시간` + no `사용자 규칙`): `com.android.shell:2020:VerifySweep0422-3` (2026-04-24 02:02:11), `MediaTest0421R2` (2026-04-21 04:06:01), `MediaTest0421` (2026-04-21 01:48:12). Inbox `정리함` 탭의 Digest (14건) 및 보관 중 (31건) bundle preview 는 둘 다 가장 최근 rows 만 노출 (관측: `Shopping/한정 + 발신자 있음 + 반복 알림` Detail 만 entry 가능; `조용한 시간` tag 가진 historical row 는 UI route 부재) — plan-implementer 의 deferral 사유와 정확히 일치. `DebugInjectNotificationReceiver` 도 packageName 을 `com.smartnoti.debug.tester` 로 hardcode 하므로 quiet-hours 분기 (`packageName in shoppingPackages = setOf("com.coupang.mobile")`) 를 발화시키지 못함 → debug-injector 경로로도 우회 불가. Negative-case 라이브 재확인 PASS: `발신자 있음 | 한정 | 반복 알림` reasonTags 의 Shell Shopping Detail 진입 → "왜 이렇게 처리됐나요?" 카드 안 chip row + 전달 모드 카드만 렌더, "지금 적용된 정책" sub-section 부재 (tag-gate 정상 동작). Home 탭의 일반 인사이트 카드 "Shell 알림 46개가 가장 많이 정리됐고, 주된 이유는 '조용한 시간'예요" 는 quiet-hours 파이프라인이 실제로 분류 결과를 driving 하고 있음을 추가로 확인. DRIFT 없음. `last-verified` 를 2026-04-24 → 2026-04-26 갱신.
