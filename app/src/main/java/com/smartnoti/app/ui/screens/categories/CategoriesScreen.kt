@@ -72,6 +72,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CategoriesScreen(
     contentPadding: PaddingValues,
+    onOpenNotification: (notificationId: String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
@@ -89,6 +90,14 @@ fun CategoriesScreen(
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
     }
     val capturedApps by capturedAppsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    // Plan `2026-04-26-category-detail-recent-notifications-preview.md` Task 5:
+    // collect the same notifications stream the inbox uses (only persistent-
+    // notification filter applied; IGNORE rows are intentionally included so
+    // Detail's preview reflects what the Category actually catches).
+    val notificationsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
+        notificationRepository.observeAllFiltered(settings.hidePersistentNotifications)
+    }
+    val notifications by notificationsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var editorTarget by remember { mutableStateOf<CategoryEditorTarget?>(null) }
     var detailTargetId by remember { mutableStateOf<String?>(null) }
@@ -104,17 +113,25 @@ fun CategoriesScreen(
     }
 
     if (detailCategory != null) {
+        val recentNotifications = remember(detailCategory, notifications) {
+            CategoryRecentNotificationsSelector.select(
+                category = detailCategory,
+                notifications = notifications,
+            )
+        }
         Box(modifier = Modifier.fillMaxSize()) {
             CategoryDetailScreen(
                 contentPadding = contentPadding,
                 category = detailCategory,
                 rules = rules,
+                recentNotifications = recentNotifications,
                 onBack = { detailTargetId = null },
                 onEdit = { editorTarget = CategoryEditorTarget.Edit(detailCategory.id) },
                 onDelete = {
                     detailTargetId = null
                     deleteCategory(detailCategory.id)
                 },
+                onOpenNotification = onOpenNotification,
             )
             EditorOverlay(
                 target = editorTarget,
