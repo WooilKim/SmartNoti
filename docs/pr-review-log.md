@@ -278,3 +278,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T05:04:51Z | #351 | project-manager | APPROVE+MERGED | ops loop-monitor 2-row land take2, docs-only +2/-0, CI green; squash a428860; comment-verdict per single-account env |
 | 2026-04-26T05:04:54Z | #352 | gap-planner | ESCALATE | meta-plan modifies .claude/agents/loop-monitor.md (Task 3) + .claude/rules/agent-loop.md (Task 4) — agent-spec self-mod scope, same precedent as #344; plan body itself acknowledges DEFER; CI green |
 | 2026-04-26T05:15:34Z | #353 | gap-planner | DEFER | CI in-progress at review time; scope/traceability OK, will re-check next sweep |
+| 2026-04-26T05:18:21Z | #353 | gap-planner | APPROVE+MERGE | docs/plans/2026-04-26-duplicate-threshold-window-settings.md + journey Known-gap link; CI green |
