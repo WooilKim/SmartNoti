@@ -65,7 +65,7 @@ superseded-by: ../journeys/quiet-hours.md
 4. Update the KDoc on the class to document the new extras (block comment with the canonical `am broadcast` example for `quiet-hours`).
 5. Re-run unit tests — all green. `./gradlew :app:testDebugUnitTest` full suite must stay green (no other test should reference the hardcoded constant).
 
-## Task 3: Quiet-hours verification recipe — add positive-case ADB step
+## Task 3: Quiet-hours verification recipe — add positive-case ADB step [SHIPPED via PR #343]
 
 **Objective:** Replace the "두 가지 blocker (b)" admission in `quiet-hours.md` Known gaps with an actual recipe step that exercises the positive case live.
 
@@ -96,7 +96,7 @@ superseded-by: ../journeys/quiet-hours.md
 2. Add a Change log entry (date = `$(date -u +%Y-%m-%d)`) summarizing: positive-case path now executable; (b) blocker resolved by package_name extra; (a) bundle-preview entry-point limitation still open.
 3. **Do not bump `last-verified`** in this Task — the bump happens in Task 5 after the recipe is actually run on the emulator.
 
-## Task 4: Cross-journey note — debug-inject extras as shared verification primitive
+## Task 4: Cross-journey note — debug-inject extras as shared verification primitive [SHIPPED via PR #343]
 
 **Objective:** Other journeys that have package-gated branches should know this extra exists so future Known-gap entries can reference it instead of re-discovering the limitation.
 
@@ -104,7 +104,7 @@ superseded-by: ../journeys/quiet-hours.md
 - `docs/journeys/notification-capture-classify.md` — Code pointers or a one-line note: "Debug-only inject receiver supports `--es package_name <pkg>` and `--es app_name <label>` extras (debug APK only) — see `app/src/debug/.../DebugInjectNotificationReceiver.kt` and `docs/plans/2026-04-26-debug-inject-package-name-extra.md`."
 - (No edits to other journeys in this plan — those will reference the extras organically when their own Known gaps come up for triage.)
 
-## Task 5: End-to-end ADB verification + last-verified bump for `quiet-hours`
+## Task 5: End-to-end ADB verification + last-verified bump for `quiet-hours` [SHIPPED via PR #343 — partial: live ADB confirmed package_name+app_name+sourceEntryKey substitution end-to-end and shopping-app classifier branch entry; in-window DIGEST observation blocked by newly-discovered Settings UI gap (no start/end editor) — surfaced as Known gap (c) on quiet-hours.md, deferred to follow-up plan]
 
 **Objective:** Actually run the new positive-case recipe on emulator-5554, observe DIGEST + `조용한 시간` in DB, navigate to Detail, screenshot the "지금 적용된 정책" sub-section, and bump `last-verified`.
 
@@ -116,7 +116,7 @@ superseded-by: ../journeys/quiet-hours.md
 5. In-app: enter inbox → locate the QuietHrsPositive row → tap to Detail → confirm "지금 적용된 정책" sub-section renders. Screenshot.
 6. Bump `last-verified` of `docs/journeys/quiet-hours.md` to today (`date -u +%Y-%m-%d`). Add a Change log entry summarizing the live observation.
 
-## Task 6: Self-review + PR
+## Task 6: Self-review + PR [SHIPPED via PR #343]
 
 - `./gradlew :app:testDebugUnitTest` full PASS.
 - `./gradlew :app:assembleDebug` PASS. `./gradlew :app:assembleRelease` PASS (receiver still excluded from release source set — no new release-side surface).
