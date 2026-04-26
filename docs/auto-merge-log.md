@@ -300,3 +300,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T14:16:15Z | project-manager | #385 | plan #381 Tasks 6-7-8 bulk-assign rules to category (Path A + Path B DIGEST default) + journey sync + plan shipped flip | https://github.com/WooilKim/SmartNoti/actions/runs/24958675698 |
 | 2026-04-26T14:27:40Z | project-manager | #386 | docs-only plan addition for priority inbox bulk reclassify | https://github.com/WooilKim/SmartNoti/actions/runs/24958904106 |
 | 2026-04-26T14:37:28Z | project-manager | #387 | plan 2026-04-26 priority-inbox bulk reclassify tasks 1-2 (dispatcher + 5 tests) | https://github.com/WooilKim/SmartNoti/actions/runs/24959102965 |
+| 2026-04-26T14:46:53Z | project-manager | #388 | PriorityScreenMultiSelectState + 7 unit tests (plan 2026-04-26 Tasks 3-4) | https://github.com/WooilKim/SmartNoti/actions/runs/24959262747 |
