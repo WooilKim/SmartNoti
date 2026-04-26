@@ -29,7 +29,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for categoryAction → notificationStatus mapper
+## Task 1: Add failing tests for categoryAction → notificationStatus mapper [IN PROGRESS via PR #377]
 
 **Objective:** Category action 을 notification status 로 변환하는 helper 의 매핑 규칙을 unit test 로 고정. 기존 매퍼가 있는지 implementer 가 먼저 확인하고, 있으면 그 매퍼 사용 + 누락된 분기 테스트만 보강. 없으면 신규 작성.
 
