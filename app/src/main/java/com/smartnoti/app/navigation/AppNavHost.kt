@@ -263,12 +263,35 @@ fun AppNavHost(
                 )
             }
             // 분류 (Categories) primary tab — plan Phase P3 Task 8.
-            composable(Routes.Categories.route) {
+            // Plan `2026-04-26-uncategorized-prompt-editor-autoopen` Task 3:
+            // two optional nav args carry the first uncovered app's package +
+            // label from Home's uncategorized-prompt card so the Categories
+            // screen can auto-open the editor pre-populated with that app.
+            // Both args declare a `null` default so the bare `"categories"`
+            // URL (still used by BottomNav, popUpTo, deep links) keeps
+            // matching the route pattern.
+            composable(
+                route = Routes.Categories.route,
+                arguments = listOf(
+                    navArgument("prefillPackage") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("prefillLabel") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) { backStackEntry ->
                 CategoriesScreen(
                     contentPadding = paddingValues,
                     onOpenNotification = { notificationId ->
                         navController.navigate(Routes.Detail.create(notificationId))
                     },
+                    prefillPackage = backStackEntry.arguments?.getString("prefillPackage"),
+                    prefillLabel = backStackEntry.arguments?.getString("prefillLabel"),
                 )
             }
             composable(Routes.Settings.route) {
