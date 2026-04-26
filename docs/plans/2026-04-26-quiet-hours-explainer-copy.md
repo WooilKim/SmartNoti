@@ -80,7 +80,7 @@ superseded-by: ../journeys/quiet-hours.md
 3. signature 에 `Settings` 객체 전체를 받지 말고 두 Int 만 받는 편이 test fixture 가 단순해진다 — wiring 사이트에서 `settings.quietHoursStartHour` 두 번만 풀어 넘김.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.QuietHoursExplainerBuilderTest"` → 모두 GREEN.
 
-## Task 3: Wire explainer into `NotificationDetailScreen`
+## Task 3: Wire explainer into `NotificationDetailScreen` [SHIPPED via PR #339]
 
 **Objective:** Detail 의 "왜 이렇게 처리됐나요?" 카드 안에 explainer sub-section 이 적절한 케이스에 한 줄로 노출.
 
@@ -113,7 +113,7 @@ superseded-by: ../journeys/quiet-hours.md
 4. classifierSignals chip row 의 `조용한 시간` chip 자체는 그대로 둔다 — explainer 는 보강이지 대체가 아님.
 5. `./gradlew :app:assembleDebug` 통과.
 
-## Task 4: Manual ADB verification on emulator-5554
+## Task 4: Manual ADB verification on emulator-5554 [SHIPPED via PR #339]
 
 **Objective:** 두 흐름 (overnight default 23~7 / same-day temp 14~16) 에서 explainer 가 의도된 카케스에만 노출되는지 시각 확인.
 
@@ -127,7 +127,7 @@ superseded-by: ../journeys/quiet-hours.md
 4. **반례 검증**: PRIORITY status row 또는 `조용한 시간` 태그 없는 row 의 Detail 을 열고 sub-section 이 **노출되지 않는** 것을 확인.
 5. 결과를 `docs/journeys/quiet-hours.md` Change log + Verification log (README) 에 캡처와 함께 기록.
 
-## Task 5: Update `quiet-hours` journey
+## Task 5: Update `quiet-hours` journey [SHIPPED via PR #339]
 
 **Objective:** Observable steps + Code pointers + Known gaps + Tests + Change log 동기화.
 
@@ -142,7 +142,7 @@ superseded-by: ../journeys/quiet-hours.md
 5. Change log 에 본 PR 항목 append (날짜는 implementer 가 작업한 실제 UTC 날짜 = `date -u +%Y-%m-%d`, 요약, plan link, PR link merge 시 채움).
 6. `last-verified` 는 ADB recipe 를 처음부터 끝까지 다시 돌리지 않았다면 **갱신하지 않음**.
 
-## Task 6: Self-review + PR
+## Task 6: Self-review + PR [SHIPPED via PR #339]
 
 - `./gradlew :app:testDebugUnitTest` GREEN, `./gradlew :app:assembleDebug` 통과.
 - PR 본문에 다음 명시:
