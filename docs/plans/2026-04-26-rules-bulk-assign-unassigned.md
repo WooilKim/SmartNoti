@@ -28,7 +28,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for `BulkAssignRulesToCategoryUseCase`
+## Task 1: Add failing tests for `BulkAssignRulesToCategoryUseCase` [IN PROGRESS via PR #382]
 
 **Objective:** 새 use case 의 계약을 unit test 로 고정.
 
@@ -44,7 +44,7 @@ status: planned
    - **partial failure mid-loop**: 두 번째 ruleId 의 `appendRuleIdToCategory` 가 throw 하면 use case 가 throw 를 propagate, 첫 번째 ruleId 의 두 op (append+flip) 는 이미 commit 된 상태로 유지 (use case 는 transaction 책임 없음 — 단일 Rule 경로와 동일 정책). assertion: 첫 ruleId 의 두 record 가 존재, 두 번째 ruleId 의 append record 만 시도되고 flip record 는 없음, throw 가 caller 까지 올라옴.
 3. `./gradlew :app:testDebugUnitTest --tests "*.BulkAssignRulesToCategoryUseCaseTest"` → RED 확인.
 
-## Task 2: Implement `BulkAssignRulesToCategoryUseCase`
+## Task 2: Implement `BulkAssignRulesToCategoryUseCase` [IN PROGRESS via PR #382]
 
 **Objective:** Task 1 의 테스트를 GREEN 으로.
 
