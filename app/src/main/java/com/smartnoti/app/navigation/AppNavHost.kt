@@ -213,7 +213,22 @@ fun AppNavHost(
                     onNotificationAccessClick = { navigateToTopLevel(Routes.Settings.route) },
                     onRulesClick = { navigateToTopLevel(Routes.Rules.route) },
                     onInsightClick = { navController.navigate(it) },
-                    onCreateCategoryClick = { navigateToTopLevel(Routes.Categories.route) },
+                    onCreateCategoryClick = { prefillPackage, prefillLabel ->
+                        // Plan `2026-04-26-uncategorized-prompt-editor-autoopen`
+                        // Task 6: when prefill args are present, the Categories
+                        // composable's nav-arg pickup auto-opens the editor.
+                        // `Routes.Categories.create(...)` collapses to bare
+                        // `"categories"` when both args are null/blank, so the
+                        // popUpTo / launchSingleTop policy in
+                        // `navigateToTopLevel` matches the start-destination
+                        // pattern for both prefill and bare entries.
+                        navigateToTopLevel(
+                            Routes.Categories.create(
+                                prefillPackage = prefillPackage,
+                                prefillLabel = prefillLabel,
+                            ),
+                        )
+                    },
                     onSeeAllRecent = { navigateToTopLevel(Routes.Inbox.route) },
                 )
             }
