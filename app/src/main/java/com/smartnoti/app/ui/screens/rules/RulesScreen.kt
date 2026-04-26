@@ -62,6 +62,7 @@ import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.usecase.AssignRuleToCategoryUseCase
 import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import com.smartnoti.app.domain.usecase.UnassignedRulesDetector
@@ -96,6 +97,16 @@ fun RulesScreen(
     val overrideOptionsBuilder = remember { RuleEditorOverrideOptionsBuilder() }
     val overrideSupersetValidator = remember { RuleOverrideSupersetValidator() }
     val unassignedRulesDetector = remember { UnassignedRulesDetector() }
+    // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 3+4: every Category
+    // routing path (sheet "추가" + future card-level wiring) goes through
+    // this single use case so the `draft = true → false` flip can never
+    // be skipped relative to the Category-side append.
+    val assignRuleToCategory = remember(repository, categoriesRepository) {
+        AssignRuleToCategoryUseCase.create(
+            rulesRepository = repository,
+            categoriesRepository = categoriesRepository,
+        )
+    }
     val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -596,6 +607,15 @@ fun RulesScreen(
                             existingId = editingRule?.id,
                             enabled = editingRule?.enabled ?: true,
                             overrideOf = draftOverrideOf.takeIf { draftOverrideEnabled },
+                            // Plan `2026-04-26-rule-explicit-draft-flag.md`
+                            // Task 4: brand-new rules persist with
+                            // `draft = true` so RulesScreen surfaces them in
+                            // "작업 필요" until the user picks a Category in
+                            // the post-save sheet (or explicitly parks them).
+                            // Edits preserve the existing rule's flag — once
+                            // a rule has been routed once, the flip is
+                            // sticky.
+                            draft = editingRule?.draft ?: true,
                         )
                         // Plan `2026-04-24-rule-editor-remove-action-dropdown.md`
                         // Tasks 4+5: persist the rule only — the silent 1:1
@@ -650,11 +670,26 @@ fun RulesScreen(
                 rule = pendingCategoryAssignmentRule,
                 categories = categories,
                 onCategorySelected = { categoryId ->
+                    // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 4:
+                    // route Category routing through the use case so the
+                    // `draft = true → false` flip is atomic with the
+                    // Category-side append.
                     scope.launch {
-                        categoriesRepository.appendRuleIdToCategory(
-                            categoryId = categoryId,
+                        assignRuleToCategory.assign(
                             ruleId = pendingCategoryAssignmentRule.id,
+                            categoryId = categoryId,
                         )
+                    }
+                    pendingCategoryAssignmentRuleId = null
+                },
+                onParkRule = {
+                    // Plan Task 4 second CTA — explicit "보류" intent. The
+                    // rule moves into the quieter "보류" sub-bucket on
+                    // RulesScreen and stays there until the user promotes
+                    // it back to "작업 필요" via the longpress action
+                    // (Task 5).
+                    scope.launch {
+                        repository.markRuleAsParked(pendingCategoryAssignmentRule.id)
                     }
                     pendingCategoryAssignmentRuleId = null
                 },
@@ -669,6 +704,7 @@ private fun CategoryAssignSheetContent(
     rule: RuleUiModel,
     categories: List<Category>,
     onCategorySelected: (String) -> Unit,
+    onParkRule: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -704,12 +740,30 @@ private fun CategoryAssignSheetContent(
                 }
             }
         }
-        Row(
+        // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 4 — split the
+        // single "나중에 분류에 추가" CTA into two intent-aware buttons:
+        //   - "작업 목록에 두기" (default) leaves draft = true so the rule
+        //     surfaces in the loud "작업 필요" sub-bucket on RulesScreen.
+        //   - "분류 없이 보류" flips draft = false so the rule moves to the
+        //     quieter "보류" sub-bucket — explicit "intentionally
+        //     unassigned" intent.
+        // Both buttons dismiss the sheet; neither auto-reopens. Closing the
+        // sheet via outside-tap / system back keeps the rule's current
+        // draft state untouched (default branch via onDismiss).
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TextButton(onClick = onDismiss) {
-                Text("나중에 분류에 추가")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onParkRule) {
+                    Text("분류 없이 보류")
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("작업 목록에 두기")
+                }
             }
         }
     }

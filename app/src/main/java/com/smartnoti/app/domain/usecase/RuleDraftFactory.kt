@@ -12,6 +12,14 @@ import com.smartnoti.app.domain.model.RuleUiModel
  * and is selected after save via the post-save assignment sheet, not in the
  * editor. Subtitle is intentionally left blank — RuleRow renders the action
  * label by deriving it from the owning Category at presentation time.
+ *
+ * Plan `docs/plans/2026-04-26-rule-explicit-draft-flag.md` Task 4: the
+ * optional `draft` parameter lets the rule editor pass `true` for brand-new
+ * rules (so RulesScreen surfaces them in "작업 필요" until the user attaches
+ * them to a Category) while preserving the existing rule's `draft` value on
+ * edit. Default is `false` so existing call sites that auto-route the rule
+ * into a Category (onboarding quick-start preset, etc.) keep producing
+ * non-draft rules and are not impacted.
  */
 class RuleDraftFactory {
     fun create(
@@ -21,6 +29,7 @@ class RuleDraftFactory {
         enabled: Boolean = true,
         existingId: String? = null,
         overrideOf: String? = null,
+        draft: Boolean = false,
     ): RuleUiModel {
         val normalizedTitle = title.trim()
         val normalizedMatchValue = normalizeMatchValue(type, matchValue)
@@ -36,6 +45,7 @@ class RuleDraftFactory {
             enabled = enabled,
             matchValue = normalizedMatchValue,
             overrideOf = normalizedOverrideOf,
+            draft = draft,
         )
     }
 
