@@ -113,7 +113,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Known gaps
 
 - Drag-reorder 는 현재 arrow/handle 기반 — smooth drag gesture 는 현행 UI 가 직접 이웃 swap 만 지원 (`moveCategory` 계약상 한 스텝씩).
-- Category 이름 고유성 미보장 (id 가 primary key 이므로 중복 이름 허용).
+- Category 이름 고유성 미보장 (id 가 primary key 이므로 중복 이름 허용). → plan: `docs/plans/2026-04-25-category-name-uniqueness.md`
 - Detail 화면이 "최근 이 Category 로 분류된 알림 preview" 를 아직 표시하지 않음 — 현재는 Rule 리스트 + 액션 chip 까지만. 후속 plan 대상.
 - Category 자동 추천 (ML / 휴리스틱) 미구현 — 사용자가 수동 생성만 가능.
 - Recipe 는 아직 ADB 로 end-to-end 검증되지 않음 (`last-verified` 비어 있음). 첫 journey-tester sweep 에서 스크린샷 + uiautomator dump 로 고정.
