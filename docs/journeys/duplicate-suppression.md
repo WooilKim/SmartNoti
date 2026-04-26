@@ -74,7 +74,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- Threshold 3 과 window 10분은 하드코딩 — 사용자 커스터마이징 불가.
+- Threshold 3 과 window 10분은 하드코딩 — 사용자 커스터마이징 불가. → plan: `docs/plans/2026-04-26-duplicate-threshold-window-settings.md`
 - signature 는 title+body 만 사용, 이미지/chrono 같은 시각 신호는 무시.
 - 서비스가 재시작되면 in-memory live entry 가 사라지고 persisted count 로만 재집계됨 — 경계 케이스에서 1건 차이 가능.
 
