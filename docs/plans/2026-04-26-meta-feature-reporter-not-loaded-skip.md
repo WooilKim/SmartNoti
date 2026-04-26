@@ -1,7 +1,8 @@
 ---
-status: planned
+status: shipped
 type: meta
 kind: meta-plan
+shipped: 2026-04-26
 related-rule: ../../.claude/rules/agent-loop.md
 related-command: ../../.claude/commands/journey-loop.md
 related-agent: ../../.claude/agents/feature-reporter.md

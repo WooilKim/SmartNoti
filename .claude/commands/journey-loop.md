@@ -101,7 +101,30 @@ Spawn `feature-reporter` (via Agent tool, `subagent_type: feature-reporter`) wit
 
 If feature-reporter opens a PR, the next tick's Phase B PM will sweep it (docs-only carve-out — auto-merge expected). If feature-reporter returns NOOP, that's logged but no PR opens.
 
+If the wrapper detects `FEATURE_REPORTER_NOT_LOADED` (see agent-availability gate below), it logs the skip and proceeds to Step 5 unchanged.
+
 If no plan flipped this tick, skip Step 4.5 entirely. Do NOT spawn feature-reporter speculatively — its trigger is a real shipped feature, not idle ticks.
+
+#### Agent-availability gate (registry-vs-merge race)
+
+Claude Code loads its agent registry **at session start**, not per-tool-invocation. If `feature-reporter`'s spec was merged on `main` *after* the current loop session began, the Agent tool will fail to spawn it even though `.claude/agents/feature-reporter.md` exists on disk. Treat this as a known graceful-skip outcome — NOT an error. See `.claude/rules/agent-loop.md` ("Agent 추가/변경 시 세션 재시작 필요성") and `docs/plans/2026-04-26-meta-feature-reporter-not-loaded-skip.md`.
+
+Match the failure narrowly. If the Agent tool returns an error whose message contains any of these literal substrings (observed runtime behavior — not documented API; update list if Claude Code changes its error format):
+
+- `not loaded`
+- `unknown subagent_type`
+- `Without a Task tool exposed`
+- `agent not found`
+
+then record the skip with the literal marker `FEATURE_REPORTER_NOT_LOADED` so loop-monitor's rubric (Task 2 of the meta-plan) can match it, and append exactly one line to the tick summary block:
+
+```
+Step 4.5: SKIPPED — feature-reporter agent not in current session registry (merged 2026-04-26, current session predates merge). Will resume on next session restart. [FEATURE_REPORTER_NOT_LOADED]
+```
+
+Do NOT retry the spawn. Do NOT fall back to a Bash invocation (`claude --dangerously-skip-permissions ...`). Do NOT substitute another agent. Just record + continue to Step 5.
+
+Any other error shape (genuine sub-agent crash, prompt validation failure, etc.) still surfaces as `SUB_AGENT_ERROR` per the existing path.
 
 ### Step 5 — Loop monitor
 
