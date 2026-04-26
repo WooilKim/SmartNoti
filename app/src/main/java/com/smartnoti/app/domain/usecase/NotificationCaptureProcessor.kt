@@ -32,6 +32,10 @@ class NotificationCaptureProcessor(
                 quietHours = input.quietHours,
                 duplicateCountInWindow = input.duplicateCountInWindow,
                 hourOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+                // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
+                // forward the user-tunable threshold so the classifier compares
+                // against the value the listener loaded from `SmartNotiSettings`.
+                duplicateThreshold = input.duplicateThreshold,
             ),
             rules = rules,
             categories = categories,

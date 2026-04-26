@@ -4,9 +4,11 @@ import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.CategoryAction
+import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.model.toDecision
 import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
 import com.smartnoti.app.domain.usecase.NotificationCaptureProcessor
 import com.smartnoti.app.domain.usecase.NotificationClassifier
@@ -157,5 +159,83 @@ class SmartNotiNotificationListenerServiceCategoryInjectionTest {
 
         assertEquals(1, seenCategories.size)
         assertEquals("cat-work", seenCategories.single().single().id)
+    }
+
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4.
+     *
+     * Pins that the user-tunable `duplicateDigestThreshold` plumbed through
+     * `CapturedNotificationInput.duplicateThreshold` reaches the classifier
+     * and changes its DIGEST decision. With threshold = 2 a count-of-2
+     * input trips DIGEST; with threshold = 5 the same count falls through
+     * to SILENT. Pure unit-level seam — the listener field-level instance
+     * is bypassed because the coordinator wires the input directly.
+     */
+    @Test
+    fun coordinator_forwards_user_threshold_to_classifier_lowering_to_two() = runBlocking {
+        val processor = NotificationCaptureProcessor(
+            classifier = NotificationClassifier(
+                vipSenders = emptySet(),
+                priorityKeywords = emptySet(),
+                shoppingPackages = emptySet(),
+            ),
+            deliveryProfilePolicy = DeliveryProfilePolicy(),
+        )
+        val coordinator = NotificationProcessingCoordinator(
+            loadRules = { emptyList() },
+            loadCategories = { emptyList() },
+            loadSettings = { SmartNotiSettings(duplicateDigestThreshold = 2) },
+            processor = processor,
+        )
+
+        val ui = coordinator.process(
+            CapturedNotificationInput(
+                packageName = "com.news.app",
+                appName = "News",
+                sender = null,
+                title = "속보",
+                body = "같은 알림이 또 도착했어요",
+                postedAtMillis = 1_700_000_000_000L,
+                quietHours = false,
+                duplicateCountInWindow = 2,
+                duplicateThreshold = 2,
+            )
+        )
+
+        assertEquals(NotificationDecision.DIGEST, ui.status.toDecision())
+    }
+
+    @Test
+    fun coordinator_forwards_user_threshold_to_classifier_raising_to_five() = runBlocking {
+        val processor = NotificationCaptureProcessor(
+            classifier = NotificationClassifier(
+                vipSenders = emptySet(),
+                priorityKeywords = emptySet(),
+                shoppingPackages = emptySet(),
+            ),
+            deliveryProfilePolicy = DeliveryProfilePolicy(),
+        )
+        val coordinator = NotificationProcessingCoordinator(
+            loadRules = { emptyList() },
+            loadCategories = { emptyList() },
+            loadSettings = { SmartNotiSettings(duplicateDigestThreshold = 5) },
+            processor = processor,
+        )
+
+        val ui = coordinator.process(
+            CapturedNotificationInput(
+                packageName = "com.news.app",
+                appName = "News",
+                sender = null,
+                title = "속보",
+                body = "같은 알림이 또 도착했어요",
+                postedAtMillis = 1_700_000_000_000L,
+                quietHours = false,
+                duplicateCountInWindow = 2,
+                duplicateThreshold = 5,
+            )
+        )
+
+        assertEquals(NotificationDecision.SILENT, ui.status.toDecision())
     }
 }
