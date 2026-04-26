@@ -70,6 +70,32 @@ class SettingsRepository private constructor(
         }
     }
 
+    /**
+     * Plan `2026-04-26-settings-quiet-hours-window-editor.md` Task 2.
+     *
+     * Persists the start hour of the quiet-hours window. Caller (Settings UI)
+     * is responsible for keeping the value within `0..23`; the repository does
+     * not validate so the model contract stays in lockstep with
+     * `QuietHoursPolicy.startHour: Int`.
+     */
+    suspend fun setQuietHoursStartHour(hour: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[QUIET_HOURS_START_HOUR] = hour
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-settings-quiet-hours-window-editor.md` Task 2.
+     *
+     * Persists the end hour of the quiet-hours window. See
+     * [setQuietHoursStartHour] for validation contract.
+     */
+    suspend fun setQuietHoursEndHour(hour: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[QUIET_HOURS_END_HOUR] = hour
+        }
+    }
+
     suspend fun setSuppressSourceForDigestAndSilent(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = enabled
