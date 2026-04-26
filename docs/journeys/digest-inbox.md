@@ -75,7 +75,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- 그룹별 "모두 중요로 변경" / "모두 무시" 액션 부재. → plan: `docs/plans/2026-04-26-inbox-digest-group-bulk-actions.md` ("모두 중요로 변경" + "모두 지우기" 두 액션; "모두 무시" 는 별도 plan 후속)
+- (resolved 2026-04-26, plan `docs/plans/2026-04-26-inbox-digest-group-bulk-actions.md`; "모두 무시" 는 별도 plan 으로 위임) 그룹별 "모두 중요로 변경" / "모두 무시" 액션 부재. → plan: `docs/plans/2026-04-26-inbox-digest-group-bulk-actions.md` ("모두 중요로 변경" + "모두 지우기" 두 액션; "모두 무시" 는 별도 plan 후속)
 - DigestScreen 직접 UI 테스트 부재.
 - Digest 알림이 0건이면 empty-state 만 보여주는데, suppress opt-in 유도 같은 교육용 문구 없음.
 
@@ -86,4 +86,5 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: Fresh APK (`lastUpdateTime=2026-04-22 03:46:30`, post-IGNORE) ADB end-to-end 검증 — Observable steps 1–5 + Exit state 전부 일치. DRIFT 없음. `last-verified: 2026-04-21 → 2026-04-22` 갱신.
 - 2026-04-22: **Deprecated** — plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task 11 (#240) 이후 정리함 통합 탭 ([inbox-unified](inbox-unified.md)) 이 Digest + 보관 중 + 처리됨 세그먼트를 통합 소유한다. `Routes.Digest` 는 tray deep-link 용으로 유지. 문서는 참조용으로 남김.
 - 2026-04-26: Plan `2026-04-26-inbox-bundle-preview-see-all` ship — `DigestGroupCard` preview 가 inline expansion 지원 ("전체 보기 · ${remaining}건 더" CTA). Legacy Digest 진입 경로 (`Routes.Digest` deep-link) 도 동일 컴포넌트를 공유하므로 `items.size > 3` 그룹의 4번째 이후 row Detail 진입 가능. 활성 contract 는 [inbox-unified](inbox-unified.md).
+- 2026-04-26: Plan `2026-04-26-inbox-digest-group-bulk-actions` ship — `DigestGroupCard` 의 expanded 영역에 그룹 단위 bulk action 행 (`모두 중요로 변경` / `모두 지우기`) 추가. `Routes.Digest` deep-link 진입 경로도 동일 컴포넌트를 공유하므로 legacy standalone 진입에서도 두 액션 사용 가능. 신규 repository 메서드 `restoreDigestToPriorityByPackage` / `deleteDigestByPackage` 단일 query 위임. 활성 contract 는 [inbox-unified](inbox-unified.md). Known gap `그룹별 "모두 중요로 변경" / "모두 무시" 액션 부재` 의 `모두 중요로 변경` 부분 resolved — `모두 무시` 는 별도 plan 후속.
 - 2026-04-26: Rotation sweep (deprecated journey, oldest by `last-verified`). emulator-5554, APK `lastUpdateTime=2026-04-26 15:43:43`. Recipe: 4× `cmd notification post -S bigtext -t Coupang Deal{i}` (모두 `pkg=com.android.shell` 로 posting → 기존 Shell 그룹에 흡수, count 13 → 17) → BottomNav `정리함` (407,2274) → inbox-unified host 의 Digest 서브탭 default. `Shell 17건` `DigestGroupCard` 렌더 (앱명 + count badge + summary `Shell 관련 알림 17건` + `최근 묶음 미리보기` + `탭하면 원본 알림 상세를 확인할 수 있어요`). 다른 그룹 (`SmartNoti Test Notifier 3건`) 도 같은 컴포넌트로 렌더. preview row tap (540,1000) → `알림 상세` + `왜 이렇게 처리됐나요?` + `전달 모드 · Digest 묶음 전달` (Routes.Detail.create deep-link). Observable steps 1–5 + Exit state 모두 일치 (legacy `Routes.Digest` composable + `DigestGroupCard` contract 무손상). DRIFT 없음. `last-verified` 2026-04-22 → 2026-04-26.

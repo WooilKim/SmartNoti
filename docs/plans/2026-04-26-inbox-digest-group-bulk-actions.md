@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 # Inbox Digest sub-tab — Group bulk actions (모두 중요로 변경 / 모두 지우기)
