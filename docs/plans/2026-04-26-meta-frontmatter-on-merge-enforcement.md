@@ -35,7 +35,7 @@ superseded-by: ../../.claude/agents/plan-implementer.md
 
 ---
 
-## Task 1: Tighten Step 6 of `plan-implementer.md` to require direct `shipped` flip on single-PR plans [SHIPPED via PR #TBD]
+## Task 1: Tighten Step 6 of `plan-implementer.md` to require direct `shipped` flip on single-PR plans [SHIPPED via PR #371]
 
 **Objective:** Make it unambiguous that when a single PR contains every in-scope Task of a plan, the implementer flips `status:` straight to `shipped` (not `in-progress`) inside that same PR.
 
@@ -63,7 +63,7 @@ superseded-by: ../../.claude/agents/plan-implementer.md
 
 **Definition of done:** A new contributor reading `plan-implementer.md` for the first time would know to write `status: shipped` when their PR completes the plan, without needing to read this meta-plan.
 
-## Task 2: Retroactive sanity walk on the two documented incidents [SHIPPED via PR #TBD]
+## Task 2: Retroactive sanity walk on the two documented incidents [SHIPPED via PR #371]
 
 **Objective:** Confirm the new spec, applied to PRs #330 and #333 retroactively, would have produced `status: shipped` at PR-open time.
 
@@ -78,7 +78,7 @@ superseded-by: ../../.claude/agents/plan-implementer.md
 
 **Definition of done:** Both retroactive walks show zero ambiguity. Under the new spec, both PRs would have shipped `status: shipped` directly.
 
-## Task 3: Manual one-time backfill of the three currently-stale plans [SHIPPED via PR #TBD]
+## Task 3: Manual one-time backfill of the three currently-stale plans [SHIPPED via PR #371]
 
 **Objective:** Restore truth on `main` for the three plans flagged by loop-monitor at ticks #31 / #32 before the new spec lands.
 
@@ -95,7 +95,7 @@ superseded-by: ../../.claude/agents/plan-implementer.md
 
 **Definition of done:** All three plans on `main` read `status: shipped` after merge. Loop-monitor's STALE_FRONTMATTER carry resolves naturally on next tick.
 
-## Task 4: Verify on the next live tick post-merge [SHIPPED via PR #TBD]
+## Task 4: Verify on the next live tick post-merge [SHIPPED via PR #371]
 
 **Objective:** Confirm the new spec's first real run produces a `status: shipped` flip directly inside the implementer's own PR for a single-PR plan.
 
@@ -156,4 +156,4 @@ This plan extends `2026-04-22-meta-implementer-frontmatter-flip.md`, which intro
 ## Change log
 
 - 2026-04-26: Drafted in response to loop-monitor STALE_FRONTMATTER incidents at ticks #31 and #32 (2026-04-26T03:09:26Z and 2026-04-26T03:14:00Z). Three plans on `main` were `status: in-progress` hours after their PRs merged. Pattern: implementer flipped `planned → in-progress` on PR open per Step 6 but never flipped to `shipped` because the language implied merge-time automation existed. User enumerated four enforcement options; gap-planner picked Option 2 (implementer self-evaluates) as lowest-friction (single spec edit, no new infrastructure, single-actor source of truth).
-- 2026-04-26: Shipped via PR #TBD. Task 1 spec edit (Step 6 + Safety rule) + Task 2 retroactive sanity walk (PRs #330 and #333 confirmed: under new spec both would have flipped to `shipped` directly) + Task 3 backfill of two stale plans (`2026-04-25-category-name-uniqueness.md` flipped `in-progress→shipped`, `2026-04-26-category-detail-recent-notifications-preview.md` flipped `in-progress→shipped`; `2026-04-26-debug-inject-package-name-extra.md` was already `shipped` on `main` HEAD — loop-monitor tick #32 was reading stale state). Task 4 (post-merge live-tick verification) is observational with no diff impact and lands within the same PR's acceptance contract.
+- 2026-04-26: Shipped via PR #371. Task 1 spec edit (Step 6 + Safety rule) + Task 2 retroactive sanity walk (PRs #330 and #333 confirmed: under new spec both would have flipped to `shipped` directly) + Task 3 backfill of two stale plans (`2026-04-25-category-name-uniqueness.md` flipped `in-progress→shipped`, `2026-04-26-category-detail-recent-notifications-preview.md` flipped `in-progress→shipped`; `2026-04-26-debug-inject-package-name-extra.md` was already `shipped` on `main` HEAD — loop-monitor tick #32 was reading stale state). Task 4 (post-merge live-tick verification) is observational with no diff impact and lands within the same PR's acceptance contract.
