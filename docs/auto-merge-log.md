@@ -313,3 +313,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T16:49:49Z | project-manager | #398 | docs-only: gap-planner plan persistent-bypass-keyword-word-boundary + journey link | https://github.com/WooilKim/SmartNoti/actions/runs/24961733014 |
 | 2026-04-26T16:57:23Z | project-manager | #399 | word-boundary bypass matcher (plan 2026-04-26 Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24961975070 |
 | 2026-04-26T17:05:25Z | project-manager | #400 | plan #398 Tasks 3-6 journey sync + plan flip shipped | https://github.com/WooilKim/SmartNoti/actions/runs/24962130762 |
+| 2026-04-26T17:17:24Z | project-manager | #401 | gap-planner plan: insight-drilldown range state survival | https://github.com/WooilKim/SmartNoti/actions/runs/24962366621 |
