@@ -78,6 +78,7 @@ last-verified: 2026-04-26
 - `shoppingPackages` 가 classifier 생성자에 하드코딩 (`setOf("com.coupang.mobile")`) — 사용자가 카테고리를 확장할 수 없음.
 - (resolved 2026-04-26, plan `2026-04-26-quiet-hours-explainer-copy`) Quiet hours 가 적용되었다는 것을 Detail 의 reasonTags 로만 확인 가능. UI 에서 "quiet hours 때문에 숨김" 같은 명시적 설명 부재. → plan: `docs/plans/2026-04-26-quiet-hours-explainer-copy.md`
 - Positive-case ADB end-to-end capture (DIGEST + `조용한 시간` + no `사용자 규칙` Detail 진입 + "지금 적용된 정책" sub-section 라이브 관측) 가 현재 setup 에서 불가능. 두 가지 blocker: (a) 정리함 inbox 의 Digest/보관 bundle preview 가 가장 최근 rows 만 노출 → 과거 quiet-hours rows 로 직접 navigation 경로 부재, (b) `DebugInjectNotificationReceiver` 가 packageName 을 `com.smartnoti.debug.tester` 로 hardcode → classifier 의 quiet-hours 분기 (`packageName in setOf("com.coupang.mobile")`) 를 발화시키지 못함. 우회: receiver 의 `--es package_name` 지원 추가 또는 bundle preview 에 "전체 보기" 진입점. 현재는 6/6 unit test (overnight + same-day + null gates) + negative-case 라이브 검증 + DB-level 데이터 존재 확인으로 등가 증거 확보.
+  → plan: `docs/plans/2026-04-26-debug-inject-package-name-extra.md` (drains blocker (b); (a) remains open)
 
 ## Change log
 
