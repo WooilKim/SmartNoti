@@ -273,3 +273,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T05:56:06Z | journey-tester | #355 | duplicate-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24949555933 |
 | 2026-04-26T06:10:51Z | project-manager | #356 | gap-planner plan: rule explicit-draft flag (작업 필요 vs 보류) — docs/plans + journey Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24949730976 |
 | 2026-04-26T06:37:09Z | project-manager | #357 | rules: explicit draft flag separates 작업 필요/보류 unassigned rules | https://github.com/WooilKim/SmartNoti/actions/runs/24950201995 |
+| 2026-04-26T06:51:46Z | journey-tester | #358 | rules-management | https://github.com/WooilKim/SmartNoti/actions/runs/24950486966 |
