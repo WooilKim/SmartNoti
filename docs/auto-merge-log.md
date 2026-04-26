@@ -291,3 +291,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T12:10:20Z | journey-tester | #375 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24956225769 |
 | 2026-04-26T12:29:22Z | project-manager | #376 | gap-planner plan: detail reclassify-this-row-now CTA + 2 journey gap annotations | https://github.com/WooilKim/SmartNoti/actions/runs/24956429945 |
 | 2026-04-26T12:40:10Z | project-manager | #377 | Task 1 CategoryAction->NotificationStatusUi mapper + pin test | https://github.com/WooilKim/SmartNoti/actions/runs/24956784310 |
+| 2026-04-26T12:51:57Z | project-manager | #378 | ApplyCategoryActionToNotificationUseCase + 6 unit tests (plan #376 Tasks 2-3) | https://github.com/WooilKim/SmartNoti/actions/runs/24956997968 |
