@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: docs/journeys/rules-management.md
 ---
 
 # Rules — Bulk Assign Unassigned Rules to a Category
