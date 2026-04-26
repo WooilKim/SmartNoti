@@ -37,7 +37,13 @@ import kotlinx.coroutines.withContext
 class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val duplicatePolicy = DuplicateNotificationPolicy()
+    // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 3+4.
+    // The window is now caller-injected (no companion default). Task 4
+    // replaces this field-level instance with a per-`processNotification`
+    // build that pulls from `SmartNotiSettings.duplicateWindowMinutes`.
+    // Until then the legacy 10-minute window is the explicit default so the
+    // observable behavior is unchanged.
+    private val duplicatePolicy = DuplicateNotificationPolicy(windowMillis = 10 * 60 * 1000L)
     private val liveDuplicateCountTracker = LiveDuplicateCountTracker()
     private val persistentNotificationPolicy = PersistentNotificationPolicy()
     private val notifier by lazy { SmartNotiNotifier(applicationContext) }

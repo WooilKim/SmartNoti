@@ -91,7 +91,12 @@ class NotificationClassifier(
             return NotificationClassification(NotificationDecision.DIGEST)
         }
 
-        if (input.duplicateCountInWindow >= 3) {
+        // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 3:
+        // generalize the historical hard-coded `>= 3` to the user-tunable
+        // `input.duplicateThreshold` (default 3). The repository's setter
+        // coerces to >= 1 so this comparison is always meaningful — a 0
+        // would otherwise route every notification to DIGEST.
+        if (input.duplicateCountInWindow >= input.duplicateThreshold) {
             return NotificationClassification(NotificationDecision.DIGEST)
         }
 
