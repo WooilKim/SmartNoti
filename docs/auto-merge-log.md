@@ -319,3 +319,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T17:50:44Z | project-manager | #404 | docs-only plan: quiet-hours user-extensible shoppingPackages | https://github.com/WooilKim/SmartNoti/actions/runs/24963043598 |
 | 2026-04-26T17:59:35Z | project-manager | #405 | quiet-hours quietHoursPackages settings field (Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24963230081 |
 | 2026-04-26T18:09:34Z | project-manager | #406 | quiet-hours dynamic shoppingPackages classifier wiring + onboarding SSOT (plan #404 Tasks 3-4-5) | https://github.com/WooilKim/SmartNoti/actions/runs/24963434757 |
+| 2026-04-26T18:30:14Z | project-manager | #407 | quiet-hours shoppingPackages Settings picker (plan #404 Tasks 6-9) | https://github.com/WooilKim/SmartNoti/actions/runs/24963849865 |
