@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — priority-inbox re-verify via debug-inject marker)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | PASS | v1 loop tick rotation pick (oldest active 2026-04-24 batch; `categories-management` already bumped to 2026-04-26 by plan-implementer in #333 same-PR doc-sync, deprecated `hidden-inbox`/`digest-inbox` skipped). emulator-5554 `date -u`=2026-04-26. `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg13000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB row `PriDbg13000\|PRIORITY\|디버그 주입` 확인 (sqlite3 run-as). Cold-start Home: passthrough card `검토 대기 34` / `SmartNoti 가 건드리지 않은 알림 34건` / `검토하기` 노출. 탭 → PriorityScreen eyebrow `검토` + title `SmartNoti 가 건드리지 않은 알림` + subtitle `이 판단이 맞는지 확인하고…` + SmartSurfaceCard `검토 대기 34건` + 카드별 `이 판단을 바꿀까요?` + `→ Digest / → 조용히 / → 규칙 만들기` 3버튼 노출. BottomNav 4탭 (홈/정리함/분류/설정), Priority 탭 부재. Observable steps 1–7 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26. |
+
+
 ### 2026-04-26 (journey-tester — home-uncategorized-prompt partial verify, render path SKIP)
 
 | Journey | Result | Notes |
