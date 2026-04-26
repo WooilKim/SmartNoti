@@ -49,6 +49,7 @@ class SettingsRepository private constructor(
                 showIgnoredArchive = prefs[SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
                 duplicateDigestThreshold = prefs[DUPLICATE_DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
                 duplicateWindowMinutes = prefs[DUPLICATE_WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
+                quietHoursPackages = prefs[QUIET_HOURS_PACKAGES] ?: defaults.quietHoursPackages,
             )
         }
     }
@@ -124,6 +125,60 @@ class SettingsRepository private constructor(
     suspend fun setDuplicateWindowMinutes(minutes: Int) {
         context.dataStore.edit { prefs ->
             prefs[DUPLICATE_WINDOW_MINUTES] = minutes.coerceAtLeast(1)
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2.
+     *
+     * Bulk replace of the quiet-hours-eligible package set. The classifier
+     * reads this set on every `processNotification` call (Task 4 wiring), so
+     * the next notification after the write picks up the new value. Empty
+     * set is allowed and means no quiet-hours candidates — the master switch
+     * may still be ON but the branch never fires until the user adds a
+     * package back. Mirrors `setSuppressedSourceApps` in atomicity.
+     */
+    suspend fun setQuietHoursPackages(packageNames: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[QUIET_HOURS_PACKAGES] = packageNames
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2.
+     *
+     * Idempotent insertion: re-adding an existing member is a no-op (the
+     * underlying Set semantics dedup). Used by the Settings picker's
+     * "앱 추가" affordance for single-package additions.
+     */
+    suspend fun addQuietHoursPackage(packageName: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[QUIET_HOURS_PACKAGES] ?: SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES
+            if (packageName !in current) {
+                prefs[QUIET_HOURS_PACKAGES] = current + packageName
+            } else if (QUIET_HOURS_PACKAGES !in prefs) {
+                // Materialize the default into the store so subsequent
+                // observers see a stable on-disk value rather than the
+                // implicit fallback. Mirrors the pattern in
+                // `applyPendingMigrations()` for the suppress-source default.
+                prefs[QUIET_HOURS_PACKAGES] = current
+            }
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2.
+     *
+     * Removes a single package from the set. Removing the last member leaves
+     * an empty set (the UI surfaces an inline warning so the user knows the
+     * branch is silently no-op'ing). Removing an unknown package is a no-op.
+     */
+    suspend fun removeQuietHoursPackage(packageName: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[QUIET_HOURS_PACKAGES] ?: SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES
+            if (packageName in current) {
+                prefs[QUIET_HOURS_PACKAGES] = current - packageName
+            }
         }
     }
 
@@ -534,6 +589,13 @@ class SettingsRepository private constructor(
             intPreferencesKey("duplicate_digest_threshold")
         private val DUPLICATE_WINDOW_MINUTES =
             intPreferencesKey("duplicate_window_minutes")
+        // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
+        // Task 2: user-editable list of packages the classifier treats as
+        // quiet-hours-eligible. Default is supplied via
+        // `SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES` (single source of
+        // truth shared with `OnboardingQuickStartSettingsApplier`).
+        private val QUIET_HOURS_PACKAGES =
+            stringSetPreferencesKey("quiet_hours_packages")
 
         @Volatile private var instance: SettingsRepository? = null
 
