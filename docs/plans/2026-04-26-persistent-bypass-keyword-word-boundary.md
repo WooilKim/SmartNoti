@@ -35,7 +35,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for keyword false-positive cases
+## Task 1: Add failing tests for keyword false-positive cases [IN PROGRESS via PR #399]
 
 **Objective:** 사용자가 gap 본문에 박은 "전화번호" 케이스를 비롯해 합성어/접미사 false-positive 를 테스트로 고정. 구현 전에 RED 확인.
 
@@ -55,7 +55,7 @@ status: planned
 
 3. 기존 7개 테스트는 그대로 두고 변경하지 않음 — 본 plan 의 매칭 변경이 그것들을 깨면 안 됨이 회귀 테스트의 핵심.
 
-## Task 2: Implement word-boundary matcher with Hangul-aware adjacency check
+## Task 2: Implement word-boundary matcher with Hangul-aware adjacency check [IN PROGRESS via PR #399]
 
 **Objective:** Task 1 의 처음 4개 케이스가 GREEN, 기존 7개 + 마지막 2개도 GREEN 이 되게.
 
