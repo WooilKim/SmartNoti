@@ -181,15 +181,15 @@ class NotificationRepositoryDigestBulkActionsTest {
         assertEquals(3, affected)
         val rows = repository.observeAll().first().associateBy { it.id }
         // Already-tagged row keeps single occurrence.
-        assertEquals("사용자 분류", rows.getValue("digest-with-tag").reasonTags)
+        assertEquals(listOf("사용자 분류"), rows.getValue("digest-with-tag").reasonTags)
         // Already-tagged-with-other-tags row stays unchanged.
         assertEquals(
-            "키워드 일치|사용자 분류",
+            listOf("키워드 일치", "사용자 분류"),
             rows.getValue("digest-with-other-tag").reasonTags,
         )
         // Untagged row gets the tag appended.
         assertEquals(
-            "키워드 일치|사용자 분류",
+            listOf("키워드 일치", "사용자 분류"),
             rows.getValue("digest-without-tag").reasonTags,
         )
         // All flipped to PRIORITY.

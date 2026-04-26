@@ -188,8 +188,50 @@ class NotificationRepository(
         return candidates.size
     }
 
+    /**
+     * Plan `docs/plans/2026-04-26-inbox-digest-group-bulk-actions.md` Task 2.
+     *
+     * Bulk-restore every DIGEST row for [packageName] to PRIORITY and
+     * dedup-append the `사용자 분류` reason tag — mirrors
+     * [restoreSilentToPriorityByPackage] but scoped to status=DIGEST and uses
+     * the `사용자 분류` label for parity with
+     * `ApplyCategoryActionToNotificationUseCase` (single-row Detail path).
+     *
+     * Returns the number of rows updated (zero if the group is empty).
+     */
+    suspend fun restoreDigestToPriorityByPackage(packageName: String): Int {
+        val candidates = dao.observeAll().first()
+            .filter { it.status == NotificationStatusUi.DIGEST.name && it.packageName == packageName }
+        candidates.forEach { entity ->
+            dao.upsert(
+                entity.copy(
+                    status = NotificationStatusUi.PRIORITY.name,
+                    reasonTags = appendUserClassificationReasonTag(entity.reasonTags),
+                )
+            )
+        }
+        return candidates.size
+    }
+
+    /**
+     * Plan `docs/plans/2026-04-26-inbox-digest-group-bulk-actions.md` Task 2.
+     *
+     * Hard-delete every DIGEST row for [packageName]. Mirrors
+     * [deleteSilentByPackage]. Returns the number of rows deleted.
+     */
+    suspend fun deleteDigestByPackage(packageName: String): Int {
+        return dao.deleteDigestByPackage(packageName)
+    }
+
     private fun appendUserReasonTag(existing: String): String {
         val tag = "사용자 복구"
+        if (existing.isBlank()) return tag
+        if (existing.split("|").any { it.trim() == tag }) return existing
+        return "$existing|$tag"
+    }
+
+    private fun appendUserClassificationReasonTag(existing: String): String {
+        val tag = "사용자 분류"
         if (existing.isBlank()) return tag
         if (existing.split("|").any { it.trim() == tag }) return existing
         return "$existing|$tag"
