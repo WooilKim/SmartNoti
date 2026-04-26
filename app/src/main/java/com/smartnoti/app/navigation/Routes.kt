@@ -35,8 +35,43 @@ sealed class Routes(val route: String) {
      * Task 8. The list + editor live on this route; the Task 11 bottom-nav
      * reshape (removing Rules in favour of a 4-tab layout) is tracked
      * separately.
+     *
+     * Two optional query args (`prefillPackage`, `prefillLabel`) allow
+     * external entry points (currently Home's uncategorized-prompt card,
+     * plan `2026-04-26-uncategorized-prompt-editor-autoopen`) to ask the
+     * Categories screen to auto-open the editor pre-populated with a
+     * specific app. Both args default to `null` in [AppNavHost] so the
+     * bare `"categories"` URL still matches this pattern when no prefill
+     * is supplied.
      */
-    data object Categories : Routes("categories")
+    data object Categories : Routes("categories?prefillPackage={prefillPackage}&prefillLabel={prefillLabel}") {
+        /**
+         * Build a Categories destination URL.
+         *
+         * - No args ⇒ `"categories"`, which matches the route pattern
+         *   because both nav args declare `null` defaults in [AppNavHost].
+         * - Blank `prefillPackage` is treated as absent — the editor needs
+         *   the package to pin its app dropdown, so a stray label alone
+         *   has no useful effect and would just clutter the route.
+         * - `prefillLabel` is allowed to be absent even when a package is
+         *   supplied — editor will leave the name field empty but the app
+         *   dropdown still gets pre-selected.
+         */
+        fun create(prefillPackage: String? = null, prefillLabel: String? = null): String {
+            val trimmedPackage = prefillPackage?.trim().orEmpty()
+            if (trimmedPackage.isEmpty()) {
+                return "categories"
+            }
+            val trimmedLabel = prefillLabel?.trim().orEmpty()
+            val params = buildList {
+                add("prefillPackage=${encodeRouteParam(trimmedPackage)}")
+                if (trimmedLabel.isNotEmpty()) {
+                    add("prefillLabel=${encodeRouteParam(trimmedLabel)}")
+                }
+            }
+            return "categories?${params.joinToString("&")}"
+        }
+    }
     /**
      * 정리함 (Inbox) tab — plan
      * `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P3 Task

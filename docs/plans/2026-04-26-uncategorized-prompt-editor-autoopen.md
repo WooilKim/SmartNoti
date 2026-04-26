@@ -25,7 +25,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing test for `Routes.Categories.create` with prefill args
+## Task 1: Add failing test for `Routes.Categories.create` with prefill args [IN PROGRESS via PR #409]
 
 **Objective:** nav arg 인코딩 계약을 unit test 로 고정. 한글 label 이 들어오면 percent-encoded 로 흘러야 하고 인자 누락 시 기존 `"categories"` 를 그대로 반환해야 한다 (회귀 안전).
 
@@ -40,7 +40,7 @@ status: planned
    - `Routes.Categories.create(prefillPackage = "com.example.app", prefillLabel = "")` → `"categories?prefillPackage=com.example.app"` — label 누락은 허용 (editor 의 이름 필드만 empty 로 둘 뿐 package 는 prefill).
 2. `./gradlew :app:testDebugUnitTest --tests "*.RoutesCategoriesPrefillTest"` → RED 확인.
 
-## Task 2: Extend `Routes.Categories` to accept prefill args
+## Task 2: Extend `Routes.Categories` to accept prefill args [IN PROGRESS via PR #409]
 
 **Objective:** Task 1 의 테스트를 GREEN 으로.
 
