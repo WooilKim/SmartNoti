@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Category Detail "최근 이 분류로 분류된 알림" preview Plan
