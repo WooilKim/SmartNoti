@@ -283,3 +283,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T06:11:06Z | #356 | gap-planner | APPROVE+merged | plan rule-explicit-draft-flag; CI green; in-scope; no risk signals |
 | 2026-04-26T06:37:22Z | #357 | plan-implementer | APPROVE+MERGE | rules draft flag — code+tests+journey+plan; CI green; squash-merged |
 | 2026-04-26T10:45:31Z | #371 | plan-implementer | ESCALATE | SELF_MOD on .claude/agents/plan-implementer.md (Step 6 + Safety) + CI pending; routed to human review per agent-loop carve-out |
+| 2026-04-26T11:41:27Z | #371 | plan-implementer | escalate | SELF_MOD .claude/agents/plan-implementer.md; CI green now but already escalated to human awaiting disposition |
