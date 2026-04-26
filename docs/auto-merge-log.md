@@ -269,3 +269,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T04:45:51Z | project-manager | #350 | ops: land 26 loop-monitor tick rows (clean working tree) | https://github.com/WooilKim/SmartNoti/actions/runs/24948444852 |
 | 2026-04-26T05:04:24Z | project-manager | #351 | ops loop-monitor: land 2 additional tick rows (take 2) +meta-plan ask, docs-only +2/-0 | https://github.com/WooilKim/SmartNoti/actions/runs/24948613452 |
 | 2026-04-26T05:18:07Z | project-manager | #353 | gap-planner plan: user-tunable duplicate-suppression threshold + window | https://github.com/WooilKim/SmartNoti/actions/runs/24948923902 |
+| 2026-04-26T05:43:14Z | project-manager | #354 | feat: duplicate-suppression threshold + window user settings (plan-implementer end-to-end ship) | https://github.com/WooilKim/SmartNoti/actions/runs/24949339251 |
