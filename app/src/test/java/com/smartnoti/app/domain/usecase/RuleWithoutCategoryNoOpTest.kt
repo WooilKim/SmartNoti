@@ -77,4 +77,61 @@ class RuleWithoutCategoryNoOpTest {
         assertEquals(NotificationDecision.SILENT, result.decision)
         assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
+
+    @Test
+    fun draft_true_rule_with_empty_categories_still_falls_through_to_silent() {
+        // Plan `2026-04-26-rule-explicit-draft-flag` Task 1 step 3 — the new
+        // `draft` flag is a pure UI/UX hint. The classifier contract does
+        // NOT change: a rule whose match fires but whose owning Category is
+        // missing falls through to SILENT regardless of `draft` value.
+        val rule = RuleUiModel(
+            id = "keyword:인증번호",
+            title = "인증번호",
+            subtitle = "",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "인증번호",
+            draft = true,
+        )
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.bank.app",
+                title = "은행",
+                body = "인증번호 123456",
+            ),
+            rules = listOf(rule),
+            categories = emptyList(),
+        )
+
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(listOf("keyword:인증번호"), result.matchedRuleIds)
+    }
+
+    @Test
+    fun draft_false_parked_rule_with_empty_categories_still_falls_through_to_silent() {
+        // Mirror of the draft=true case for the "보류" sub-bucket. A user who
+        // explicitly parked a rule expects no behavior change at the
+        // classifier — only the RulesScreen rendering should differ.
+        val rule = RuleUiModel(
+            id = "keyword:인증번호",
+            title = "인증번호",
+            subtitle = "",
+            type = RuleTypeUi.KEYWORD,
+            enabled = true,
+            matchValue = "인증번호",
+            draft = false,
+        )
+        val result = classifier.classify(
+            input = ClassificationInput(
+                packageName = "com.bank.app",
+                title = "은행",
+                body = "인증번호 123456",
+            ),
+            rules = listOf(rule),
+            categories = emptyList(),
+        )
+
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(listOf("keyword:인증번호"), result.matchedRuleIds)
+    }
 }
