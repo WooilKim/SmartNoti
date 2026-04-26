@@ -31,7 +31,7 @@ status: in-progress
 
 ---
 
-## Task 1: Add failing tests for `CategoryNameUniqueness`
+## Task 1: Add failing tests for `CategoryNameUniqueness` [IN PROGRESS via PR #330]
 
 **Objective:** 비교 규칙 (trim, case-insensitive, 자기 id 제외) 을 unit test 로 고정한 뒤 구현. 테스트 표면이 가장 명확한 곳부터 짠다.
 
@@ -51,7 +51,7 @@ status: in-progress
    - Edit 흐름: `currentCategoryId = "cat-promo"`, 기존 `cat-promo:"프로모션"` + `cat-other:"광고"`, 새 입력 `"광고"` → `DUPLICATE` (다른 row 와 충돌).
 2. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.categories.CategoryNameUniquenessTest"` → 모두 RED 확인 (구현이 아직 없음).
 
-## Task 2: Implement `CategoryNameUniqueness`
+## Task 2: Implement `CategoryNameUniqueness` [IN PROGRESS via PR #330]
 
 **Objective:** Task 1 의 테스트가 모두 GREEN 이 되게.
 
@@ -78,7 +78,7 @@ status: in-progress
 3. `existing` 인자 형태가 `Pair<String, String>` 가 아닌 `List<Category>` 인 편이 호출 사이트에서 더 자연스럽다고 implementer 가 판단하면 그렇게 바꿔도 무방 — pure validation 의 contract 만 유지. 결정은 Task 3 wiring 이 가장 깔끔한 형태로 implementer 가 선택. Test 도 그에 맞춰 변경.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.categories.CategoryNameUniquenessTest"` → 모두 GREEN.
 
-## Task 3: Wire uniqueness into `CategoryEditorDraftValidator` + Editor
+## Task 3: Wire uniqueness into `CategoryEditorDraftValidator` + Editor [IN PROGRESS via PR #330]
 
 **Objective:** Editor 저장 버튼이 DUPLICATE 시 비활성화되고, 이름 필드 아래 inline 에러 카피가 표시된다.
 
@@ -113,7 +113,7 @@ status: in-progress
 4. 카피 한국어 단일 어조 유지 — 기존 카피 톤 (`"이미 사용 중인 이름이에요"`) 와 일관. 다국어는 본 plan scope 외.
 5. `./gradlew :app:testDebugUnitTest` 전체 GREEN. `./gradlew :app:assembleDebug` 통과.
 
-## Task 4: Manual ADB verification on emulator-5554
+## Task 4: Manual ADB verification on emulator-5554 [IN PROGRESS via PR #330]
 
 **Objective:** 두 흐름 (분류 탭 → FAB → 신규 / Detail → "새 분류 만들기" Path B) 에서 사용자가 중복 이름 입력 시 inline 에러를 보고 저장 버튼이 비활성화되는지 시각 확인.
 
@@ -133,7 +133,7 @@ status: in-progress
    - 사용자가 prefill 된 이름을 수정하면 inline 에러 사라지고 저장 가능해지는지 확인.
 5. 결과를 `docs/journeys/categories-management.md` Change log + Verification log (README) 에 캡처와 함께 기록.
 
-## Task 5: Update `categories-management` journey
+## Task 5: Update `categories-management` journey [IN PROGRESS via PR #330]
 
 **Objective:** Observable steps + Code pointers + Known gaps + Tests + Change log 동기화.
 
@@ -148,7 +148,7 @@ status: in-progress
 5. Change log 에 본 PR 항목 append (날짜는 implementer 가 작업한 실제 UTC 날짜, 요약, plan link, PR link merge 시 채움).
 6. `last-verified` 는 ADB recipe 를 처음부터 끝까지 다시 돌리지 않았다면 **갱신하지 않음**.
 
-## Task 6: Self-review + PR
+## Task 6: Self-review + PR [IN PROGRESS via PR #330]
 
 - `./gradlew :app:testDebugUnitTest` GREEN, `./gradlew :app:assembleDebug` 통과.
 - PR 본문에 다음 명시:
