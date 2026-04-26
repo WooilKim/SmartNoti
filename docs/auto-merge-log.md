@@ -250,3 +250,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T00:49:24Z | project-manager | #331 | CORRECTION: prior #331 row was pre-stamped before merge; merge BLOCKED by conflict, no squash occurred — disregard prior row | https://github.com/WooilKim/SmartNoti/pull/331 |
 | 2026-04-26T00:53:54Z | journey-tester | #332 | home-uncategorized-prompt | https://github.com/WooilKim/SmartNoti/actions/runs/24944613935 |
 | 2026-04-26T01:05:53Z | project-manager | #331 | gap-planner: plan for Category Detail recent-notifications preview (categories-management) | https://github.com/WooilKim/SmartNoti/actions/runs/24944813975 |
+| 2026-04-26T01:24:57Z | project-manager | #333 | feat(categories): CategoryDetail recent-notifications preview (selector+helper+UI+nav, tests, journey) | https://github.com/WooilKim/SmartNoti/actions/runs/24945123742 |
