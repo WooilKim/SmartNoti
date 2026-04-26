@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — rules-management explicit draft flag end-to-end post-#357, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-management | PASS | First end-to-end ADB sweep after PR #357 (026ca82 `feat/rule-explicit-draft-flag`) shipped explicit `draft: Boolean` flag. APK rebuilt 2026-04-26 15:27 — initial dump on stale 14:33 install showed legacy single "나중에 분류에 추가" CTA, fresh `adb install -r` resolved. Settings → "고급 규칙 편집 열기" → Rules screen baseline 3개 룰. (a) 새 키워드 룰 `ActionNeededTest_0426` 저장 → `CategoryAssignBottomSheet` 가 두 dismiss CTA "분류 없이 보류" + "작업 목록에 두기" 정확히 split 노출. (b) "작업 목록에 두기" 탭 → 활성 5개, 액션 그룹 위에 **"작업 필요"** SectionLabel + 설명 카피 + ActionNeededTest_0426 row (border-only "미분류" chip + "분류에 추가되기 전까지 비활성" 배너) 렌더. (c) 사전 OLD APK 단일-CTA 경로로 만든 `DraftFlagTest_0426` 룰이 자동으로 **"보류"** sub-section 에 위치 (사용자가 보류함 배너 + "보류" chip + 우하단 "작업으로 끌어올리기" TextButton) — 두 sub-bucket 동시 렌더 + 순서 작업 필요 → 보류 확인. (d) "작업으로 끌어올리기" 탭 → DraftFlagTest_0426 가 보류 → 작업 필요 로 이동, "보류" SectionLabel 사라짐 (regression guard PASS — 빈 sub-bucket 라벨 미노출). 두 신규 Rule 삭제로 baseline 3개 복원. DRIFT 없음 — Observable steps 6 의 두-CTA sheet + UnassignedRulesPartitioner split + promote 어포던스 모두 doc 과 일치. `last-verified` 2026-04-25 → 2026-04-26. |
+
 ### 2026-04-26 (journey-tester — duplicate-suppression Settings dropdowns end-to-end post-#354, emulator-5554)
 
 | Journey | Result | Notes |
