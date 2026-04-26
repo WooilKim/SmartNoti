@@ -51,7 +51,7 @@ last-verified: 2026-04-26
 - CategoriesRepository:
   - 경로 A → 선택한 Category 의 `ruleIds` 에 rule.id 가 deduped 로 추가됨. 그 밖 필드 변화 없음.
   - 경로 B → 신규 Category 가 저장되며 `ruleIds` 에 rule.id 포함. Editor 에서 고른 `action` 이 persist.
-- NotificationRepository: **이 경로는 대상 알림 row 자체를 갱신하지 않는다** (legacy 4-버튼과의 핵심 차이). 사용자가 "이 알림 자체" 의 상태를 즉시 바꾸고 싶으면 분류가 달라지는 즉시 다음 tick 에 반영된다 — 과거처럼 status / reasonTags 에 "사용자 규칙" 을 즉시 덮어쓰지 않음.
+- NotificationRepository: 2026-04-26 plan `detail-reclassify-this-row-now` 이후, Detail 호출 경로는 Rule/Category write 직후 `ApplyCategoryActionToNotificationUseCase` 로 대상 알림 row 의 `status` 를 매핑된 Category action 으로, `reasonTags` 에 `사용자 분류` 를 dedup append 한다 ([notification-detail](notification-detail.md) Exit state 참조). Path A 의 destination Category race deletion 시에는 row write skip + snackbar 만 진행. 이 단계는 Detail 측 implementation 이며 본 journey 의 Goal (자동 재분류 + Rule/Category 학습) 과는 독립.
 - 알림센터: replacement 알림은 별도 cancel 되지 않는다 (이 경로가 `notificationManager.cancel` 을 호출하지 않음 — replacement 수명 주기는 기존 silent-suppression 계약을 따름).
 - 후속 동일 유형 알림: 이번에 묶인 Category 의 action 으로 자동 분류됨.
 
@@ -59,7 +59,7 @@ last-verified: 2026-04-26
 
 - 수동 룰 편집/삭제 (→ [rules-management](rules-management.md))
 - Category 자체의 편집 / 순서 변경 (→ [categories-management](categories-management.md))
-- 대상 알림 row 의 즉시 status 변경 (이 redesign 이후 Detail 에는 "즉시 상태를 바꾸는" 버튼이 없음 — 자연스러운 재분류는 "다음 tick" 의 자동 classifier 재적용으로 관측)
+- 대상 알림 row 의 즉시 status 변경의 Detail 측 implementation (2026-04-26 plan `detail-reclassify-this-row-now` 이후 Path A/B 에서 자동 수행 — `ApplyCategoryActionToNotificationUseCase`. 본 journey 는 Rule/Category 학습 계약만 다룸, row write 는 [notification-detail](notification-detail.md) 참조)
 
 ## Code pointers
 
@@ -111,7 +111,7 @@ adb shell cmd notification post -S bigtext -t "AssignTest_0421" FbTest2 "두 번
 - 자동 rule 유도는 PERSON / APP 만 지원 — KEYWORD / SCHEDULE / REPEAT_BUNDLE 기반 묶기는 제공하지 않음 (사용자가 원하면 editor 에서 추가해야 함).
 - Deterministic rule id 의 교차 Category 중복: 동일 sender 를 서로 다른 Category 두 곳에 연이어 할당하면 같은 rule.id 를 두 Category 가 `ruleIds` 에 갖게 된다. Classifier 는 `order` 드래그 tie-break 로 승자를 결정 — 사용자가 분류 탭에서 정한 순서가 그대로 지배한다. Bug 아님 (계약 명시).
 - PrefillStore 프로세스 생존: 경로 B 의 Editor 전이 도중 프로세스가 죽으면 prefill 이 소실되고 Editor 는 빈 상태로 열린다. 재시도 시 문제 없음 (저장 이전까지 아무것도 persist 되지 않음).
-- Detail "즉시 상태 변경" 부재: legacy 4-버튼은 알림 row 자체의 status 를 즉시 바꿔줬는데 redesign 에서는 의도적으로 제거. 사용자가 "이 알림 자체를 지금 이 버킷으로 보내기" 를 원한다면 classifier 가 다음 tick 에 재적용하는 동안 row 상태는 그대로 보임. 이 UX 후퇴를 감지하면 별도 plan 으로 restore 결정 필요. → plan: `docs/plans/2026-04-26-detail-reclassify-this-row-now.md`
+- (resolved 2026-04-26, plan 2026-04-26-detail-reclassify-this-row-now) Detail "즉시 상태 변경" 부재: legacy 4-버튼은 알림 row 자체의 status 를 즉시 바꿔줬는데 redesign 에서는 의도적으로 제거. 사용자가 "이 알림 자체를 지금 이 버킷으로 보내기" 를 원한다면 classifier 가 다음 tick 에 재적용하는 동안 row 상태는 그대로 보임. 이 UX 후퇴를 감지하면 별도 plan 으로 restore 결정 필요. → plan: `docs/plans/2026-04-26-detail-reclassify-this-row-now.md`
 - Replacement 알림 per-action 버튼 제거 (intended trade): silent-suppression 의 대체 알림이 tap-only 로 바뀌어 `notification-replacement-alert` recipe 는 탭 수가 한 번 더 필요하다. journey-tester 가 해당 recipe 재검증 필요.
 
 ## Change log
@@ -127,4 +127,5 @@ adb shell cmd notification post -S bigtext -t "AssignTest_0421" FbTest2 "두 번
 - 2026-04-22: journey-tester full end-to-end PASS on fresh Categories APK (refactor P1-P3 + runtime-wiring + save-race-fix + DataStore-dedup stack). Path B: Detail → "분류 변경" → "+ 새 분류 만들기" → editor prefilled (name=`AssignTest_0422_T1`, action=PRIORITY dynamic-opposite of SILENT, pendingRule=`PERSON:AssignTest_0422_T1` pre-checked) → "추가" tap → DataStore `smartnoti_categories.preferences_pb` persists `cat-user-…|AssignTest_0422_T1|PRIORITY|0|PERSON:AssignTest_0422_T1`, 분류 탭 에 "규칙 1개 · 즉시 전달" 카드 표출. Path A: 별도 sender `PathATest_0422` 알림 Detail → "분류 변경" → 시트 상단 "기존 분류에 포함" 헤더 렌더 (이전 Known gap 해소) → AssignTest Category row tap → Category ruleIds 가 `PERSON:AssignTest_0422_T1,PERSON:PathATest_0422` 로 append (name/action/order 불변), 신규 rule 이 Rules DataStore 에 upsert. 자동 재분류 PASS: 동일 sender 후속 알림 포스팅 시 Home "즉시" StatPill 이 0 → 1 증가 (PRIORITY 로 auto-routed). `last-verified` 를 2026-04-22 로 bump.
 - 2026-04-23: Onboarding quick-start 가 Categories 도 1:1 seed 하도록 wiring 추가 — 첫-진입 사용자가 Path A 를 시도해도 시트 상단 "기존 분류에 포함" 섹션이 비어 있지 않다. Path A 자체 동작은 변경 없음. Plan: `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md` (this PR). `last-verified` 변경 없음 — ADB 재검증은 다음 journey-tester sweep.
 - 2026-04-25: 시트 dismiss 후 confirmation snackbar 추가 — 경로 A `"<카테고리명> 분류로 옮겼어요"`, 경로 B `"새 분류 '<카테고리명>' 만들었어요"` (cancel 시 미표시). Detail 측 신규 `DetailReclassifyConfirmationMessageBuilder` + `SnackbarHost` 가 담당, 본 journey 의 Observable / Trigger / Exit 자체는 변경 없음 (대상 알림 row 즉시 갱신 부재 등 위임 계약 보존). Plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` (this PR). `last-verified` 변경 없음.
+- 2026-04-26: **Detail "이 알림도 지금 재분류" inline CTA** — Path A / Path B 두 경로 모두 시트/에디터 dismiss 직후 신규 `ApplyCategoryActionToNotificationUseCase` 가 대상 알림 row 의 `status` + `reasonTags` (`사용자 분류` dedup append) 를 즉시 갱신. 본 journey 의 Goal/Observable/Trigger 자체는 변경 없음 — Detail 측 implementation 변경이며 rules-feedback 계약 (Rule + Category persist, 자동 재분류) 은 그대로. Exit state 의 `NotificationRepository: 이 경로는 대상 알림 row 자체를 갱신하지 않는다 (legacy 4-버튼과의 핵심 차이)` 줄은 [notification-detail](notification-detail.md) 측 갱신으로 위임. Plan: `docs/plans/2026-04-26-detail-reclassify-this-row-now.md` Tasks 1 (#377), 2-3 (#378), 4-5 (#379), 6-8 (this PR). `last-verified` 변경 없음.
 - 2026-04-26: journey-tester re-verify on emulator-5554 — Path A end-to-end PASS. 신규 sender `AssignTest_0426` 알림 게시 → 정리함 > 보관 중 > Shell 카드 > preview 탭 → Detail "분류 변경" → `CategoryAssignBottomSheet` 가 onboarding-seeded 3개 Category ("중요 알림" / "프로모션 알림" / "반복 알림") + "+ 새 분류 만들기" terminal row 로 렌더. "중요 알림" 탭 → 시트 dismiss + Detail 에 `"중요 알림 분류로 옮겼어요"` 스낵바 표시 (2026-04-25 confirm-toast). `smartnoti_categories.preferences_pb` 검사: `cat-onboarding-important_priority` 의 ruleIds 에 `PERSON:AssignTest_0426` 가 dedup append (action=PRIORITY/order=0/name 불변 유지). 동일 sender 후속 알림 (`두 번째 알림`) 포스팅 직후 Home StatPill `즉시 9 → 10`, 카피 `중요한 9 → 10` 로 자동 재분류 확인. `last-verified` 를 2026-04-26 으로 bump. (Path B 는 별도 sweep 으로 위임 — 이번 cycle 은 Path A + auto-reclassify 만 cover)

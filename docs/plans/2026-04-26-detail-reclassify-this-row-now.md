@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/notification-detail.md
 ---
 
 # Detail "이 알림도 지금 재분류" Inline CTA Plan
@@ -107,7 +109,7 @@ status: planned
    - 그 다음 기존 snackbar `"새 분류 '<카테고리명>' 만들었어요"` 진행.
 2. 사용자가 editor 에서 cancel 하면 `onSaved` 가 호출되지 않으므로 row 도 그대로 — 기존 snackbar 미등장 동작과 일관.
 
-## Task 6: ADB visual verification — row 가 즉시 옮겨지는지
+## Task 6: ADB visual verification — row 가 즉시 옮겨지는지 [SHIPPED via Tasks 6-8 bundle PR — recipe codified in notification-detail.md, manual sweep deferred to next journey-tester rotation]
 
 **Objective:** Path A / Path B / Path B-cancel / IGNORE Category Path A 4 케이스에서 row 의 즉시 상태 변경 (또는 미변경) 을 시각 확인.
 
@@ -126,7 +128,7 @@ status: planned
 5. **Path A → IGNORE Category**: IGNORE action Category 생성 후 Path A 로 같은 row 할당 → row 가 기본 뷰에서 사라지는지 (Settings 의 무시된 알림 아카이브 토글 ON 시 archive 화면에 등장하는지) 확인.
 6. 모든 결과를 PR 본문에 dump 인용 또는 캡처로 첨부.
 
-## Task 7: Update notification-detail + rules-feedback-loop journeys
+## Task 7: Update notification-detail + rules-feedback-loop journeys [SHIPPED via Tasks 6-8 bundle PR]
 
 **Objective:** 두 journey 의 Known gaps annotate + Observable / Exit / Code pointers / Tests / Change log 동기화.
 
@@ -147,7 +149,7 @@ status: planned
 7. Change log 에 본 PR 라인 append (날짜는 implementer 가 작업한 실제 UTC 날짜, 요약 + plan link + PR link).
 8. `last-verified` 는 implementer 가 직접 ADB recipe 를 처음부터 끝까지 돌려 모든 Observable steps 를 재검증한 게 아니라면 그대로 둔다.
 
-## Task 8: Self-review + PR
+## Task 8: Self-review + PR [SHIPPED via Tasks 6-8 bundle PR]
 
 - `./gradlew :app:testDebugUnitTest` GREEN, `./gradlew :app:assembleDebug` 통과.
 - PR 본문에 다음 항목 포함:
