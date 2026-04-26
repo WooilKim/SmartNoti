@@ -242,3 +242,4 @@ If a self-merged row caused a regression:
 | 2026-04-25T10:50:55Z | journey-tester | #324 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24929165871 |
 | 2026-04-25T23:34:03Z | journey-tester | #325 | home-overview | https://github.com/WooilKim/SmartNoti/actions/runs/24943239336 |
 | 2026-04-25T23:43:17Z | project-manager | #326 | gap-planner: Android <queries> package visibility plan | https://github.com/WooilKim/SmartNoti/actions/runs/24943392068 |
+| 2026-04-26T00:00:00Z | project-manager | #327 | Android <queries> manifest fix so APP chip resolves user app names | https://github.com/WooilKim/SmartNoti/actions/runs/24943696883 |
