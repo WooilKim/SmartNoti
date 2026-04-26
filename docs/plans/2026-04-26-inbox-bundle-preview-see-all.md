@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/inbox-unified.md
 ---
 
 # Inbox Bundle Preview "전체 보기" 진입점 Plan
@@ -32,7 +34,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing UI test for "전체 보기" CTA visibility
+## Task 1: Add failing UI test for "전체 보기" CTA visibility [SHIPPED via PR #349]
 
 **Objective:** CTA 가 `model.items.size > 3` 일 때만 렌더되고, 탭 시 `showAll` 상태가 변하며 모든 row 가 노출됨을 ComposeRule 로 고정.
 
@@ -49,7 +51,7 @@ status: planned
    - 헤더 collapsible=true 에서 카드 collapse → CTA + 모든 row 가 보이지 않음 (기존 collapse 동작 보존). expand → 직전 `showAll` 상태로 복원.
 2. 테스트 실행 → 모두 RED 확인.
 
-## Task 2: Implement "전체 보기" CTA in `DigestGroupCard`
+## Task 2: Implement "전체 보기" CTA in `DigestGroupCard` [SHIPPED via PR #349]
 
 **Objective:** Task 1 의 테스트가 모두 GREEN 이 되게.
 
@@ -73,7 +75,7 @@ status: planned
 4. `bulkActions` 호출은 CTA **아래** 그대로 둔다 (순서 보존). bulk action 이 늘어나도 CTA 가 그 사이에 끼지 않도록.
 5. `./gradlew :app:testDebugUnitTest` + `:app:connectedDebugAndroidTest` (ComposeRule 위치에 따라) 의 새 테스트가 모두 GREEN.
 
-## Task 3: Manual ADB verification on emulator-5554 (positive-case quiet-hours historical row)
+## Task 3: Manual ADB verification on emulator-5554 (positive-case quiet-hours historical row) [SHIPPED via PR #349]
 
 **Objective:** quiet-hours 의 historical row 가 실제로 Detail 까지 navigate 되어 `QuietHoursExplainerBuilder` 의 sub-section + `reasonTags` chip row 가 렌더됨을 사용자 액션으로 재현.
 
@@ -107,7 +109,7 @@ status: planned
     ```
     상위 5개 그룹의 row 수를 PR 본문에 1줄로 첨부 — 100건 이상이면 별도 화면 plan escalate 트리거.
 
-## Task 4: Update `inbox-unified` journey + cross-link deprecated journeys
+## Task 4: Update `inbox-unified` journey + cross-link deprecated journeys [SHIPPED via PR #349]
 
 **Objective:** Observable steps + Code pointers + Tests + Change log 동기화. quiet-hours / digest-inbox / hidden-inbox 의 Known gap 본문은 그대로 유지하되 plan link annotate.
 
@@ -128,7 +130,7 @@ status: planned
 8. `hidden-inbox.md` Change log 에 한 줄: "본 plan ship 으로 `DigestGroupCard` (보관 중 / 처리됨 그룹) preview 가 inline expansion 지원."
 9. `last-verified` 는 verification recipe 를 처음부터 다시 돌리지 않았으므로 갱신하지 않는다 (per `.claude/rules/docs-sync.md`).
 
-## Task 5: Self-review + PR
+## Task 5: Self-review + PR [SHIPPED via PR #349]
 
 - `./gradlew :app:testDebugUnitTest` GREEN, `./gradlew :app:assembleDebug` 통과, 새 ComposeRule 테스트 GREEN.
 - PR 본문에 다음 명시:
