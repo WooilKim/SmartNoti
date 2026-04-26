@@ -256,3 +256,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T01:25:13Z | #334 | loop-monitor-ops | DEFER | docs-only baseline of loop-monitor-log; CI pending; will re-check next sweep |
 | 2026-04-26T01:29:21Z | #334 | loop-monitor (ops) | APPROVE | Baseline docs/loop-monitor-log.md tracked on main (+69 lines, ADDED, append-only docs); CI SUCCESS; no risk signals; merged squash 3d2b172 |
 | 2026-04-26T01:45:41Z | #336 | gap-planner | DEFER | CI pending: Unit tests + debug APK |
+| 2026-04-26T01:48:26Z | #336 | gap-planner | APPROVE+merged | quiet-hours explainer copy plan; docs-only; CI green |
