@@ -66,6 +66,13 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — silent-auto-hide re-verify post-#327 manifest queries)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | PASS | v1 loop tick rotation (2026-04-24 = oldest non-deprecated tier; `categories-management` already verified post-#327 yesterday). emulator-5554 dumpsys: root summary `보관 중인 조용한 알림 31건` + text `탭: 보관함 열기 · 스와이프: 확인으로 처리` + action `숨겨진 알림 보기` on `smartnoti_silent_summary` (importance=1, vis=SECRET, pri=-2) — Observable step 5 일치. 그룹 채널 `smartnoti_silent_group` 의 N≥2 임계 강제도 다수 sender groupKey (`…sender:FooBarSender`, `…PathBTest_003943`, `…PathATest_0422`) 로 확인 (step 6/7). 콜드 deep-link → `Hidden` 화면 헤더 `보관 31건 · 처리 2건` + 기본 `보관 중 · 31건` 탭, 요약 카드 `1개 앱에서 31건을 보관 중이에요.`. `처리됨 · 2건` 탭 전환 → 서브카피 `이미 확인했거나 이전 버전에서 넘어온 알림이에요.` 노출. 그룹 카드 초기 collapsed (preview 라벨 0건), chevron(`펼치기`) tap → `최근 묶음 미리보기` + bulk action row (`모두 중요로 복구` / `모두 지우기`) 노출. #327 (`<queries>`) 변경은 SILENT 라우팅·요약 채널 계약과 무관 (manifest 는 PackageManager 라벨 lookup 한정), regression 없음 확인. DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26. |
+
+
 ### 2026-04-25 (journey-tester — home-overview re-verify on emulator-5554)
 
 | Journey | Result | Notes |

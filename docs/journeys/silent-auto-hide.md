@@ -3,7 +3,7 @@ id: silent-auto-hide
 title: 조용히 분류된 알림 — ARCHIVED / PROCESSED 하위 상태로 보관/처리
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-24
+last-verified: 2026-04-26
 ---
 
 ## Goal
@@ -144,3 +144,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity \
 - 2026-04-21: **Detail "처리 완료로 표시" 가 tray cancel 연계 (drift fix)** — `markSilentProcessed(id)` 성공 후 `MarkSilentProcessedTrayCancelChain` 이 활성 listener 인스턴스에 `cancelNotification(sourceEntryKey)` 를 위임해 tray 원본도 제거된다. 활성 listener 가 없으면 best-effort no-op (DB 전이는 보존). Observable step 11 / Code pointers 는 이미 이 경로를 기술하고 있었고, 본 Change log 로 Known gap 해소를 기록. 관련 plan: `docs/plans/2026-04-20-silent-archive-drift-fix.md` Task 3. PR #126.
 - 2026-04-24: Verification re-run on emulator-5554 post-#292 (default-on suppression toggle + empty-set=all-apps + v1 migration). Live `dumpsys` confirmed root summary copy/channel/importance/vis, group summaries with N≥2 threshold (Promo=4, three other senders=2), and capture default ARCHIVED branch (source `shell_cmd` retained on fresh post; root count 26→27, Promo group 4→5 within 4s). PASS — Observable steps 1/3/5/7 and Exit state hold; #292's policy change does not regress the ARCHIVED path.
 - 2026-04-24: **SILENT 원본 cancel 경로의 default-on 보장** — `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경되고, `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션이 한 번 덮어씀. SILENT 도 같은 policy 분기를 사용하므로 신규/미설정 사용자에게도 capture 경로의 cancel 이 정상 작동한다 (PROCESSED 분기 — ARCHIVED 분기는 이미 cancel 을 건너뛰는 것이 의도). 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.
+- 2026-04-26: v1 loop tick re-verify on emulator-5554 (PASS) post-#327 (`<queries>` manifest fix for app-label visibility). `dumpsys notification --noredact` confirmed root summary `보관 중인 조용한 알림 31건` + text `탭: 보관함 열기 · 스와이프: 확인으로 처리` + action `숨겨진 알림 보기` + channel `smartnoti_silent_summary` (importance=1, vis=SECRET, pri=-2) — Observable step 5 계약 일치. 그룹 채널 `smartnoti_silent_group` 의 N≥2 임계 강제도 다수 sender groupKey (`smartnoti_silent_group_sender:FooBarSender`, `…PathBTest_003943`, `…PathATest_0422`) 로 확인 (step 6/7). 콜드-스타트 deep-link (`am force-stop` → `am start -e DEEP_LINK_ROUTE hidden`) → `Hidden` 화면 헤더 `보관 31건 · 처리 2건` + 기본 탭 `보관 중 · 31건` + 요약 카피 `1개 앱에서 31건을 보관 중이에요.` (step 8/9, hidden-inbox cross-cut). `처리됨 · 2건` 탭 전환 시 서브카피 `이미 확인했거나 이전 버전에서 넘어온 알림이에요.` 1건 노출. 그룹 카드 초기 collapsed (preview 라벨 0건), chevron (`펼치기`) tap → `최근 묶음 미리보기` + bulk action row (`모두 중요로 복구` / `모두 지우기`) 노출 (스크롤 후 확인). DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26 bump.
