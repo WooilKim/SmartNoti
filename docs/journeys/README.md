@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (plan-implementer — `quiet-hours-shopping-packages-user-extensible` Tasks 1-9 ship + E2E ADB sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | PASS | Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible` 전 9 task 종료 (PRs #405 + #406 + #407). 신규 Settings UI sub-row "조용한 시간 대상 앱" + 모달 bottom-sheet picker 가 기대대로 add/remove/clear-all 모두 처리 (DataStore `quiet_hours_packages` 키 영속 확인). Hot-path classifier 가 `settings.quietHoursPackages` 를 매 호출에 thread (`shoppingPackagesOverride` per-call). emulator-5554 KST 03:21 (default `[23,7)` window 안), `am broadcast` E2E 4 케이스: (a) Add 경로 — `com.smartnoti.testnotifier` 추가 후 broadcast → DB row `status=DIGEST, reasonTags=발신자 있음\|조용한 시간` (user-added pkg 가 quiet-hours 분기 발화). (b) Remove 경로 — Coupang 제거 후 broadcast → `status=SILENT` (분기 미발화 — 정확한 증거). (c) Empty 경로 — picker 의 "모두 비우기" 후 sub-row + sheet 헤더에 inline 경고 카피 ("대상 앱이 없어 조용한 시간이 어떤 알림도 모으지 않아요.") 렌더. (d) Default 호환성 — Coupang 단독 default → broadcast → DIGEST + `조용한 시간\|쇼핑 앱` (PR #346 sweep 와 동일). 25개 신규 unit test (9 settings round-trip + 4 classifier dynamic + 9 spec builder + 3 wiring). Full unit suite GREEN, `:app:assembleDebug` GREEN. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-26 (positive ADB step 4 를 신규 settings 출처로 재현). |
+
 ### 2026-04-26 (journey-tester — onboarding-bootstrap rotation sweep, SKIP)
 
 | Journey | Result | Notes |
