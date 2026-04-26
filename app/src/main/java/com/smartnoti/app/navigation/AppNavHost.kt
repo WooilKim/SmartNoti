@@ -44,6 +44,13 @@ import com.smartnoti.app.ui.screens.priority.PriorityScreen
 import com.smartnoti.app.ui.screens.rules.RulesScreen
 import com.smartnoti.app.ui.screens.settings.SettingsScreen
 
+/**
+ * `NavBackStackEntry.savedStateHandle` key used by the Insight drill-down
+ * composable to persist the user-selected range across Detail round-trips.
+ * Plan `docs/plans/2026-04-26-insight-drilldown-range-state-survival.md` Task 4.
+ */
+private const val KEY_INSIGHT_RANGE = "insight_range"
+
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
@@ -363,6 +370,19 @@ fun AppNavHost(
                     },
                 )
             ) { backStackEntry ->
+                // Plan `docs/plans/2026-04-26-insight-drilldown-range-state-survival.md`
+                // Task 4: persist the user's chip selection into this entry's
+                // savedStateHandle so a Detail push + system back round-trip
+                // (which re-RESUMEs the same backstack entry but in some
+                // lifecycle paths re-runs the composable from scratch) still
+                // restores the user's window. The savedStateHandle is
+                // automatically scoped to this entry's lifetime — when the
+                // user back-navigates *out* of InsightDrillDown the handle
+                // dies with the entry, so a fresh deep-link from Home/Settings
+                // correctly seeds from the URL `range` arg again.
+                val savedRangeRouteValue = backStackEntry
+                    .savedStateHandle
+                    .get<String>(KEY_INSIGHT_RANGE)
                 InsightDrillDownScreen(
                     contentPadding = paddingValues,
                     filterType = backStackEntry.arguments?.getString("filterType").orEmpty(),
@@ -372,6 +392,10 @@ fun AppNavHost(
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onInsightClick = { navController.navigate(it) },
                     onBack = { navController.popBackStack() },
+                    savedRangeRouteValue = savedRangeRouteValue,
+                    onRangeSelected = { routeValue ->
+                        backStackEntry.savedStateHandle[KEY_INSIGHT_RANGE] = routeValue
+                    },
                 )
             }
         }
