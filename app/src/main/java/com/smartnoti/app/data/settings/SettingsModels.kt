@@ -30,6 +30,13 @@ data class SmartNotiSettings(
     // injected once via `SettingsRepository.applyPendingMigrations()`.
     val suppressSourceForDigestAndSilent: Boolean = true,
     val suppressedSourceApps: Set<String> = emptySet(),
+    // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 3:
+    // packages the user explicitly removed from the Suppressed Apps list in
+    // Settings. `SuppressedSourceAppsAutoExpansionPolicy` treats membership
+    // here as a hard exclude — it will never re-add these packages to
+    // `suppressedSourceApps` even when a fresh DIGEST notification arrives.
+    // Default `emptySet()` means existing users see no behavior change.
+    val suppressedSourceAppsExcluded: Set<String> = emptySet(),
     val hidePersistentNotifications: Boolean = true,
     val hidePersistentSourceNotifications: Boolean = false,
     val protectCriticalPersistentNotifications: Boolean = true,

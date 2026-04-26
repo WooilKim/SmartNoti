@@ -42,6 +42,7 @@ class SettingsRepository private constructor(
                 silentLockScreenVisibility = prefs[SILENT_LOCK_SCREEN_VISIBILITY] ?: defaults.silentLockScreenVisibility,
                 suppressSourceForDigestAndSilent = prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: defaults.suppressSourceForDigestAndSilent,
                 suppressedSourceApps = prefs[SUPPRESSED_SOURCE_APPS] ?: defaults.suppressedSourceApps,
+                suppressedSourceAppsExcluded = prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: defaults.suppressedSourceAppsExcluded,
                 hidePersistentNotifications = prefs[HIDE_PERSISTENT_NOTIFICATIONS] ?: defaults.hidePersistentNotifications,
                 hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
                 protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
@@ -183,9 +184,58 @@ class SettingsRepository private constructor(
 
     suspend fun setSilentLockScreenVisibility(value: String) = setString(SILENT_LOCK_SCREEN_VISIBILITY, value)
 
+    /**
+     * Bulk replace of the Suppressed Apps set written by auto-expansion and
+     * the legacy "select-all / clear-all" Settings affordances.
+     *
+     * NOTE (plan `2026-04-26-digest-suppression-sticky-exclude-list.md`): this
+     * API does NOT touch `suppressedSourceAppsExcluded`. Callers that need to
+     * honor the user's sticky-exclude intent must use
+     * [setSuppressedSourceAppExcluded] for per-package toggles, or check the
+     * excluded set themselves before calling this with a set that re-includes
+     * a previously excluded package. The auto-expansion path is already
+     * gated by `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull`
+     * so it cannot violate this contract.
+     */
     suspend fun setSuppressedSourceApps(packageNames: Set<String>) {
         context.dataStore.edit { prefs ->
             prefs[SUPPRESSED_SOURCE_APPS] = packageNames
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 3.
+     *
+     * Atomic per-package toggle for the sticky-exclude list:
+     *  - `excluded = true`: add `packageName` to `suppressedSourceAppsExcluded`
+     *    AND remove it from `suppressedSourceApps`. After this call, the
+     *    auto-expansion policy will refuse to re-add the package even if a
+     *    fresh DIGEST notification arrives from it.
+     *  - `excluded = false`: remove `packageName` from
+     *    `suppressedSourceAppsExcluded` only. This does NOT re-add to
+     *    `suppressedSourceApps` — the user must opt-in explicitly via the
+     *    Settings toggle (which calls [setSuppressedSourceApps]) or auto-
+     *    expansion must observe the package again on a future DIGEST.
+     *
+     * Both writes happen inside a single `dataStore.edit { ... }` block so
+     * concurrent readers always see a consistent (excluded, suppressed) pair.
+     */
+    suspend fun setSuppressedSourceAppExcluded(packageName: String, excluded: Boolean) {
+        context.dataStore.edit { prefs ->
+            val currentExcluded = (prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: emptySet()).toMutableSet()
+            if (excluded) {
+                currentExcluded.add(packageName)
+                prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = currentExcluded
+                val currentSuppressed = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet())
+                if (packageName in currentSuppressed) {
+                    prefs[SUPPRESSED_SOURCE_APPS] = currentSuppressed - packageName
+                }
+            } else {
+                if (packageName in currentExcluded) {
+                    currentExcluded.remove(packageName)
+                    prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = currentExcluded
+                }
+            }
         }
     }
 
@@ -409,6 +459,13 @@ class SettingsRepository private constructor(
         private val SILENT_LOCK_SCREEN_VISIBILITY = stringPreferencesKey("silent_lock_screen_visibility")
         private val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT = booleanPreferencesKey("suppress_source_for_digest_and_silent")
         private val SUPPRESSED_SOURCE_APPS = stringSetPreferencesKey("suppressed_source_apps")
+        // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 3.
+        // Sticky exclude list — packages the user has explicitly removed from
+        // the Suppressed Apps list. `SuppressedSourceAppsAutoExpansionPolicy`
+        // never re-adds these to `SUPPRESSED_SOURCE_APPS`. Default empty set
+        // means existing users are unaffected by this key's introduction.
+        private val SUPPRESSED_SOURCE_APPS_EXCLUDED =
+            stringSetPreferencesKey("suppressed_source_apps_excluded")
         private val HIDE_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_notifications")
         private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
         private val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("protect_critical_persistent_notifications")
