@@ -43,11 +43,30 @@ class NotificationClassifier(
      * can still explain every rule that fired — not just the one whose
      * Category happened to win.
      */
+    /**
+     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
+     * Tasks 3+4 add the optional [shoppingPackagesOverride] parameter so the
+     * production hot path can thread `SmartNotiSettings.quietHoursPackages`
+     * (the user-editable picker output) into the quiet-hours branch on every
+     * call without rebuilding the classifier. When `null` (legacy callers,
+     * unit-test fixtures, onboarding's auxiliary classifier), the
+     * constructor-baked [shoppingPackages] applies — so existing call sites
+     * preserve historical behavior. When non-null, the override fully
+     * replaces the default for this single classification.
+     *
+     * The architecture follows option (B) from the plan because it mirrors
+     * the per-input `duplicateThreshold` pattern (`2026-04-26-duplicate-
+     * threshold-window-settings`): cheaper than re-creating the classifier
+     * per notification and keeps the dynamic input adjacent to the other
+     * settings-derived per-call knobs.
+     */
     fun classify(
         input: ClassificationInput,
         rules: List<RuleUiModel> = emptyList(),
         categories: List<Category> = emptyList(),
+        shoppingPackagesOverride: Set<String>? = null,
     ): NotificationClassification {
+        val effectiveShoppingPackages = shoppingPackagesOverride ?: shoppingPackages
         val matchedRules = findMatchingRules(input, rules)
         if (matchedRules.isNotEmpty()) {
             val effectiveRules = collapseOverrides(matchedRules)
@@ -87,7 +106,7 @@ class NotificationClassifier(
             return NotificationClassification(NotificationDecision.PRIORITY)
         }
 
-        if (input.packageName in shoppingPackages && input.quietHours) {
+        if (input.packageName in effectiveShoppingPackages && input.quietHours) {
             return NotificationClassification(NotificationDecision.DIGEST)
         }
 

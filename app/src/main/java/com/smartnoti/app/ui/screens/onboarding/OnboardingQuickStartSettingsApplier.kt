@@ -179,7 +179,15 @@ class OnboardingQuickStartSettingsApplier(
         )
         private val DEFAULT_VIP_SENDERS = setOf("엄마", "팀장")
         private val DEFAULT_PRIORITY_KEYWORDS = setOf("인증번호", "OTP", "결제")
-        private val DEFAULT_SHOPPING_PACKAGES = setOf("com.coupang.mobile")
+        // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
+        // Task 4 SSOT consolidation: the onboarding auxiliary classifier and
+        // the persisted settings default both pull from the same companion
+        // const so they cannot drift. Onboarding still uses the static
+        // default rather than the live settings flow because this code runs
+        // *before* the user has had a chance to edit the picker — the live
+        // value is the same default at that point anyway.
+        private val DEFAULT_SHOPPING_PACKAGES =
+            SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES
     }
 }
 
