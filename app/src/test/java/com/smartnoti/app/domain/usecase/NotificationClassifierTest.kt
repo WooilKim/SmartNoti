@@ -281,6 +281,77 @@ class NotificationClassifierTest {
         assertEquals(emptyList<String>(), result.matchedRuleIds)
     }
 
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 1.
+     *
+     * The base heuristic compares against `input.duplicateThreshold` instead of
+     * a hard-coded 3. With the user-tunable threshold lowered to 2, the second
+     * duplicate already trips DIGEST (the user is asking for "더 자주 묶기").
+     */
+    @Test
+    fun custom_threshold_two_promotes_to_digest_at_count_two() {
+        val result = classifier.classify(
+            ClassificationInput(
+                packageName = "com.news.app",
+                body = "속보가 도착했어요",
+                duplicateCountInWindow = 2,
+                duplicateThreshold = 2,
+            )
+        )
+
+        assertEquals(NotificationDecision.DIGEST, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
+    }
+
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 1.
+     *
+     * Same input as `custom_threshold_two_…` but with the user threshold lifted
+     * to 5 — "거의 묶지 말기". `duplicateCountInWindow == 2` no longer trips
+     * DIGEST and the cascade continues to the SILENT default.
+     */
+    @Test
+    fun custom_threshold_five_falls_through_to_silent_at_count_two() {
+        val result = classifier.classify(
+            ClassificationInput(
+                packageName = "com.news.app",
+                body = "속보가 도착했어요",
+                duplicateCountInWindow = 2,
+                duplicateThreshold = 5,
+            )
+        )
+
+        assertEquals(NotificationDecision.SILENT, result.decision)
+        assertEquals(emptyList<String>(), result.matchedRuleIds)
+    }
+
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 1.
+     *
+     * Default threshold (3) preserves the historical behavior at exactly the
+     * boundary — pinned so a future refactor cannot silently flip the off-by-one.
+     */
+    @Test
+    fun default_threshold_three_preserves_historical_boundary() {
+        val belowThreshold = classifier.classify(
+            ClassificationInput(
+                packageName = "com.news.app",
+                body = "속보가 도착했어요",
+                duplicateCountInWindow = 2,
+            )
+        )
+        assertEquals(NotificationDecision.SILENT, belowThreshold.decision)
+
+        val atThreshold = classifier.classify(
+            ClassificationInput(
+                packageName = "com.news.app",
+                body = "속보가 도착했어요",
+                duplicateCountInWindow = 3,
+            )
+        )
+        assertEquals(NotificationDecision.DIGEST, atThreshold.decision)
+    }
+
     @Test
     fun repeat_bundle_rule_overrides_default_repeat_handling_at_custom_threshold() {
         val rule = RuleUiModel(

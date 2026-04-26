@@ -42,4 +42,15 @@ data class ClassificationInput(
     val quietHours: Boolean = false,
     val duplicateCountInWindow: Int = 0,
     val hourOfDay: Int? = null,
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 3.
+     *
+     * User-tunable threshold for the duplicate-burst → DIGEST base heuristic.
+     * Default = 3 to preserve historical behavior at every call site that has
+     * not yet been migrated to thread the user's `SmartNotiSettings` value
+     * through. The notifier's `processNotification` sets this from
+     * `settings.duplicateDigestThreshold` so the dropdown takes effect on the
+     * next notification.
+     */
+    val duplicateThreshold: Int = 3,
 )

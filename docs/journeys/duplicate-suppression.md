@@ -8,12 +8,12 @@ last-verified: 2026-04-24
 
 ## Goal
 
-같은 content signature(title+body 정규화) 의 알림이 일정 창(기본 10분) 안에 3회 이상 반복되면 DIGEST 로 떨어뜨려 반복 알림 소음을 완화한다. 룰 매치나 우선순위 키워드가 없는 일반 알림에만 적용.
+같은 content signature(title+body 정규화) 의 알림이 사용자 설정 창(기본 10분, Settings 에서 5/10/15/30/60 분 중 선택) 안에 사용자 설정 임계값(기본 3회, Settings 에서 2/3/4/5/7/10 회 중 선택) 이상 반복되면 DIGEST 로 떨어뜨려 반복 알림 소음을 완화한다. 룰 매치나 우선순위 키워드가 없는 일반 알림에만 적용.
 
 ## Preconditions
 
 - 알림이 posted 됨 (→ [notification-capture-classify](notification-capture-classify.md))
-- 같은 content signature 알림이 최근 `DEFAULT_WINDOW_MILLIS` (10분) 안에 최소 3건 존재 (in-memory + DB 합산)
+- 같은 content signature 알림이 최근 `SmartNotiSettings.duplicateWindowMinutes` (기본 10분, 사용자 설정 가능) 안에 최소 `SmartNotiSettings.duplicateDigestThreshold` (기본 3회, 사용자 설정 가능) 건 존재 (in-memory + DB 합산)
 
 ## Trigger
 
@@ -21,9 +21,9 @@ last-verified: 2026-04-24
 
 ## Observable steps
 
-1. `DuplicateNotificationPolicy.contentSignature(title, body)` — title/body 를 소문자화 + 공백 정규화해 signature 생성.
-2. `windowStart = sbn.postTime - DEFAULT_WINDOW_MILLIS` 계산.
-3. `NotificationRepository.countRecentDuplicates(packageName, signature, windowStart)` → Room DAO 에서 10분 내 persisted count.
+1. `DuplicateNotificationPolicy.contentSignature(title, body)` — title/body 를 소문자화 + 공백 정규화해 signature 생성. policy 인스턴스는 매 `processNotification` 호출 시 `settings.duplicateWindowMinutes * 60_000L` 로 새로 빌드 — 사용자가 dropdown 을 바꾸면 다음 알림부터 적용.
+2. `windowStart = sbn.postTime - settings.duplicateWindowMinutes * 60_000L` 계산 (기본 10분, Settings 에서 사용자 변경 가능).
+3. `NotificationRepository.countRecentDuplicates(packageName, signature, windowStart)` → Room DAO 에서 사용자 설정 창 내 persisted count.
 4. `LiveDuplicateCountTracker.recordAndCount(...)`:
    - 같은 sourceEntryKey 의 재게시면 기존 live entry 의 postedAtMillis 만 갱신 (count 증가 없음)
    - 새 sourceEntryKey 면 live entry 에 추가, window 밖 entry 는 prune
@@ -32,7 +32,7 @@ last-verified: 2026-04-24
 6. `NotificationClassifier.classify(input, rules)`:
    - 룰 매치 우선
    - 이어 VIP/키워드 heuristic 체크
-   - 그 외일 때 `duplicateCountInWindow >= DUPLICATE_DIGEST_THRESHOLD (3)` 이면 DIGEST 반환
+   - 그 외일 때 `duplicateCountInWindow >= input.duplicateThreshold` (기본 3, Settings 의 `duplicateDigestThreshold` 에서 2/3/4/5/7/10 중 선택) 이면 DIGEST 반환
 7. 이후 opt-in 된 앱이면 [digest-suppression](digest-suppression.md) 경로로 원본 숨김 + replacement.
 
 ## Exit state
@@ -48,11 +48,15 @@ last-verified: 2026-04-24
 
 ## Code pointers
 
-- `domain/usecase/DuplicateNotificationPolicy` — signature 정규화, `DEFAULT_WINDOW_MILLIS` (10분)
+- `domain/usecase/DuplicateNotificationPolicy` — signature 정규화. `windowMillis` 는 caller-injected (default 없음); listener 가 `settings.duplicateWindowMinutes * 60_000L` 로 매 호출 build.
 - `domain/usecase/LiveDuplicateCountTracker` — in-memory + persisted 카운트 병합
-- `domain/usecase/NotificationClassifier` — 임계 3회 체크
+- `domain/usecase/NotificationClassifier` — `duplicateCountInWindow >= input.duplicateThreshold` 체크 (사용자 설정 임계값)
+- `domain/model/CapturedNotificationInput.duplicateThreshold` / `domain/model/ClassificationInput.duplicateThreshold` — 사용자 임계값 전파
+- `data/settings/SettingsRepository` — 새 키 `duplicate_digest_threshold` / `duplicate_window_minutes` + setters `setDuplicateDigestThreshold` / `setDuplicateWindowMinutes` (`coerceAtLeast(1)` 가드)
+- `data/settings/SmartNotiSettings.duplicateDigestThreshold` / `duplicateWindowMinutes` — 기본 3 / 10
+- `ui/screens/settings/DuplicateThresholdEditorSpecBuilder` — Settings 카드 dropdown 옵션 (`2/3/4/5/7/10` × `5/10/15/30/60`) 의 단일 source-of-truth
 - `data/local/NotificationDao#countRecentDuplicates` — SQL 쿼리
-- `notification/SmartNotiNotificationListenerService#processNotification` — tracker 호출부
+- `notification/SmartNotiNotificationListenerService#processNotification` — tracker 호출부, settings-driven policy build
 
 ## Tests
 
@@ -74,10 +78,10 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- Threshold 3 과 window 10분은 하드코딩 — 사용자 커스터마이징 불가. → plan: `docs/plans/2026-04-26-duplicate-threshold-window-settings.md`
 - signature 는 title+body 만 사용, 이미지/chrono 같은 시각 신호는 무시.
 - 서비스가 재시작되면 in-memory live entry 가 사라지고 persisted count 로만 재집계됨 — 경계 케이스에서 1건 차이 가능.
 
 ## Change log
 
 - 2026-04-20: 초기 인벤토리 문서화
+- 2026-04-26: **Threshold 와 window 가 사용자 설정 가능** — `SmartNotiSettings.duplicateDigestThreshold` (기본 3, Settings dropdown 2/3/4/5/7/10) + `duplicateWindowMinutes` (기본 10, dropdown 5/10/15/30/60). `DuplicateNotificationPolicy.DEFAULT_WINDOW_MILLIS` 제거 (caller-injected only); `NotificationClassifier` 의 하드코딩 `>= 3` 은 `>= input.duplicateThreshold` 로 일반화. Listener 가 매 `processNotification` 호출에서 settings snapshot 으로 policy 인스턴스를 새로 build, `CapturedNotificationInput.duplicateThreshold` 를 통해 classifier 에 전달. UI 는 OperationalSummaryCard 안에 두 dropdown 추가 (반복 N회 / 최근 N분). Plan: `docs/plans/2026-04-26-duplicate-threshold-window-settings.md`. `last-verified` 는 ADB 검증 후 별도 갱신.

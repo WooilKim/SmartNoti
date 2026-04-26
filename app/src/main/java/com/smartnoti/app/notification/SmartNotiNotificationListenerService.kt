@@ -37,7 +37,17 @@ import kotlinx.coroutines.withContext
 class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val duplicatePolicy = DuplicateNotificationPolicy()
+    // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4.
+    // `processNotification` now builds a fresh `DuplicateNotificationPolicy`
+    // from `SmartNotiSettings.duplicateWindowMinutes` on every call so the
+    // user-tunable dropdown takes effect on the next notification. The
+    // tracker / repository themselves are still long-lived; only the policy
+    // facade (signature + windowStart) is rebuilt — both methods are pure
+    // and cheap. The legacy field-level instance is kept for the
+    // `dedupKeyFor` helper which only consumes `contentSignature` (no window
+    // dependency) and runs from coordinator paths that do not have a
+    // settings snapshot in scope.
+    private val duplicatePolicy = DuplicateNotificationPolicy(windowMillis = 10 * 60 * 1000L)
     private val liveDuplicateCountTracker = LiveDuplicateCountTracker()
     private val persistentNotificationPolicy = PersistentNotificationPolicy()
     private val notifier by lazy { SmartNotiNotifier(applicationContext) }
@@ -227,11 +237,21 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         } else {
             false
         }
-        val contentSignature = duplicatePolicy.contentSignature(
+        // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
+        // build the policy from the freshly-read settings snapshot so a
+        // dropdown change in Settings reaches the very next notification
+        // without an app restart. The signature path is window-independent
+        // (legacy field-level `duplicatePolicy` would do) but we use the
+        // settings-driven instance everywhere in this method to keep the
+        // call site coherent.
+        val settingsDrivenDuplicatePolicy = DuplicateNotificationPolicy(
+            windowMillis = settings.duplicateWindowMinutes * 60_000L,
+        )
+        val contentSignature = settingsDrivenDuplicatePolicy.contentSignature(
             title = title,
             body = body,
         ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
-        val duplicateWindowStart = duplicatePolicy.windowStart(sbn.postTime)
+        val duplicateWindowStart = settingsDrivenDuplicatePolicy.windowStart(sbn.postTime)
         val duplicateCount = liveDuplicateCountTracker.recordAndCount(
             packageName = sbn.packageName,
             contentSignature = contentSignature,
@@ -256,6 +276,12 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
             isPersistent = isPersistent && !shouldBypassPersistentHiding,
             sourceEntryKey = sbn.key,
+            // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
+            // forward the user-tunable threshold to the classifier through
+            // the processor. `settings` is the snapshot read above at the
+            // same call site as rules / categories, so all three knobs are
+            // mutually consistent for this notification.
+            duplicateThreshold = settings.duplicateDigestThreshold,
         ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
 
         val classifiedNotification = processor.process(

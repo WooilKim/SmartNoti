@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/duplicate-suppression.md
 ---
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
@@ -24,7 +26,7 @@ status: planned
 
 ---
 
-## Task 1: Pin current behavior with failing tests
+## Task 1: Pin current behavior with failing tests [SHIPPED via PR #354]
 
 **Objective:** 현재 하드코딩된 3/10min 동작이 settings-driven 으로 바뀌어도 default 가 동일함을 회귀 고정 + 새 knob 의 contract 를 RED 로 고정.
 
@@ -39,7 +41,7 @@ status: planned
 3. `DuplicateThresholdSettingsTest` — `SmartNotiSettings(duplicateDigestThreshold=4, duplicateWindowMinutes=15)` 가 round-trip 으로 영속화/복원되는지. (`SettingsRepository` 의 DataStore round-trip 단위 테스트 패턴 참고 — 기존 `quiet_hours_*` 키 테스트 자리에 동일 형태로 추가.)
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.DuplicateNotificationPolicyTest" --tests "com.smartnoti.app.domain.usecase.NotificationClassifierTest" --tests "com.smartnoti.app.data.settings.DuplicateThresholdSettingsTest"` → 실패 (RED) 확인.
 
-## Task 2: Add settings fields + repository wiring
+## Task 2: Add settings fields + repository wiring [SHIPPED via PR #354]
 
 **Objective:** `SmartNotiSettings` data class + `SettingsRepository` read/write/observe + DataStore key 추가. Default 동작 유지.
 
@@ -53,7 +55,7 @@ status: planned
 3. `currentNotificationContext` (있다면) / `observeSettings` 가 새 필드를 함께 노출하는지 확인.
 4. `Task 1` 의 `DuplicateThresholdSettingsTest` GREEN 확인.
 
-## Task 3: Generalize policy + classifier to read settings
+## Task 3: Generalize policy + classifier to read settings [SHIPPED via PR #354]
 
 **Objective:** `DuplicateNotificationPolicy` 의 default `windowMillis` 제거, `NotificationClassifier` 의 하드코딩 `>= 3` 을 `>= duplicateThreshold` 로 일반화.
 
@@ -68,7 +70,7 @@ status: planned
 3. `NotificationClassifier.classify` 의 `if (input.duplicateCountInWindow >= 3)` 를 `if (input.duplicateCountInWindow >= input.duplicateThreshold)` 로 변경.
 4. `Task 1` 의 `NotificationClassifierTest` 새 케이스 GREEN 확인.
 
-## Task 4: Wire settings into the listener
+## Task 4: Wire settings into the listener [SHIPPED via PR #354]
 
 **Objective:** 매 `processNotification` 호출에서 settings snapshot 으로 policy / threshold 주입.
 
@@ -82,7 +84,7 @@ status: planned
 3. `CapturedNotificationInput` 빌더가 `duplicateThreshold = settings.duplicateDigestThreshold` 를 채워 classifier 에 전달.
 4. Robolectric 또는 instrumentation 단위로 listener 의 호출 사이트가 settings 의 두 값을 정확히 반영하는지 검증 (기존 listener 테스트가 있다면 그 자리에 1 케이스 추가).
 
-## Task 5: Settings UI — two dropdown selectors
+## Task 5: Settings UI — two dropdown selectors [SHIPPED via PR #354]
 
 **Objective:** 운영 상태 카드 (Settings) 에 quiet-hours editor 와 동일 패턴으로 두 selector 노출.
 
@@ -101,13 +103,13 @@ status: planned
 2. Settings VM/route 가 `setDuplicateDigestThreshold` / `setDuplicateWindowMinutes` 를 호출하도록 wiring.
 3. ADB 검증: Settings 진입 → 두 selector 노출 → 값 변경 → `am force-stop` + 재진입 후 영속 확인 → testnotifier 로 반복 알림 게시 시 새 임계값/창에 따른 DIGEST 분기 발화 확인 (예: threshold=2 로 낮춘 후 2회만 게시해도 두 번째가 DIGEST 로 빠지는지).
 
-## Task 6: Update journey docs
+## Task 6: Update journey docs [SHIPPED via PR #354]
 
 **Files:**
 - `docs/journeys/duplicate-suppression.md` — Preconditions 의 "10분" 표현을 "기본 10분, 사용자 설정 가능" 으로 갱신, Observable steps 1/2/6 에서 하드코딩 값 표현 완화, Code pointers 에 `SettingsRepository` 의 새 키 두 개 추가, Known gaps 의 "Threshold 3 과 window 10분은 하드코딩 — 사용자 커스터마이징 불가" 항목 제거 + Change log 에 ship 일자 + plan 링크 추가.
 - `docs/journeys/notification-capture-classify.md` — 필요 시 Change log 에 한 줄 ("duplicate threshold/window 가 settings-driven 으로 일반화").
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [SHIPPED via PR #354]
 
 - 모든 단위 테스트 통과 (`./gradlew :app:testDebugUnitTest`).
 - ADB 시나리오 (threshold=2 lowered → 2회 게시 → 두 번째가 DIGEST, 그 후 threshold=3 으로 복귀 → 동일 게시 시 SILENT) 결과를 PR 본문에 첨부.

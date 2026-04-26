@@ -133,10 +133,17 @@ fun SettingsScreen(
     val suppressionSummaryBuilder = remember { SettingsSuppressionInsightSummaryBuilder() }
     val operationalSummaryBuilder = remember { SettingsOperationalSummaryBuilder() }
     val quietHoursPickerSpecBuilder = remember { QuietHoursWindowPickerSpecBuilder() }
+    // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 5.
+    // Pure spec builder for the "중복 알림 묶기" editor row — keeps option
+    // lists / labels in one place so the Compose code stays a thin renderer.
+    val duplicateThresholdEditorSpecBuilder = remember { DuplicateThresholdEditorSpecBuilder() }
     val notificationAccessSummaryBuilder = remember { SettingsNotificationAccessSummaryBuilder() }
     var notificationAccessStatus by remember { mutableStateOf(OnboardingPermissions.currentStatus(context)) }
     val operationalSummary = remember(settings) { operationalSummaryBuilder.build(settings) }
     val quietHoursPickerSpec = remember(settings) { quietHoursPickerSpecBuilder.build(settings) }
+    val duplicateThresholdEditorSpec = remember(settings) {
+        duplicateThresholdEditorSpecBuilder.build(settings)
+    }
     val notificationAccessSummary = remember(notificationAccessStatus) {
         notificationAccessSummaryBuilder.build(notificationAccessStatus)
     }
@@ -200,6 +207,7 @@ fun SettingsScreen(
             OperationalSummaryCard(
                 summary = operationalSummary,
                 quietHoursPickerSpec = quietHoursPickerSpec,
+                duplicateThresholdEditorSpec = duplicateThresholdEditorSpec,
                 onQuietHoursEnabledChange = { enabled ->
                     scope.launch { repository.setQuietHoursEnabled(enabled) }
                 },
@@ -208,6 +216,12 @@ fun SettingsScreen(
                 },
                 onQuietHoursEndHourChange = { hour ->
                     scope.launch { repository.setQuietHoursEndHour(hour) }
+                },
+                onDuplicateThresholdChange = { value ->
+                    scope.launch { repository.setDuplicateDigestThreshold(value) }
+                },
+                onDuplicateWindowMinutesChange = { value ->
+                    scope.launch { repository.setDuplicateWindowMinutes(value) }
                 },
             )
         }
@@ -346,9 +360,12 @@ private fun IgnoredArchiveSettingsCard(
 private fun OperationalSummaryCard(
     summary: SettingsOperationalSummary,
     quietHoursPickerSpec: QuietHoursWindowPickerSpec,
+    duplicateThresholdEditorSpec: DuplicateThresholdEditorSpec,
     onQuietHoursEnabledChange: (Boolean) -> Unit,
     onQuietHoursStartHourChange: (Int) -> Unit,
     onQuietHoursEndHourChange: (Int) -> Unit,
+    onDuplicateThresholdChange: (Int) -> Unit,
+    onDuplicateWindowMinutesChange: (Int) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         SettingsCardHeader(
@@ -386,11 +403,155 @@ private fun OperationalSummaryCard(
                 )
             }
             HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
+            // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 5.
+            // The "중복 알림 묶기" row mirrors the QuietHours editor pattern —
+            // two AssistChip + DropdownMenu selectors so the user can shorten
+            // ("더 자주 묶기") or lengthen ("거의 묶지 말기") the duplicate-burst
+            // base heuristic. The label copy matches the plan's design
+            // direction (반복 N회 / 최근 N분).
+            DuplicateThresholdEditorRow(
+                spec = duplicateThresholdEditorSpec,
+                onThresholdSelected = onDuplicateThresholdChange,
+                onWindowMinutesSelected = onDuplicateWindowMinutesChange,
+            )
+            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
             OperationalSummaryRow(
                 label = "Digest 시간",
                 value = summary.digestSchedule,
                 detail = summary.digestDetail,
             )
+        }
+    }
+}
+
+@Composable
+private fun DuplicateThresholdEditorRow(
+    spec: DuplicateThresholdEditorSpec,
+    onThresholdSelected: (Int) -> Unit,
+    onWindowMinutesSelected: (Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "중복 알림 묶기",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "같은 내용이 짧은 시간 안에 반복되면 자동으로 모아둬요.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DuplicateThresholdPicker(
+                label = "반복 횟수",
+                selectedValue = spec.selectedThreshold,
+                options = spec.thresholdOptions,
+                onSelected = onThresholdSelected,
+                modifier = Modifier.weight(1f),
+            )
+            DuplicateWindowPicker(
+                label = "시간 창",
+                selectedMinutes = spec.selectedWindowMinutes,
+                options = spec.windowOptions,
+                onSelected = onWindowMinutesSelected,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DuplicateThresholdPicker(
+    label: String,
+    selectedValue: Int,
+    options: List<DuplicateThresholdEditorSpec.ThresholdOption>,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.value == selectedValue }?.label
+        ?: "반복 ${selectedValue}회"
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box {
+            AssistChip(
+                onClick = { expanded = true },
+                label = { Text(selectedLabel) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            onSelected(option.value)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DuplicateWindowPicker(
+    label: String,
+    selectedMinutes: Int,
+    options: List<DuplicateThresholdEditorSpec.WindowOption>,
+    onSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.minutes == selectedMinutes }?.label
+        ?: "최근 ${selectedMinutes}분"
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box {
+            AssistChip(
+                onClick = { expanded = true },
+                label = { Text(selectedLabel) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            onSelected(option.minutes)
+                            expanded = false
+                        },
+                    )
+                }
+            }
         }
     }
 }
