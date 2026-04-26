@@ -19,8 +19,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -128,9 +132,11 @@ fun SettingsScreen(
     val summaryBuilder = remember { SettingsDisclosureSummaryBuilder() }
     val suppressionSummaryBuilder = remember { SettingsSuppressionInsightSummaryBuilder() }
     val operationalSummaryBuilder = remember { SettingsOperationalSummaryBuilder() }
+    val quietHoursPickerSpecBuilder = remember { QuietHoursWindowPickerSpecBuilder() }
     val notificationAccessSummaryBuilder = remember { SettingsNotificationAccessSummaryBuilder() }
     var notificationAccessStatus by remember { mutableStateOf(OnboardingPermissions.currentStatus(context)) }
     val operationalSummary = remember(settings) { operationalSummaryBuilder.build(settings) }
+    val quietHoursPickerSpec = remember(settings) { quietHoursPickerSpecBuilder.build(settings) }
     val notificationAccessSummary = remember(notificationAccessStatus) {
         notificationAccessSummaryBuilder.build(notificationAccessStatus)
     }
@@ -193,8 +199,15 @@ fun SettingsScreen(
         item {
             OperationalSummaryCard(
                 summary = operationalSummary,
+                quietHoursPickerSpec = quietHoursPickerSpec,
                 onQuietHoursEnabledChange = { enabled ->
                     scope.launch { repository.setQuietHoursEnabled(enabled) }
+                },
+                onQuietHoursStartHourChange = { hour ->
+                    scope.launch { repository.setQuietHoursStartHour(hour) }
+                },
+                onQuietHoursEndHourChange = { hour ->
+                    scope.launch { repository.setQuietHoursEndHour(hour) }
                 },
             )
         }
@@ -332,7 +345,10 @@ private fun IgnoredArchiveSettingsCard(
 @Composable
 private fun OperationalSummaryCard(
     summary: SettingsOperationalSummary,
+    quietHoursPickerSpec: QuietHoursWindowPickerSpec,
     onQuietHoursEnabledChange: (Boolean) -> Unit,
+    onQuietHoursStartHourChange: (Int) -> Unit,
+    onQuietHoursEndHourChange: (Int) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         SettingsCardHeader(
@@ -358,12 +374,106 @@ private fun OperationalSummaryCard(
                     )
                 },
             )
+            // Plan `2026-04-26-settings-quiet-hours-window-editor.md` Task 4.
+            // Pickers appear only when the master Switch is ON — see
+            // QuietHoursWindowPickerSpecBuilder for the full rationale and the
+            // same-value warning contract.
+            if (quietHoursPickerSpec.visible) {
+                QuietHoursWindowPickerRow(
+                    spec = quietHoursPickerSpec,
+                    onStartHourChange = onQuietHoursStartHourChange,
+                    onEndHourChange = onQuietHoursEndHourChange,
+                )
+            }
             HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
             OperationalSummaryRow(
                 label = "Digest 시간",
                 value = summary.digestSchedule,
                 detail = summary.digestDetail,
             )
+        }
+    }
+}
+
+@Composable
+private fun QuietHoursWindowPickerRow(
+    spec: QuietHoursWindowPickerSpec,
+    onStartHourChange: (Int) -> Unit,
+    onEndHourChange: (Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            QuietHoursHourPicker(
+                label = "시작",
+                selectedHour = spec.startHour,
+                options = spec.hourOptions,
+                onHourSelected = onStartHourChange,
+                modifier = Modifier.weight(1f),
+            )
+            QuietHoursHourPicker(
+                label = "종료",
+                selectedHour = spec.endHour,
+                options = spec.hourOptions,
+                onHourSelected = onEndHourChange,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (spec.sameValueWarning != null) {
+            Text(
+                text = spec.sameValueWarning,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuietHoursHourPicker(
+    label: String,
+    selectedHour: Int,
+    options: List<QuietHoursWindowPickerSpec.HourOption>,
+    onHourSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.hour == selectedHour }?.label
+        ?: "%02d:00".format(selectedHour)
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Box {
+            AssistChip(
+                onClick = { expanded = true },
+                label = { Text(selectedLabel) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+            )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            onHourSelected(option.hour)
+                            expanded = false
+                        },
+                    )
+                }
+            }
         }
     }
 }
