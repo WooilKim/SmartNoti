@@ -22,10 +22,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
@@ -41,6 +43,7 @@ import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.usecase.CategoryEditorPrefill
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SmartSurfaceCard
@@ -73,6 +76,14 @@ import kotlinx.coroutines.launch
 fun CategoriesScreen(
     contentPadding: PaddingValues,
     onOpenNotification: (notificationId: String) -> Unit = {},
+    // Plan `2026-04-26-uncategorized-prompt-editor-autoopen` Tasks 3+5:
+    // optional nav args carried in by Home's uncategorized-prompt card.
+    // When the package is non-blank and the consumed lock has not been
+    // tripped this composition, the editor auto-opens with the supplied
+    // app pre-pinned. Both default to null so existing call sites
+    // (BottomNav, deep links, tests) compile unchanged.
+    prefillPackage: String? = null,
+    prefillLabel: String? = null,
 ) {
     val context = LocalContext.current
     val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
@@ -101,6 +112,33 @@ fun CategoriesScreen(
 
     var editorTarget by remember { mutableStateOf<CategoryEditorTarget?>(null) }
     var detailTargetId by remember { mutableStateOf<String?>(null) }
+    // Plan `2026-04-26-uncategorized-prompt-editor-autoopen` Task 5: snapshot
+    // the prefill at the moment we auto-open so a later FAB tap (after the
+    // user dismisses the auto-opened dialog) opens an empty editor — the
+    // FAB path never sets [newEditorPrefill]. Cleared on dismiss/save/delete.
+    var newEditorPrefill by remember { mutableStateOf<CategoryEditorPrefill?>(null) }
+    // rememberSaveable so the lock survives configuration changes (rotation /
+    // process death). Once true, no nav-arg-driven re-open ever fires for
+    // this back-stack entry; a fresh navigation event with new args creates
+    // a new entry with a fresh saveable, so future Home prompt taps still
+    // work.
+    var prefillConsumed by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(prefillPackage, prefillLabel) {
+        if (UncategorizedPromptPrefillResolver.shouldAutoOpen(
+                prefillPackage = prefillPackage,
+                prefillLabel = prefillLabel,
+                alreadyConsumed = prefillConsumed,
+            )
+        ) {
+            newEditorPrefill = UncategorizedPromptPrefillResolver.buildPrefill(
+                prefillPackage = prefillPackage,
+                prefillLabel = prefillLabel,
+            )
+            editorTarget = CategoryEditorTarget.New
+            prefillConsumed = true
+        }
+    }
 
     fun deleteCategory(categoryId: String) {
         scope.launch { categoriesRepository.deleteCategory(categoryId) }
@@ -138,13 +176,19 @@ fun CategoriesScreen(
                 categories = categories,
                 rules = rules,
                 capturedApps = capturedApps,
-                onDismiss = { editorTarget = null },
+                prefill = newEditorPrefill.takeIf { editorTarget == CategoryEditorTarget.New },
+                onDismiss = {
+                    editorTarget = null
+                    newEditorPrefill = null
+                },
                 onSaved = { savedCategory ->
                     editorTarget = null
+                    newEditorPrefill = null
                     if (detailTargetId != null) detailTargetId = savedCategory.id
                 },
                 onDelete = { deletedId ->
                     editorTarget = null
+                    newEditorPrefill = null
                     if (detailTargetId == deletedId) detailTargetId = null
                     deleteCategory(deletedId)
                 },
@@ -233,13 +277,19 @@ fun CategoriesScreen(
                 categories = categories,
                 rules = rules,
                 capturedApps = capturedApps,
-                onDismiss = { editorTarget = null },
+                prefill = newEditorPrefill.takeIf { editorTarget == CategoryEditorTarget.New },
+                onDismiss = {
+                    editorTarget = null
+                    newEditorPrefill = null
+                },
                 onSaved = { savedCategory ->
                     editorTarget = null
+                    newEditorPrefill = null
                     if (detailTargetId != null) detailTargetId = savedCategory.id
                 },
                 onDelete = { deletedId ->
                     editorTarget = null
+                    newEditorPrefill = null
                     if (detailTargetId == deletedId) detailTargetId = null
                     deleteCategory(deletedId)
                 },
@@ -257,6 +307,7 @@ private fun EditorOverlay(
     onDismiss: () -> Unit,
     onSaved: (Category) -> Unit,
     onDelete: (String) -> Unit,
+    prefill: CategoryEditorPrefill? = null,
 ) {
     if (target != null) {
         CategoryEditorScreen(
@@ -267,6 +318,7 @@ private fun EditorOverlay(
             onDismiss = onDismiss,
             onSaved = onSaved,
             onDelete = onDelete,
+            prefill = prefill,
         )
     }
 }
