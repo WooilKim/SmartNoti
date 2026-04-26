@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/priority-inbox.md
 ---
 
 # Priority Inbox — Bulk Reclassify (모두 Digest / 모두 조용히)
