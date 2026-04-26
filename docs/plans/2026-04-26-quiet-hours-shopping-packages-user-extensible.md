@@ -40,7 +40,7 @@ status: planned
 
 ---
 
-## Task 1: Failing tests for `SmartNotiSettings.quietHoursPackages` round-trip + DataStore key
+## Task 1: Failing tests for `SmartNotiSettings.quietHoursPackages` round-trip + DataStore key [IN PROGRESS via PR #405]
 
 **Objective:** 신규 settings 필드의 read/write/default 가 다른 필드와 충돌 없이 영속·복원됨을 unit test 로 고정.
 
@@ -57,7 +57,7 @@ status: planned
    - 다른 stringSet 키 (`suppressedSourceApps`, `suppressedSourceAppsExcluded`) 와 cross-contamination 없음 — 한 쪽 set 변경이 다른 쪽에 영향 없음.
 2. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.settings.SettingsRepositoryTest"` → 새 case 들이 RED.
 
-## Task 2: Implement `SmartNotiSettings.quietHoursPackages` + repository setters
+## Task 2: Implement `SmartNotiSettings.quietHoursPackages` + repository setters [IN PROGRESS via PR #405]
 
 **Objective:** Task 1 GREEN.
 
