@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.rules.RulesRepository
+import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.NotificationStatusUi
@@ -46,6 +48,7 @@ import com.smartnoti.app.domain.usecase.NotificationDetailDeliveryProfileSummary
 import com.smartnoti.app.domain.usecase.NotificationDetailOnboardingRecommendationSummaryBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailReasonSectionBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
+import com.smartnoti.app.domain.usecase.QuietHoursExplainerBuilder
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
 import com.smartnoti.app.notification.MarkSilentProcessedTrayCancelChain
 import com.smartnoti.app.notification.SmartNotiNotificationListenerService
@@ -93,10 +96,12 @@ fun NotificationDetailScreen(
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val rulesRepository = remember(context) { RulesRepository.getInstance(context) }
     val categoriesRepository = remember(context) { CategoriesRepository.getInstance(context) }
+    val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
     val deliveryProfileSummaryBuilder = remember { NotificationDetailDeliveryProfileSummaryBuilder() }
     val onboardingRecommendationSummaryBuilder = remember { NotificationDetailOnboardingRecommendationSummaryBuilder() }
     val sourceSuppressionSummaryBuilder = remember { NotificationDetailSourceSuppressionSummaryBuilder() }
     val reasonSectionBuilder = remember { NotificationDetailReasonSectionBuilder() }
+    val quietHoursExplainerBuilder = remember { QuietHoursExplainerBuilder() }
     val scope = rememberCoroutineScope()
     // Plan `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` Task 2:
     // single SnackbarHostState shared by the two reclassify call sites so
@@ -108,6 +113,11 @@ fun NotificationDetailScreen(
     val notification = liveNotification
     val rules by rulesRepository.observeRules().collectAsState(initial = emptyList<RuleUiModel>())
     val categories by categoriesRepository.observeCategories().collectAsState(initial = emptyList<Category>())
+    // Plan `docs/plans/2026-04-26-quiet-hours-explainer-copy.md` Task 3:
+    // observe settings so the explainer can interpolate the user's current
+    // quiet-hours window. First emission may briefly fall back to defaults
+    // (23~7) — same race other Detail builders accept.
+    val settings by settingsRepository.observeSettings().collectAsState(initial = SmartNotiSettings())
     // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 2: the four
     // action buttons are replaced with a single "분류 변경" CTA that opens
     // a ModalBottomSheet. Local state governs whether the sheet or the
@@ -131,6 +141,25 @@ fun NotificationDetailScreen(
     }
     val reasonSections = remember(notification, rules) {
         notification?.let { reasonSectionBuilder.build(it, rules) }
+    }
+    // Plan `docs/plans/2026-04-26-quiet-hours-explainer-copy.md` Task 3:
+    // synthesize the plain-language quiet-hours explainer from the live
+    // notification + current settings window. Null when the quiet-hours
+    // branch was not the decisive classifier signal.
+    val quietHoursExplainer = remember(
+        notification?.reasonTags,
+        notification?.status,
+        settings.quietHoursStartHour,
+        settings.quietHoursEndHour,
+    ) {
+        notification?.let {
+            quietHoursExplainerBuilder.build(
+                reasonTags = it.reasonTags,
+                status = it.status,
+                startHour = settings.quietHoursStartHour,
+                endHour = settings.quietHoursEndHour,
+            )
+        }
     }
     val deliveryProfileSummary = remember(notification) {
         notification?.let(deliveryProfileSummaryBuilder::build)
@@ -207,8 +236,9 @@ fun NotificationDetailScreen(
             }
         }
         val sections = reasonSections
-        val hasReasonContent = sections != null &&
-            (sections.classifierSignals.isNotEmpty() || sections.ruleHits.isNotEmpty())
+        val hasReasonContent = (sections != null &&
+            (sections.classifierSignals.isNotEmpty() || sections.ruleHits.isNotEmpty())) ||
+            quietHoursExplainer != null
         if (hasReasonContent) {
             item {
                 Card(
@@ -229,6 +259,25 @@ fun NotificationDetailScreen(
                                 description = "분류에 참고한 내부 신호예요. 직접 수정할 수는 없어요.",
                             ) {
                                 ReasonChipRow(sections.classifierSignals)
+                            }
+                        }
+                        // Plan
+                        // `docs/plans/2026-04-26-quiet-hours-explainer-copy.md`
+                        // Task 3: when the quiet-hours branch decided this
+                        // notification, surface a one-line explainer so users
+                        // do not have to infer what the `조용한 시간` chip
+                        // means on its own. Higher-precedence signals (e.g.
+                        // 사용자 규칙) suppress the explainer upstream.
+                        if (quietHoursExplainer != null) {
+                            ReasonSubSection(
+                                title = "지금 적용된 정책",
+                                description = "사용자가 설정한 시간 정책에 따라 자동으로 분류됐어요.",
+                            ) {
+                                Text(
+                                    quietHoursExplainer.message,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
                             }
                         }
                         if (sections?.ruleHits?.isNotEmpty() == true) {
