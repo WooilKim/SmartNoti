@@ -295,3 +295,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T13:02:08Z | project-manager | #379 | NotificationDetailScreen Path A+B reclassify wiring (plan #376 Tasks 4-5) | https://github.com/WooilKim/SmartNoti/actions/runs/24957192175 |
 | 2026-04-26T13:11:33Z | project-manager | #380 | docs(detail): codify verify recipe + sync journeys + flip plan (Tasks 6-8) | https://github.com/WooilKim/SmartNoti/actions/runs/24957397346 |
 | 2026-04-26T13:23:30Z | project-manager | #381 | gap-planner plan: rules bulk-assign-unassigned | https://github.com/WooilKim/SmartNoti/actions/runs/24957626517 |
+| 2026-04-26T13:32:43Z | project-manager | #382 | plan #381 Tasks 1-2: BulkAssignRulesToCategoryUseCase + tests | https://github.com/WooilKim/SmartNoti/actions/runs/24957788948 |
