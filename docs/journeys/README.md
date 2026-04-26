@@ -40,7 +40,7 @@
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-25 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-26 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
-| [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-24 |
+| [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-22 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — inbox-unified rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-24 → 2026-04-26). emulator-5554 cold-start (`am force-stop` → `am start`). 4× Coupang + 2× generic notifications via `cmd notification post -S bigtext` → BottomNav `정리함` (407,2274) → header (`정리함` / `알림 정리함` / Digest 묶음과 숨긴 알림 subtitle) + 3 segments (`Digest · 18건 / 보관 중 · 16건 / 처리됨 · 6건`) 일치. Default Digest 선택 + 앱별 그룹 카드 렌더. `보관 중` (541,484) → embedded HiddenScreen `2개 앱에서 16건을 보관 중이에요.`. `처리됨` (868,484) → 요약 카피 `이미 확인했거나 이전 버전에서 넘어온 알림이에요…` 일치. Digest 탭 preview card → Detail (`알림 상세` + `왜 이렇게 처리됐나요?` + `전달 모드 · Digest 묶음 전달`) → KEYCODE_BACK → 같은 Inbox 서브탭 + 카운트 복원. Observable steps 1–8 + Exit state 모두 일치. DRIFT 없음. |
 
 ### 2026-04-26 (journey-tester — ignored-archive rotation sweep, emulator-5554)
 
