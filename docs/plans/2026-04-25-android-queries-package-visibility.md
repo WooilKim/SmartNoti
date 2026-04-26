@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+superseded-by: ../journeys/categories-management.md
 ---
 
 # Android `<queries>` Package Visibility for App Label Lookup
