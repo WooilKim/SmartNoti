@@ -46,6 +46,8 @@ class SettingsRepository private constructor(
                 hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
                 protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
                 showIgnoredArchive = prefs[SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
+                duplicateDigestThreshold = prefs[DUPLICATE_DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
+                duplicateWindowMinutes = prefs[DUPLICATE_WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
             )
         }
     }
@@ -93,6 +95,34 @@ class SettingsRepository private constructor(
     suspend fun setQuietHoursEndHour(hour: Int) {
         context.dataStore.edit { prefs ->
             prefs[QUIET_HOURS_END_HOUR] = hour
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 2.
+     *
+     * Persists the minimum duplicate count that promotes a notification to
+     * DIGEST in the base heuristic (when no rule / priority keyword matches).
+     * The setter coerces to `>= 1` so a programmatic 0 / negative value
+     * cannot effectively disable duplicate-burst suppression entirely. The UI
+     * is a dropdown so this is defense-in-depth.
+     */
+    suspend fun setDuplicateDigestThreshold(threshold: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[DUPLICATE_DIGEST_THRESHOLD] = threshold.coerceAtLeast(1)
+        }
+    }
+
+    /**
+     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 2.
+     *
+     * Persists the rolling-window length (minutes) that
+     * `DuplicateNotificationPolicy` uses to count repeats. Coerces to `>= 1`
+     * for the same reason as [setDuplicateDigestThreshold].
+     */
+    suspend fun setDuplicateWindowMinutes(minutes: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[DUPLICATE_WINDOW_MINUTES] = minutes.coerceAtLeast(1)
         }
     }
 
@@ -402,6 +432,14 @@ class SettingsRepository private constructor(
         // user has set since.
         private val SUPPRESS_SOURCE_MIGRATION_V1_APPLIED =
             booleanPreferencesKey("suppress_source_migration_v1_applied")
+        // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 2.
+        // User-tunable base heuristic for the duplicate-burst → DIGEST
+        // cascade. Read by the listener at every `processNotification` call
+        // site so the new value takes effect on the next notification.
+        private val DUPLICATE_DIGEST_THRESHOLD =
+            intPreferencesKey("duplicate_digest_threshold")
+        private val DUPLICATE_WINDOW_MINUTES =
+            intPreferencesKey("duplicate_window_minutes")
 
         @Volatile private var instance: SettingsRepository? = null
 

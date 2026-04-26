@@ -39,4 +39,15 @@ data class SmartNotiSettings(
     // the default views. Toggling this is the only in-app surface that reveals
     // IGNORE rows — the repository still persists them regardless.
     val showIgnoredArchive: Boolean = false,
+    // Plan `2026-04-26-duplicate-threshold-window-settings.md`. User-tunable
+    // base heuristic for the "duplicate burst → DIGEST" cascade. Defaults
+    // mirror the historical hard-coded values (3 repeats, 10-minute window)
+    // so existing users see no behavior change post-upgrade. The classifier
+    // reads `duplicateDigestThreshold` to compare against
+    // `ClassificationInput.duplicateCountInWindow`; the listener reads
+    // `duplicateWindowMinutes` to size `DuplicateNotificationPolicy`'s rolling
+    // window. Rule / Category matches still preempt this knob — it only
+    // fires when the user has neither a matching rule nor a priority keyword.
+    val duplicateDigestThreshold: Int = 3,
+    val duplicateWindowMinutes: Int = 10,
 )
