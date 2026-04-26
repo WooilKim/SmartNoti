@@ -26,7 +26,7 @@ journey: digest-suppression
 
 ---
 
-## Task 1: Failing test for `SuppressedSourceAppsAutoExpansionPolicy` excluded gate
+## Task 1: Failing test for `SuppressedSourceAppsAutoExpansionPolicy` excluded gate [IN PROGRESS via PR feat/digest-suppress-sticky-task-1-2]
 
 **Objective:** "excluded set 에 있으면 expansion 이 절대 일어나지 않는다" 는 contract 를 단위 테스트로 고정.
 
@@ -42,7 +42,7 @@ journey: digest-suppression
    - `excludedApps = emptySet()` 이면 모든 기존 케이스가 변동 없이 통과.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.SuppressedSourceAppsAutoExpansionPolicyTest"` 로 신규 테스트가 컴파일/RED 확인 (signature 변경 전이므로 컴파일 단계에서 실패).
 
-## Task 2: Extend `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull`
+## Task 2: Extend `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull` [IN PROGRESS via PR feat/digest-suppress-sticky-task-1-2]
 
 **Objective:** Task 1 의 테스트가 GREEN.
 

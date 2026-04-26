@@ -14,6 +14,7 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = true,
             packageName = "com.testshop",
             currentApps = setOf("com.coupang.mobile"),
+            excludedApps = emptySet(),
         )
 
         assertEquals(setOf("com.coupang.mobile", "com.testshop"), expanded)
@@ -26,6 +27,7 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = true,
             packageName = "com.coupang.mobile",
             currentApps = setOf("com.coupang.mobile"),
+            excludedApps = emptySet(),
         )
 
         assertNull(expanded)
@@ -38,6 +40,7 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = false,
             packageName = "com.testshop",
             currentApps = emptySet(),
+            excludedApps = emptySet(),
         )
 
         assertNull(expanded)
@@ -51,6 +54,7 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = true,
             packageName = "com.testshop",
             currentApps = emptySet(),
+            excludedApps = emptySet(),
         )
 
         assertNull(expanded)
@@ -63,6 +67,7 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = true,
             packageName = "com.testshop",
             currentApps = emptySet(),
+            excludedApps = emptySet(),
         )
 
         assertNull(expanded)
@@ -81,6 +86,7 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = true,
             packageName = "com.testshop",
             currentApps = emptySet(),
+            excludedApps = emptySet(),
         )
 
         assertNull(expanded)
@@ -93,6 +99,53 @@ class SuppressedSourceAppsAutoExpansionPolicyTest {
             suppressSourceForDigestAndSilent = true,
             packageName = "   ",
             currentApps = emptySet(),
+            excludedApps = emptySet(),
+        )
+
+        assertNull(expanded)
+    }
+
+    // --- Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 1 ---
+
+    @Test
+    fun digest_on_excluded_app_returns_null_even_when_currentApps_nonempty() {
+        // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md`:
+        // 사용자가 Settings 에서 명시적으로 uncheck 한 앱은 sticky 하게
+        // auto-expansion 에서 제외된다.
+        val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+            decision = NotificationDecision.DIGEST,
+            suppressSourceForDigestAndSilent = true,
+            packageName = "com.foo",
+            currentApps = setOf("com.bar"),
+            excludedApps = setOf("com.foo"),
+        )
+
+        assertNull(expanded)
+    }
+
+    @Test
+    fun digest_on_non_excluded_app_still_expands_when_other_apps_excluded() {
+        // excludedApps 는 다른 앱의 auto-expansion 에 영향이 없어야 한다.
+        val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+            decision = NotificationDecision.DIGEST,
+            suppressSourceForDigestAndSilent = true,
+            packageName = "com.baz",
+            currentApps = setOf("com.bar"),
+            excludedApps = setOf("com.foo"),
+        )
+
+        assertEquals(setOf("com.bar", "com.baz"), expanded)
+    }
+
+    @Test
+    fun silent_decision_with_excluded_still_returns_null() {
+        // 기존 fast-fail (decision != DIGEST) 의 우선순위는 변하지 않는다.
+        val expanded = SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
+            decision = NotificationDecision.SILENT,
+            suppressSourceForDigestAndSilent = true,
+            packageName = "com.foo",
+            currentApps = setOf("com.bar"),
+            excludedApps = setOf("com.foo"),
         )
 
         assertNull(expanded)
