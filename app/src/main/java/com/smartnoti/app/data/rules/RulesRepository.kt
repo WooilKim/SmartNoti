@@ -158,6 +158,40 @@ class RulesRepository private constructor(
         }
     }
 
+    /**
+     * Flip [ruleId]'s `draft` flag to `false`, signalling that the user has
+     * routed the rule into a Category at least once. Plan
+     * `docs/plans/2026-04-26-rule-explicit-draft-flag.md` Task 3 — invoked
+     * by [com.smartnoti.app.domain.usecase.AssignRuleToCategoryUseCase] AFTER
+     * the corresponding `CategoriesRepository.appendRuleIdToCategory` succeeds.
+     * No-op when [ruleId] is missing or already `draft = false`.
+     */
+    suspend fun markRuleAsAssigned(ruleId: String) {
+        flipDraftIfNeeded(ruleId, target = false)
+    }
+
+    /**
+     * Flip [ruleId]'s `draft` flag to `false` for the explicit "분류 없이
+     * 보류" CTA. Storage effect is identical to [markRuleAsAssigned] but
+     * the call site signals user intent — the rule moves into the quieter
+     * "보류" sub-bucket on RulesScreen and stays there until the user
+     * explicitly promotes it back to "작업 필요".
+     */
+    suspend fun markRuleAsParked(ruleId: String) {
+        flipDraftIfNeeded(ruleId, target = false)
+    }
+
+    private suspend fun flipDraftIfNeeded(ruleId: String, target: Boolean) {
+        val current = currentRules()
+        val index = current.indexOfFirst { it.id == ruleId }
+        if (index < 0) return
+        if (current[index].draft == target) return
+        val updated = current.toMutableList().also { list ->
+            list[index] = list[index].copy(draft = target)
+        }
+        persist(updated)
+    }
+
     suspend fun replaceAllRules(rules: List<RuleUiModel>) {
         persist(rules)
     }
