@@ -1,6 +1,8 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
 journey: digest-suppression
+superseded-by: ../journeys/digest-suppression.md
 ---
 
 # Digest Suppression Sticky Exclude List

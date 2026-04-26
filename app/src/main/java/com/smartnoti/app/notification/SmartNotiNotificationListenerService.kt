@@ -345,10 +345,11 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 packageName = sbn.packageName,
                 currentApps = settings.suppressedSourceApps,
                 // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md`
-                // Task 5 will wire this to `settings.suppressedSourceAppsExcluded`
-                // once the field lands (Task 3). For Tasks 1-2 the empty set
-                // preserves prior behavior exactly.
-                excludedApps = emptySet(),
+                // Task 5: wire the persisted sticky-exclude set into the
+                // policy. Apps the user explicitly unchecked in Settings stay
+                // excluded across DIGEST notifications instead of being
+                // re-added by auto-expansion.
+                excludedApps = settings.suppressedSourceAppsExcluded,
             )
         } else {
             null

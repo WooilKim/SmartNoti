@@ -239,6 +239,43 @@ class SettingsRepository private constructor(
         }
     }
 
+    /**
+     * Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 6.4.
+     *
+     * Bulk variant of [setSuppressedSourceAppExcluded] for the
+     * "모두 선택 / 모두 해제" buttons in the Suppressed Apps editor.
+     *  - `excluded = true`: add `packageNames` to the exclude set AND
+     *    remove them from `suppressedSourceApps` so the next DIGEST
+     *    cannot re-add any of them.
+     *  - `excluded = false`: remove `packageNames` from the exclude set
+     *    only. Re-adding to `suppressedSourceApps` is the caller's
+     *    responsibility (the "모두 선택" path pairs this with
+     *    [setSuppressedSourceApps]).
+     *
+     * Both writes happen inside a single `dataStore.edit { ... }` block so
+     * concurrent readers always see a consistent (excluded, suppressed) pair.
+     */
+    suspend fun setSuppressedSourceAppsExcludedBulk(packageNames: Set<String>, excluded: Boolean) {
+        if (packageNames.isEmpty()) return
+        context.dataStore.edit { prefs ->
+            val currentExcluded = (prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: emptySet()).toMutableSet()
+            if (excluded) {
+                currentExcluded.addAll(packageNames)
+                prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = currentExcluded
+                val currentSuppressed = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet())
+                val updatedSuppressed = currentSuppressed - packageNames
+                if (updatedSuppressed.size != currentSuppressed.size) {
+                    prefs[SUPPRESSED_SOURCE_APPS] = updatedSuppressed
+                }
+            } else {
+                val updatedExcluded = currentExcluded - packageNames
+                if (updatedExcluded.size != currentExcluded.size) {
+                    prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = updatedExcluded
+                }
+            }
+        }
+    }
+
     suspend fun setHidePersistentNotifications(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[HIDE_PERSISTENT_NOTIFICATIONS] = enabled

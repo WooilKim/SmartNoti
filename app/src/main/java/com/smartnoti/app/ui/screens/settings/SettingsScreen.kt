@@ -264,10 +264,31 @@ fun SettingsScreen(
                     scope.launch { repository.setProtectCriticalPersistentNotifications(enabled) }
                 },
                 onSuppressedSourceAppToggle = { packageName, enabled ->
-                    scope.launch { repository.toggleSuppressedSourceApp(packageName, enabled) }
+                    // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 6.
+                    // Toggling OFF must persist sticky-exclude intent so the
+                    // next DIGEST notification cannot re-add the package via
+                    // auto-expansion. Toggling ON clears the exclude entry
+                    // AND adds the package to `suppressedSourceApps` so the
+                    // user's explicit opt-in is recorded even when the list
+                    // was previously empty (default opt-out semantic).
+                    scope.launch {
+                        if (enabled) {
+                            repository.setSuppressedSourceAppExcluded(packageName, excluded = false)
+                            repository.toggleSuppressedSourceApp(packageName, true)
+                        } else {
+                            repository.setSuppressedSourceAppExcluded(packageName, excluded = true)
+                        }
+                    }
                 },
                 onSuppressedSourceAppsReplace = { packageNames ->
                     scope.launch { repository.setSuppressedSourceApps(packageNames) }
+                },
+                onSuppressedSourceAppsBulkExcludeChange = { packageNames, excluded ->
+                    // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 6.4.
+                    // Bulk variant for the "모두 선택 / 모두 해제" buttons.
+                    scope.launch {
+                        repository.setSuppressedSourceAppsExcludedBulk(packageNames, excluded)
+                    }
                 },
             )
         }
@@ -1336,6 +1357,7 @@ private fun SuppressionManagementCard(
     onProtectCriticalPersistentNotificationsChange: (Boolean) -> Unit,
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
     onSuppressedSourceAppsReplace: (Set<String>) -> Unit,
+    onSuppressedSourceAppsBulkExcludeChange: (Set<String>, Boolean) -> Unit,
 ) {
     SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
         val insightTokens = remember(settings.suppressSourceForDigestAndSilent, summary) {
@@ -1434,9 +1456,11 @@ private fun SuppressionManagementCard(
             SuppressedSourceAppChips(
                 filteredCapturedApps = filteredCapturedApps,
                 suppressedSourceApps = settings.suppressedSourceApps,
+                excludedSourceApps = settings.suppressedSourceAppsExcluded,
                 suppressEnabled = settings.suppressSourceForDigestAndSilent,
                 onSuppressedSourceAppToggle = onSuppressedSourceAppToggle,
                 onSuppressedSourceAppsReplace = onSuppressedSourceAppsReplace,
+                onSuppressedSourceAppsBulkExcludeChange = onSuppressedSourceAppsBulkExcludeChange,
             )
         }
     }
@@ -1446,9 +1470,11 @@ private fun SuppressionManagementCard(
 private fun SuppressedSourceAppChips(
     filteredCapturedApps: List<CapturedAppSelectionItem>,
     suppressedSourceApps: Set<String>,
+    excludedSourceApps: Set<String>,
     suppressEnabled: Boolean,
     onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
     onSuppressedSourceAppsReplace: (Set<String>) -> Unit,
+    onSuppressedSourceAppsBulkExcludeChange: (Set<String>, Boolean) -> Unit,
 ) {
     if (filteredCapturedApps.isEmpty()) {
         Text(
@@ -1459,21 +1485,41 @@ private fun SuppressedSourceAppChips(
         return
     }
 
-    val presentation = remember(filteredCapturedApps, suppressedSourceApps) {
+    // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 6.1.
+    // Effective `isSelected` is no longer a single membership check — the
+    // sticky-exclude set must subtract from the displayed selection even
+    // when `suppressedSourceApps` is empty. The builder owns that rule.
+    val presentation = remember(filteredCapturedApps, suppressedSourceApps, excludedSourceApps) {
         SettingsSuppressedAppPresentationBuilder().build(
-            apps = filteredCapturedApps.map { app ->
-                RawSuppressedAppState(
-                    app = app,
-                    isSelected = app.packageName in suppressedSourceApps,
-                )
-            },
+            capturedApps = filteredCapturedApps,
+            suppressedSourceApps = suppressedSourceApps,
+            excludedApps = excludedSourceApps,
         )
     }
     val allCandidatePackages = remember(filteredCapturedApps) {
         filteredCapturedApps.map(CapturedAppSelectionItem::packageName).toSet()
     }
-    val allSelected = remember(allCandidatePackages, suppressedSourceApps) {
-        allCandidatePackages.isNotEmpty() && allCandidatePackages.all { it in suppressedSourceApps }
+    val allEffectivelySelected = remember(allCandidatePackages, suppressedSourceApps, excludedSourceApps) {
+        allCandidatePackages.isNotEmpty() && allCandidatePackages.all { pkg ->
+            SettingsSuppressedAppPresentationBuilder.isEffectivelySelected(
+                packageName = pkg,
+                suppressedSourceApps = suppressedSourceApps,
+                excludedApps = excludedSourceApps,
+            )
+        }
+    }
+    val anyEffectivelyExcludedAmongVisible = remember(allCandidatePackages, suppressedSourceApps, excludedSourceApps) {
+        // "모두 해제" should remain enabled while at least one visible app
+        // could still be excluded — either it's currently selected, or it's
+        // already in the excluded set (idempotent re-press is harmless but
+        // we hide it once nothing is left to do).
+        allCandidatePackages.any { pkg ->
+            SettingsSuppressedAppPresentationBuilder.isEffectivelySelected(
+                packageName = pkg,
+                suppressedSourceApps = suppressedSourceApps,
+                excludedApps = excludedSourceApps,
+            )
+        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1488,9 +1534,14 @@ private fun SuppressedSourceAppChips(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             OutlinedButton(
-                enabled = suppressEnabled && !allSelected,
+                enabled = suppressEnabled && !allEffectivelySelected,
                 onClick = {
-                    // 기존 선택은 그대로 두고 현재 보이는 앱을 모두 선택 상태로 만든다.
+                    // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md`
+                    // Task 6.4. "모두 선택" clears the exclude entries for every
+                    // visible app AND adds them back to `suppressedSourceApps`
+                    // so the user's intent persists symmetrically with the
+                    // single-row toggle.
+                    onSuppressedSourceAppsBulkExcludeChange(allCandidatePackages, false)
                     onSuppressedSourceAppsReplace(suppressedSourceApps + allCandidatePackages)
                 },
                 modifier = Modifier.weight(1f),
@@ -1498,10 +1549,15 @@ private fun SuppressedSourceAppChips(
                 Text("모두 선택")
             }
             OutlinedButton(
-                enabled = suppressEnabled && suppressedSourceApps.any { it in allCandidatePackages },
+                enabled = suppressEnabled && anyEffectivelyExcludedAmongVisible,
                 onClick = {
-                    // 현재 보이는 앱만 선택에서 제거; 필터에 가려진 앱의 선택은 유지.
-                    onSuppressedSourceAppsReplace(suppressedSourceApps - allCandidatePackages)
+                    // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md`
+                    // Task 6.4. "모두 해제" persists sticky-exclude intent for
+                    // every visible app so subsequent DIGEST notifications
+                    // cannot re-add them via auto-expansion. The bulk helper
+                    // also strips them from `suppressedSourceApps` atomically
+                    // — no separate replace call is required.
+                    onSuppressedSourceAppsBulkExcludeChange(allCandidatePackages, true)
                 },
                 modifier = Modifier.weight(1f),
             ) {
