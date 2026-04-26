@@ -74,7 +74,7 @@ last-verified: 2026-04-26
 ## Known gaps
 
 - 키워드가 한국어/영어 혼합으로 하드코딩 — 다국어(일본어/중국어 등) 알림 대응 미흡.
-- 키워드 매치가 substring contains 기반이라 오탐 가능성 (예: "전화번호" 라는 단어만 있어도 bypass 됨).
+- 키워드 매치가 substring contains 기반이라 오탐 가능성 (예: "전화번호" 라는 단어만 있어도 bypass 됨). → plan: `docs/plans/2026-04-26-persistent-bypass-keyword-word-boundary.md`
 - 향후 `ProtectedSourceNotificationDetector` 로 일원화 고려 대상.
 
 ## Change log
