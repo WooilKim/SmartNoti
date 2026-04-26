@@ -3,7 +3,7 @@ id: rules-feedback-loop
 title: Detail "분류 변경" 으로 분류 학습
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-24
+last-verified: 2026-04-26
 ---
 
 ## Goal
@@ -127,3 +127,4 @@ adb shell cmd notification post -S bigtext -t "AssignTest_0421" FbTest2 "두 번
 - 2026-04-22: journey-tester full end-to-end PASS on fresh Categories APK (refactor P1-P3 + runtime-wiring + save-race-fix + DataStore-dedup stack). Path B: Detail → "분류 변경" → "+ 새 분류 만들기" → editor prefilled (name=`AssignTest_0422_T1`, action=PRIORITY dynamic-opposite of SILENT, pendingRule=`PERSON:AssignTest_0422_T1` pre-checked) → "추가" tap → DataStore `smartnoti_categories.preferences_pb` persists `cat-user-…|AssignTest_0422_T1|PRIORITY|0|PERSON:AssignTest_0422_T1`, 분류 탭 에 "규칙 1개 · 즉시 전달" 카드 표출. Path A: 별도 sender `PathATest_0422` 알림 Detail → "분류 변경" → 시트 상단 "기존 분류에 포함" 헤더 렌더 (이전 Known gap 해소) → AssignTest Category row tap → Category ruleIds 가 `PERSON:AssignTest_0422_T1,PERSON:PathATest_0422` 로 append (name/action/order 불변), 신규 rule 이 Rules DataStore 에 upsert. 자동 재분류 PASS: 동일 sender 후속 알림 포스팅 시 Home "즉시" StatPill 이 0 → 1 증가 (PRIORITY 로 auto-routed). `last-verified` 를 2026-04-22 로 bump.
 - 2026-04-23: Onboarding quick-start 가 Categories 도 1:1 seed 하도록 wiring 추가 — 첫-진입 사용자가 Path A 를 시도해도 시트 상단 "기존 분류에 포함" 섹션이 비어 있지 않다. Path A 자체 동작은 변경 없음. Plan: `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md` (this PR). `last-verified` 변경 없음 — ADB 재검증은 다음 journey-tester sweep.
 - 2026-04-25: 시트 dismiss 후 confirmation snackbar 추가 — 경로 A `"<카테고리명> 분류로 옮겼어요"`, 경로 B `"새 분류 '<카테고리명>' 만들었어요"` (cancel 시 미표시). Detail 측 신규 `DetailReclassifyConfirmationMessageBuilder` + `SnackbarHost` 가 담당, 본 journey 의 Observable / Trigger / Exit 자체는 변경 없음 (대상 알림 row 즉시 갱신 부재 등 위임 계약 보존). Plan: `docs/plans/2026-04-24-detail-reclassify-confirm-toast.md` (this PR). `last-verified` 변경 없음.
+- 2026-04-26: journey-tester re-verify on emulator-5554 — Path A end-to-end PASS. 신규 sender `AssignTest_0426` 알림 게시 → 정리함 > 보관 중 > Shell 카드 > preview 탭 → Detail "분류 변경" → `CategoryAssignBottomSheet` 가 onboarding-seeded 3개 Category ("중요 알림" / "프로모션 알림" / "반복 알림") + "+ 새 분류 만들기" terminal row 로 렌더. "중요 알림" 탭 → 시트 dismiss + Detail 에 `"중요 알림 분류로 옮겼어요"` 스낵바 표시 (2026-04-25 confirm-toast). `smartnoti_categories.preferences_pb` 검사: `cat-onboarding-important_priority` 의 ruleIds 에 `PERSON:AssignTest_0426` 가 dedup append (action=PRIORITY/order=0/name 불변 유지). 동일 sender 후속 알림 (`두 번째 알림`) 포스팅 직후 Home StatPill `즉시 9 → 10`, 카피 `중요한 9 → 10` 로 자동 재분류 확인. `last-verified` 를 2026-04-26 으로 bump. (Path B 는 별도 sweep 으로 위임 — 이번 cycle 은 Path A + auto-reclassify 만 cover)

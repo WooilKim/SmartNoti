@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — rules-feedback-loop rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-24 → 2026-04-26). emulator-5554, Path A end-to-end. `cmd notification post -S bigtext -t AssignTest_0426 FbTest "분류 변경 테스트"` → 정리함 > 보관 중 > Shell 카드 > preview 탭 → Detail "분류 변경" → `CategoryAssignBottomSheet` 가 onboarding-seeded 3개 Category ("중요 알림" / "프로모션 알림" / "반복 알림") + "+ 새 분류 만들기" terminal row 로 렌더. "중요 알림" 탭 → 시트 dismiss + Detail 에 `"중요 알림 분류로 옮겼어요"` confirm snackbar. `smartnoti_categories.preferences_pb`: `cat-onboarding-important_priority` ruleIds 에 `PERSON:AssignTest_0426` dedup append (action=PRIORITY/order=0/name 불변). 동일 sender 후속 알림 (`두 번째 알림`) 직후 Home `즉시 9 → 10`, `오늘 알림 51 → 52`, `중요한 9 → 10` — auto-reclassify 확인. Observable steps 1–2, 4 + Exit state PASS. Path B 는 별도 sweep 으로 위임. DRIFT 없음. |
+
 ### 2026-04-26 (journey-tester — notification-capture-classify rotation sweep, emulator-5554)
 
 | Journey | Result | Notes |
