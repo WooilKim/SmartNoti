@@ -88,7 +88,7 @@ superseded-by:
 5. 호출 site 갱신 — listener 의 `onNotificationPosted` 분기에서 latest settings snapshot 을 함께 전달.
 6. `./gradlew :app:assembleDebug` 빌드 통과 확인.
 
-## Task 3: Add settings model + UI for `replacementAutoDismissEnabled` / `replacementAutoDismissMinutes` [SHIPPED via PR #N]
+## Task 3: Add settings model + UI for `replacementAutoDismissEnabled` / `replacementAutoDismissMinutes` [SHIPPED via PR #417]
 
 **Objective:** 사용자가 토글 + duration preset 으로 timeout 을 조절할 수 있다.
 
@@ -106,7 +106,7 @@ superseded-by:
    - 토글 ON 일 때만 노출되는 SegmentedControl 또는 Row of FilterChips (`5분 / 15분 / 30분 / 1시간 / 3시간`). 선택 시 `replacementAutoDismissMinutes` 갱신.
 4. `./gradlew :app:assembleDebug` 빌드 통과 + 기존 settings UI 테스트가 있다면 갱신.
 
-## Task 4: Update journey docs [SHIPPED via PR #N]
+## Task 4: Update journey docs [SHIPPED via PR #417]
 
 **Files:**
 - `docs/journeys/digest-suppression.md`
