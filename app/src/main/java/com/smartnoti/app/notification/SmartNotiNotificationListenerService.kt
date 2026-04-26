@@ -152,7 +152,11 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 val archivedRows = notifications.filterSilentArchivedForSummary(
                     hidePersistentNotifications = settings.hidePersistentNotifications,
                 )
-                SilentSummarySnapshot(rows = archivedRows, count = archivedRows.size)
+                SilentSummarySnapshot(
+                    rows = archivedRows,
+                    count = archivedRows.size,
+                    settings = settings,
+                )
             }.distinctUntilChanged().collect { snapshot ->
                 val rootCountChanged = snapshot.count != lastCount
                 lastCount = snapshot.count
@@ -163,7 +167,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 trayState = plan.nextState
                 withContext(Dispatchers.Main) {
                     if (rootCountChanged) {
-                        silentSummaryNotifier.post(snapshot.count)
+                        silentSummaryNotifier.post(snapshot.count, snapshot.settings)
                     }
                     plan.summaryCancels.forEach { key ->
                         silentSummaryNotifier.cancelGroupSummary(key)
@@ -177,6 +181,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                             notificationId = post.notificationId,
                             entity = entity,
                             key = post.key,
+                            settings = snapshot.settings,
                         )
                     }
                     plan.summaryPosts.forEach { post ->
@@ -185,6 +190,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                             count = post.count,
                             preview = post.preview.map { it.toGroupTrayEntity() },
                             rootDeepLink = SilentHiddenSummaryNotifier.ROUTE_HIDDEN,
+                            settings = snapshot.settings,
                         )
                     }
                 }
@@ -422,6 +428,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 body = baseNotification.body,
                 notificationId = baseNotification.id,
                 reasonTags = baseNotification.reasonTags,
+                settings = settings,
                 deliveryProfile = deliveryProfile,
             )
             replacementNotificationPosted = true
@@ -551,6 +558,13 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 internal data class SilentSummarySnapshot(
     val rows: List<NotificationUiModel>,
     val count: Int,
+    // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
+    // settings snapshot so the SILENT summary / group tray notifier can
+    // wire `replacementAutoDismissEnabled` / `replacementAutoDismissMinutes`
+    // into `setTimeoutAfter`. Carried with the snapshot so all three
+    // post() / postGroupSummary() / postGroupChild() call sites see the
+    // same coherent value.
+    val settings: com.smartnoti.app.data.settings.SmartNotiSettings,
 )
 
 /**

@@ -11,14 +11,17 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.smartnoti.app.MainActivity
+import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.DeliveryProfile
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.sanitizedForDecision
+import com.smartnoti.app.domain.usecase.ReplacementNotificationTimeoutPolicy
 import com.smartnoti.app.navigation.ReplacementNotificationEntryRoutes
 import com.smartnoti.app.onboarding.OnboardingPermissions
 
 class SmartNotiNotifier(
     private val context: Context,
+    private val timeoutPolicy: ReplacementNotificationTimeoutPolicy = ReplacementNotificationTimeoutPolicy(),
 ) {
     private val notificationManager by lazy { NotificationManagerCompat.from(context) }
 
@@ -40,6 +43,7 @@ class SmartNotiNotifier(
         body: String,
         notificationId: String,
         reasonTags: List<String>,
+        settings: SmartNotiSettings,
         deliveryProfile: DeliveryProfile = DeliveryProfile.defaultsFor(decision),
     ) {
         if (decision == NotificationDecision.PRIORITY) return
@@ -86,6 +90,16 @@ class SmartNotiNotifier(
             .setOnlyAlertOnce(true)
             .setVisibility(channelSpec.notificationVisibility)
             .setContentIntent(contentIntent)
+
+        // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
+        // when the user has the auto-dismiss toggle ON, ask Android to
+        // cancel this replacement after `replacementAutoDismissMinutes`.
+        // The DB row is unaffected — `setTimeoutAfter` only retracts the
+        // tray entry, so the user still sees this notification under the
+        // Digest / Hidden inbox via the persisted row.
+        timeoutPolicy.timeoutMillisFor(settings, decision)?.let {
+            notificationBuilder.setTimeoutAfter(it)
+        }
 
         if (channelSpec.silentBuilder) {
             notificationBuilder.setSilent(true)

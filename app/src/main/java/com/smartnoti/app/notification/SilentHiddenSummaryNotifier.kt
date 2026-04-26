@@ -11,6 +11,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.smartnoti.app.MainActivity
 import com.smartnoti.app.data.local.NotificationEntity
+import com.smartnoti.app.data.settings.SmartNotiSettings
+import com.smartnoti.app.domain.model.NotificationDecision
+import com.smartnoti.app.domain.usecase.ReplacementNotificationTimeoutPolicy
 import com.smartnoti.app.domain.usecase.SilentGroupKey
 import com.smartnoti.app.onboarding.OnboardingPermissions
 
@@ -32,11 +35,12 @@ import com.smartnoti.app.onboarding.OnboardingPermissions
  */
 class SilentHiddenSummaryNotifier(
     private val context: Context,
+    private val timeoutPolicy: ReplacementNotificationTimeoutPolicy = ReplacementNotificationTimeoutPolicy(),
 ) {
     private val notificationManager by lazy { NotificationManagerCompat.from(context) }
 
     @SuppressLint("MissingPermission")
-    fun post(count: Int) {
+    fun post(count: Int, settings: SmartNotiSettings) {
         if (count <= 0) {
             cancel()
             return
@@ -45,7 +49,7 @@ class SilentHiddenSummaryNotifier(
         if (!OnboardingPermissions.isPostNotificationsGranted(context)) return
 
         val contentIntent = createContentIntent()
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setContentTitle("보관 중인 조용한 알림 ${count}건")
             .setContentText("탭: 보관함 열기 · 스와이프: 확인으로 처리")
@@ -70,9 +74,15 @@ class SilentHiddenSummaryNotifier(
                 "숨겨진 알림 보기",
                 contentIntent,
             )
-            .build()
+        // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
+        // archived-summary follows the same auto-dismiss policy as other
+        // SmartNoti-posted SILENT tray entries. The summary is keyed off
+        // the SILENT decision because it is the user's SILENT inbox bell.
+        timeoutPolicy.timeoutMillisFor(settings, NotificationDecision.SILENT)?.let {
+            builder.setTimeoutAfter(it)
+        }
 
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        notificationManager.notify(NOTIFICATION_ID, builder.build())
     }
 
     fun cancel() {
@@ -112,6 +122,7 @@ class SilentHiddenSummaryNotifier(
         count: Int,
         preview: List<NotificationEntity>,
         rootDeepLink: String,
+        settings: SmartNotiSettings,
     ) {
         if (count <= 0) {
             cancelGroupSummary(key)
@@ -134,7 +145,7 @@ class SilentHiddenSummaryNotifier(
             else -> previewLines.first()
         }
         val contentIntent = createGroupContentIntent(rootDeepLink, key)
-        val notification = NotificationCompat.Builder(context, SmartNotiNotifier.CHANNEL_SILENT_GROUP)
+        val builder = NotificationCompat.Builder(context, SmartNotiNotifier.CHANNEL_SILENT_GROUP)
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setContentTitle(title)
             .setContentText(contentText)
@@ -148,9 +159,15 @@ class SilentHiddenSummaryNotifier(
             .setAutoCancel(true)
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setContentIntent(contentIntent)
-            .build()
+        // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
+        // group summaries respect the same auto-dismiss policy. Children
+        // (postGroupChild) carry the same timeout, so the summary and its
+        // children retract roughly in lock-step.
+        timeoutPolicy.timeoutMillisFor(settings, NotificationDecision.SILENT)?.let {
+            builder.setTimeoutAfter(it)
+        }
 
-        notificationManager.notify(groupSummaryNotificationIdFor(key), notification)
+        notificationManager.notify(groupSummaryNotificationIdFor(key), builder.build())
     }
 
     /** Cancels the group summary notification for [key] if one is currently posted. */
@@ -178,6 +195,7 @@ class SilentHiddenSummaryNotifier(
         notificationId: Long,
         entity: NotificationEntity,
         key: SilentGroupKey,
+        settings: SmartNotiSettings,
     ) {
         SmartNotiNotifier.ensureSilentGroupChannel(context)
         if (!OnboardingPermissions.isPostNotificationsGranted(context)) return
@@ -187,7 +205,7 @@ class SilentHiddenSummaryNotifier(
         }
         val childText = entity.body.ifBlank { "조용히로 분류됨" }
         val contentIntent = createGroupContentIntent(ROUTE_HIDDEN, key)
-        val notification = NotificationCompat.Builder(context, SmartNotiNotifier.CHANNEL_SILENT_GROUP)
+        val builder = NotificationCompat.Builder(context, SmartNotiNotifier.CHANNEL_SILENT_GROUP)
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .setContentTitle(childTitle)
             .setContentText(childText)
@@ -202,9 +220,13 @@ class SilentHiddenSummaryNotifier(
             .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .setWhen(entity.postedAtMillis)
             .setContentIntent(contentIntent)
-            .build()
+        // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
+        // children retract on the same SILENT timeout as their summary.
+        timeoutPolicy.timeoutMillisFor(settings, NotificationDecision.SILENT)?.let {
+            builder.setTimeoutAfter(it)
+        }
 
-        notificationManager.notify(groupChildNotificationId(notificationId), notification)
+        notificationManager.notify(groupChildNotificationId(notificationId), builder.build())
     }
 
     private fun NotificationEntity.previewLine(): String {

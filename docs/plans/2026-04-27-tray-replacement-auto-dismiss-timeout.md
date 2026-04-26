@@ -37,7 +37,7 @@ status: planned
 
 ---
 
-## Task 1: Add `ReplacementNotificationTimeoutPolicy` + failing unit tests
+## Task 1: Add `ReplacementNotificationTimeoutPolicy` + failing unit tests [IN PROGRESS via PR #415]
 
 **Objective:** Pure helper 의 계약을 JUnit 으로 고정.
 
@@ -64,7 +64,7 @@ status: planned
    - `minutes <= 0` 인 invalid 입력 → null (방어적 — Settings UI 가 0 을 허용하지 않더라도 helper 단에서 가드)
 3. `./gradlew :app:testDebugUnitTest --tests "*.ReplacementNotificationTimeoutPolicyTest"` → GREEN.
 
-## Task 2: Wire timeout into `SmartNotiNotifier` + `SilentHiddenSummaryNotifier`
+## Task 2: Wire timeout into `SmartNotiNotifier` + `SilentHiddenSummaryNotifier` [IN PROGRESS via PR #415]
 
 **Objective:** Tray 에 게시되는 SmartNoti replacement / summary 알림이 helper 가 반환한 timeout 을 받도록 builder 를 갱신.
 
