@@ -325,3 +325,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T16:08:43Z | #395 | plan-implementer | DEFER | CI pending (Unit tests + debug APK run 24961049216); scope/traceability OK, will re-review next sweep |
 | 2026-04-26T16:12:04Z | #395 | plan-implementer | APPROVE | plan #394 Tasks 1-2 excludedApps gate, CI green, no .claude scope |
 | 2026-04-26T16:16:50Z | #396 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) at sweep time |
+| 2026-04-26T16:20:52Z | #396 | plan-implementer | APPROVE | Tasks 3-4 SettingsRepository sticky-exclude Set + 7 tests; CI green |
