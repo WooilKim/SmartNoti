@@ -332,3 +332,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T16:46:26Z | #398 | gap-planner | DEFER | CI re-running after flaky NotificationRepositoryDigestBulkActionsTest HttpURLConnection failure (recurrence of network flake); wrapper re-ran failed job, run pending |
 | 2026-04-26T16:50:01Z | #398 | gap-planner | APPROVE+MERGE | re-sweep; CI re-run flipped to SUCCESS after flaky NotificationRepositoryDigestBulkActionsTest cleared; docs-only plan |
 | 2026-04-26T16:54:11Z | #399 | plan-implementer | DEFER | CI pending (Unit tests + debug APK); plan #398 Tasks 1-2 word-boundary matcher |
+| 2026-04-26T16:57:38Z | #399 | plan-implementer | APPROVE+MERGE | word-boundary bypass matcher Tasks 1-2; CI green re-sweep; squash 10544d8 |
