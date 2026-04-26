@@ -134,10 +134,19 @@ class AssignNotificationToCategoryUseCase(
  * `CategoryEditor` composable. The editor consumes these fields on first
  * composition to seed its draft state; no Rule is persisted until the
  * user saves.
+ *
+ * `seedExistingRuleIds` (plan
+ * `docs/plans/2026-04-26-rules-bulk-assign-unassigned.md` Task 6) seeds
+ * the editor's pre-selected `draftSelectedRuleIds` with rule ids that
+ * already exist in the Rules DataStore — used by the RulesScreen
+ * bulk-assign "새 분류 만들기" path so the user lands in the editor
+ * with the N selected unassigned rules already checked. Empty for the
+ * Detail single-rule path (which uses [pendingRule] instead).
  */
 data class CategoryEditorPrefill(
     val name: String,
     val appPackageName: String?,
-    val pendingRule: RuleUiModel,
+    val pendingRule: RuleUiModel?,
     val defaultAction: CategoryAction,
+    val seedExistingRuleIds: List<String> = emptyList(),
 )

@@ -62,7 +62,7 @@ class CreateCategoryFromNotificationPrefillTest {
         // Person-typed derivation does not pin the Category to an app —
         // that's a keyword/person Category, not an APP Category.
         assertNull(prefill.appPackageName)
-        val rule = prefill.pendingRule
+        val rule = prefill.pendingRule!!
         assertNotNull(rule)
         assertEquals(RuleTypeUi.PERSON, rule.type)
         assertEquals("Bob", rule.matchValue)
@@ -84,7 +84,7 @@ class CreateCategoryFromNotificationPrefillTest {
 
         assertEquals("Foo앱", prefill.name)
         assertEquals("com.foo", prefill.appPackageName)
-        val rule = prefill.pendingRule
+        val rule = prefill.pendingRule!!
         assertEquals(RuleTypeUi.APP, rule.type)
         assertEquals("com.foo", rule.matchValue)
         assertEquals("APP:com.foo", rule.id)
@@ -150,7 +150,7 @@ class CreateCategoryFromNotificationPrefillTest {
         )
 
         // What the editor save path eventually persists:
-        val savedRule = prefill.pendingRule
+        val savedRule = prefill.pendingRule!!
         val savedCategory = Category(
             id = "cat-new-bob",
             name = prefill.name,

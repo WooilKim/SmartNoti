@@ -106,9 +106,10 @@ fun CategoryEditorScreen(
         mutableStateOf(editingCategory?.appPackageName ?: effectivePrefill?.appPackageName)
     }
     var draftSelectedRuleIds by remember(editingCategory, effectivePrefill) {
+        val pendingId = effectivePrefill?.pendingRule?.id
+        val seedIds = effectivePrefill?.seedExistingRuleIds.orEmpty().toSet()
         val ids = editingCategory?.ruleIds?.toSet()
-            ?: effectivePrefill?.pendingRule?.let { setOf(it.id) }
-            ?: emptySet()
+            ?: (seedIds + listOfNotNull(pendingId)).ifEmpty { emptySet() }
         mutableStateOf(ids)
     }
     var draftAction by remember(editingCategory, effectivePrefill) {
