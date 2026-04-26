@@ -309,3 +309,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T16:04:16Z | project-manager | #394 | gap-planner plan: digest-suppression sticky exclude list (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24960885331 |
 | 2026-04-26T16:12:07Z | project-manager | #395 | digest-suppression excludedApps gate (plan #394 T1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24961049216 |
 | 2026-04-26T16:20:54Z | project-manager | #396 | SettingsRepository sticky-exclude persistence (plan Tasks 3-4) | https://github.com/WooilKim/SmartNoti/actions/runs/24961213431 |
+| 2026-04-26T16:34:02Z | project-manager | #397 | digest-suppression sticky-exclude Tasks 5-8 ships plan #394 | https://github.com/WooilKim/SmartNoti/actions/runs/24961482256 |
