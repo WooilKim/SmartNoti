@@ -111,7 +111,7 @@ adb shell cmd notification post -S bigtext -t "AssignTest_0421" FbTest2 "두 번
 - 자동 rule 유도는 PERSON / APP 만 지원 — KEYWORD / SCHEDULE / REPEAT_BUNDLE 기반 묶기는 제공하지 않음 (사용자가 원하면 editor 에서 추가해야 함).
 - Deterministic rule id 의 교차 Category 중복: 동일 sender 를 서로 다른 Category 두 곳에 연이어 할당하면 같은 rule.id 를 두 Category 가 `ruleIds` 에 갖게 된다. Classifier 는 `order` 드래그 tie-break 로 승자를 결정 — 사용자가 분류 탭에서 정한 순서가 그대로 지배한다. Bug 아님 (계약 명시).
 - PrefillStore 프로세스 생존: 경로 B 의 Editor 전이 도중 프로세스가 죽으면 prefill 이 소실되고 Editor 는 빈 상태로 열린다. 재시도 시 문제 없음 (저장 이전까지 아무것도 persist 되지 않음).
-- Detail "즉시 상태 변경" 부재: legacy 4-버튼은 알림 row 자체의 status 를 즉시 바꿔줬는데 redesign 에서는 의도적으로 제거. 사용자가 "이 알림 자체를 지금 이 버킷으로 보내기" 를 원한다면 classifier 가 다음 tick 에 재적용하는 동안 row 상태는 그대로 보임. 이 UX 후퇴를 감지하면 별도 plan 으로 restore 결정 필요.
+- Detail "즉시 상태 변경" 부재: legacy 4-버튼은 알림 row 자체의 status 를 즉시 바꿔줬는데 redesign 에서는 의도적으로 제거. 사용자가 "이 알림 자체를 지금 이 버킷으로 보내기" 를 원한다면 classifier 가 다음 tick 에 재적용하는 동안 row 상태는 그대로 보임. 이 UX 후퇴를 감지하면 별도 plan 으로 restore 결정 필요. → plan: `docs/plans/2026-04-26-detail-reclassify-this-row-now.md`
 - Replacement 알림 per-action 버튼 제거 (intended trade): silent-suppression 의 대체 알림이 tap-only 로 바뀌어 `notification-replacement-alert` recipe 는 탭 수가 한 번 더 필요하다. journey-tester 가 해당 recipe 재검증 필요.
 
 ## Change log
