@@ -56,6 +56,9 @@ interface NotificationDao {
     @Query("DELETE FROM notifications WHERE status = 'SILENT' AND packageName = :packageName")
     suspend fun deleteSilentByPackage(packageName: String): Int
 
+    @Query("DELETE FROM notifications WHERE status = 'DIGEST' AND packageName = :packageName")
+    suspend fun deleteDigestByPackage(packageName: String): Int
+
     @Query("SELECT sourceEntryKey FROM notifications WHERE id = :id LIMIT 1")
     suspend fun sourceEntryKeyForId(id: String): String?
 }

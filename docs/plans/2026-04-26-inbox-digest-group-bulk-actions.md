@@ -27,7 +27,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for `restoreDigestToPriorityByPackage` + `deleteDigestByPackage`
+## Task 1: Add failing tests for `restoreDigestToPriorityByPackage` + `deleteDigestByPackage` [IN PROGRESS via PR #392]
 
 **Objective:** 두 신규 repository 메서드의 계약을 unit + DAO 테스트로 고정.
 
@@ -45,7 +45,7 @@ status: planned
    - **`사용자 분류` dedup**: restore 시 reasonTags 에 `사용자 분류` 가 이미 있던 row 는 한 번만 가지고, 없던 row 는 새로 append 받는다 (이중 dedup 검증).
 3. `./gradlew :app:testDebugUnitTest --tests "*.NotificationRepositoryDigestBulkActionsTest"` → RED 확인.
 
-## Task 2: Implement `restoreDigestToPriorityByPackage` + `deleteDigestByPackage`
+## Task 2: Implement `restoreDigestToPriorityByPackage` + `deleteDigestByPackage` [IN PROGRESS via PR #392]
 
 **Objective:** Task 1 의 테스트를 GREEN 으로.
 
