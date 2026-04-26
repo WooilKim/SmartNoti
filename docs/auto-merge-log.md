@@ -254,3 +254,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T01:27:38Z | project-manager | #334 | ops/track-loop-monitor-log: baseline docs/loop-monitor-log.md on main (append-only docs, +69 lines) | https://github.com/WooilKim/SmartNoti/actions/runs/24945168843 |
 | 2026-04-26T01:37:09Z | journey-tester | #335 | priority-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/24945358455/job/73045779337 |
 | 2026-04-26T01:48:09Z | project-manager | #336 | gap-planner plan for quiet-hours explainer copy (docs/plans add + 1-line journey annotation) | https://github.com/WooilKim/SmartNoti/actions/runs/24945558356 |
+| 2026-04-26T01:55:15Z | journey-tester | #337 | notification-detail | https://github.com/WooilKim/SmartNoti/actions/runs/24945668710 |
