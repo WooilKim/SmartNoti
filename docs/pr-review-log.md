@@ -337,3 +337,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T17:05:41Z | #400 | plan-implementer | APPROVE+MERGE | plan #398 Tasks 3-6 journey sync + plan flip shipped; CI green re-sweep |
 | 2026-04-26T17:13:43Z | #401 | gap-planner | DEFER | CI pending (Unit tests + debug APK); plan-doc-only PR, will re-check next sweep |
 | 2026-04-26T17:17:32Z | #401 | gap-planner | APPROVE+MERGE | docs-only plan + Known-gap annotation; CI green re-sweep |
+| 2026-04-26T17:22:49Z | #402 | plan-implementer | DEFER | CI pending (Unit tests + debug APK run 24962555002); insight-drilldown range Tasks 1-2 |
