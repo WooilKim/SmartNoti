@@ -281,3 +281,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T05:18:21Z | #353 | gap-planner | APPROVE+MERGE | docs/plans/2026-04-26-duplicate-threshold-window-settings.md + journey Known-gap link; CI green |
 | 2026-04-26T05:43:37Z | #354 | plan-implementer | APPROVE+MERGE | feat duplicate-threshold-window settings; 7/7 tasks shipped; CI green; merged eb15c59 |
 | 2026-04-26T06:11:06Z | #356 | gap-planner | APPROVE+merged | plan rule-explicit-draft-flag; CI green; in-scope; no risk signals |
+| 2026-04-26T06:37:22Z | #357 | plan-implementer | APPROVE+MERGE | rules draft flag — code+tests+journey+plan; CI green; squash-merged |
