@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — protected-source-notifications rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| protected-source-notifications | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-24 → 2026-04-26). emulator-5554 (`adb devices` = device), SmartNoti listener enabled (`settings get secure enabled_notification_listeners` includes `com.smartnoti.app/.notification.SmartNotiNotificationListenerService`). Recipe path A: `cmd notification post -S media -t "Player" MediaTest "미디어 스타일 테스트"` → posts notification with `category=transport`. `dumpsys notification --noredact \| grep -B1 MediaTest` 결과 `NotificationRecord pkg=com.android.shell id=2020 tag=MediaTest … category=transport` 가 active list 에 잔존 — SmartNoti listener 가 cancel 하지 않음 확인 (Observable steps 1–4, Exit state 원본 유지 일치). 코드 검증: `app/src/main/java/com/smartnoti/app/notification/ProtectedSourceNotificationDetector.kt` 의 `PROTECTED_CATEGORIES = {call, transport, navigation, alarm, progress}` + `MEDIA_TEMPLATE_SUFFIXES = {MediaStyle, BigMediaStyle, DecoratedMediaCustomViewStyle}` + `EXTRA_MEDIA_SESSION = "android.mediaSession"` + `FLAG_FOREGROUND_SERVICE` 분기 모두 doc 의 Observable step 1–2 와 정확히 일치. Path B (실제 미디어 앱) / Path C (FLAG_FOREGROUND_SERVICE 직접 세팅) 는 doc 에 명시된 대로 `cmd notification post` 로 검증 불가 — 카테고리 기반 path A 로 보호 메커니즘 자체는 충분히 증명. DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26. |
+
 ### 2026-04-26 (journey-tester — hidden-inbox rotation sweep, emulator-5554)
 
 | Journey | Result | Notes |

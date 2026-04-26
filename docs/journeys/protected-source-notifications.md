@@ -3,7 +3,7 @@ id: protected-source-notifications
 title: 미디어·통화·포그라운드 서비스 알림 보호
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-24
+last-verified: 2026-04-26
 ---
 
 ## Goal
@@ -90,3 +90,4 @@ adb shell dumpsys notification --noredact \
 
 - 2026-04-20: 최초 구현 + 문서화 (commit `762fa28`, PR #2)
 - 2026-04-20: MessagingStyle 비보호를 Known gap 에서 Design decision 으로 승격 — 의도적 결정임을 명시.
+- 2026-04-26: journey-tester rotation re-verification (oldest non-deprecated by `last-verified` 2026-04-24 → 2026-04-26).
