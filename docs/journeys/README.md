@@ -32,7 +32,7 @@
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-26 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
-| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-24 |
+| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-26 |
 
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — persistent-notification-protection rotation sweep, JVM unit test)
+
+| Journey | Result | Notes |
+|---|---|---|
+| persistent-notification-protection | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-24 → 2026-04-26). Recipe is policy-level — `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.PersistentNotificationPolicyTest"` (Android Studio JBR JDK). 7/7 cases PASS in 0.013s: `disables_bypass_when_critical_persistent_protection_is_turned_off`, `keeps_recording_and_navigation_persistent_notifications_visible`, `ignores_normal_clearable_notifications`, `keeps_call_related_persistent_notifications_visible`, `allows_charging_notifications_to_be_hidden`, `treats_ongoing_notifications_as_persistent`, `treats_non_clearable_notifications_as_persistent`. Recipe note (`cmd notification post` 가 `FLAG_ONGOING_EVENT` 미지원이라 e2e 는 실제 통화/내비 앱 필요) 가 여전히 유효 — unit test 가 모든 BYPASS_KEYWORDS 분기를 커버. DRIFT 없음. |
 
 ### 2026-04-26 (journey-tester — rules-feedback-loop rotation sweep, emulator-5554)
 
