@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/persistent-notification-protection.md
 ---
 
 # Persistent Bypass Keyword 매칭을 substring contains 에서 word-boundary 로 강화 Plan
