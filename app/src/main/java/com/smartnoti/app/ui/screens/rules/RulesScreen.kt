@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -37,6 +38,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,13 +65,18 @@ import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.RuleActionUi
 import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
 import com.smartnoti.app.domain.usecase.AssignRuleToCategoryUseCase
+import com.smartnoti.app.domain.usecase.BulkAssignRulesToCategoryUseCase
+import com.smartnoti.app.domain.usecase.CategoryEditorPrefill
 import com.smartnoti.app.domain.usecase.RuleCategoryActionIndex
 import com.smartnoti.app.domain.usecase.RuleDraftFactory
 import com.smartnoti.app.domain.usecase.UnassignedRulesPartitioner
+import com.smartnoti.app.ui.screens.categories.CategoryEditorScreen
+import com.smartnoti.app.ui.screens.categories.CategoryEditorTarget
 import com.smartnoti.app.ui.components.RuleRow
 import com.smartnoti.app.ui.components.RuleRowPresentation
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -113,6 +122,17 @@ fun RulesScreen(
             categoriesRepository = categoriesRepository,
         )
     }
+    // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Task 6 — bulk
+    // entry point. Wraps the same per-rule append-then-flip ordering as
+    // the single-rule path, so the contract stays identical for both
+    // surfaces.
+    val bulkAssignRulesToCategory = remember(repository, categoriesRepository) {
+        BulkAssignRulesToCategoryUseCase.create(
+            rulesRepository = repository,
+            categoriesRepository = categoriesRepository,
+        )
+    }
+    val snackbarHostState = remember { SnackbarHostState() }
     val settings by settingsRepository.observeSettings().collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
     val capturedAppsFlow = remember(notificationRepository, settings.hidePersistentNotifications) {
         notificationRepository.observeCapturedAppsFiltered(settings.hidePersistentNotifications)
@@ -189,6 +209,13 @@ fun RulesScreen(
     // untouched.
     var multiSelectState by remember { mutableStateOf(RulesScreenMultiSelectState()) }
     var pendingBulkAssignmentRuleIds by remember { mutableStateOf<List<String>?>(null) }
+    // Plan Task 6 step 4 — Path B "새 분류 만들기" prefill. Set when the
+    // user taps the terminal row in the bulk sheet; consumed by the
+    // [CategoryEditorScreen] mounted at the bottom of the screen. Kept
+    // separate from [pendingBulkAssignmentRuleIds] so the bulk sheet can
+    // dismiss before the editor opens and re-mount cleanly without the
+    // sheet flickering on top of the editor.
+    var pendingBulkPrefill by remember { mutableStateOf<CategoryEditorPrefill?>(null) }
 
     fun startCreate() {
         editingRule = null
@@ -244,6 +271,7 @@ fun RulesScreen(
         highlightedRuleId = null
     }
 
+    Box(modifier = Modifier.fillMaxWidth()) {
     LazyColumn(
         state = listState,
         modifier = Modifier.padding(contentPadding),
@@ -529,6 +557,18 @@ fun RulesScreen(
             }
         }
     }
+        // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Task 6 step 2 —
+        // snackbar overlay for the bulk-assign confirmation copy. Hosted
+        // inside the same Box that wraps the LazyColumn so the toast lifts
+        // above the parent Scaffold's bottom inset (BottomNav).
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(contentPadding)
+                .padding(16.dp),
+        )
+    }
 
     if (showEditor) {
         AlertDialog(
@@ -795,6 +835,119 @@ fun RulesScreen(
                 onDismiss = { pendingCategoryAssignmentRuleId = null },
             )
         }
+    }
+
+    // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Task 6 step 1 —
+    // bulk-assign sheet. Surfaces when the user taps "분류 추가" on the
+    // multi-select ActionBar and lists every existing Category plus a
+    // terminal "+ 새 분류 만들기" row. Path A (existing) routes through
+    // [BulkAssignRulesToCategoryUseCase] and emits a snackbar. Path B
+    // (new) hands the selection off to [pendingBulkPrefill] so the
+    // editor mounts below.
+    val bulkRuleIds = pendingBulkAssignmentRuleIds
+    if (bulkRuleIds != null) {
+        BulkRulesAssignBottomSheet(
+            categories = categories,
+            selectedCount = bulkRuleIds.size,
+            onDismiss = { pendingBulkAssignmentRuleIds = null },
+            onAssignToExisting = { categoryId ->
+                // Capture state at tap time so the snackbar copy resolves
+                // the destination name even if `categories` re-emits before
+                // the toast fires. Same pattern as Detail's reclassify
+                // confirmation.
+                val capturedIds = bulkRuleIds
+                val capturedCount = capturedIds.size
+                val capturedName = categories.firstOrNull { it.id == categoryId }?.name
+                pendingBulkAssignmentRuleIds = null
+                multiSelectState = RulesScreenMultiSelectState()
+                scope.launch {
+                    bulkAssignRulesToCategory.assign(
+                        ruleIds = capturedIds,
+                        categoryId = categoryId,
+                    )
+                    val message = if (!capturedName.isNullOrBlank()) {
+                        "규칙 ${capturedCount}개를 '${capturedName}' 분류에 추가했어요"
+                    } else {
+                        "규칙 ${capturedCount}개를 분류에 추가했어요"
+                    }
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                        duration = SnackbarDuration.Short,
+                    )
+                }
+            },
+            onCreateNewCategory = {
+                // Plan Risks (per implementer judgement, 2026-04-26):
+                // bulk path defaults to DIGEST. Rationale — there is no
+                // single source Category to do a dynamic-opposite swap
+                // against (the "PRIORITY ↔ DIGEST" mapping the single-rule
+                // path uses needs a "current action" anchor that the bulk
+                // case lacks). Of the two candidates the plan lists,
+                // DIGEST is the conservative default for parked-출신
+                // 미분류 rules — most park-then-assign flows treat the
+                // selection as "less urgent than priority but worth
+                // grouping". Editor user can still flip to PRIORITY in
+                // one tap before saving.
+                pendingBulkPrefill = CategoryEditorPrefill(
+                    name = "",
+                    appPackageName = null,
+                    pendingRule = null,
+                    defaultAction = CategoryAction.DIGEST,
+                    seedExistingRuleIds = bulkRuleIds,
+                )
+                pendingBulkAssignmentRuleIds = null
+            },
+        )
+    }
+
+    val activePrefill = pendingBulkPrefill
+    if (activePrefill != null) {
+        // Plan Task 6 step 4 — Path B editor. Reuses the existing
+        // [CategoryEditorScreen] (AlertDialog) seeded with the selected
+        // rule ids. After save, run the same bulk use case so the new
+        // Category's `ruleIds` is the union of the seeded ids plus
+        // whatever the user toggled in the editor's chip picker — the
+        // use case's `distinct()` handles overlap.
+        val seededIds = activePrefill.seedExistingRuleIds
+        val originalCount = seededIds.size
+        CategoryEditorScreen(
+            target = CategoryEditorTarget.New,
+            categories = categories,
+            rules = rules,
+            capturedApps = capturedApps,
+            onDismiss = {
+                // Cancel keeps the multi-select active so the user can
+                // try a different destination Category. Plan Task 6 step 5.
+                pendingBulkPrefill = null
+            },
+            onSaved = { savedCategory ->
+                pendingBulkPrefill = null
+                multiSelectState = RulesScreenMultiSelectState()
+                val capturedName = savedCategory.name
+                // Use the editor's saved `ruleIds` as the source of truth —
+                // if the user un-toggled a seeded rule in the chip picker
+                // we must NOT re-add it. The editor already wrote the
+                // Category with its final ruleIds, so the bulk use case
+                // call below is idempotent for any rule already present
+                // and only flips each rule's `draft` to false (the editor
+                // does not flip the flag itself). originalCount in the
+                // snackbar copy reflects the user's intended bulk size at
+                // the moment they tapped "분류 추가".
+                val finalRuleIds = savedCategory.ruleIds
+                scope.launch {
+                    bulkAssignRulesToCategory.assign(
+                        ruleIds = finalRuleIds,
+                        categoryId = savedCategory.id,
+                    )
+                    snackbarHostState.showSnackbar(
+                        message = "새 분류 '${capturedName}' 만들고 규칙 ${originalCount}개를 추가했어요",
+                        duration = SnackbarDuration.Short,
+                    )
+                }
+            },
+            onDelete = { /* no-op — New flow */ },
+            prefill = activePrefill,
+        )
     }
 }
 
