@@ -22,7 +22,7 @@
 ### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-24 |
+| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-26 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-26 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — notification-capture-classify rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-24 → 2026-04-26). emulator-5554, APK `lastUpdateTime=2026-04-26 15:43:43`. Recipe Steps 1–3: `cmd notification allow_listener` → `cmd notification post -S bigtext -t Bank CaptureClassifyTest_0426 "인증번호 123456을 입력하세요"` → `am start MainActivity`. DB 확인 (`run-as com.smartnoti.app sqlite3`): row 저장됨 `status=PRIORITY, packageName=com.android.shell, title=Bank, ruleHitIds=keyword:인증번호,결제,배송,출발`. 23-column v9 schema 의 `ruleHitIds` 컬럼 재확인. Home StatPill: `오늘 알림 50개 중 중요한 9개를 먼저 전달했어요` + 즉시 9 / Digest 20 / 조용히 21 — PRIORITY tier 에 새 row 반영. Capture pipeline (listener → coordinator → classifier → repository) 전 구간 정상. Observable steps 1–10 + Exit state (`status ∈ {PRIORITY, DIGEST, SILENT, IGNORE}` 의 PRIORITY 분기) 일치. DRIFT 없음. |
 
 ### 2026-04-26 (journey-tester — insight-drilldown rotation sweep, emulator-5554)
 
