@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/inbox-unified.md
 ---
 
 # Inbox Bundle Preview "전체 보기" 진입점 Plan
