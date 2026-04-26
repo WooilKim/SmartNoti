@@ -70,6 +70,14 @@ fun InsightDrillDownScreen(
     onNotificationClick: (String) -> Unit,
     onInsightClick: (String) -> Unit,
     onBack: () -> Unit,
+    // Plan 2026-04-26-insight-drilldown-range-state-survival Task 4:
+    // optional savedStateHandle bridge so the user-selected range survives
+    // even the back-stack lifecycle transitions where rememberSaveable's
+    // bundle restore does not fire (e.g. STOPPED→STARTED on the same entry
+    // after a Detail push). Defaults are no-ops so callers (including
+    // existing tests) that do not wire it remain unaffected.
+    savedRangeRouteValue: String? = null,
+    onRangeSelected: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -82,13 +90,21 @@ fun InsightDrillDownScreen(
     val reasonNavigationBuilder = remember { InsightDrillDownReasonNavigationModelBuilder() }
     val notifications by repository.observeAll().collectAsState(initial = emptyList())
     val settings by settingsRepository.observeSettings().collectAsState(initial = com.smartnoti.app.data.settings.SmartNotiSettings())
-    // Plan 2026-04-26-insight-drilldown-range-state-survival Task 2:
+    // Plan 2026-04-26-insight-drilldown-range-state-survival Task 2 + Task 4:
     // hoist the chip selection into a pure holder whose `rememberSaveable`
     // key is static so URL-arg shake (Detail back-stack restore) does not
     // reset user choice. `onRouteArgsChanged` re-applies the URL arg only
-    // while the user has not yet selected anything.
+    // while the user has not yet selected anything. The `savedRangeRouteValue`
+    // bridge from `NavBackStackEntry.savedStateHandle` (wired by
+    // `AppNavHost`) seeds the holder with `userOverridden = true` so a
+    // post-back resume on the same entry restores the user's pick even when
+    // `rememberSaveable`'s own bundle does not get reapplied for that
+    // lifecycle transition.
     val rangeState = rememberSaveable(saver = InsightDrillDownRangeState.Saver) {
-        InsightDrillDownRangeState(initialRouteValue = initialRange)
+        InsightDrillDownRangeState.fromSeed(
+            savedRangeRouteValue = savedRangeRouteValue,
+            initialRouteValue = initialRange,
+        )
     }
     LaunchedEffect(initialRange) {
         rangeState.onRouteArgsChanged(initialRouteValue = initialRange)
@@ -209,20 +225,24 @@ fun InsightDrillDownScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val handleSelection: (InsightDrillDownRange) -> Unit = { picked ->
+                        rangeState.select(picked)
+                        onRangeSelected(picked.routeValue)
+                    }
                     InsightRangeChip(
                         range = InsightDrillDownRange.RECENT_3_HOURS,
                         selectedRange = selectedRange,
-                        onRangeSelected = { rangeState.select(it) },
+                        onRangeSelected = handleSelection,
                     )
                     InsightRangeChip(
                         range = InsightDrillDownRange.RECENT_24_HOURS,
                         selectedRange = selectedRange,
-                        onRangeSelected = { rangeState.select(it) },
+                        onRangeSelected = handleSelection,
                     )
                     InsightRangeChip(
                         range = InsightDrillDownRange.ALL,
                         selectedRange = selectedRange,
-                        onRangeSelected = { rangeState.select(it) },
+                        onRangeSelected = handleSelection,
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

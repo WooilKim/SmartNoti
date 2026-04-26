@@ -1,5 +1,7 @@
 ---
-status: in-progress
+status: shipped
+shipped: 2026-04-26
+superseded-by: docs/journeys/insight-drilldown.md
 ---
 
 # Insight Drill-down Range Selection Survives Detail Round-trip

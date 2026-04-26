@@ -68,6 +68,33 @@ class InsightDrillDownRangeState internal constructor(
 
     companion object {
         /**
+         * Factory for the rememberSaveable seed call. When `savedRangeRouteValue`
+         * is non-null (the AppNavHost wired a value from
+         * `NavBackStackEntry.savedStateHandle`), seed the holder with that
+         * value AND mark `userOverridden = true` so a subsequent
+         * `LaunchedEffect(initialRange)` cannot clobber the restored selection.
+         * Otherwise fall back to caller intent (the URL `range` arg) with
+         * `userOverridden = false`, which keeps the deep-link semantics —
+         * a fresh navigate with `range=all` honors the caller.
+         *
+         * Plan `docs/plans/2026-04-26-insight-drilldown-range-state-survival.md`
+         * Task 4.
+         */
+        fun fromSeed(
+            savedRangeRouteValue: String?,
+            initialRouteValue: String,
+        ): InsightDrillDownRangeState {
+            return if (savedRangeRouteValue != null) {
+                InsightDrillDownRangeState(
+                    initialRouteValue = savedRangeRouteValue,
+                    initialUserOverridden = true,
+                )
+            } else {
+                InsightDrillDownRangeState(initialRouteValue = initialRouteValue)
+            }
+        }
+
+        /**
          * `Saver` for `rememberSaveable`. Persists `routeValue` (string,
          * stable across enum renames) and `userOverridden` (boolean) so a
          * restored holder keeps the user-wins behavior intact.
