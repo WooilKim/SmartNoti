@@ -113,7 +113,7 @@ adb -s emulator-5554 shell dumpsys notification --noredact \
 
 ## Known gaps
 
-- Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피.
+- Auto-expansion 은 사용자가 Settings 에서 명시적으로 비운 앱도 DIGEST 가 다시 오면 재추가함. "sticky 제외" 리스트는 미구현 — 현재는 재분류로 회피. → plan: `docs/plans/2026-04-26-digest-suppression-sticky-exclude-list.md`
 
 ## Change log
 
