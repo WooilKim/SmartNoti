@@ -259,6 +259,9 @@ fun AppNavHost(
             composable(Routes.Categories.route) {
                 CategoriesScreen(
                     contentPadding = paddingValues,
+                    onOpenNotification = { notificationId ->
+                        navController.navigate(Routes.Detail.create(notificationId))
+                    },
                 )
             }
             composable(Routes.Settings.route) {

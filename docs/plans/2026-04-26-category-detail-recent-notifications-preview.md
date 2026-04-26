@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Category Detail "최근 이 분류로 분류된 알림" preview Plan
@@ -33,7 +33,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing tests for `CategoryRecentNotificationsSelector`
+## Task 1: Add failing tests for `CategoryRecentNotificationsSelector` [IN PROGRESS via PR #333]
 
 **Objective:** preview 매칭 / 정렬 / limit 계약을 unit test 로 고정한 뒤 구현. 테스트 표면이 가장 명확한 곳부터 짠다.
 
@@ -52,7 +52,7 @@ status: planned
    - `category.ruleIds` 가 비어 있으면 (rule-less Category) → 빈 리스트.
 2. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.categories.CategoryRecentNotificationsSelectorTest"` → 모두 RED 확인.
 
-## Task 2: Implement `CategoryRecentNotificationsSelector`
+## Task 2: Implement `CategoryRecentNotificationsSelector` [IN PROGRESS via PR #333]
 
 **Objective:** Task 1 의 테스트가 모두 GREEN 이 되게.
 
@@ -77,7 +77,7 @@ status: planned
    - `notifications.asSequence().filter { it.matchedRuleIds.any(ruleIdSet::contains) }.sortedByDescending { it.postedAtMillis }.take(limit).toList()`.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.categories.CategoryRecentNotificationsSelectorTest"` → 모두 GREEN.
 
-## Task 3: Add failing test + implement relative-time formatter helper (only if no reusable one exists)
+## Task 3: Add failing test + implement relative-time formatter helper (only if no reusable one exists) [IN PROGRESS via PR #333]
 
 **Objective:** 압축 row 의 시간 카피 (`"3분 전"` 등) 를 pure helper 로 분리해 unit test. 기존 helper 가 있으면 본 task 는 skip 하고 Task 4 에서 재사용.
 
@@ -95,7 +95,7 @@ status: planned
    - 그 이상 → `"${days}일 전"` (단순화 — 본 plan 에서는 절대 날짜로 fallback 하지 않음).
 3. `./gradlew :app:testDebugUnitTest --tests "*CategoryRecentNotificationsRelativeTimeTest"` → RED → 구현 → GREEN.
 
-## Task 4: Add `CategoryRecentNotificationItem` Composable + section into `CategoryDetailScreen`
+## Task 4: Add `CategoryRecentNotificationItem` Composable + section into `CategoryDetailScreen` [IN PROGRESS via PR #333]
 
 **Objective:** 시각 시각화. CategoryDetailScreen LazyColumn 의 "소속 규칙 list" 다음에 신규 섹션 추가.
 
@@ -113,7 +113,7 @@ status: planned
 4. `CategoryRecentNotificationItem` 은 `SmartSurfaceCard` (또는 `Surface` + small radius) 안에 `Column { Text(appLabel ?: packageName, style=labelSmall); Text(title, style=bodyMedium, fontWeight=FontWeight.SemiBold, maxLines=1, overflow=Ellipsis); Text(body, style=bodySmall, maxLines=1, overflow=Ellipsis); Text(formatRelative(now, postedAtMillis), style=labelSmall) }`. 카드는 `Modifier.clickable { onClick() }` + `contentDescription = "${title}, ${relative}, 탭하면 알림 상세로 이동"`.
 5. ADB / preview 둘 다 깨지지 않도록 `@Preview` (있으면) + `MainActivity` / `AppNavHost` 의 Category Detail nav block 만 컴파일 깨지면 fix.
 
-## Task 5: Wire repositories at the call site (`MainActivity` or `AppNavHost`)
+## Task 5: Wire repositories at the call site (`MainActivity` or `AppNavHost`) [IN PROGRESS via PR #333]
 
 **Objective:** Category Detail nav 블록에서 `recentNotifications` 와 `onOpenNotification` 콜백을 props 로 주입.
 
@@ -132,7 +132,7 @@ status: planned
 3. `CategoryDetailScreen(..., recentNotifications = recent, onOpenNotification = { id -> navController.navigate(Routes.NotificationDetail.create(id)) })`.
 4. `Routes.NotificationDetail.create(...)` 의 정확한 시그니처는 `Grep` 으로 호출 사이트 (Inbox / Home recent / Hidden) 에서 확인 후 동일하게 사용.
 
-## Task 6: ADB end-to-end verification + journey doc update
+## Task 6: ADB end-to-end verification + journey doc update [IN PROGRESS via PR #333]
 
 **Objective:** emulator-5554 에서 Recipe 로 동작 확인 + `docs/journeys/categories-management.md` 의 Observable steps / Code pointers / Tests / Known gaps / Change log 갱신.
 

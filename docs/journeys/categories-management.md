@@ -3,7 +3,7 @@ id: categories-management
 title: 분류 (Category) CRUD + drag-reorder + 액션 선택
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-25
+last-verified: 2026-04-26
 ---
 
 ## Goal
@@ -38,6 +38,7 @@ last-verified: 2026-04-25
    - Category 요약 (이름 / 앱 / 액션)
    - 요약 카드 안에 `CategoryConditionChips` (`maxInline = Int.MAX_VALUE`) — 모든 조건 토큰을 펼쳐서 사용자가 매처 사슬 전체를 감사할 수 있다.
    - 소속 Rule 리스트 (`RuleRow` 최소 렌더 — 조건만 표시)
+   - 그 아래 "최근 분류된 알림" 섹션 — `category.ruleIds ∩ notification.matchedRuleIds` 교집합으로 매치된 알림 중 `postedAtMillis` 내림차순 5건 cap 노출. 각 row 는 압축된 카드 (앱 라벨 / 제목 / 본문 1줄 truncate / 상대 시간) + content-desc `"$title, $relative, 탭하면 알림 상세로 이동"`. 0건이면 "아직 이 분류로 분류된 알림이 없어요." 한 줄 카피. row 탭 → `Routes.Detail.create(notificationId)` (NotificationDetail 화면이 재분류·되돌리기 책임). IGNORE 알림은 `showIgnoredArchive` 토글과 무관하게 본 preview 에 포함 (감사 화면 가설).
    - "편집" → `CategoryEditorScreen`, "삭제" → 즉시 삭제 후 리스트 복귀.
 5. FAB 또는 Detail "편집" → `CategoryEditorScreen` (AlertDialog 기반, 기존 RuleEditor 와 동일 패턴):
    - 이름 입력 (`OutlinedTextField`). 동일 이름 (trim + case-insensitive) 의 기존 Category 가 있으면 inline 에러 `이미 사용 중인 이름이에요` + 저장 버튼 비활성화 — 자기 자신 편집은 충돌로 간주하지 않음.
@@ -67,7 +68,9 @@ last-verified: 2026-04-25
 - `ui/screens/categories/CategoriesScreen` — 목록 + FAB + detail/editor 호스팅. 로컬 `Scaffold(floatingActionButton = ...)` 슬롯으로 FAB 배치 (AppBottomBar inset 자동 회피).
 - `ui/screens/categories/CategoriesEmptyStateAction` — FAB/EmptyState CTA 공용 라벨 상수 (`"새 분류 만들기"`)
 - `ui/components/EmptyState` — `action: (@Composable () -> Unit)?` 옵셔널 슬롯 (`subtitle` 아래 inline CTA 렌더)
-- `ui/screens/categories/CategoryDetailScreen` — Category 요약 + 소속 Rule 리스트 + 편집/삭제
+- `ui/screens/categories/CategoryDetailScreen` — Category 요약 + 소속 Rule 리스트 + 최근 분류된 알림 preview (5건 cap) + 편집/삭제. 압축 row 컴포저블 (`CategoryRecentNotificationItem`) 은 같은 파일의 private composable.
+- `ui/screens/categories/CategoryRecentNotificationsSelector` — pure 셀렉터 (`category.ruleIds ∩ notification.matchedRuleIds` → `postedAtMillis` desc → `take(limit)`, default 5)
+- `ui/screens/categories/CategoryRecentNotificationsRelativeTime` — pure helper `formatRelative(nowMillis, eventMillis)` ("방금" / "N분 전" / "N시간 전" / "N일 전")
 - `ui/screens/categories/CategoryEditorScreen` — AlertDialog 에디터 (신규/편집 공용)
 - `ui/screens/categories/CategoryEditorDraftValidator` — 이름 + Rule 최소 1개 + 이름 고유성 (`nameAvailable`) 검증
 - `ui/screens/categories/CategoryNameUniqueness` — pure trim + case-insensitive 고유성 평가 (`OK` / `EMPTY` / `DUPLICATE`); Edit 흐름은 자기 id 제외
@@ -95,6 +98,8 @@ last-verified: 2026-04-25
 - `CategoryConflictResolverTest` — specificity + tie-break 전체 케이스
 - `RuleToCategoryMigrationTest` — 1:1 변환 + 2회 실행 idempotent
 - `CategoryConditionChipFormatterTest` — chip 카피 형식 / 토큰 라벨 / 액션 라벨 / `외 N개` overflow / 빈 rule list 방어 케이스. APP 토큰 `appLabelLookup` 분기 (라벨 적용 / null fallback / blank fallback / blank matchValue lookup skip / PERSON·KEYWORD·SCHEDULE·REPEAT_BUNDLE 무영향 / 혼합 rule / default Identity backward-compat) 도 포함.
+- `CategoryRecentNotificationsSelectorTest` — preview 셀렉터의 8 케이스 (빈 입력 / matchedRuleIds 빈 / 정확한 교집합 + desc 정렬 / 다중 매치 1건 / default limit 5 cap / limit 5 == size / limit 0 / rule-less Category)
+- `CategoryRecentNotificationsRelativeTimeTest` — relative-time helper 의 7 분기 (방금 / 미래 skew / 분 / 시간 / 일 / 7일+ / 30일+)
 
 ## Verification recipe
 
@@ -116,13 +121,14 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - Drag-reorder 는 현재 arrow/handle 기반 — smooth drag gesture 는 현행 UI 가 직접 이웃 swap 만 지원 (`moveCategory` 계약상 한 스텝씩).
 - (resolved 2026-04-26, plan `docs/plans/2026-04-25-category-name-uniqueness.md`) Category 이름 고유성 미보장 (id 가 primary key 이므로 중복 이름 허용). → plan: `docs/plans/2026-04-25-category-name-uniqueness.md`
-- Detail 화면이 "최근 이 Category 로 분류된 알림 preview" 를 아직 표시하지 않음 — 현재는 Rule 리스트 + 액션 chip 까지만. 후속 plan 대상. → plan: `docs/plans/2026-04-26-category-detail-recent-notifications-preview.md`
+- (resolved 2026-04-26, plan `docs/plans/2026-04-26-category-detail-recent-notifications-preview.md`) Detail 화면이 "최근 이 Category 로 분류된 알림 preview" 를 아직 표시하지 않음 — 현재는 Rule 리스트 + 액션 chip 까지만. → plan: `docs/plans/2026-04-26-category-detail-recent-notifications-preview.md`. (후속 open question: 같은 알림이 여러 Category 매치 시 양쪽 Detail 모두 노출 — `CategoryConflictResolver` winner 만 표시할지, "전체 N건 보기" footer 추가 여부, IGNORE preview 정책은 본 plan Risks 참조.)
 - Category 자동 추천 (ML / 휴리스틱) 미구현 — 사용자가 수동 생성만 가능.
 - Recipe 는 아직 ADB 로 end-to-end 검증되지 않음 (`last-verified` 비어 있음). 첫 journey-tester sweep 에서 스크린샷 + uiautomator dump 로 고정.
 - (resolved 2026-04-25, plan `docs/plans/2026-04-25-category-chip-app-label-lookup.md`) `CategoryConditionChips` 의 APP 토큰은 현재 `Rule.matchValue` (raw `com.kakao.talk` 같은 packageName) 를 그대로 노출 — `appLabelLookup` 주입으로 사용자 친화 라벨로 바꾸는 후속 plan 필요 (plan `2026-04-24-categories-condition-chips.md` open question). → 후속 plan: `docs/plans/2026-04-25-category-chip-app-label-lookup.md` (chip surface 한 곳만 적용; 카드 metadata line / Detail "연결된 앱 · ${packageName}" 은 동일 lookup 으로 후속 PR 가능).
 
 ## Change log
 
+- 2026-04-26: CategoryDetail 에 "최근 분류된 알림" preview 추가 (5건 cap) — plan `docs/plans/2026-04-26-category-detail-recent-notifications-preview.md`. 신규 pure `CategoryRecentNotificationsSelector.select(...)` (`category.ruleIds ∩ notification.matchedRuleIds` → `postedAtMillis` desc → `take(limit=5)`) + pure `formatRelative(nowMillis, eventMillis)` ("방금" / "N분 전" / "N시간 전" / "N일 전") + private `CategoryRecentNotificationItem` 압축 row composable (앱 라벨 / 제목 / 본문 1줄 truncate / 상대 시간 + content-desc `"$title, $relative, 탭하면 알림 상세로 이동"`). `CategoriesScreen` 이 `NotificationRepository.observeAllFiltered(hidePersistentNotifications)` 를 collect 해서 셀렉터 결과를 props 로 주입. `AppNavHost` 가 `onOpenNotification` 을 `Routes.Detail.create(id)` 로 위임. ADB 검증 emulator-5554 (PASS): `중요 알림` Category Detail 에 3건 (Ship → 2분 전, PayTest → 2분 전, OtpTest 순) preview row 노출, content-desc 정확히 매칭, 첫 row 탭 시 `NotificationDetailScreen` 진입 + 뒤로가기 시 Categories 리스트 복귀. 빈 매치 (예: `프로모션 알림`) 는 "아직 이 분류로 분류된 알림이 없어요." empty 카피만 노출. (PR 링크는 머지 시 채움.)
 - 2026-04-26: Category 이름 고유성 검증 + Editor 저장 차단 — plan `docs/plans/2026-04-25-category-name-uniqueness.md`. 신규 pure `CategoryNameUniqueness.evaluate(...)` (trim + case-insensitive, Edit 흐름은 자기 id 제외) + `CategoryEditorDraftValidator.nameAvailable(...)` 분리 메서드 (옵션 B; 기존 `canSave` 4 테스트 무영향). `CategoryEditorScreen` 의 이름 `OutlinedTextField` 가 `isError = (status == DUPLICATE)` + `supportingText` "이미 사용 중인 이름이에요" 를 surface 하고 저장 버튼은 `canSave && nameAvailable` 단일 게이트로 결정. ADB 검증 emulator-5554: 신규 흐름에서 "ToastVerify" 입력 → inline 에러 빨간색 표시 + `추가` 버튼 `enabled=false`; "ToastVerifyX" 로 한 글자 추가 → 에러 사라짐. case-insensitive: "toastverify" → DUPLICATE. Edit 흐름: 기존 "ToastVerify" Category 편집 진입 시 이름 그대로 두면 `저장` 버튼 `enabled=true` (자기 id 제외). 마이그레이션 미실행 — 이미 영속화된 중복 이름 Category 는 자동 정리되지 않음 (현재 user 데이터에 그런 케이스 없음 확인). (PR 링크는 머지 시 채움.)
 - 2026-04-25: APP-토큰 라벨 가시성 보강 — plan `docs/plans/2026-04-25-android-queries-package-visibility.md`. AndroidManifest 에 `<queries><intent action=MAIN></queries>` 선언 → `PackageManagerAppLabelLookup` 가 Android 11+ 에서도 launcher 활동을 가진 임의 사용자 앱 (예: YouTube) 의 라벨을 정상 해석. chip 이 더 이상 raw `com.google.android.youtube` 로 fallback 되지 않음. ADB 검증 emulator-5554: `중요 알림` Category 에 `com.google.android.youtube` APP rule (이름 `YT`) 합류 후 Detail 의 펼친 chip 이 `앱=YouTube` 로 노출 (text 직접 확인). 카드 chip 은 `maxInline=2` 이라 `외 2개` 로 가려졌지만 동일 lookup 경로. listener 쪽 `SmartNotiNotificationListenerService` 의 라벨 해석 코드는 변경 없음 (notification-access grant 로 이미 성공하던 경로). Manifest 누락이 근본 원인이었으며, regression 방지로 `PackageManagerVisibilityContractTest` (pure JVM, manifest XML 파싱) 1건 추가 — Option A (instrumented) 는 CI 에 connectedDebugAndroidTest 러너가 없어 Option B 채택. (PR 링크는 머지 시 채움.)
 - 2026-04-25: v1 loop tick re-verify on emulator-5554 (PASS) post-#320. `am start` → BottomNav `분류` tap → 3 categories rendered. `중요 알림` row 의 inline `CategoryConditionChips` content-desc 가 `조건: 키워드=인증번호,결제,배송,출발 또는 앱=Shell → 즉시 전달` 로 정확히 노출 (text 토큰도 `앱=Shell`). Detail 진입 → 동일 chip + 펼침 카드 모두 `앱=Shell` (메타데이터 line `APP · com.android.shell` raw packageName 은 documented out-of-scope). `편집` → `CategoryEditorScreen` AlertDialog 미리보기 chip 도 `앱=Shell` 로 즉시 렌더. 즉, 카드 / Detail / Editor 세 surface 모두 #320 의 `LocalAppLabelLookup` 자동 wiring 가 작동. Observable steps 1-5 verified, 별도 DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-25 bump.
