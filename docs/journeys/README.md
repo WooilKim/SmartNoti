@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — quiet-hours post-#339 explainer positive-case re-attempt, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | PASS | Follow-up to #339 (5ba2c9b feat/quiet-hours-explainer-copy-wire) deferred positive-case ADB capture. emulator-5554 KST 11:24 (default `[23,7)` 밖). DB query confirms 3 historical positive-case rows exist (DIGEST + `조용한 시간` + no `사용자 규칙`): `VerifySweep0422-3` (04-24 02:02), `MediaTest0421R2/MediaTest0421` (04-21 04:06/01:48). 정리함 탭 navigation: Digest(14건) bundle preview Detail 진입 → 가장 최근 row 만 노출 (Shell `Shopping/한정` reasonTags `발신자 있음 \| 한정 \| 반복 알림`, 조용한 시간 미포함) → "왜 이렇게 처리됐나요?" 카드 chip row + 전달 모드 카드만 렌더, "지금 적용된 정책" sub-section 부재 (negative-case tag-gate 라이브 재확인). 보관 중(31건) Shell bundle 도 같은 preview 제약. `DebugInjectNotificationReceiver` 가 packageName 을 `com.smartnoti.debug.tester` 로 hardcode → quiet-hours 분기 (`packageName in setOf("com.coupang.mobile")`) 우회 불가. Plan-implementer 의 deferral 사유 (inbox bundle preview limitation) 정확. Home 인사이트 카드 "Shell 알림 46개가 가장 많이 정리됐고, 주된 이유는 '조용한 시간'예요" — quiet-hours 파이프라인이 라이브로 driving 중. DRIFT 없음. Known gaps 에 positive-case ADB blocker 항목 추가 (bundle preview "전체 보기" 또는 receiver `--es package_name` 지원 우회안). `last-verified` 2026-04-24 → 2026-04-26. |
+
 ### 2026-04-26 (journey-tester — notification-detail rule-chip drift correction)
 
 | Journey | Result | Notes |
