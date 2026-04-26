@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 ---
 
 # Category 이름 고유성 검증 + Editor 저장 차단 Plan
