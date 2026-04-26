@@ -245,3 +245,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T00:00:00Z | project-manager | #327 | Android <queries> manifest fix so APP chip resolves user app names | https://github.com/WooilKim/SmartNoti/actions/runs/24943696883 |
 | 2026-04-26T00:14:57Z | project-manager | #328 | gap-planner plan: category name uniqueness | https://github.com/WooilKim/SmartNoti/actions/runs/24943925977 |
 | 2026-04-26T00:22:36Z | journey-tester | #329 | silent-auto-hide | https://github.com/WooilKim/SmartNoti/actions/runs/24944099172/job/73042376367 |
+| 2026-04-26T00:46:21Z | project-manager | #330 | feat: block duplicate Category names in editor save gate | https://github.com/WooilKim/SmartNoti/actions/runs/24944366370 |
