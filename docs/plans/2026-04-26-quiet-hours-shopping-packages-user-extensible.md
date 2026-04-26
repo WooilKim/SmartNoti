@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/quiet-hours.md
 ---
 
 # Quiet hours 분기 대상 앱을 사용자가 직접 추가/제거할 수 있게 만드는 Plan
