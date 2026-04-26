@@ -75,7 +75,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- 그룹별 "모두 중요로 변경" / "모두 무시" 액션 부재.
+- 그룹별 "모두 중요로 변경" / "모두 무시" 액션 부재. → plan: `docs/plans/2026-04-26-inbox-digest-group-bulk-actions.md` ("모두 중요로 변경" + "모두 지우기" 두 액션; "모두 무시" 는 별도 plan 후속)
 - DigestScreen 직접 UI 테스트 부재.
 - Digest 알림이 0건이면 empty-state 만 보여주는데, suppress opt-in 유도 같은 교육용 문구 없음.
 
