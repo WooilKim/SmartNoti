@@ -1,5 +1,9 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by:
+  - docs/journeys/digest-suppression.md
+  - docs/journeys/silent-auto-hide.md
 ---
 
 # Tray replacement notification — auto-dismiss timeout
@@ -84,7 +88,7 @@ status: planned
 5. 호출 site 갱신 — listener 의 `onNotificationPosted` 분기에서 latest settings snapshot 을 함께 전달.
 6. `./gradlew :app:assembleDebug` 빌드 통과 확인.
 
-## Task 3: Add settings model + UI for `replacementAutoDismissEnabled` / `replacementAutoDismissMinutes`
+## Task 3: Add settings model + UI for `replacementAutoDismissEnabled` / `replacementAutoDismissMinutes` [SHIPPED via PR #417]
 
 **Objective:** 사용자가 토글 + duration preset 으로 timeout 을 조절할 수 있다.
 
@@ -102,7 +106,7 @@ status: planned
    - 토글 ON 일 때만 노출되는 SegmentedControl 또는 Row of FilterChips (`5분 / 15분 / 30분 / 1시간 / 3시간`). 선택 시 `replacementAutoDismissMinutes` 갱신.
 4. `./gradlew :app:assembleDebug` 빌드 통과 + 기존 settings UI 테스트가 있다면 갱신.
 
-## Task 4: Update journey docs
+## Task 4: Update journey docs [SHIPPED via PR #417]
 
 **Files:**
 - `docs/journeys/digest-suppression.md`
@@ -115,7 +119,9 @@ status: planned
 3. Out of scope 에 명시 — PRIORITY 원본 알림은 SmartNoti 가 게시한 알림이 아니므로 timeout 적용 불가 (앱이 직접 post 한 것).
 4. Change log row 1줄 추가 (구현 PR 머지 시 commit 해시 채움).
 
-## Task 5: ADB end-to-end verification
+## Task 5: ADB end-to-end verification [DEFERRED]
+
+> Deferred to a follow-up sweep. Tasks 1-4 ship without an emulator dry-run; the policy + Settings UI are unit-test-covered (Tasks 1 and 3 add seven JUnit cases) and the SmartNotiNotifier wiring (Task 2) is covered by the existing notifier tests refactored in PR #415. A subsequent ADB session will exercise the recipe below and append a Verification log row to `docs/journeys/README.md`.
 
 **Objective:** 실기기 emulator-5554 에서 timeout 이 실제로 NotificationManager 에 의해 자동 cancel 되는지 확인.
 

@@ -33,13 +33,14 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
    - 본문: `ReplacementNotificationTextFormatter.explanationText(DIGEST, reasonTags)`
    - subText: "{appName} • Digest"
    - 액션: `중요로 고정`, `Digest로 유지`, `열기`
+   - **Auto-dismiss timeout**: `ReplacementNotificationTimeoutPolicy.timeoutMillisFor(settings, DIGEST)` 가 non-null 을 반환하면 (default ON / 30분) `NotificationCompat.Builder.setTimeoutAfter(...)` 으로 NotificationManager 가 해당 시간 후 자동 cancel. 사용자가 swipe 하지 않아도 트레이가 누적되지 않음. 이 timeout 은 **트레이 항목에만** 적용되고 DB row (`status=DIGEST`, `replacementNotificationIssued=true`) 는 그대로 — Digest 인박스 / 정리함에서는 그대로 보임.
 6. 사용자가 액션 탭 → `SmartNotiNotificationActionReceiver` 가 broadcast 수신 → feedback 적용 (→ [rules-feedback-loop](rules-feedback-loop.md)).
 7. 사용자가 본문 탭 → `contentIntent` 가 `MainActivity` 를 열고 parent route = Digest, notification id 를 전달해 Detail 로 이동.
 
 ## Exit state
 
-- 시스템 tray: 원본 제거, replacement 1건 잔존 (AutoCancel=true 이므로 탭 시 자동 해제).
-- DB: 원본은 `status=DIGEST` 로 저장됨. `replacementNotificationIssued` 필드 true.
+- 시스템 tray: 원본 제거, replacement 1건 잔존 (AutoCancel=true 이므로 탭 시 자동 해제). 사용자가 swipe 하지 않아도 `replacementAutoDismissEnabled` 기본 ON / 30분 후에는 NotificationManager 가 자동 cancel.
+- DB: 원본은 `status=DIGEST` 로 저장됨. `replacementNotificationIssued` 필드 true. Auto-dismiss timeout 이 발화한 후에도 row 는 그대로 (timeout 은 트레이 정리만 담당).
 - 사용자가 액션으로 재분류한 경우 룰이 저장되고 status/태그 업데이트.
 
 ## Out of scope
@@ -47,6 +48,7 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 - Silent 은 replacement 없이 요약 알림으로 처리 (→ [silent-auto-hide](silent-auto-hide.md))
 - opt-in 하지 않은 앱의 DIGEST 는 원본 유지 + DB 기록만 (Digest 인박스에서 훑어봄, → digest-inbox)
 - 액션 수신 이후 룰 저장 세부 (→ [rules-feedback-loop](rules-feedback-loop.md))
+- **PRIORITY 원본 알림**: `SmartNotiNotifier#notifySuppressedNotification` 가 PRIORITY 분기에서 early-return 하므로 SmartNoti 가 PRIORITY 원본을 다시 게시하지도, 위의 auto-dismiss timeout 을 걸지도 않는다 (앱이 직접 post 한 트레이 항목은 SmartNoti 의 권한 밖).
 
 ## Code pointers
 
@@ -59,7 +61,9 @@ DIGEST 로 분류된 알림 중, 사용자가 명시적으로 opt-in 한 앱에 
 - `notification/ReplacementNotificationTextFormatter` — 본문 포맷
 - `notification/ReplacementNotificationChannelRegistry` — 채널 선택
 - `notification/SmartNotiNotificationActionReceiver` — 액션 수신
-- `data/settings/SettingsModels` — `suppressSourceForDigestAndSilent`, `suppressedSourceApps`, `suppressedSourceAppsExcluded`
+- `domain/usecase/ReplacementNotificationTimeoutPolicy` — replacement / summary 의 auto-dismiss timeout 결정 (PRIORITY/IGNORE 무동작 가드 + `enabled=false` / `minutes<=0` null 분기)
+- `ui/screens/settings/ReplacementAutoDismissPickerSpec` — 자동 정리 duration preset (`5 / 15 / 30 / 60 / 180` 분) + label 헬퍼
+- `data/settings/SettingsModels` — `suppressSourceForDigestAndSilent`, `suppressedSourceApps`, `suppressedSourceAppsExcluded`, `replacementAutoDismissEnabled`, `replacementAutoDismissMinutes`
 
 ## Tests
 
@@ -127,3 +131,4 @@ adb -s emulator-5554 shell dumpsys notification --noredact \
 - 2026-04-26: ADB verification PASS (emulator-5554) — testnotifier `PROMO_DIGEST` 시나리오 tap 후 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 가 active list 에서 사라지고 동일 title 이 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry (importance=3, AutoCancel) 로 게시됨. Observable steps 1–7 + Exit state 일치, DRIFT 없음.
 - 2026-04-24: **신규/미설정 사용자에게 DIGEST/SILENT 가 이중으로 뜨던 증상 해소** — `SmartNotiSettings.suppressSourceForDigestAndSilent` 의 default 를 `true` 로 flip 하고, `NotificationSuppressionPolicy` 가 빈 `suppressedSourceApps` 를 "모든 앱 opt-in" 으로 해석하도록 변경. 기존 사용자에게는 `SettingsRepository.applyPendingMigrations` 의 v1 one-shot 마이그레이션 (`suppress_source_migration_v1_applied` DataStore 키 게이트) 로 toggle 을 한 번 덮어씀. `SuppressedSourceAppsAutoExpansionPolicy` 는 `currentApps` 가 비어있을 때 no-op 가드를 추가해 의미 전환 (opt-out → 화이트리스트-of-one) 을 막음. 관련 plan: `docs/plans/2026-04-24-duplicate-notifications-suppress-defaults-ac.md`. 커밋: d9c3ff6 / e2a472d / 8aada48 / 704dfc7.
 - 2026-04-26: **사용자가 Settings 에서 명시적으로 uncheck 한 앱은 sticky 제외** — `SmartNotiSettings.suppressedSourceAppsExcluded` 신규 set 도입. `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull` 이 이 set 의 멤버에 대해 항상 expansion 차단. Settings UI 토글 OFF 는 `SettingsRepository#setSuppressedSourceAppExcluded(_, true)` (atomic — 두 set 동시 update), ON 은 excluded clear + suppressedSourceApps add. "모두 해제" 는 `setSuppressedSourceAppsExcludedBulk` 로 sticky 의지 보존. 마이그레이션 noop (default emptySet). 관련 plan: `docs/plans/2026-04-26-digest-suppression-sticky-exclude-list.md` (shipped via #395 / #396 / 본 PR).
+- 2026-04-27: **Replacement 알림 auto-dismiss timeout 도입** — `SmartNotiNotifier#notifySuppressedNotification` 의 builder 가 `ReplacementNotificationTimeoutPolicy.timeoutMillisFor(settings, DIGEST)` 를 통해 `NotificationCompat.Builder.setTimeoutAfter` 호출. `SmartNotiSettings` 에 `replacementAutoDismissEnabled` (default ON) + `replacementAutoDismissMinutes` (default 30) 두 필드 추가, `SettingsRepository.applyPendingMigrations()` 의 v2 one-shot 마이그레이션 (`replacement_auto_dismiss_migration_v2_applied` DataStore 키 게이트) 으로 기존 사용자에게도 default 주입. Settings 의 "고급 숨김 옵션" 서브섹션에 토글 + AssistChip dropdown (`5 / 15 / 30 / 60 / 180` 분 preset) 노출. PRIORITY 원본은 helper 가 null 을 반환하므로 timeout 미적용 (Out-of-scope 명시). DB row 는 timeout 발화 후에도 그대로 — Digest 인박스/정리함은 영향 없음. 관련 plan: `docs/plans/2026-04-27-tray-replacement-auto-dismiss-timeout.md` (Tasks 1-4 shipped via #415 + #417).
