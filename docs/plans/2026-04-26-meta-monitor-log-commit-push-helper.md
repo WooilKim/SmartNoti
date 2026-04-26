@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
 kind: meta-plan
 focus: loop-monitor log commit/push race & cross-session loss
 related-files:
@@ -199,3 +200,4 @@ None — this is a meta-plan touching `.claude/` and `docs/loop-monitor-log.md` 
 ## Change log
 
 - 2026-04-26: Drafted by `gap-planner` after wrapper opened TWO ad-hoc ops PRs (#350 land 26 rows, #351 land take-2 rows) in a single session AND `journey-tester` refused to run because the prior session left `docs/loop-monitor-log.md` modified locally. Pattern indicates the bare-edit rule scales poorly; helper analogous to MP-1.1's `audit-log-append.sh` is the targeted fix. Pre-selected over a more general "agent commit invariant" meta-plan because narrow fixes have shipped successfully twice (MP-1, MP-1.1) and the broader abstraction lacks evidence beyond two related failure classes (this one + STALE_FRONTMATTER per PR #344).
+- 2026-04-26: Shipped via PR #372 (merge commit `9ea347e`). Tasks 1-4 landed as code/spec/rules edits — failing tests, `.claude/lib/monitor-log-append.sh` helper with race-retry + `--stamp-now` + dedupe-by-body, `loop-monitor.md` Log format / Meta-safety / Why-you-exist rewrite to invoke the helper inline, and `agent-loop.md` MP-1.2 footnote + table-cell pointer. Tasks 5-6 are written guidance only (retroactive cleanup procedure + 7-day verification recipe), so no further code action is required for ship. Frontmatter flipped via follow-up docs PR per the freshly-merged frontmatter-on-merge enforcement (PR #371).
