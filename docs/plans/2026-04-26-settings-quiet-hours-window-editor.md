@@ -30,7 +30,7 @@ status: in-progress
 
 ---
 
-## Task 1: Failing tests for `SettingsRepository` quiet-hours hour setters
+## Task 1: Failing tests for `SettingsRepository` quiet-hours hour setters [IN PROGRESS via PR #346]
 
 **Objective:** `setQuietHoursStartHour(hour)` / `setQuietHoursEndHour(hour)` 가 DataStore 에 영속되고 `observeSettings()` 가 반영하는지 단위 테스트로 고정.
 
@@ -44,7 +44,7 @@ status: in-progress
 4. `clearInstanceForTest()` + `clearAllForTest()` cleanup.
 5. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.settings.SettingsRepositoryTest"` → 추가한 케이스 모두 RED (setter 부재).
 
-## Task 2: Implement `SettingsRepository` setters
+## Task 2: Implement `SettingsRepository` setters [IN PROGRESS via PR #346]
 
 **Objective:** Task 1 테스트 GREEN.
 
@@ -60,7 +60,7 @@ status: in-progress
 2. 키 `QUIET_HOURS_START_HOUR` / `QUIET_HOURS_END_HOUR` 는 이미 companion object 에 정의돼 있으므로 신규 키는 없음.
 3. 단위 테스트 재실행 → GREEN.
 
-## Task 3: Failing UI test (or builder test) for picker visibility & callbacks
+## Task 3: Failing UI test (or builder test) for picker visibility & callbacks [IN PROGRESS via PR #346]
 
 **Objective:** `OperationalSummaryCard` 가 새 콜백을 받고 picker 가 Switch ON 일 때만 노출되는지 (또는 채택한 alternative — disabled 회색 처리) 를 테스트로 고정.
 
@@ -73,7 +73,7 @@ status: in-progress
 3. 사용자가 startHour 를 14 로 바꾸면 callback 이 14 와 함께 호출됨 (콜백 invocation assertion).
 4. `./gradlew :app:testDebugUnitTest` 신규 테스트 RED.
 
-## Task 4: Wire pickers into `OperationalSummaryCard`
+## Task 4: Wire pickers into `OperationalSummaryCard` [IN PROGRESS via PR #346]
 
 **Objective:** Task 3 테스트 GREEN. 사용자가 Settings → 운영 상태 → Quiet Hours row 에서 picker 두 개로 시작/종료 시간을 변경할 수 있다.
 
@@ -94,7 +94,7 @@ status: in-progress
 6. 신규 picker spec 단위 테스트 GREEN.
 7. 전체 테스트 (`./gradlew :app:testDebugUnitTest`) 가 PASS — 기존 `SettingsScreen` 또는 navigation 경유 테스트가 있으면 콜백 시그니처 변경으로 깨지지 않는지 확인.
 
-## Task 5: ADB / 라이브 검증
+## Task 5: ADB / 라이브 검증 [IN PROGRESS via PR #346]
 
 **Objective:** 사용자 관측 동작이 실제로 변경되는지 확인. 동시에 `quiet-hours.md` verification recipe 의 "Settings 에서 시작/종료 시간을 현재 시각을 포함하도록 조정" 단계가 build 에서 수행 가능해졌음을 입증.
 
@@ -119,7 +119,7 @@ adb -s emulator-5554 exec-out run-as com.smartnoti.app sqlite3 \
   "SELECT status,reasonTags FROM notifications WHERE title LIKE 'QuietHrsLive%' ORDER BY postedAtMillis DESC LIMIT 1;"
 ```
 
-## Task 6: Update journey doc + plan frontmatter
+## Task 6: Update journey doc + plan frontmatter [IN PROGRESS via PR #346]
 
 **Files:**
 - `docs/journeys/quiet-hours.md` — Known gaps 의 신규 blocker (c) 를 `(resolved YYYY-MM-DD, plan ...)` 로 표기. Verification recipe 의 step 1 카피 ("Settings 에서 시작/종료 시간을 현재 시각을 포함하도록 조정") 가 이제 빌드에서 가능함을 Change log 에 기록 + `last-verified` 갱신 (verification 을 실제로 한 날짜).
@@ -130,7 +130,7 @@ adb -s emulator-5554 exec-out run-as com.smartnoti.app sqlite3 \
 2. Change log 에 `<date>: Plan 2026-04-26-settings-quiet-hours-window-editor ship — Settings 화면에 quietHoursStartHour / quietHoursEndHour picker 두 개 추가, blocker (c) 해소.` 한 줄 추가.
 3. plan frontmatter flip.
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [IN PROGRESS via PR #346]
 
 - 모든 단위 테스트 PASS.
 - ADB 검증 결과 (Settings UI 스크린샷 + DataStore 재진입 후 값 유지 + 옵션 step 5 의 DB row) PR 본문 첨부.
