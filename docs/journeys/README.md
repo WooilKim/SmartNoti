@@ -45,7 +45,7 @@
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
-| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-24 |
+| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-26 |
 
 ### Categories, Rules & onboarding
 | ID | Title | Status | Last verified |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-26 (journey-tester — insight-drilldown rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| insight-drilldown | PASS | Oldest non-deprecated journey by `last-verified` (2026-04-24 → 2026-04-26). emulator-5554, Coupang × 5 게시 (`cmd notification post -S bigtext`) → 홈 탭 (142,2274) → SmartNoti 인사이트 카드 `Shell 알림 32개가 가장 많이 정리됐고...` 탭 (540,1586) → InsightDrillDown 화면. eyebrow `인사이트` + title `Shell 인사이트` + ContextBadge `일반 인사이트` + range chips (`최근 3시간`/`최근 24시간`/`전체`) + 24h Digest 14/Silent 12 + reason 차트 (`이 앱에서 가장 많이 보인 이유는 '반복 알림'`) + reason navigation (반복 알림 8건 / 사용자 규칙 4건 / 프로모션 알림 4건) + 필터 카드 리스트 (Shell `ToastVerify`) 모두 문서대로 렌더. `전체` 칩 tap (695,782) → Digest 17/Silent 15 로 카운트 갱신 + subtitle `전체 기준 Shell에서 정리된 알림 32건...` 갱신 (Observable steps 1–9 + Exit state 일치). DRIFT 없음. |
 
 ### 2026-04-26 (journey-tester — inbox-unified rotation sweep, emulator-5554)
 
