@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-26 (journey-tester — quiet-hours positive-case ADB capture post-#346, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | PASS | First end-to-end positive capture after Settings hour-picker (PR #346 `feat/settings-quiet-hours-window-editor`) + debug-inject `--es package_name` (PR #339) + explainer copy (PR #338) all shipped. emulator KST 12:54 (default `[23,7)` 밖). Settings → 운영 상태 → Quiet Hours row 의 종료 picker dropdown 으로 종료=11→13 설정 → 요약 `11:00 ~ 13:00` 갱신 (12 포함). DataStore `quiet_hours_start_hour=11 / end=13 / enabled=true` 영속 확인. `am broadcast … --es package_name com.coupang.mobile --es app_name 'Coupang' --es title 'QuietHrsPositive…'` → DB `status=DIGEST, reasonTags=발신자 있음\|조용한 시간\|쇼핑 앱` (no `사용자 규칙`). 정리함 → Digest · 15건 → Coupang 1건 row → Detail "왜 이렇게 처리됐나요?" 카드 chip row 아래 "지금 적용된 정책" sub-section 정확히 한 줄 카피 `지금이 조용한 시간(11시~13시)이라 자동으로 모아뒀어요.` 렌더 — Observable step 5 same-day 카피 패턴 (`"11시" + "13시"` substring, `"익일"` 미포함) 일치. 전달 모드 카드 `Digest 묶음 전달` 도 동시 렌더. DRIFT 없음. Known gaps blocker (b) 가 positive 증명까지 완료 (bullet 에 마킹). `last-verified` 는 같은 날(2026-04-26) 이므로 유지. |
+
 ### 2026-04-26 (journey-tester — quiet-hours post-#339 explainer positive-case re-attempt, emulator-5554)
 
 | Journey | Result | Notes |
