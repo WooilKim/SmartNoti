@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-26
+superseded-by: ../journeys/rules-management.md
 ---
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
@@ -27,7 +29,7 @@ status: planned
 
 ---
 
-## Task 1: Pin current contract + new partition behavior with failing tests
+## Task 1: Pin current contract + new partition behavior with failing tests [SHIPPED via PR #357]
 
 **Objective:** 현재 "신규 Rule 저장 → sheet 닫음 → 영구 미분류" 동작이 새 `draft` 필드 도입 후에도 분류기 측에서 변하지 않음을 회귀 고정. 동시에 새 partition helper 의 contract 를 RED 로 고정.
 
@@ -45,7 +47,7 @@ status: planned
 3. `RuleWithoutCategoryNoOpTest` — `draft = true` Rule + `draft = false` Rule 이 모두 owning Category 없으면 `RuleCategoryActionIndex.actionFor(...) == null` 임을 단언 (분류기 contract 변경 없음 명시).
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.UnassignedRulesPartitionerTest" --tests "com.smartnoti.app.data.rules.RuleStorageCodecTest" --tests "com.smartnoti.app.domain.usecase.RuleWithoutCategoryNoOpTest"` → 실패 (RED) 확인.
 
-## Task 2: Extend domain model + codec
+## Task 2: Extend domain model + codec [SHIPPED via PR #357]
 
 **Objective:** `RuleUiModel` / `Rule` 에 `draft: Boolean = false` 필드 추가, `RuleStorageCodec` 8-column 포맷 확장 + legacy 7-column tolerance.
 
@@ -64,7 +66,7 @@ status: planned
    - `parts.size >= 9` (legacy 8-column with action + draft 가 동시에 존재하는 가상 케이스) → `removeAt(4)` 후 8 columns → index 7 을 `draft` 로.
 4. Task 1 의 `RuleStorageCodecTest` GREEN 확인.
 
-## Task 3: Repository setter + AssignRuleToCategoryUseCase
+## Task 3: Repository setter + AssignRuleToCategoryUseCase [SHIPPED via PR #357]
 
 **Objective:** `RulesRepository` 에 `markRuleAsAssigned(ruleId)` + `markRuleAsParked(ruleId)` 두 setter 추가, `AssignRuleToCategoryUseCase` 가 두 repository op 의 순서/원자성을 책임.
 
@@ -84,7 +86,7 @@ status: planned
 3. `AssignRuleToCategoryUseCaseTest` — fake repository 두 개로 (a) 정상 흐름에서 두 op 모두 호출됨, (b) appendRuleIdToCategory 가 throw 하면 markRuleAsAssigned 호출 안 됨, (c) 이미 다른 Category 에 속한 Rule 을 또 assign 해도 두 op 모두 동일 순서로 호출됨 확인.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.AssignRuleToCategoryUseCaseTest"` GREEN.
 
-## Task 4: Wire UseCase into RulesScreen + new "보류" CTA
+## Task 4: Wire UseCase into RulesScreen + new "보류" CTA [SHIPPED via PR #357]
 
 **Objective:** `CategoryAssignBottomSheet` 의 기존 "나중에 분류에 추가" 한 개 CTA 를 두 개 ("작업 목록에 두기" default + "분류 없이 보류" secondary) 로 분기. Category 선택 경로가 `AssignRuleToCategoryUseCase.assign(...)` 을 호출하도록 wiring 변경.
 
@@ -100,7 +102,7 @@ status: planned
 3. 두 CTA 모두 dismiss 후 sheet 자동 재오픈 없음 (사용자가 row 를 탭해야 다시 노출).
 4. Compose 단위 테스트 또는 lightweight contract test 는 ViewModel layer 까지만 — Compose preview 로 두 CTA 가 모두 노출되는지 시각 확인 (PR 에 스크린샷 첨부).
 
-## Task 5: Partition unassigned section into two sub-buckets
+## Task 5: Partition unassigned section into two sub-buckets [SHIPPED via PR #357]
 
 **Objective:** RulesScreen 의 기존 단일 "미분류" 섹션을 "작업 필요" + "보류" 두 sub-section 으로 분리. Empty sub-bucket 은 헤더도 노출하지 않음.
 
@@ -118,7 +120,7 @@ status: planned
 3. "보류" row 의 longpress menu 또는 chip 측 secondary action 으로 "작업으로 끌어올리기" 제공 → ViewModel 에서 `rulesRepository.upsertRule(rule.copy(draft = true))` 호출.
 4. Task 1 의 `UnassignedRulesPartitionerTest` GREEN 확인.
 
-## Task 6: Update journey docs
+## Task 6: Update journey docs [SHIPPED via PR #357]
 
 **Files:**
 - `docs/journeys/rules-management.md`
@@ -129,7 +131,7 @@ status: planned
   - Known gaps 의 "**신규 미분류 Rule sheet 거부 흐름**" 항목을 (resolved YYYY-MM-DD, plan `2026-04-26-rule-explicit-draft-flag`) 로 갱신 — 단, Change log 자체는 plan-implementer 가 ship 일자에 추가.
   - Verification recipe 갱신: skip 경로를 "작업 목록에 두기" / "분류 없이 보류" 두 분기로 cover.
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [SHIPPED via PR #357]
 
 - 모든 단위 테스트 통과 (`./gradlew :app:testDebugUnitTest`).
 - ADB end-to-end: (a) 신규 Rule 저장 → 두 CTA 모두 노출 확인, (b) "작업 목록에 두기" 누른 후 RulesScreen "작업 필요" 섹션에 표시 확인, (c) 같은 Rule 카드 탭 → sheet 재오픈 → "분류 없이 보류" 누름 → "보류" 섹션으로 이동 확인, (d) "보류" 카드 longpress → "작업으로 끌어올리기" → 다시 "작업 필요" 섹션으로 이동 확인, (e) Category 합류 후 Rule 이 양 섹션에서 모두 사라지는지 확인. 결과를 PR 본문에 첨부.
