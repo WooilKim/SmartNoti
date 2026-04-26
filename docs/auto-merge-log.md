@@ -271,3 +271,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T05:18:07Z | project-manager | #353 | gap-planner plan: user-tunable duplicate-suppression threshold + window | https://github.com/WooilKim/SmartNoti/actions/runs/24948923902 |
 | 2026-04-26T05:43:14Z | project-manager | #354 | feat: duplicate-suppression threshold + window user settings (plan-implementer end-to-end ship) | https://github.com/WooilKim/SmartNoti/actions/runs/24949339251 |
 | 2026-04-26T05:56:06Z | journey-tester | #355 | duplicate-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24949555933 |
+| 2026-04-26T06:10:51Z | project-manager | #356 | gap-planner plan: rule explicit-draft flag (작업 필요 vs 보류) — docs/plans + journey Known-gap annotation | https://github.com/WooilKim/SmartNoti/actions/runs/24949730976 |
