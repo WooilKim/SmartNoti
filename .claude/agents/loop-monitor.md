@@ -137,6 +137,26 @@ If the helper exits 2 (fallback PR opened), report `AUDIT_DRIFT auto-fix DEFERRE
 
 **Escalate**: single-line reminder.
 
+### FEATURE_REPORTER_NOT_LOADED
+
+**Check**: The orchestrator tick summary contains the literal marker `FEATURE_REPORTER_NOT_LOADED` (emitted by `/journey-loop` Step 4.5's agent-availability gate when the wrapper detected that `feature-reporter`'s spec was merged on `main` after the current loop session began, so the Agent tool cannot spawn it). This is the same root cause as the `AGENT_NOT_LOADED` candidate class self-coined on 2026-04-26 14:18:14Z — they are synonyms; prefer this name going forward. See `.claude/rules/agent-loop.md` ("Agent 추가/변경 시 세션 재시작 필요성") and `docs/plans/2026-04-26-meta-feature-reporter-not-loaded-skip.md`.
+
+**Evidence**: the literal `Step 4.5: SKIPPED — feature-reporter agent not in current session registry ...` line in the tick summary.
+
+**Disposition**: **always informational, never escalates, never auto-fixes, never opens a backfill PR.** The mitigation is the next session restart; monitor cannot accelerate that. Do NOT count this against the "same anomaly repeated for 2 ticks → escalate" rule. Do NOT label recurrences as "Nth recurrence escalating as config-plan candidate" — once per session is informational; subsequent occurrences in the same session are expected and silent.
+
+**Row format**: still mention the class in your tick log row (so `loop-retrospective` can count occurrences across sessions) using the suggested phrasing:
+
+> `Step 4.5 SKIPPED (agent registry stale); known graceful skip — .claude/rules/agent-loop.md.`
+
+After the first sighting in a given session, suppress the class from the "User attention needed" list — it is neither actionable nor surprising.
+
+**Auto-fix**: none.
+
+**Escalate**: never.
+
+This class is strictly for the agent-not-loaded path that the wrapper itself logs via the `FEATURE_REPORTER_NOT_LOADED` marker. Genuine sub-agent crashes (errored Agent tool invocations whose error shape does NOT match the wrapper's narrow string list) still surface via `SUB_AGENT_ERROR` as before.
+
 ### CI_RED_WITHOUT_VERDICT
 
 **Check**: Any open PR where `gh pr checks <n>` has FAILURE AND `docs/pr-review-log.md` has no `project-manager: REQUEST_CHANGES` row for that PR.

@@ -86,6 +86,14 @@ v1 은 `/journey-loop` 을 한 번 호출하면 시작됩니다. 중단하려면
 - 테스트가 깨진 채로 커밋 금지.
 - **시계는 시스템에서 읽는다** — 모든 agent 는 task 시작 시 `date -u` 를 한 번 읽고 그 값을 사용. 모델 컨텍스트의 "오늘 날짜" 를 신뢰하지 않는다 (실제 UTC 보다 시간 단위로 뒤처질 수 있음). 자세한 근거 + protected surface 목록은 [`.claude/rules/clock-discipline.md`](clock-discipline.md). 감사 로그 row 는 `audit-log-append.sh --stamp-now` 가 column 1 을 자동으로 다시 stamping; 그 외 모든 date-write 지점은 이 규칙으로 보호.
 
+## Agent 추가/변경 시 세션 재시작 필요성
+
+Claude Code 는 agent registry 를 **세션 시작 시 한 번만** 로드한다. `.claude/agents/<new-agent>.md` 가 main 에 머지되어도 이미 실행 중인 세션 (loop 포함) 은 그 agent 를 spawn 할 수 없다 — Agent tool 호출이 `not loaded` / `unknown subagent_type` / `Without a Task tool exposed` 같은 에러 문자열로 즉시 실패한다. 새 agent 가 첫 fire 하려면 사용자가 세션을 재시작해야 한다 (`ScheduleWakeup` 으로 깨어난 다음 tick 도 같은 세션 컨텍스트를 유지하므로 도움 안 됨).
+
+`/journey-loop` Step 4.5 가 이 race 에 부딪힌 사례: `feature-reporter` (PR #384, 2026-04-26 14:14Z, commit `a0f05a8`). 머지 직전에 시작된 loop 세션이 4 consecutive plan-close ticks 에 걸쳐 동일한 abort 를 발생시켰고, loop-monitor 가 `FEATURE_REPORTER_NOT_LOADED` 라는 informational class 로 분류했다. 해결: Step 4.5 에 agent-availability gate 를 추가해 graceful skip + 한 줄 로그로 처리 ([`docs/plans/2026-04-26-meta-feature-reporter-not-loaded-skip.md`](../../docs/plans/2026-04-26-meta-feature-reporter-not-loaded-skip.md)). 다음 12번째 agent 를 추가할 사람이 같은 함정에 빠지지 않도록 이 절을 남겨둔다.
+
+대칭 case (agent 제거) 도 비슷하게 존재: deprecated 된 agent 는 spec 파일을 지워도 현재 세션이 끝날 때까지는 spawn 가능. `loop-orchestrator` (deprecated 2026-04-22) 가 한 예. 별도 plan 이 필요한 정도의 noise 는 아직 아님.
+
 ## 실패 시 동작
 
 - agent 가 예상 외 상황을 만나면 **멈추고 보고**. 추측으로 계속 진행하지 않는다.
