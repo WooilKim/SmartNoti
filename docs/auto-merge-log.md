@@ -307,3 +307,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T15:37:06Z | project-manager | #392 | digest group bulk repository foundation (Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24960296281 |
 | 2026-04-26T15:54:14Z | project-manager | #393 | digest sub-tab group bulk actions Tasks 3-6 (plan #391 6/6) | https://github.com/WooilKim/SmartNoti/actions/runs/24960641476 |
 | 2026-04-26T16:04:16Z | project-manager | #394 | gap-planner plan: digest-suppression sticky exclude list (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24960885331 |
+| 2026-04-26T16:12:07Z | project-manager | #395 | digest-suppression excludedApps gate (plan #394 T1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24961049216 |
