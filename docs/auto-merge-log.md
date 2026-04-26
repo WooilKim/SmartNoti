@@ -289,3 +289,4 @@ If a self-merged row caused a regression:
 | 2026-04-26T11:54:37Z | project-manager | #373 | ops monitor-log flush (174+2 rows) | https://github.com/WooilKim/SmartNoti/actions/runs/24955926002 |
 | 2026-04-26T12:04:19Z | project-manager | #374 | plan frontmatter flip MP-1.2 monitor-log-helper to shipped (cites #372 merge 9ea347e) | https://github.com/WooilKim/SmartNoti/actions/runs/24956107162 |
 | 2026-04-26T12:10:20Z | journey-tester | #375 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24956225769 |
+| 2026-04-26T12:29:22Z | project-manager | #376 | gap-planner plan: detail reclassify-this-row-now CTA + 2 journey gap annotations | https://github.com/WooilKim/SmartNoti/actions/runs/24956429945 |
