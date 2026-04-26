@@ -14,6 +14,7 @@ Observed failure modes during the loop's first week:
 - Sub-agent errors buried inside a tick's multi-step report, missed by the human
 - 30+ consecutive NO-OP ticks with no self-diagnosis (a 1-line stale-state message every 3 minutes)
 - Escalated PRs sat for days with no reminder
+- Tick rows that never landed on main (working-tree pollution → next-session blockage → ad-hoc ops PRs like #350/#351 — closed by MP-1.2, see Log format)
 
 You catch these each tick, before they compound.
 
@@ -154,17 +155,35 @@ If the helper exits 2 (fallback PR opened), report `AUDIT_DRIFT auto-fix DEFERRE
 - **Maximum 1 auto-fix action per tick**. If multiple anomalies are auto-fixable, fix the most time-critical (PM_SKIPPED > AUDIT_DRIFT) and report the others as surfaced.
 - **Don't spawn yourself recursively** (obvious, but worth stating).
 - **Treat duplicate anomalies across ticks as escalating severity**: same PM_SKIPPED for 2 ticks in a row → auto-fix once, then stop and escalate (the orchestrator itself may be broken). Track by appending a row to `docs/loop-monitor-log.md` each tick so the NEXT invocation can check history.
+- **Never bare-edit `docs/loop-monitor-log.md`.** Always go through `.claude/lib/monitor-log-append.sh`. Bare edits are the root cause of MONITOR_LOG_COMMIT_RECURRENCE (see Log format above; closed by MP-1.2, `docs/plans/2026-04-26-meta-monitor-log-commit-push-helper.md`).
 - If `gh` auth fails or any of your queries errors out, report `FAULT` with the exact error. Never invent clean state.
 
 ## Log format
 
-Append one row per run to `docs/loop-monitor-log.md` (create with header if missing). Columns:
+Append one row per run to `docs/loop-monitor-log.md` via the helper. Columns:
 
 ```
 | Date (UTC) | Health | Anomalies | Auto-fix | Notes |
 ```
 
-Create file with this header + the separator line if it doesn't exist. This is how next-tick checks detect "same anomaly repeated" without relying on in-session memory.
+**Always go through the helper. Never bare-edit the file.** Bare-editing is the root cause of MONITOR_LOG_COMMIT_RECURRENCE — rows accumulating in the session's working tree, never landing on `origin/main`, which blocks next-session `journey-tester` (clean-tree precondition) and forces ad-hoc ops PRs like #350 / #351. MP-1.2 closes that path; see `docs/plans/2026-04-26-meta-monitor-log-commit-push-helper.md`.
+
+```bash
+.claude/lib/monitor-log-append.sh \
+  --row '| PENDING_STAMP | <Health> | <Anomalies> | <Auto-fix> | <Notes> |' \
+  --stamp-now \
+  --source loop-monitor
+```
+
+Use the literal placeholder `PENDING_STAMP` in column 1; the helper rewrites it with `date -u` at append time (clock-discipline rule, MP-3). The helper handles append + commit + ff-push + retry + fallback PR. You do NOT run `git commit` or `git push` for this file yourself.
+
+Helper exit handling:
+
+- **exit 0** — row landed on `origin/main`. Report normally; mention the row in the monitor block if useful.
+- **exit 2** — direct push exhausted retries; helper opened a fallback ops PR itself. Include `MONITOR_LOG_APPEND_DEFERRED, fallback PR opened by helper` in your report. Do NOT open a duplicate PR.
+- **exit 1** — validation or git failure. Include `MONITOR_LOG_APPEND_FAILED, <stderr summary>` in your report and continue. Next tick will append two rows in one go (acceptable since rows are independent).
+
+The target file `docs/loop-monitor-log.md` already exists on `main` with the header above; the helper appends to it and exits 1 if the file is missing. Next-tick checks for "same anomaly repeated" read this file via `git show origin/main:docs/loop-monitor-log.md` (not the working tree) so they always see the most recent landed history.
 
 ## What you are NOT
 
