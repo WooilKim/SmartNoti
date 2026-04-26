@@ -251,3 +251,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T00:46:49Z | #331 | gap-planner | DEFER | CI Unit tests + debug APK pending; re-review next sweep |
 | 2026-04-26T00:49:17Z | #331 | gap-planner | APPROVE+DEFER-MERGE | Approved on scope/traceability/CI; merge blocked by conflict on categories-management.md, awaiting agent rebase |
 | 2026-04-26T00:57:27Z | #331 | gap-planner | DEFER | mergeable=CONFLICTING; rebase in progress by plan-implementer this tick |
+| 2026-04-26T01:06:07Z | #331 | gap-planner | APPROVE | docs-only plan + Known-gap link annotation; CI green; merged d972ac1 |
