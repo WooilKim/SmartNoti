@@ -77,7 +77,7 @@ status: planned
 3. `Ports` 는 `suspend fun updateNotification(notification: NotificationUiModel)` 단일 메서드만 노출.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.*"` GREEN.
 
-## Task 4: Wire use case into Detail "분류 변경" Path A (existing Category)
+## Task 4: Wire use case into Detail "분류 변경" Path A (existing Category) [SHIPPED via PR #379]
 
 **Objective:** 사용자가 시트에서 기존 Category 한 row 를 탭하면 Rule/Category write 직후 use case 가 호출되어 row 도 같이 옮겨진다.
 
@@ -94,7 +94,7 @@ status: planned
    - 그 다음 기존 `snackbarHostState.showSnackbar(...)` 진행.
 3. snackbar 카피는 변경하지 않음 — `"<카테고리명> 분류로 옮겼어요"` 가 row 변경까지 자연스럽게 시사.
 
-## Task 5: Wire use case into Detail "분류 변경" Path B (new Category)
+## Task 5: Wire use case into Detail "분류 변경" Path B (new Category) [SHIPPED via PR #379]
 
 **Objective:** 사용자가 "+ 새 분류 만들기" 로 editor 에 들어가 저장 (`onSaved(Category)`) 한 시점에 Detail 이 동일 use case 를 호출.
 
