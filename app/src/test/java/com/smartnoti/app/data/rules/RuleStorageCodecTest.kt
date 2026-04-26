@@ -156,4 +156,99 @@ class RuleStorageCodecTest {
         assertEquals("legacy", decoded[0].id)
         assertEquals(null, decoded[0].overrideOf)
     }
+
+    @Test
+    fun draft_true_round_trips_through_codec() {
+        // Plan `2026-04-26-rule-explicit-draft-flag` Task 1/2 — the new
+        // 8-column layout serializes `draft` as the trailing column. A
+        // freshly created rule (post-save sheet untouched) has `draft = true`
+        // and that flag must survive encode → decode so the RulesScreen
+        // partitioner can route it back into "작업 필요".
+        val rules = listOf(
+            RuleUiModel(
+                id = "draft-keyword",
+                title = "초안",
+                subtitle = "",
+                type = RuleTypeUi.KEYWORD,
+                enabled = true,
+                matchValue = "초안",
+                draft = true,
+            ),
+        )
+
+        val decoded = RuleStorageCodec.decode(RuleStorageCodec.encode(rules))
+
+        assertEquals(rules, decoded)
+        assertEquals(true, decoded[0].draft)
+    }
+
+    @Test
+    fun draft_false_round_trips_through_codec() {
+        // Mirror of the draft=true case — the explicit "보류" flag must
+        // also persist intact so RulesScreen does not promote a parked rule
+        // back into "작업 필요" on every recompose / app cold-start.
+        val rules = listOf(
+            RuleUiModel(
+                id = "parked-keyword",
+                title = "보류",
+                subtitle = "",
+                type = RuleTypeUi.KEYWORD,
+                enabled = true,
+                matchValue = "보류",
+                draft = false,
+            ),
+        )
+
+        val decoded = RuleStorageCodec.decode(RuleStorageCodec.encode(rules))
+
+        assertEquals(rules, decoded)
+        assertEquals(false, decoded[0].draft)
+    }
+
+    @Test
+    fun decode_tolerates_legacy_seven_column_row_as_draft_false() {
+        // Rows persisted by post-P1-Task-4 builds (before this plan) have 7
+        // columns and no `draft` field. They must decode as `draft = false`
+        // — these rules are pre-existing and have already had a chance for
+        // the user to interact with them, so falling back to the quieter
+        // "보류" bucket is the safest migration default.
+        val legacyLine = listOf(
+            "legacy-no-draft",
+            "Legacy",
+            "subtitle",
+            "KEYWORD",
+            "true",
+            "matchvalue",
+            "\u0000",
+        ).joinToString("|") { java.net.URLEncoder.encode(it, "UTF-8") }
+
+        val decoded = RuleStorageCodec.decode(legacyLine)
+
+        assertEquals(1, decoded.size)
+        assertEquals("legacy-no-draft", decoded[0].id)
+        assertEquals(false, decoded[0].draft)
+    }
+
+    @Test
+    fun decode_falls_back_to_draft_false_when_eighth_column_is_garbled() {
+        // Defensive — if a future migration / bad write sticks a non-boolean
+        // string into the draft cell, the row must still decode (with the
+        // safer "보류" default) instead of disappearing from the list.
+        val garbledLine = listOf(
+            "garbled-draft",
+            "Garbled",
+            "subtitle",
+            "KEYWORD",
+            "true",
+            "matchvalue",
+            "\u0000",
+            "",
+        ).joinToString("|") { java.net.URLEncoder.encode(it, "UTF-8") }
+
+        val decoded = RuleStorageCodec.decode(garbledLine)
+
+        assertEquals(1, decoded.size)
+        assertEquals("garbled-draft", decoded[0].id)
+        assertEquals(false, decoded[0].draft)
+    }
 }

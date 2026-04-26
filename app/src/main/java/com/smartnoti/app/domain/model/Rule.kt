@@ -16,10 +16,16 @@ package com.smartnoti.app.domain.model
  * @property overrideOf Optional id of the base rule this rule overrides in the
  *   override chain introduced by the Phase C override validator. Null for
  *   base-tier rules.
+ * @property draft Plan `docs/plans/2026-04-26-rule-explicit-draft-flag.md`.
+ *   Mirrors [RuleUiModel.draft] so the two models stay shape-compatible
+ *   while they coexist. `true` on freshly saved rules until the user attaches
+ *   the rule to a Category or explicitly parks it; `false` otherwise. Pure
+ *   UI/UX hint with no classifier impact.
  */
 data class Rule(
     val id: String,
     val type: RuleTypeUi,
     val matchValue: String,
     val overrideOf: String? = null,
+    val draft: Boolean = false,
 )

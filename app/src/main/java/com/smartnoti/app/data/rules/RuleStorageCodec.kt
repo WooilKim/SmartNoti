@@ -9,14 +9,30 @@ import java.nio.charset.StandardCharsets
 /**
  * Line-oriented codec for the `smartnoti_rules` DataStore payload.
  *
- * Plan `docs/plans/2026-04-22-categories-split-rules-actions.md` Phase P1
- * Task 4 removed `RuleUiModel.action`, so the persisted format shrinks from
- * 8 columns to 7. The decoder still tolerates legacy 8-column rows written
- * by pre-P1 builds — the 5th column (the old action string) is skipped so
- * existing installs upgrade in place without an explicit Room-style
- * migration. The action carried by those legacy rows is recovered via the
- * Task 3 Rules → Categories migration, which reads `RulesRepository` BEFORE
- * that repository was re-encoded (so `action` is still inspectable there).
+ * Layout history (per row, `|`-separated, every cell URL-encoded):
+ *
+ *  - Pre-P1: 8 columns — `id | title | subtitle | type | action | enabled |
+ *    matchValue | overrideOf`. Some early rows are 7 columns (no `overrideOf`).
+ *  - Post-P1-Task-4 (plan `2026-04-22-categories-split-rules-actions`):
+ *    7 columns — `id | title | subtitle | type | enabled | matchValue |
+ *    overrideOf`. The `action` column at index 4 was dropped; the action
+ *    moved onto the owning [com.smartnoti.app.domain.model.Category]. The
+ *    pre-P1 action is recovered exactly once by [LegacyRuleActionReader]
+ *    during the Rules → Categories migration before this codec rewrites
+ *    storage.
+ *  - Post-Task-2 (plan `2026-04-26-rule-explicit-draft-flag`): 8 columns —
+ *    same as the 7-column layout plus a trailing boolean `draft` cell.
+ *    Disambiguation against the pre-P1 8-column layout is by index 4:
+ *    pre-P1 stored an `RuleActionUi.name` there ("ALWAYS_PRIORITY" /
+ *    "DIGEST" / "SILENT" / "CONTEXTUAL" / "IGNORE"), the new layout stores
+ *    `enabled` ("true" / "false"). A boolean string at index 4 means "this
+ *    is a post-P1 row" and the trailing cell is the new `draft` flag.
+ *
+ * Decoder migration policy: rows missing the `draft` cell decode as
+ * `draft = false` (the quieter "보류" sub-bucket). Rows with a garbled
+ * 8th cell also decode as `draft = false`. The only intentional spelling of
+ * `draft = true` is "true" written by the encoder for a freshly saved
+ * rule.
  */
 object RuleStorageCodec {
     /**
@@ -36,6 +52,7 @@ object RuleStorageCodec {
                 rule.enabled.toString(),
                 rule.matchValue,
                 rule.overrideOf ?: NULL_OVERRIDE_OF,
+                rule.draft.toString(),
             ).joinToString("|") { value -> value.escape() }
         }
     }
@@ -47,25 +64,33 @@ object RuleStorageCodec {
             .filter { it.isNotBlank() }
             .mapNotNull { line ->
                 val parts = line.split("|").map { it.unescape() }
-                // Post-P1-Task-4: 7-column layout (id, title, subtitle, type,
-                // enabled, matchValue, overrideOf). Pre-Task-4 lines have an
-                // `action` column at index 4 — sometimes 8 columns including
-                // `overrideOf`, sometimes 7 when the row was written before
-                // Phase C added `overrideOf`. Disambiguate by checking index 4:
-                //   - "true" / "false" -> new 7-column format, keep as-is.
-                //   - anything else -> legacy, drop index 4 (action).
-                val normalizedParts = when {
-                    parts.size < 7 -> return@mapNotNull null
-                    parts.size >= 8 -> parts.toMutableList().apply { removeAt(4) }
-                    parts[4].equals("true", ignoreCase = true) ||
-                        parts[4].equals("false", ignoreCase = true) -> parts
-                    else -> parts.toMutableList().apply { removeAt(4) }
+                if (parts.size < 7) return@mapNotNull null
+
+                // Disambiguate post-Task-2 (boolean at index 4) vs pre-P1
+                // (action name at index 4). The 4th cell of the post-P1
+                // layouts is `enabled` so it is always the literal "true"
+                // or "false"; the pre-P1 layouts stored an `RuleActionUi`
+                // enum name there, so a non-boolean string indicates a
+                // legacy row that needs its action column stripped.
+                val isPostP1Layout = parts[4].equals("true", ignoreCase = true) ||
+                    parts[4].equals("false", ignoreCase = true)
+                val normalizedParts = if (isPostP1Layout) {
+                    parts
+                } else {
+                    parts.toMutableList().apply { removeAt(4) }
                 }
 
                 if (normalizedParts.size < 6) return@mapNotNull null
+
                 val overrideOf = normalizedParts.getOrNull(6)?.let { raw ->
                     if (raw == NULL_OVERRIDE_OF || raw.isEmpty()) null else raw
                 }
+                // `draft` lives in the trailing cell of the post-Task-2
+                // layout (index 7). Anything else — missing cell, garbled
+                // value, legacy row that never carried a draft column —
+                // decodes as `draft = false` so we route the rule into the
+                // quieter "보류" sub-bucket on RulesScreen.
+                val draft = normalizedParts.getOrNull(7)?.toBooleanStrictOrNull() ?: false
 
                 RuleUiModel(
                     id = normalizedParts[0],
@@ -75,6 +100,7 @@ object RuleStorageCodec {
                     enabled = normalizedParts[4].toBoolean(),
                     matchValue = normalizedParts[5],
                     overrideOf = overrideOf,
+                    draft = draft,
                 )
             }
             .toList()
