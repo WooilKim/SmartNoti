@@ -260,3 +260,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T02:04:32Z | #338 | plan-implementer | APPROVE+MERGE | Tasks 1-2/6 quiet-hours explainer scaffold; pure builder + tests; intentional bundle, follow-up will ship Tasks 3-6 |
 | 2026-04-26T02:22:04Z | #339 | plan-implementer | APPROVE+merge | quiet-hours explainer wired into Detail; plan-frontmatter pre-flip noted (informational); CI green; squash-merged |
 | 2026-04-26T02:40:37Z | #341 | gap-planner | DEFER | CI IN_PROGRESS (run 24946460390); docs-only diff (journey + plan), scope OK |
+| 2026-04-26T02:43:26Z | #341 | gap-planner | APPROVE+MERGE | docs-only plan + journey gap annotation; CI green; previously deferred on CI pending |
