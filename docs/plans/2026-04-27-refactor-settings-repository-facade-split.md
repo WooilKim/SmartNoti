@@ -1,8 +1,15 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/quiet-hours.md
 ---
 
 # `SettingsRepository` 705-line per-domain façade split Plan
+
+## Change log
+
+- 2026-04-27 (Task 1, PR #476): Pin `SettingsRepository` façade contract via 8-test `SettingsRepositoryFacadeContractTest` covering observe-defaults, cross-domain composition (3 setters → 3 model fields), migration atomicity (v1 + v2 + INBOX_SORT in one snapshot), bootstrap dual-key transition, and `clearAllForTest`. Caller-grep audit confirmed all 41 sites go through the façade (no reflection / `Keys` direct access). Plan flipped from `planned` to `in-progress`.
+- 2026-04-27 (Tasks 2-5, PR refactor/settings-repository-facade-split-extract): Extracted 5 sibling repositories (`SettingsQuietHoursRepository`, `SettingsDuplicateRepository`, `SettingsDeliveryProfileRepository`, `SettingsSuppressionRepository`, `SettingsOnboardingRepository`) plus `SettingsMigrationRunner`. Façade reduced to 189 lines (≤ 200 target met) holding only the DataStore singleton, sibling composition, `observeSettings()` cross-domain reader, `currentNotificationContext()`, `clearAllForTest`, and 1-line delegates for every public setter / observer. 41 caller sites unchanged (zero import / signature edits). DataStore on-disk schema unchanged (key strings preserved verbatim). All migrations remain inside a single `dataStore.edit { }` transaction (atomicity preserved). Existing 6 settings test classes + new façade contract test all GREEN; full unit test suite + `:app:assembleDebug` GREEN. Plan flipped to `shipped`.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. Pure refactor — behavior must not change. Pin every public method with characterization tests before moving any code. Single-instance singleton contract (`SettingsRepository.getInstance(context)`) and the `observeSettings(): Flow<SmartNotiSettings>` aggregate flow MUST remain bit-identical to today.
 
