@@ -39,9 +39,7 @@ import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.Category
 import com.smartnoti.app.domain.model.CategoryAction
-import com.smartnoti.app.domain.model.NotificationStatusUi
 import com.smartnoti.app.domain.model.RuleUiModel
-import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.usecase.ApplyCategoryActionToNotificationUseCase
 import com.smartnoti.app.domain.usecase.AssignNotificationToCategoryUseCase
 import com.smartnoti.app.domain.usecase.CategoryActionToNotificationStatusMapper
@@ -52,11 +50,7 @@ import com.smartnoti.app.domain.usecase.NotificationDetailReasonSectionBuilder
 import com.smartnoti.app.domain.usecase.NotificationDetailSourceSuppressionSummaryBuilder
 import com.smartnoti.app.domain.usecase.QuietHoursExplainerBuilder
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
-import com.smartnoti.app.notification.MarkSilentProcessedTrayCancelChain
-import com.smartnoti.app.notification.SmartNotiNotificationListenerService
 import com.smartnoti.app.ui.components.EmptyState
-import com.smartnoti.app.ui.components.ReasonChipRow
-import com.smartnoti.app.ui.components.RuleHitChipRow
 import com.smartnoti.app.ui.components.StatusBadge
 import com.smartnoti.app.ui.notification.CategoryAssignBottomSheet
 import com.smartnoti.app.ui.notification.ChangeCategorySheetState
@@ -254,210 +248,30 @@ fun NotificationDetailScreen(
                 }
             }
         }
-        val sections = reasonSections
-        val hasReasonContent = (sections != null &&
-            (sections.classifierSignals.isNotEmpty() || sections.ruleHits.isNotEmpty())) ||
-            quietHoursExplainer != null
-        if (hasReasonContent) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                ) {
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Text(
-                            "왜 이렇게 처리됐나요?",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        if (sections?.classifierSignals?.isNotEmpty() == true) {
-                            ReasonSubSection(
-                                title = "SmartNoti 가 본 신호",
-                                description = "분류에 참고한 내부 신호예요. 직접 수정할 수는 없어요.",
-                            ) {
-                                ReasonChipRow(sections.classifierSignals)
-                            }
-                        }
-                        // Plan
-                        // `docs/plans/2026-04-26-quiet-hours-explainer-copy.md`
-                        // Task 3: when the quiet-hours branch decided this
-                        // notification, surface a one-line explainer so users
-                        // do not have to infer what the `조용한 시간` chip
-                        // means on its own. Higher-precedence signals (e.g.
-                        // 사용자 규칙) suppress the explainer upstream.
-                        if (quietHoursExplainer != null) {
-                            ReasonSubSection(
-                                title = "지금 적용된 정책",
-                                description = "사용자가 설정한 시간 정책에 따라 자동으로 분류됐어요.",
-                            ) {
-                                Text(
-                                    quietHoursExplainer.message,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
-                        }
-                        if (sections?.ruleHits?.isNotEmpty() == true) {
-                            ReasonSubSection(
-                                title = "적용된 규칙",
-                                description = "내 규칙 탭에서 수정하거나 끌 수 있는 규칙이에요. 탭하면 해당 규칙으로 이동해요.",
-                            ) {
-                                RuleHitChipRow(
-                                    hits = sections.ruleHits,
-                                    onHitClick = { onRuleClick(it.ruleId) },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+        item {
+            NotificationDetailReasonCard(
+                sections = reasonSections,
+                quietHoursExplainer = quietHoursExplainer,
+                onRuleClick = onRuleClick,
+            )
         }
-        if (onboardingRecommendationSummary != null) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                ) {
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text(
-                            onboardingRecommendationSummary.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            onboardingRecommendationSummary.body,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
+        item {
+            NotificationDetailOnboardingRecommendationCard(
+                summary = onboardingRecommendationSummary,
+            )
         }
-        if (deliveryProfileSummary != null) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                ) {
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text(
-                            "어떻게 전달되나요?",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            deliveryProfileSummary.overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "전달 모드 · ${deliveryProfileSummary.deliveryModeLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            "소리 · ${deliveryProfileSummary.alertLevelLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            "진동 · ${deliveryProfileSummary.vibrationLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            "Heads-up · ${deliveryProfileSummary.headsUpLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            "잠금화면 · ${deliveryProfileSummary.lockScreenVisibilityLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
+        item {
+            NotificationDetailDeliveryProfileCard(summary = deliveryProfileSummary)
         }
-        if (sourceSuppressionSummary != null) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                ) {
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text(
-                            "원본 알림 처리 상태",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            sourceSuppressionSummary.overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "원본 상태 · ${sourceSuppressionSummary.statusLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            "대체 알림 · ${sourceSuppressionSummary.replacementLabel}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-            }
+        item {
+            NotificationDetailSourceSuppressionCard(summary = sourceSuppressionSummary)
         }
-        if (notification.status == NotificationStatusUi.SILENT &&
-            notification.silentMode == SilentMode.ARCHIVED
-        ) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                ) {
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text(
-                            "조용히 보관 중",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            "원본 알림이 아직 알림창에 남아 있어요. 확인이 끝났다면 처리 완료로 표시해 알림창에서 치울 수 있어요.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    val chain = MarkSilentProcessedTrayCancelChain(
-                                        markSilentProcessed = repository::markSilentProcessed,
-                                        sourceEntryKeyForId = repository::sourceEntryKeyForId,
-                                        cancelSourceEntryIfConnected = SmartNotiNotificationListenerService
-                                            .Companion::cancelSourceEntryIfConnected,
-                                    )
-                                    chain.run(notification.id)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text("처리 완료로 표시")
-                        }
-                    }
-                }
-            }
+        item {
+            NotificationDetailArchivedCompletionCard(
+                notification = notification,
+                repository = repository,
+                scope = scope,
+            )
         }
         item {
             Card(
@@ -662,26 +476,3 @@ private fun ruleMatches(
     }
 }
 
-@Composable
-private fun ReasonSubSection(
-    title: String,
-    description: String,
-    content: @Composable () -> Unit,
-) {
-    androidx.compose.foundation.layout.Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        content()
-    }
-}
