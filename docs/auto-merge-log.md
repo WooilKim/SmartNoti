@@ -406,3 +406,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T16:34:59Z | project-manager | #495 | docs-only plan-flip status:shipped for 2026-04-27 #478 promo-prefix plan | https://github.com/WooilKim/SmartNoti/actions/runs/25007179190 |
 | 2026-04-27T16:49:52Z | journey-tester | #496 | digest-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/25007882075 |
 | 2026-04-27T17:10:09Z | journey-tester | #497 | hidden-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/25008784356 |
+| 2026-04-27T17:22:28Z | project-manager | #498 | docs/plans/ batch flip #480 + #488 to status:shipped (toggle-gated verification deferred) | https://github.com/WooilKim/SmartNoti/actions/runs/25009195876 |
