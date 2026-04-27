@@ -343,3 +343,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T01:59:59Z | project-manager | #427 | feat(notification): gate SILENT sender key behind MessagingStyle hint | https://github.com/WooilKim/SmartNoti/actions/runs/24972930419 |
 | 2026-04-27T02:10:53Z | project-manager | #428 | gap-planner plan for uncategorized-prompt APP-Rule coverage (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24973187045 |
 | 2026-04-27T02:20:36Z | project-manager | #429 | uncategorized-prompt APP-Rule coverage Tasks 1-2 (detector+tests) | https://github.com/WooilKim/SmartNoti/actions/runs/24973425237 |
+| 2026-04-27T02:32:11Z | project-manager | #430 | Wire RulesRepository into UncategorizedAppsDetector (Tasks 3-5) + plan flip + journey sync | https://github.com/WooilKim/SmartNoti/actions/runs/24973696336 |
