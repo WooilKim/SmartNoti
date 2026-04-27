@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: ../journeys/ignored-archive.md
 ---
 
 # Ignored Archive: bulk "모두 지우기" + per-row 복구 어포던스
@@ -25,7 +27,7 @@ status: planned
 
 ---
 
-## Task 1: Failing tests for new repository ops [IN PROGRESS via PR pending]
+## Task 1: Failing tests for new repository ops [SHIPPED via PR #432]
 
 **Objective:** 두 신규 repository 메서드의 contract 를 테스트로 고정.
 
@@ -39,7 +41,7 @@ status: planned
 4. Empty IGNORE set 에서 두 메서드 호출 → 0 row affected, no exception.
 5. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.local.NotificationRepositoryIgnoredBulkTest"` 로 RED 확인.
 
-## Task 2: Implement repository bulk ops [IN PROGRESS via PR pending]
+## Task 2: Implement repository bulk ops [SHIPPED via PR #432]
 
 **Objective:** Task 1 의 테스트 GREEN.
 
@@ -53,7 +55,7 @@ status: planned
 3. `reasonTags` dedup append helper 가 이미 있으면 재사용 (priority-inbox / digest-inbox change log 참조), 없으면 pure helper 로 추출.
 4. Task 1 테스트 GREEN 확인.
 
-## Task 3: Pure state for archive multi-select
+## Task 3: Pure state for archive multi-select [SHIPPED via this PR]
 
 **Objective:** Compose 외부에서 검증 가능한 multi-select 상태.
 
@@ -65,7 +67,7 @@ status: planned
 1. `priority-inbox` 의 `PriorityScreenMultiSelectState` 시그니처 그대로 차용 — `enter(id)`, `toggle(id)`, `clear()`, `isActive: Boolean`, `selected: Set<String>`, `count: Int`.
 2. 4 케이스 단위 테스트: enter → toggle 가산/감산 / clear / 빈 set 자동 비활성.
 
-## Task 4: ConfirmDialog 추출 (필요 시)
+## Task 4: ConfirmDialog 추출 (필요 시) [SHIPPED via this PR — inline AlertDialog]
 
 **Objective:** "모두 지우기" 의 확인 다이얼로그 재사용 컴포넌트가 이미 있으면 채택, 없으면 single-purpose 컴포넌트 추가.
 
@@ -77,7 +79,7 @@ status: planned
 1. Hidden 의 헤더 "전체 모두 지우기" 가 사용하는 컴포넌트를 grep 으로 확인 — 동일 패턴 재사용을 우선.
 2. 신규 도입 시 카피는 Hidden 과 정렬 (`되돌릴 수 없어요` 문구 통일).
 
-## Task 5: IgnoredArchiveScreen UI wiring
+## Task 5: IgnoredArchiveScreen UI wiring [SHIPPED via this PR]
 
 **Objective:** 헤더 bulk action + multi-select bar + per-row 복구 TextButton 을 시각적으로 연결.
 
@@ -94,7 +96,7 @@ status: planned
 6. multi-select 비활성 시 각 `NotificationCard` 우하단에 `TextButton("PRIORITY 로 복구")` 노출 — 탭 시 `repository.updateNotification(id, status=PRIORITY, reasonTags += "사용자 분류")` 단일 write + snackbar `"이 알림을 PRIORITY 로 복구했어요"`.
 7. 빈 set 으로 떨어지면 multi-select 자동 종료 (Task 3 state contract).
 
-## Task 6: Per-id bulk delete (선택)
+## Task 6: Per-id bulk delete (선택) [SHIPPED via this PR]
 
 **Objective:** multi-select 의 N row 한꺼번에 지우기 query.
 
@@ -106,7 +108,7 @@ status: planned
 1. `@Query("DELETE FROM notifications WHERE id IN (:ids)")` 신규 + suspend wrapper.
 2. 단위 테스트 1건 (Task 1 파일에 추가): mixed-status 5 row 중 IGNORE 2 row id 만 전달 → 2 row 만 삭제.
 
-## Task 7: Update journey doc
+## Task 7: Update journey doc [SHIPPED via this PR]
 
 **Objective:** [`docs/journeys/ignored-archive.md`](../journeys/ignored-archive.md) 의 Observable steps + Out-of-scope + Known gaps + Change log 동기화.
 
@@ -119,7 +121,7 @@ status: planned
 3. Known gaps 의 `아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현` 줄을 `(resolved YYYY-MM-DD, plan ...) ...` 마킹. 잔여 (예: "다른 status 로 복구 chooser") 는 잔여 항목으로 남김.
 4. Change log 에 한 항목 append (날짜는 시스템 `date -u +%Y-%m-%d` 결과 — clock-discipline.md 준수).
 
-## Task 8: ADB end-to-end verification
+## Task 8: ADB end-to-end verification [PARTIAL via this PR — empty branch only, see journey Change log 2026-04-27]
 
 **Objective:** emulator-5554 에서 4 시나리오 확증.
 
