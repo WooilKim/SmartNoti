@@ -485,3 +485,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T20:02:43Z | #509 | plan-implementer | DEFER | CI pending post-rebase (F3 orange accent restraint). |
 | 2026-04-27T20:22:02Z | #509 | plan-implementer | APPROVE+MERGE | F3 inbox-unified orange accent restraint; squash 8102d63 |
 | 2026-04-27T20:22:05Z | #513 | plan-implementer | DEFER | Task 1 of #511 plan; CI red by-design (failing tests + compile-RED stubs); awaiting human disposition on tests-first staging |
+| 2026-04-27T20:40:46Z | #513 | plan-implementer | APPROVE+merged | Tasks 1-5 of #511 P0 cancel-source-on-replacement Option C; CI green; tests-first; Tasks 6-7 deferred to follow-up |
