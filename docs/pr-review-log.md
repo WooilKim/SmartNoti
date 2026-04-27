@@ -447,3 +447,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T12:07:22Z | #476 | plan-implementer | DEFER | CI pending (Unit tests + debug APK run 24994033641) |
 | 2026-04-27T12:12:11Z | #476 | plan-implementer | APPROVE+merged | refactor settings facade Task 1; CI green; carve-out merged |
 | 2026-04-27T12:28:48Z | #477 | plan-implementer | DEFER | CI pending — Unit tests + debug APK still running |
+| 2026-04-27T12:38:27Z | #477 | plan-implementer | APPROVE | refactor settings façade split — last pre-release-prep refactor; CI green; pure refactor with characterization-test coverage |
