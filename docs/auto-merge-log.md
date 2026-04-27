@@ -398,3 +398,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T14:30:40Z | project-manager | #485 | DiagnosticLogger module + Settings 진단 export wiring (Tasks 1-4 of #480 plan) | https://github.com/WooilKim/SmartNoti/actions/runs/25000737037 |
 | 2026-04-27T14:42:49Z | project-manager | #487 | gap-planner 3rd-diagnosis plan for #478 (KCC (광고) prefix precedence + PROMO_QUIETING bundle-by-default B2) | https://github.com/WooilKim/SmartNoti/actions/runs/25001301708 |
 | 2026-04-27T15:07:24Z | project-manager | #489 | Bug A KCC (광고) prefix precedence (Task 1+2 of issue #478 plan) | https://github.com/WooilKim/SmartNoti/actions/runs/25002710081 |
+| 2026-04-27T15:15:27Z | project-manager | #490 | gap-planner plan for issue #488 Bug 2 (signature normalize) | https://github.com/WooilKim/SmartNoti/actions/runs/25003197808 |
