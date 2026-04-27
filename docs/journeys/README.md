@@ -38,7 +38,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-27 |
-| [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-26 |
+| [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-27 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-27 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — home-uncategorized-prompt post-snooze-expiry full sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-uncategorized-prompt | ✅ PASS | UTC 08:08Z (snooze 07:14Z 만료 후) 카드 4요소 모두 렌더 — 배지 "분류 제안" + "새 앱 3개가 알림을 보내고 있어요" + body "SmartNotiDebugTester, SmartNoti Test Notifier, Coupang 앱을 분류하시겠어요?" + 버튼 2개. **#430 APP-Rule coverage 시각 검증**: body sample 에 `com.android.shell` 부재 — 해당 패키지가 `cat-onboarding-important_priority` Category 의 ruleIds 로 참조된 APP Rule 경유로 detector 합집합에 정확히 들어감 (이전 sweep 들이 snooze 로 못 본 path live PASS). "나중에" 탭 → 카드 즉시 unmount + DataStore snooze epoch 가 +24h (1777363800866 = 2026-04-28T08:10Z) 로 persist. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (ui-ux sweep — recently-shipped UI changes audit, emulator-5554)
 
