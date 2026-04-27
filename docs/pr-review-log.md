@@ -491,3 +491,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T21:11:20Z | #515 | plan-implementer | DEFER | F4 unify card visual language; held to avoid conflict with just-merged #514 |
 | 2026-04-27T21:23:35Z | #515 | plan-implementer | DEFER | F4 inbox card language; CI PENDING after wrapper rebase (run 25020276667). Re-review next tick. |
 | 2026-04-27T21:26:56Z | #515 | plan-implementer | APPROVE+MERGE | F4 inbox card language unification; CI green; meta-plan 2026-04-28 inbox overhaul |
+| 2026-04-27T21:31:00Z | #516 | plan-implementer | DEFER | F5 count dedup; CI pending after wrapper inline rebase, re-check next sweep |
