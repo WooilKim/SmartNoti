@@ -470,3 +470,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T17:22:43Z | #498 | plan-flip-batch | APPROVE+merge | docs-only plan flip; #480 + #488 → status:shipped; CI green; toggle-gated verification deferred with re-open path |
 | 2026-04-27T17:32:49Z | #499 | gap-planner | DEFER | CI Unit tests + debug APK IN_PROGRESS at sweep time; meta-plan single-doc PR, scope/traceability clean |
 | 2026-04-27T17:36:49Z | #499 | gap-planner | APPROVE+MERGE | meta-plan, docs-only, CI green, A/B/C user gate preserved |
+| 2026-04-27T17:53:11Z | #500 | plan-implementer | DEFER | CI IN_PROGRESS (Unit tests + debug APK started 17:50:06Z); docs-only meta-plan audit-findings append, scope/traceability pre-pass; re-check next sweep |
