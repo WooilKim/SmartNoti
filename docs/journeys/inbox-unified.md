@@ -115,6 +115,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
+- **(2026-04-27 ui-ux sweep)** 정리함 통합 탭 진입 시 외부 `InboxScreen` 의 `ScreenHeader` (eyebrow `정리함` + title `알림 정리함` + subtitle "Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요.") 바로 아래에 sort dropdown + InboxTabRow 가 노출되고, 그 직후 임베드된 `DigestScreen` 이 자기 자신의 `ScreenHeader` (동일 eyebrow/title + 다른 subtitle) + `현재 N개의 묶음이 준비되어 있어요` SmartSurfaceCard 까지 또 그린다 — 화면 상단 절반이 중복 chrome 으로 채워지고 그룹 카드가 fold 아래로 밀림. `inbox-denest-and-home-recent-truncate` (2026-04-22) 가 Hidden 두 서브탭에는 `HiddenScreenMode.Embedded` 분기로 헤더를 끈 반면 Digest 서브탭에는 같은 처리가 없는 상태로 ship 됐기 때문. PR #418 sort dropdown 자체의 결함은 아니지만 dropdown row 가 두 헤더 사이에 끼면서 중복이 가시화. 위반: `.claude/rules/ui-improvement.md` "scaffold coherence" / "spacing rhythm" / "favor clarity over decoration". Plan: `docs/plans/2026-04-27-inbox-unified-double-header-collapse.md`. Evidence: `/tmp/ui-inbox-sort-dropdown-closed.png` (텍스트 노드 `정리함` / `알림 정리함` 각 2회 등장).
 - Digest 서브탭 count badge 는 앱 그룹 내 item 수의 합으로 계산 — 묶기 전 개별 알림 수가 아님. UI 가 의도된 동작이나 copy 로 명시 안 함.
 - IGNORE 카운트는 어느 서브탭 헤더에도 표시되지 않음 (의도) — Settings 의 `showIgnoredArchive` 토글을 켜야만 별도 경로로 노출.
 - Recipe 는 journey-tester 가 ADB 로 아직 end-to-end 검증하지 않음 — `last-verified` 비어 있음.
