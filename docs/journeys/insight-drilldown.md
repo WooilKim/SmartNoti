@@ -3,7 +3,7 @@ id: insight-drilldown
 title: 인사이트 드릴다운
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-26
+last-verified: 2026-04-27
 ---
 
 ## Goal
@@ -109,3 +109,4 @@ adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep -B1 'text="최근 3시간"' | 
 - 2026-04-24: v1 loop tick re-verify on emulator-5554 (PASS). Coupang × 5 게시 후 Home 의 SmartNoti 인사이트 카드 (`Shell 알림 ...`) 탭 → InsightDrillDown for Shell, eyebrow `인사이트` + title `Shell 인사이트` + ContextBadge (`일반 인사이트`) + range chips (`최근 3시간`/`최근 24시간`/`전체`) + 24h Digest 5/Silent 9 + reason 차트 (`이 앱에서 가장 많이 보인 이유는 '조용한 시간'`) + reason navigation (조용한 시간 8건 / 반복 알림 4건 / 사용자 규칙 1건) + 필터 카드 리스트 모두 문서대로. `전체` 칩 전환 시 Digest 7/Silent 31 로 카운트 갱신 확인.
 - 2026-04-26: v1 loop tick re-verify on emulator-5554 (PASS). Coupang × 5 게시 후 Home 탭 → SmartNoti 인사이트 카드 (`Shell 알림 32개...`) 탭 → InsightDrillDown for Shell, eyebrow `인사이트` + title `Shell 인사이트` + ContextBadge (`일반 인사이트`) + range chips + 24h Digest 14/Silent 12 + reason 차트 (`이 앱에서 가장 많이 보인 이유는 '반복 알림'`) + reason navigation (반복 알림 8건 / 사용자 규칙 4건 / 프로모션 알림 4건) + 필터 카드 리스트 전부 문서대로 렌더. `전체` 칩 전환 시 Digest 17/Silent 15 로 카운트 갱신 확인.
 - 2026-04-26: range chip survival fix shipped (plan `docs/plans/2026-04-26-insight-drilldown-range-state-survival.md`). 검증 (PASS, emulator-5554): Coupang × 8 게시 → Home → Shell 인사이트 카드 탭 → drilldown subtitle `최근 24시간 기준 ... 20건` → `최근 3시간` 칩 탭 → subtitle `최근 3시간 기준 ... 8건` 으로 좁혀짐 + chip `checked="true"` → 첫 카드 탭하여 `알림 상세` 진입 → KEYCODE_BACK → drilldown 으로 복귀, `최근 3시간` chip 여전히 `checked="true"` + subtitle `최근 3시간 기준 ... 8건` 그대로 유지 (RESOLVED). 추가로 `반복 알림 · 6건` reason 네비게이션 탭 → 새 insight (`반복 알림` 인사이트) 도 `최근 3시간` 칩으로 mount 확인.
+- 2026-04-27: v1 loop tick re-verify on emulator-5554 (PASS). Coupang × 5 게시 → Home → SmartNoti 인사이트 카드 (`Shell 알림 20개 가장 많이 정리됐고, 주된 이유는 '조용히 처리'`) 탭 → InsightDrillDown for Shell, eyebrow `인사이트` + title `Shell 인사이트` + subtitle `최근 24시간 기준 ... 20건` + ContextBadge `일반 인사이트` + range chips (3h/24h/전체) + 24h Digest 8 / 조용히 12 + reason 차트 (`이 앱에서 가장 많이 보인 이유는 '조용히 처리'`) + reason navigation (조용히 처리 8건 / 반복 알림 5건 / 나중에 정리 2건) + 필터 카드 리스트 모두 문서대로 렌더. `최근 3시간` 칩 탭 → subtitle `최근 3시간 기준 ... 19건` + chip `checked="true"` → 첫 카드 탭 → `알림 상세` 진입 → KEYCODE_BACK → drilldown 복귀, `최근 3시간` 여전히 `checked="true"` + subtitle 19건 유지. 추가로 `반복 알림 · 5건` reason nav 탭 → 새 insight 도 `최근 3시간` 칩으로 mount 확인. Range chip survival fix 회귀 없음.

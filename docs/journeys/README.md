@@ -45,7 +45,7 @@
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-27 |
-| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-26 |
+| [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-27 |
 
 ### Categories, Rules & onboarding
 | ID | Title | Status | Last verified |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — insight-drilldown rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| insight-drilldown | PASS | Coupang × 5 post → Home → SmartNoti 인사이트 카드 (`Shell 알림 20개 ... 조용히 처리`) tap → InsightDrillDown for Shell. Eyebrow `인사이트` + title `Shell 인사이트` + subtitle `최근 24시간 기준 ... 20건` + ContextBadge `일반 인사이트` + 3h/24h/전체 chips + reason chart `Digest 8 / 조용히 12` + reason nav (조용히 처리 8 / 반복 알림 5 / 나중에 정리 2) + filtered card list 모두 doc-as-written. `최근 3시간` chip tap → subtitle 19건 + chip `checked="true"` → first card tap → `알림 상세` → KEYCODE_BACK → drilldown 복귀, 3h chip + subtitle 그대로 유지. Reason nav (`반복 알림 · 5건`) tap → 새 insight 도 3h chip checked 으로 mount. Range chip survival fix (#shipped 2026-04-26) 회귀 없음. `last-verified: 2026-04-26 → 2026-04-27`. |
 
 ### 2026-04-27 (journey-tester — home-overview post-#425/#430/#433 sweep, emulator-5554)
 
