@@ -1,43 +1,9 @@
 package com.smartnoti.app.ui.screens.settings
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,42 +12,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
-import com.smartnoti.app.domain.model.AlertLevel
-import com.smartnoti.app.domain.model.LockScreenVisibilityMode
-import com.smartnoti.app.domain.model.VibrationMode
-import com.smartnoti.app.domain.usecase.SuppressedAppInsight
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownChartModelBuilder
-import com.smartnoti.app.domain.usecase.SuppressionBreakdownItem
-import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargets
 import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
-import com.smartnoti.app.domain.usecase.SuppressionInsightsSummary
 import com.smartnoti.app.onboarding.OnboardingPermissions
-import com.smartnoti.app.ui.components.ContextBadge
 import com.smartnoti.app.ui.components.ScreenHeader
-import com.smartnoti.app.ui.components.SettingsCardHeader
-import com.smartnoti.app.ui.components.SettingsToggleRow
-import com.smartnoti.app.ui.components.SmartSurfaceCard
 import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
 import com.smartnoti.app.ui.notificationaccess.openNotificationAccessSettings
-import com.smartnoti.app.ui.theme.BorderSubtle
-import com.smartnoti.app.ui.theme.DigestOnContainer
-import com.smartnoti.app.ui.theme.GreenAccent
-import com.smartnoti.app.ui.theme.PriorityOnContainer
-import com.smartnoti.app.ui.theme.SilentOnContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -356,276 +301,6 @@ fun SettingsScreen(
                     openNotificationAccessSettings(context)
                 },
             )
-        }
-    }
-}
-
-@Composable
-internal fun ExpandableSettingsSectionHeader(
-    title: String,
-    subtitle: String? = null,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onExpandedChange(!expanded) },
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Icon(
-            imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.graphicsLayer {
-                rotationZ = if (expanded) 90f else 0f
-            },
-        )
-    }
-}
-
-@Composable
-internal fun SettingsSubsection(
-    title: String,
-    subtitle: String? = null,
-    isFirst: Boolean = false,
-    content: @Composable () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (!isFirst) {
-            HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        content()
-    }
-}
-
-@Composable
-internal fun ExpandableSettingsSubsection(
-    title: String,
-    subtitle: String,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
-        ExpandableSettingsSectionHeader(
-            title = title,
-            subtitle = subtitle,
-            expanded = expanded,
-            onExpandedChange = onExpandedChange,
-        )
-        AnimatedVisibility(visible = expanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                content()
-            }
-        }
-    }
-}
-
-@Composable
-internal fun AppSelectionGroup(
-    group: SettingsSuppressedAppGroup,
-    suppressEnabled: Boolean,
-    onSuppressedSourceAppToggle: (String, Boolean) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = group.title,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        SmartSurfaceCard(
-            modifier = Modifier.fillMaxWidth(),
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.32f),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-        ) {
-            group.items.forEachIndexed { index, item ->
-                if (index > 0) {
-                    HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
-                }
-                AppSelectionRow(
-                    item = item,
-                    enabled = suppressEnabled,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    onToggle = { packageName, selected ->
-                        onSuppressedSourceAppToggle(packageName, selected)
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AppSelectionRow(
-    item: SettingsSuppressedAppItem,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-    onToggle: (String, Boolean) -> Unit,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 6.dp)
-                        .size(8.dp)
-                        .background(
-                            color = if (item.isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                            shape = RoundedCornerShape(999.dp),
-                        ),
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = item.appName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = "${item.notificationCount}건 · ${item.lastSeenLabel}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        FilterChip(
-            selected = item.isSelected,
-            enabled = enabled,
-            onClick = { onToggle(item.packageName, !item.isSelected) },
-            label = { Text(if (item.isSelected) "선택됨" else "선택") },
-        )
-    }
-}
-
-@Composable
-private fun NotificationAccessCard(
-    summary: SettingsNotificationAccessSummary,
-    onOpenSettings: () -> Unit,
-) {
-    val accentColor = if (summary.granted) GreenAccent else MaterialTheme.colorScheme.primary
-    val impactTitle = if (summary.granted) "현재 반영 효과" else "켜면 생기는 변화"
-    SmartSurfaceCard(
-        modifier = Modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-            SettingsCardHeader(
-                eyebrow = "알림 접근",
-                title = "실제 알림 연결 상태",
-                subtitle = summary.headline,
-                modifier = Modifier.weight(1f),
-            )
-            ContextBadge(
-                label = summary.statusLabel,
-                containerColor = accentColor.copy(alpha = 0.18f),
-                contentColor = accentColor,
-            )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = summary.supporting,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
-                        shape = RoundedCornerShape(14.dp),
-                    )
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = "설정 경로",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = summary.pathDescription,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                HorizontalDivider(color = BorderSubtle.copy(alpha = 0.85f))
-                Text(
-                    text = impactTitle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = accentColor,
-                )
-                Text(
-                    text = summary.impactDescription,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Button(
-                onClick = onOpenSettings,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                contentPadding = PaddingValues(vertical = 14.dp),
-            ) {
-                Text(
-                    text = summary.actionLabel,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
         }
     }
 }
