@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 # Inbox sort selector — 시간순 / 중요도순 / 앱별
@@ -87,7 +89,7 @@ status: planned
    - `applyPendingMigrations()` 에 `if (key not present) put(InboxSortMode.RECENT.name)` 분기 (기존 boolean 토글 패턴 따라)
 3. `./gradlew :app:assembleDebug` 빌드 통과.
 
-## Task 3: Wire `InboxSortDropdown` + helper into `InboxScreen` + `HiddenNotificationsScreen`
+## Task 3: Wire `InboxSortDropdown` + helper into `InboxScreen` + `HiddenNotificationsScreen` [SHIPPED via feat/inbox-sort-ui-wiring PR]
 
 **Objective:** UI 가 정렬 모드를 노출 + 선택 시 helper 가 적용.
 
@@ -122,7 +124,7 @@ status: planned
    - `inboxSortMode` 를 `SmartNotiSettings` 에서 collect → 그룹 정렬 적용. 단, 본 화면은 standalone 모드일 때도 동일 정렬 적용. (helper 통합으로 코드 중복 제거.)
 5. `./gradlew :app:assembleDebug` 빌드 통과 + `inbox` / `hidden` / `digest` 패키지의 기존 테스트가 여전히 GREEN.
 
-## Task 4: Add wiring contract test
+## Task 4: Add wiring contract test [SHIPPED via feat/inbox-sort-ui-wiring PR]
 
 **Objective:** Future PR 에서 정렬 helper 호출이 누락되지 않도록 가드.
 
@@ -134,7 +136,7 @@ status: planned
 1. CI 가 Compose UI test 미지원이면 (선례 — `2026-04-25-android-queries-package-visibility` 가 Option B) pure helper `labelFor` 만 테스트.
 2. `./gradlew :app:testDebugUnitTest --tests "*InboxSortDropdownLabelTest*"` GREEN.
 
-## Task 5: Update journey docs
+## Task 5: Update journey docs [SHIPPED via feat/inbox-sort-ui-wiring PR]
 
 **Files:**
 - `docs/journeys/inbox-unified.md`
@@ -150,7 +152,7 @@ status: planned
 2. `digest-inbox.md` / `hidden-inbox.md` (deprecated):
    - Change log row 1줄 추가 — Routes.Digest / Routes.Hidden deeplink 진입 경로도 동일 helper 를 공유하므로 정렬 모드가 적용된다 (settings 영속).
 
-## Task 6: ADB end-to-end verification
+## Task 6: ADB end-to-end verification [DEFERRED — follow-up sweep]
 
 **Objective:** 실기기 emulator-5554 에서 세 모드의 동작 확인 + 영속성 회귀 가드.
 
