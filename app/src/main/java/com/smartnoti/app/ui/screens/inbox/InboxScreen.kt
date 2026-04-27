@@ -65,6 +65,7 @@ fun InboxScreen(
     contentPadding: PaddingValues,
     onNotificationClick: (String) -> Unit,
     onBack: () -> Unit,
+    onOpenSuppressedAppsSettings: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -157,6 +158,12 @@ fun InboxScreen(
             InboxTab.Digest -> DigestScreen(
                 contentPadding = innerPadding,
                 onNotificationClick = onNotificationClick,
+                // Plan `2026-04-27-digest-empty-state-suppress-opt-in-cta`
+                // Task 2: forward the empty-state CTA navigation up to the
+                // NavHost so the inbox-unified Digest sub-tab and the legacy
+                // `Routes.Digest` deep-link both reach the same Settings
+                // destination via identical wiring.
+                onOpenSuppressedAppsSettings = onOpenSuppressedAppsSettings,
             )
             // Plan `2026-04-22-inbox-denest-and-home-recent-truncate` Task 2:
             // outer Inbox tab is the single source of truth. Embed the Hidden

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 fun DigestScreen(
     contentPadding: PaddingValues,
     onNotificationClick: (String) -> Unit,
+    onOpenSuppressedAppsSettings: () -> Unit,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -75,9 +77,20 @@ fun DigestScreen(
                 )
             }
             item {
+                // Plan `2026-04-27-digest-empty-state-suppress-opt-in-cta` Task 2.
+                // Empty branch teaches what fills the inbox (suppress opt-in)
+                // and routes to the picker with one tap. Copy + label live in
+                // [DigestEmptyStateAction] so the two DigestScreen entry points
+                // (InboxScreen sub-tab + legacy `Routes.Digest` deep-link)
+                // cannot drift. Normal state (groups.isNotEmpty()) is unchanged.
                 EmptyState(
-                    title = "아직 정리된 알림이 없어요",
-                    subtitle = "반복되거나 덜 급한 알림을 여기에 모아둘게요",
+                    title = DigestEmptyStateAction.TITLE,
+                    subtitle = DigestEmptyStateAction.SUBTITLE,
+                    action = {
+                        FilledTonalButton(onClick = onOpenSuppressedAppsSettings) {
+                            Text(DigestEmptyStateAction.CTA_LABEL)
+                        }
+                    },
                 )
             }
         }
