@@ -42,7 +42,7 @@
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-27 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
-| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
+| [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-27 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-27 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-27 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-27 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — hidden-inbox rotation sweep post-SettingsRepository split, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| hidden-inbox | ✅ PASS | UTC 12:54Z. Cold-start `am force-stop` → deep-link `DEEP_LINK_ROUTE hidden`, APK `lastUpdateTime=2026-04-27 15:32:46`. Recipe 5단계 모두 통과 — 헤더 `보관 11건 · 처리 12건` + 기본 `보관 중` 탭, `처리됨` tap 후 `이미 확인했거나…` 서브카피, 두 탭 collapsed (`최근 묶음 미리보기` 0), Coupang 그룹 expand 후 preview 라벨 + 3 row + `전체 보기 · 3건 더` CTA + `모두 중요로 복구` / `모두 지우기` bulk action 모두 노출. `SettingsRepository` per-domain split (#477) 후에도 `observeSettings()` → `hidePersistentNotifications` 흐름 무회귀. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — home-uncategorized-prompt post-snooze-expiry full sweep, emulator-5554)
 
