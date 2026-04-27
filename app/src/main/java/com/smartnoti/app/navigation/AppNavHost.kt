@@ -247,7 +247,19 @@ fun AppNavHost(
             composable(Routes.Digest.route) {
                 DigestScreen(
                     contentPadding = paddingValues,
-                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) }
+                    onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
+                    // Plan `2026-04-27-digest-empty-state-suppress-opt-in-cta`
+                    // Task 2: empty-state CTA routes to Settings, where the
+                    // 숨길 앱 선택 section lives (no separate sub-route exists
+                    // today — the section is anchored inside SettingsScreen).
+                    // launchSingleTop matches the BottomNav navigate policy so
+                    // a deep-link → CTA → Settings round-trip does not stack
+                    // duplicate Settings entries.
+                    onOpenSuppressedAppsSettings = {
+                        navController.navigate(Routes.Settings.route) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             // Plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
@@ -260,6 +272,15 @@ fun AppNavHost(
                     contentPadding = paddingValues,
                     onNotificationClick = { navController.navigate(Routes.Detail.create(it)) },
                     onBack = { navController.popBackStack() },
+                    // Plan `2026-04-27-digest-empty-state-suppress-opt-in-cta`
+                    // Task 2: Digest 서브탭의 empty-state CTA 가 Settings 의
+                    // 숨길 앱 선택 섹션으로 이동. `navigateToTopLevel` 을 통해
+                    // BottomNav 와 동일한 backstack 정책 (popUpTo start +
+                    // launchSingleTop + restoreState) 을 적용해 이중 entry 를
+                    //만들지 않는다.
+                    onOpenSuppressedAppsSettings = {
+                        navigateToTopLevel(Routes.Settings.route)
+                    },
                 )
             }
             composable(
