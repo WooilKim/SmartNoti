@@ -19,6 +19,25 @@ class OnboardingQuickStartRuleApplierTest {
         assertEquals("광고,프로모션,쿠폰,세일,특가,이벤트,혜택", rules.single().matchValue)
     }
 
+    /**
+     * Plan `docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md`
+     * Task 1 / H1+H2 regression guard. Pins the PROMO_QUIETING preset to the
+     * exact (matchValue, RuleTypeUi.KEYWORD, enabled=true) triple. If any of
+     * the three drift, "(광고)" notifications stop being matched and issue
+     * #478 reproduces.
+     */
+    @Test
+    fun promo_selection_produces_keyword_rule_with_enabled_true_canonical_match_value_h1_h2_guard() {
+        val rule = applier.buildRules(setOf(OnboardingQuickStartPresetId.PROMO_QUIETING)).single()
+
+        assertEquals(RuleTypeUi.KEYWORD, rule.type)
+        assertEquals("광고,프로모션,쿠폰,세일,특가,이벤트,혜택", rule.matchValue)
+        assertTrue(
+            "PROMO_QUIETING preset rule must be enabled=true so the classifier picks it up.",
+            rule.enabled,
+        )
+    }
+
     @Test
     fun mergeRules_prepends_selected_quick_start_rules_and_preserves_existing_rules() {
         val existingRules = listOf(

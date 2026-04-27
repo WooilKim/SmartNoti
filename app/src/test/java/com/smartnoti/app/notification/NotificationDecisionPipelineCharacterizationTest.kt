@@ -173,6 +173,64 @@ class NotificationDecisionPipelineCharacterizationTest {
         assertTrue(saved.notification.isPersistent)
     }
 
+    /**
+     * Plan `docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md`
+     * Task 1 / H6: a "(광고)" titled DIGEST capture flowing through the
+     * production pipeline with the 2026-04-24 default settings (suppression
+     * ON, suppressed apps EMPTY, hide-persistent OFF) must cancel the source
+     * tray entry exactly once and persist a DIGEST row with
+     * `replacementNotificationIssued = true`. The five legacy branches above
+     * already pin every other DIGEST/SILENT/PRIORITY/IGNORE outcome — this
+     * sixth branch is the user-reported scenario from issue #478.
+     */
+    @Test
+    fun digest_promo_titled_with_default_install_settings_cancels_source_and_saves_digest() = runTest {
+        val actions = RecordingSourceTrayActions()
+        val pipeline = NotificationDecisionPipeline(actions)
+
+        val baseNotification = baseNotification(status = NotificationStatusUi.DIGEST).copy(
+            id = "promo-tray-1",
+            packageName = "com.smartnoti.testnotifier",
+            title = "(광고) 오늘만 특가",
+            body = "세일 안내",
+        )
+
+        pipeline.dispatch(
+            NotificationDecisionPipeline.DispatchInput(
+                baseNotification = baseNotification,
+                sourceEntryKey = "com.smartnoti.testnotifier|promo-tray-1",
+                packageName = "com.smartnoti.testnotifier",
+                appName = "TestNotifier",
+                postedAtMillis = 6_000L,
+                contentSignature = "sig-promo",
+                settings = settings(
+                    // Default install (2026-04-24): global suppression ON,
+                    // per-app list empty so the empty-set opt-out semantic
+                    // covers every captured package.
+                    suppressSourceForDigestAndSilent = true,
+                    suppressedSourceApps = emptySet(),
+                    hidePersistentSourceNotifications = false,
+                ),
+                isPersistent = false,
+                shouldBypassPersistentHiding = false,
+                isProtectedSourceNotification = false,
+            )
+        )
+
+        assertEquals(
+            listOf("com.smartnoti.testnotifier|promo-tray-1"),
+            actions.cancelledKeys,
+        )
+        assertEquals(1, actions.replacementCalls)
+        val saved = actions.savedNotifications.single()
+        assertEquals(
+            SourceNotificationSuppressionState.CANCEL_ATTEMPTED,
+            saved.notification.sourceSuppressionState,
+        )
+        assertTrue(saved.notification.replacementNotificationIssued)
+        assertEquals(NotificationStatusUi.DIGEST, saved.notification.status)
+    }
+
     @Test
     fun priority_no_suppression_keeps_source_in_tray_and_saves_priority_kept() = runTest {
         val actions = RecordingSourceTrayActions()
