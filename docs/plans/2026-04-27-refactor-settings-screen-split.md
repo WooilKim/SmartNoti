@@ -1,8 +1,24 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
 ---
 
 # Settings 화면을 sub-section composable 로 split Plan
+
+## Change log
+
+- 2026-04-27 — Tasks 2-3 shipped. Extracted four sub-files
+  (`SettingsQuietHoursSection.kt`, `SettingsDeliveryProfileSection.kt`,
+  `SettingsDuplicateSection.kt`, `SettingsOperationalSection.kt`) from
+  `SettingsScreen.kt`. Root file went from 2244 → 1118 lines.
+  Behavior unchanged — `SettingsScreenCharacterizationTest` GREEN
+  before/after every extraction, full `:app:testDebugUnitTest` and
+  `:app:assembleDebug` GREEN. Task 1 (characterization tests) had
+  already shipped as PR #457. Plan target of ≤ 600 lines for the root
+  file is **not** met because the suppression-management /
+  app-selection / notification-access composable cluster (~750 lines)
+  was not named as a sub-file in this plan — a follow-up plan should
+  address it.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. Refactor — behavior must not change.
 
