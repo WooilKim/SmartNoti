@@ -348,3 +348,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T02:50:01Z | project-manager | #432 | ignored-archive bulk repo ops (Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24974118064 |
 | 2026-04-27T03:08:08Z | project-manager | #433 | ignored-archive bulk header CTAs + multi-select + per-row PRIORITY restore | https://github.com/WooilKim/SmartNoti/actions/runs/24974522877 |
 | 2026-04-27T03:23:32Z | journey-tester | #434 | ignored-archive | https://github.com/WooilKim/SmartNoti/actions/runs/24974929073 |
+| 2026-04-27T03:34:08Z | journey-tester | #435 | categories-management | https://github.com/WooilKim/SmartNoti/actions/runs/24975193202 |
