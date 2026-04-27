@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/silent-auto-hide.md
 ---
 
 # SILENT 그룹핑 Sender 키 — MessagingStyle 힌트 게이트
@@ -29,7 +31,7 @@ status: planned
 
 ---
 
-## Task 1: Add failing unit tests for `MessagingStyleSenderResolver`
+## Task 1: Add failing unit tests for `MessagingStyleSenderResolver` [SHIPPED]
 
 **Objective:** sender 추출의 새 계약 (MessagingStyle 게이트) 을 RED-first 로 고정. listener 본체는 Robolectric 의존이 강해 단위 테스트가 어려우므로, 추출 로직을 순수 함수 helper 로 분리해 헤드리스 JUnit 으로 커버.
 
@@ -49,7 +51,7 @@ status: planned
    - 둘 다 비어 있음 → `null`.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.MessagingStyleSenderResolverTest"` → 컴파일 실패 (helper 부재) 로 RED.
 
-## Task 2: Implement `MessagingStyleSenderResolver` and rewire listener
+## Task 2: Implement `MessagingStyleSenderResolver` and rewire listener [SHIPPED]
 
 **Objective:** Task 1 테스트가 GREEN 이 되도록 helper 구현 + listener 의 sender 추출 한 줄을 helper 호출로 교체.
 
@@ -88,7 +90,7 @@ status: planned
 3. `notifyReplacementNotification(...)` (라인 502-504 근방) 등 동일 추출 패턴이 있는 다른 진입점도 같은 helper 로 정리. (단, scope 가 PRIORITY/DIGEST replacement 알림 게시 경로일 수 있어 sender 가 더 이상 그룹 키로 안 쓰일 수 있다 — 그 경우는 본 plan 에서 무변경으로 두고 SILENT 캡처 경로만 갱신, 실패 회귀 방지가 우선.)
 4. `./gradlew :app:testDebugUnitTest` 전체 초록 확인 (Task 1 테스트 GREEN + 기존 NotificationCaptureProcessorTest / SilentNotificationGroupingPolicyTest 등 회귀 없음).
 
-## Task 3: ADB smoke + journey doc sync + ship
+## Task 3: ADB smoke + journey doc sync + ship [SHIPPED]
 
 **Objective:** 실 디바이스에서 (a) messaging app 알림은 사람 이름 그룹으로 묶이고, (b) 비-messaging 앱은 패키지 그룹으로 묶이는지 확인 + journey 문서 동기화 + PR 마감.
 
