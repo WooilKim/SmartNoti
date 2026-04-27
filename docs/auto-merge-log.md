@@ -403,3 +403,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T15:58:40Z | project-manager | #492 | ContentSignatureNormalizer + Settings toggle (Tasks 1-4 of #488 plan); 14 files (8 prod / 5 test / 1 plan) | https://github.com/WooilKim/SmartNoti/actions/runs/25005375915 |
 | 2026-04-27T16:11:28Z | journey-tester | #493 | categories-management (post-#491 sweep) | https://github.com/WooilKim/SmartNoti/actions/runs/25006073960 |
 | 2026-04-27T16:26:06Z | journey-tester | #494 | notification-capture-classify | https://github.com/WooilKim/SmartNoti/actions/runs/25006758286/job/73231535142 |
+| 2026-04-27T16:34:59Z | project-manager | #495 | docs-only plan-flip status:shipped for 2026-04-27 #478 promo-prefix plan | https://github.com/WooilKim/SmartNoti/actions/runs/25007179190 |
