@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 # Digest 인박스 Empty State — Suppress Opt-in 유도 카피 + Inline CTA
