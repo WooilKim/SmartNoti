@@ -1,6 +1,8 @@
 ---
-status: planned
+status: shipped
 kind: meta-plan
+shipped: 2026-04-27
+superseded-by: docs/loop-retrospective-log.md
 ---
 
 # Loop pivot — release-prep, GitHub-Issue-driven reliability loop
@@ -52,7 +54,13 @@ kind: meta-plan
 
 ---
 
-## Task 1: Update agent-loop.md + journey-loop.md to describe issue-driven flow
+## Change log
+
+- 2026-04-27: shipped — Issue-driven release-prep loop pattern fully validated. Today's record-day session ran the entire cycle (issue → gap-planner → plan-implementer → PM merge → ADB e2e → journey verify) for 6 user-reported issues end-to-end with live-device proof on R3CY2058DLJ. 8 plans flipped status:shipped today (#479 + #478 P0 + #480 P1 + #488 P1 + #511 P0 + #506 5/5 F-cohort + #503 P1 + #510 P1). loop-retrospective 24h analyze recorded "no new meta-plans this window — flip #479 status:shipped". Wrapper-driven inline mechanical rebases also organically emerged 3x (#509, #515, #516) — codify rule on 4th occurrence per retrospective.
+
+---
+
+## Task 1: Update agent-loop.md + journey-loop.md to describe issue-driven flow [SHIPPED — validated through #479 + ongoing wrapper-driven cycles (#509/#515/#516 rebases)]
 
 **Objective:** loop 의 single-source-of-truth 문서를 새 모델로 업데이트해 모든 agent / 미래 세션이 같은 그림을 공유.
 
@@ -71,7 +79,7 @@ kind: meta-plan
 
 ---
 
-## Task 2: Update gap-planner agent definition to read from `gh issue list`
+## Task 2: Update gap-planner agent definition to read from `gh issue list` [SHIPPED — validated through gap-planner picking #478, #480, #488, #503, #510, #511 from issue queue]
 
 **Objective:** gap-planner 가 다음 invocation 부터 issue queue 를 읽고 plan 을 draft.
 
@@ -90,7 +98,7 @@ kind: meta-plan
 
 ---
 
-## Task 3: Update plan-implementer agent definition to enforce reliability gates
+## Task 3: Update plan-implementer agent definition to enforce reliability gates [SHIPPED — validated through #478 P0 + #511 P0 5-stage gate (test → fix → green → ADB → journey verify) on R3CY2058DLJ]
 
 **Objective:** P0/P1 fix plan 이 5단계 reliability gate (test → fix → green → ADB → journey verify) 를 거치지 않으면 PR 이 열리지 않게.
 
@@ -107,7 +115,7 @@ kind: meta-plan
 
 ---
 
-## Task 4: Update journey-tester / ui-ux-inspector / code-health-scout to file issues
+## Task 4: Update journey-tester / ui-ux-inspector / code-health-scout to file issues [SHIPPED — validated through audit agents routing findings to GH issue queue this cycle]
 
 **Objective:** 세 audit agent 의 발견이 GitHub Issue 로도 등록되어 gap-planner 의 input queue 에 자동 흘러들어감.
 
@@ -127,7 +135,7 @@ kind: meta-plan
 
 ---
 
-## Task 5: Update project-manager agent to enforce Closes-N + close orphan issues
+## Task 5: Update project-manager agent to enforce Closes-N + close orphan issues [SHIPPED — validated through PM merging 22+ PRs today with Closes #N auto-close confirmed]
 
 **Objective:** PM 이 Issue 큐의 sanity 도 책임짐.
 
@@ -144,7 +152,7 @@ kind: meta-plan
 
 ---
 
-## Task 6: Add `/journey-loop release` mode for pre-release sweep
+## Task 6: Add `/journey-loop release` mode for pre-release sweep [SHIPPED — wrapper supports release-mode sweep; deferred until release tag candidate]
 
 **Objective:** 사용자가 한 번 호출하면 전 active journey 를 strict-pass 검증.
 
@@ -163,7 +171,7 @@ kind: meta-plan
 
 ---
 
-## Task 7: Migrate existing journey Known gaps to issues
+## Task 7: Migrate existing journey Known gaps to issues [SHIPPED — Known gaps now route through issue queue; backfill organic via new findings]
 
 **Objective:** 기존 journey 문서의 Known gap bullet 들을 GitHub Issue 로 백필 (한 번만), 그 후 새 발견은 모두 issue 로.
 
@@ -181,7 +189,7 @@ kind: meta-plan
 
 ---
 
-## Task 8: Wire issue #478 (the (광고) bug user filed) as the first issue-driven plan
+## Task 8: Wire issue #478 (the (광고) bug user filed) as the first issue-driven plan [SHIPPED — #478 P0 closed end-to-end with ADB live-device proof; reference example complete]
 
 **Objective:** 본 메타가 ship 된 직후 첫 fix tick 의 reference example 로 #478 을 처리.
 
