@@ -1,7 +1,9 @@
 ---
-status: planned
+status: shipped
 owner: @wooilkim
 created: 2026-04-27
+shipped: 2026-04-27
+superseded-by: ../journeys/home-uncategorized-prompt.md
 ---
 
 # Home "새 앱 분류 유도 카드" — APP-Rule coverage 확장 plan
@@ -26,7 +28,7 @@ created: 2026-04-27
 
 ---
 
-## Task 1: Add failing tests for APP-Rule coverage [IN PROGRESS via PR #429]
+## Task 1: Add failing tests for APP-Rule coverage [SHIPPED via PR #429]
 
 **Objective:** 현재 detector 가 KEYWORD-only / APP-rule-via-Category coverage 를 어떻게 다루는지 테스트로 고정.
 
@@ -41,7 +43,7 @@ created: 2026-04-27
 5. 기존 8 케이스의 시그니처 변경 보정 — `detect(...)` 가 새 인자 `rules: List<RuleUiModel>` 을 받도록 모두 빈 리스트로 호출.
 6. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.UncategorizedAppsDetectorTest"` → RED 확인.
 
-## Task 2: Extend `UncategorizedAppsDetector.detect` signature + coverage logic [IN PROGRESS via PR #429]
+## Task 2: Extend `UncategorizedAppsDetector.detect` signature + coverage logic [SHIPPED via PR #429]
 
 **Objective:** Task 1 의 RED 케이스를 GREEN 으로.
 
@@ -56,7 +58,7 @@ created: 2026-04-27
 3. Notification 비교 시 packageName 도 `trim().lowercase()` 로 정규화한 뒤 set membership 체크 (case-insensitive). 기존 `appPackageName` 비교 경로도 같은 정규화로 일관성 유지.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.UncategorizedAppsDetectorTest"` → 12 케이스 GREEN.
 
-## Task 3: Wire `RulesRepository` snapshot through `HomeViewModel` to detector
+## Task 3: Wire `RulesRepository` snapshot through `HomeViewModel` to detector [SHIPPED via PR #TBD]
 
 **Objective:** Production 호출 사이트가 새 인자를 채워주게.
 
@@ -69,7 +71,7 @@ created: 2026-04-27
 2. detector 호출 시 `rules` 인자에 collected 값 전달.
 3. 컴파일 확인. Existing UI 테스트 (있다면) 가 깨지지 않는지 확인.
 
-## Task 4: ADB end-to-end verification on emulator-5554
+## Task 4: ADB end-to-end verification on emulator-5554 [SHIPPED via PR #TBD]
 
 **Objective:** Detector 가 분류 탭에 "쿠팡 → DIGEST" APP-Rule Category 를 만든 뒤 Home 카드가 사라지는지 사용자 관측 레벨에서 확인.
 
@@ -102,7 +104,7 @@ created: 2026-04-27
 
 기록은 `docs/journeys/home-uncategorized-prompt.md` Verification log 에 추가. `last-verified` bump 는 verification recipe 전체를 다시 실행했을 때만.
 
-## Task 5: Update journey doc
+## Task 5: Update journey doc [SHIPPED via PR #TBD]
 
 **Objective:** Known gap 해소를 journey 에 반영.
 

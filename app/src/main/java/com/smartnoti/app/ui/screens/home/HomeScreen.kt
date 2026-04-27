@@ -166,10 +166,14 @@ fun HomeScreen(
             silentCount = silentCount,
         )
     }
-    val uncategorizedDetection = remember(recent, categories, snoozeUntil) {
+    // Plan `2026-04-27-uncategorized-prompt-app-rule-coverage` Task 3: pass the
+    // collected rules so APP-type rules referenced by some Category's ruleIds
+    // also count toward coverage (not just Category.appPackageName).
+    val uncategorizedDetection = remember(recent, categories, rules, snoozeUntil) {
         uncategorizedAppsDetector.detect(
             notifications = recent,
             categories = categories,
+            rules = rules,
             nowMillis = System.currentTimeMillis(),
             snoozeUntilMillis = snoozeUntil,
         )
