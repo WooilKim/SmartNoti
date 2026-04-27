@@ -160,6 +160,28 @@ internal class SettingsOnboardingRepository(
         }
     }
 
+    /**
+     * One-shot gate for plan
+     * `docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`
+     * Task 3 (Bug B2 + M1 migration). False until
+     * [com.smartnoti.app.data.categories.MigratePromoCategoryActionRunner]
+     * has scanned and (where eligible) bumped the seeded PROMO Category from
+     * SILENT to DIGEST. The flag prevents re-scanning on every cold start
+     * AND prevents undoing a user's deliberate "set PROMO back to SILENT"
+     * post-migration choice.
+     */
+    suspend fun isPromoQuietingActionMigrationV3Applied(): Boolean {
+        return dataStore.data.map { prefs ->
+            prefs[Keys.PROMO_QUIETING_ACTION_MIGRATION_V3_APPLIED] ?: false
+        }.first()
+    }
+
+    suspend fun setPromoQuietingActionMigrationV3Applied(applied: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.PROMO_QUIETING_ACTION_MIGRATION_V3_APPLIED] = applied
+        }
+    }
+
     internal object Keys {
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val BOOTSTRAP_PENDING =
@@ -174,5 +196,7 @@ internal class SettingsOnboardingRepository(
             longPreferencesKey("quick_start_applied_card_acknowledged_at_millis")
         val CATEGORIES_MIGRATION_ANNOUNCEMENT_SEEN =
             booleanPreferencesKey("categories_migration_announcement_seen")
+        val PROMO_QUIETING_ACTION_MIGRATION_V3_APPLIED =
+            booleanPreferencesKey("promo_quieting_action_migration_v3_applied")
     }
 }

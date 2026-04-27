@@ -162,6 +162,10 @@ class SettingsRepository private constructor(
         onboarding.observeCategoriesMigrationAnnouncementSeen()
     suspend fun setCategoriesMigrationAnnouncementSeen(seen: Boolean) =
         onboarding.setCategoriesMigrationAnnouncementSeen(seen)
+    suspend fun isPromoQuietingActionMigrationV3Applied(): Boolean =
+        onboarding.isPromoQuietingActionMigrationV3Applied()
+    suspend fun setPromoQuietingActionMigrationV3Applied(applied: Boolean) =
+        onboarding.setPromoQuietingActionMigrationV3Applied(applied)
 
     // MigrationRunner delegate — single `dataStore.edit` transaction inside
     // the runner keeps v1 + v2 + INBOX_SORT default materialization atomic.
