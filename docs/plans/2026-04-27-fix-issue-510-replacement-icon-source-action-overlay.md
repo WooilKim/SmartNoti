@@ -1,12 +1,40 @@
 ---
-status: in-progress
+status: shipped
 fixes: 510
+shipped: 2026-04-27
 last-updated: 2026-04-27
+superseded-by: ../journeys/silent-auto-hide.md
 ---
 
-> **Status (2026-04-27):** Tasks 1-4 shipped via PR #521 (RED tests then GREEN
-> implementation). Tasks 5-7 (ADB end-to-end on R3CY2058DLJ, journey doc updates,
-> closure PR) deferred to a follow-up bundle.
+> **Status (2026-04-27):** All 7 Tasks shipped. Tasks 1-4 (AppIconResolver +
+> ReplacementActionIcon enum + 3 vector drawables + builder wiring in both
+> `SmartNotiNotifier` and `SilentHiddenSummaryNotifier`) shipped via PR #521
+> (commit `cfe60e5`). Tasks 5-7 (ADB e2e on R3CY2058DLJ + 4 journey doc bumps
+> + plan flip `status: shipped`) shipped via the closure PR
+> (`fix/issue-510-tasks-5-7-closure`). Live `dumpsys notification --noredact`
+> on R3CY2058DLJ confirms every `smartnoti_silent_*` channel notification
+> carries `icon=Icon(typ=RESOURCE pkg=com.smartnoti.app id=0x7f070099)`
+> (= `ic_replacement_silent` per `aapt dump --values resources`), Gmail-grouped
+> child rows carry `android.largeIcon=Icon (Icon(typ=BITMAP size=101x101))`
+> resolved through `AppIconResolver`, and the mixed-source root summary
+> (id=23057, `smartnoti_silent_summary`) carries `android.largeIcon=null`
+> confirming the omission contract for groups spanning multiple source packages.
+> Closes #510.
+
+## Change log
+
+- 2026-04-27 (PR #521 / commit `cfe60e5`): Tasks 1-4 shipped — `AppIconResolver`
+  (LRU-cached PackageManager → Bitmap) + `ReplacementActionIcon` enum
+  (DIGEST/SILENT/PRIORITY → 3 new `ic_replacement_*` vector drawables) + builder
+  wiring in `SmartNotiNotifier#notifySuppressedNotification` (DIGEST/PRIORITY)
+  + `SilentHiddenSummaryNotifier` root/group-summary/group-child posts. RED→GREEN
+  on `SmartNotiNotifierIconTest`, `SilentHiddenSummaryNotifierIconTest`,
+  `AppIconResolverTest`, `ReplacementActionIconTest` (4 new test classes).
+- 2026-04-27 (closure PR `fix/issue-510-tasks-5-7-closure`): Tasks 5-7 shipped —
+  ADB e2e on R3CY2058DLJ (debug APK rebuilt 22:30 UTC, dumpsys evidence above),
+  4 journey doc bumps (`notification-capture-classify`, `protected-source-notifications`,
+  `silent-auto-hide`, `digest-suppression`), plan frontmatter flipped to
+  `status: shipped` + `superseded-by: ../journeys/silent-auto-hide.md`.
 
 # Fix issue #510 — replacement notification icons distinguish source app + action
 
@@ -113,7 +141,7 @@ last-updated: 2026-04-27
 4. Task 1 의 RED 4건 → GREEN 확인.
 5. `./gradlew :app:testDebugUnitTest` 전체 → 신규 GREEN, 기존 회귀 0건.
 
-## Task 5: ADB end-to-end verification on R3CY2058DLJ
+## Task 5: ADB end-to-end verification on R3CY2058DLJ [SHIPPED via closure PR `fix/issue-510-tasks-5-7-closure`]
 
 **Objective:** P1 5-step gate 의 마지막 칸 — 실제 트레이에서 source large + action small 이 보이는지 시각 검증.
 
@@ -147,7 +175,7 @@ adb -s R3CY2058DLJ pull /sdcard/issue510-tray.png /tmp/
 
 기록물 (PR 본문 첨부): 트레이 스크린샷 1~2장 + 위 체크리스트 결과.
 
-## Task 6: Update affected journey docs
+## Task 6: Update affected journey docs [SHIPPED via closure PR `fix/issue-510-tasks-5-7-closure`]
 
 **Files:**
 - `docs/journeys/notification-capture-classify.md`
@@ -165,7 +193,7 @@ adb -s R3CY2058DLJ pull /sdcard/issue510-tray.png /tmp/
   - **Change log** 1줄.
 - 모든 4개 journey 의 **`last-verified`** frontmatter 는 ADB recipe (Task 5) GREEN 시점에만 시스템 시계 기준으로 bump.
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [SHIPPED via closure PR `fix/issue-510-tasks-5-7-closure`]
 
 - 모든 단위 테스트 GREEN (resolver + notifier × 2 + 기존 회귀 0건).
 - ADB end-to-end 증거 (Task 5 스크린샷 + 체크리스트) PR 본문 첨부.
