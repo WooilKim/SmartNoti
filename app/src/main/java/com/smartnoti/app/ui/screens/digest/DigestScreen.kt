@@ -36,6 +36,11 @@ fun DigestScreen(
     contentPadding: PaddingValues,
     onNotificationClick: (String) -> Unit,
     onOpenSuppressedAppsSettings: () -> Unit,
+    // Plan `2026-04-27-inbox-unified-double-header-collapse.md` Task 2.
+    // Default `Standalone` keeps the legacy `Routes.Digest` deep-link entry
+    // unchanged. `InboxScreen` passes `Embedded` so the inbox-unified Digest
+    // sub-tab does not double up on header + summary card chrome.
+    mode: DigestScreenMode = DigestScreenMode.Standalone,
 ) {
     val context = LocalContext.current
     val repository = remember(context) { NotificationRepository.getInstance(context) }
@@ -69,12 +74,14 @@ fun DigestScreen(
                 .padding(contentPadding),
             contentPadding = PaddingValues(16.dp),
         ) {
-            item {
-                ScreenHeader(
-                    eyebrow = "정리함",
-                    title = "알림 정리함",
-                    subtitle = "덜 급한 알림은 그룹으로 정리해 한 번에 훑어볼 수 있어요.",
-                )
+            if (mode.shouldRenderHeader()) {
+                item {
+                    ScreenHeader(
+                        eyebrow = "정리함",
+                        title = "알림 정리함",
+                        subtitle = "덜 급한 알림은 그룹으로 정리해 한 번에 훑어볼 수 있어요.",
+                    )
+                }
             }
             item {
                 // Plan `2026-04-27-digest-empty-state-suppress-opt-in-cta` Task 2.
@@ -102,25 +109,27 @@ fun DigestScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            ScreenHeader(
-                eyebrow = "정리함",
-                title = "알림 정리함",
-                subtitle = "지금 바로 보지 않아도 되는 알림을 앱별로 묶어 더 빠르게 정리할 수 있어요.",
-            )
-        }
-        item {
-            SmartSurfaceCard {
-                Text(
-                    text = "현재 ${groups.size}개의 묶음이 준비되어 있어요.",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+        if (mode.shouldRenderHeader()) {
+            item {
+                ScreenHeader(
+                    eyebrow = "정리함",
+                    title = "알림 정리함",
+                    subtitle = "지금 바로 보지 않아도 되는 알림을 앱별로 묶어 더 빠르게 정리할 수 있어요.",
                 )
-                Text(
-                    text = "요약과 최근 항목을 함께 보여줘서 반복 알림을 한눈에 스캔할 수 있어요.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            }
+            item {
+                SmartSurfaceCard {
+                    Text(
+                        text = "현재 ${groups.size}개의 묶음이 준비되어 있어요.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "요약과 최근 항목을 함께 보여줘서 반복 알림을 한눈에 스캔할 수 있어요.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         items(groups, key = { it.id }) { group ->

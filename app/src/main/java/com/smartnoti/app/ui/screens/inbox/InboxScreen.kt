@@ -37,6 +37,7 @@ import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.screens.digest.DigestScreen
+import com.smartnoti.app.ui.screens.digest.DigestScreenMode
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenScreenMode
 import com.smartnoti.app.ui.theme.BorderSubtle
@@ -164,6 +165,12 @@ fun InboxScreen(
                 // `Routes.Digest` deep-link both reach the same Settings
                 // destination via identical wiring.
                 onOpenSuppressedAppsSettings = onOpenSuppressedAppsSettings,
+                // Plan `2026-04-27-inbox-unified-double-header-collapse` Task
+                // 3: outer InboxScreen already renders the `정리함 / 알림 정리함`
+                // ScreenHeader + sort dropdown + tab row, so embed the
+                // DigestScreen body without its own ScreenHeader and summary
+                // card to remove the duplicate chrome.
+                mode = DigestScreenMode.Embedded,
             )
             // Plan `2026-04-22-inbox-denest-and-home-recent-truncate` Task 2:
             // outer Inbox tab is the single source of truth. Embed the Hidden
