@@ -376,3 +376,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T08:27:19Z | project-manager | #460 | gap-planner plan: HomeScreen 877-line split refactor (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24984347242 |
 | 2026-04-27T08:39:08Z | project-manager | #461 | Home split Task 1 — 27 characterization tests | https://github.com/WooilKim/SmartNoti/actions/runs/24984830546 |
 | 2026-04-27T08:51:10Z | project-manager | #462 | Tasks 2-4 Home split refactor (4 sub-files + plan flip shipped + journey Change log) | https://github.com/WooilKim/SmartNoti/actions/runs/24985378395 |
+| 2026-04-27T09:01:38Z | project-manager | #463 | docs(retro): append 2026-04-27 retrospective row | https://github.com/WooilKim/SmartNoti/actions/runs/24985829422 |
