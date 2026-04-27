@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,6 +30,7 @@ import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.screens.inbox.InboxCardLanguage
 import kotlinx.coroutines.launch
 
 @Composable
@@ -118,7 +120,16 @@ fun DigestScreen(
                 )
             }
             item {
-                SmartSurfaceCard {
+                // Plan
+                // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+                // finding **F4** — Standalone Digest entry's summary card
+                // uses the [InboxCardLanguage.Primary] language so it shares
+                // the rhythm with the [DigestGroupCard] (Subtle) surfaces
+                // stacked below it. Embedded mode does not render this card
+                // (header collapse is owned by F2 + DigestScreenMode).
+                SmartSurfaceCard(
+                    shape = RoundedCornerShape(InboxCardLanguage.CARD_CORNER_RADIUS_DP.dp),
+                ) {
                     Text(
                         text = "현재 ${groups.size}개의 묶음이 준비되어 있어요.",
                         style = MaterialTheme.typography.titleMedium,

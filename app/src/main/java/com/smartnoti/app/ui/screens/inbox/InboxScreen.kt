@@ -220,10 +220,17 @@ private fun InboxTabRow(
     processedCount: Int,
     onSelected: (InboxTab) -> Unit,
 ) {
+    // Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+    // finding **F4** — corner radius / border tokens flow from
+    // [InboxCardLanguage] so the tab row stays in lockstep with the card
+    // surfaces below it. Tab row picks the smaller [TAB_ROW_CORNER_RADIUS_DP]
+    // (12dp) intentionally — segmented controls have their own visual
+    // convention and matching the 16dp card radius would read as another
+    // stacked card rather than a control.
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(InboxCardLanguage.TAB_ROW_CORNER_RADIUS_DP.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, BorderSubtle),
+        border = BorderStroke(InboxCardLanguage.CARD_BORDER_WIDTH_DP.dp, BorderSubtle),
     ) {
         Row(
             modifier = Modifier

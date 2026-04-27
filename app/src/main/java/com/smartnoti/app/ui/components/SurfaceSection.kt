@@ -12,10 +12,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.ui.theme.BorderSubtle
 
+/**
+ * Generic polished container surface used across SmartNoti screens.
+ *
+ * Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md` finding
+ * **F4** added the optional [shape] parameter so screens that need to opt
+ * into a custom corner radius (e.g. inbox-unified, which canonicalises card
+ * corners at 16dp via `InboxCardLanguage`) can do so without forking the
+ * primitive. `null` keeps the historical `MaterialTheme.shapes.medium`
+ * default — every existing call site (Settings, Home, Rules, Categories…)
+ * keeps the 20dp default they rendered before this change.
+ */
 @Composable
 fun SmartSurfaceCard(
     modifier: Modifier = Modifier,
@@ -23,10 +35,13 @@ fun SmartSurfaceCard(
     borderColor: androidx.compose.ui.graphics.Color = BorderSubtle,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(12.dp),
+    shape: Shape? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val resolvedShape = shape ?: CardDefaults.shape
     Card(
         modifier = modifier,
+        shape = resolvedShape,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(1.dp, borderColor),
     ) {
