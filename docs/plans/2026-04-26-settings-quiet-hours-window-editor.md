@@ -1,5 +1,7 @@
 ---
-status: in-progress
+status: shipped
+shipped: 2026-04-26
+superseded-by: docs/journeys/quiet-hours.md
 ---
 
 # Settings 화면에 Quiet Hours 시작/종료 시간 editor 추가 Plan
