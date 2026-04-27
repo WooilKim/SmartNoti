@@ -333,3 +333,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T00:00:14Z | project-manager | #416 | feat(inbox-sort): InboxSortMode + planner + settings persistence (Tasks 1+2) | https://github.com/WooilKim/SmartNoti/actions/runs/24970271735 |
 | 2026-04-27T00:15:04Z | project-manager | #418 | Wire InboxSortDropdown into Inbox/Hidden/Digest (Tasks 3-5) | https://github.com/WooilKim/SmartNoti/actions/runs/24970552675 |
 | 2026-04-27T00:26:47Z | journey-tester | #419 | inbox-unified | https://github.com/WooilKim/SmartNoti/actions/runs/24970837775 |
+| 2026-04-27T00:34:41Z | journey-tester | #420 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24971026806 |
