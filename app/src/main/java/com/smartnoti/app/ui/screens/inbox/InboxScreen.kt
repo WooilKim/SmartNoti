@@ -35,7 +35,6 @@ import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.data.local.toHiddenGroups
 import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.SilentMode
-import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreenMode
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
@@ -123,22 +122,40 @@ fun InboxScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ScreenHeader(
-                eyebrow = "정리함",
-                title = "알림 정리함",
-                subtitle = "Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요.",
-            )
-            // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3.
-            // Sort mode dropdown sits between the header and the sub-tab row
-            // so a single selection applies across all three sub-tabs. The
-            // setter is fire-and-forget on the `rememberCoroutineScope`; the
-            // observed `settings` flow re-emits with the new value and the
-            // resolved `sortMode` recomposes downstream consumers.
+            // F2 of `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`:
+            // header chrome (eyebrow + 1-line title + 2-line subtitle + dedicated
+            // sort row + tab row) used to consume ~25% of first screen, pushing
+            // the first group card below the fold. The trim:
+            // - Drop the subtitle entirely on Inbox specifically — eyebrow +
+            //   title already establish context for a returning user; the
+            //   docstring-style subtitle only paid an explanation tax.
+            // - Inline the `InboxSortDropdown` into the title row's trailing
+            //   slot (right-aligned) so the dedicated 48dp sort row collapses.
+            // The `InboxHeaderChromeSpec` object is the single source of truth
+            // for this composition; `InboxHeaderChromeContractTest` pins it.
+            // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3 wiring
+            // for the dropdown setter is preserved — only its location moved.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = InboxHeaderChromeSpec.eyebrow,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = InboxHeaderChromeSpec.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
                 InboxSortDropdown(
                     currentMode = sortMode,
                     onSelect = { mode ->

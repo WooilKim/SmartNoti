@@ -48,7 +48,7 @@ Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-
 
 **Proposed fix (small):** Replace each preview row inside `DigestGroupCard` with a flat **divider-separated row** — no inner card surface, no inner padding box, just `Title / body (1 line) / metadata` in `title-medium / body-small / label-small` typography with a 1dp `outlineVariant` divider between rows. Outer card border and bulk actions stay. Reason chips on preview rows can be reduced to a single dominant tag (or hidden — they already appear on the Detail screen).
 
-### F2 — Header chrome eats 30% of first screen
+### F2 — Header chrome eats 30% of first screen [IN PROGRESS via PR fix/issue-506-f2-inbox-header-chrome]
 
 **Evidence:** `/tmp/ui-emu-digest-fresh.png` top — `정리함` eyebrow (40dp tall row) → `알림 정리함` title (48dp) → `Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요.` subtitle (52dp wrapped to 2 lines) → padding → `정렬: 최신순 ▼` row (right-aligned, 48dp) → padding → `InboxTabRow` (88dp). Total header zone ≈ 600 / 2400 px = **25% of the screen**, before any content.
 
