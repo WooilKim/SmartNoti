@@ -1,9 +1,12 @@
 ---
-status: planned
+status: superseded
 fixes: 478
+superseded-by: docs/plans/2026-04-27-fix-issue-478-promo-extended-content-fields.md
 ---
 
 # Fix #478: "(광고)" 알림이 분류되지 않고 시스템 트레이에 그대로 남음
+
+> **SUPERSEDED 2026-04-27** — PR #483 implementer 의 ADB 추적 결과 본 plan 의 6 hypotheses (rule 시드 / `enabled` / Category.action / suppression toggle / `SourceNotificationRoutingPolicy` / `NotificationDecisionPipeline` extraction) 모두 GREEN 으로 격리됨. 사용자가 이메일·캐치테이블·네이버·SSF Shop 등 다양한 한국 앱에서 "(광고)" 가 여전히 트레이에 남는다고 재확인 → 진짜 root cause 는 classifier 의 매칭 surface 가 `EXTRA_TITLE` + `EXTRA_TEXT` 만 보고 있어서 한국 KCC 가이드 준수 앱이 박는 `EXTRA_SUB_TEXT` / `EXTRA_SUMMARY_TEXT` / `EXTRA_BIG_TEXT` / `MessagingStyle.messages[*].text` / `InboxStyle.lines` / `EXTRA_INFO_TEXT` 를 못 잡는 것으로 재진단. 후속 plan: [`docs/plans/2026-04-27-fix-issue-478-promo-extended-content-fields.md`](2026-04-27-fix-issue-478-promo-extended-content-fields.md). 이 plan 은 historical record 로 남겨둠 — 6-hypothesis sweep test 는 회귀 가드로 가치 있음.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. P0 release-blocker — ADB e2e on `emulator-5554` is mandatory (deferred not allowed).
 
