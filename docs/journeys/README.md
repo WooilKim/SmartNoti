@@ -29,7 +29,7 @@
 ### Source notification routing (시스템 tray 조작)
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
+| [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-27 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-27 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-26 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — silent-auto-hide post-#427 MessagingStyle gate sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| silent-auto-hide | PASS | Two-scenario validation of #427 (`MessagingStyleSenderResolver` gating `EXTRA_TITLE` adoption as `sender`). Scenario A (`adb shell cmd notification post -S messaging --conversation MomMessenger_$$ --message ...` ×2) → both clustered under `groupKey=smartnoti_silent_group_sender:MomMessenger_51456` (Sender key path intact for true MessagingStyle, N=2 group summary + child posted on `smartnoti_silent_group` channel, vis=SECRET). Scenario B (`-S bigtext -t PromoProductA_* / -t PromoProductB_*` ×2, distinct titles, no MessagingStyle template, no EXTRA_MESSAGES) → did NOT split into two single-member Sender groups; both clustered under `smartnoti_silent_group_app:com.android.shell` App-fallback — confirms non-MessagingStyle titles are no longer leaking into sender. Root summary `보관 중인 조용한 알림 8건` on `smartnoti_silent_summary` (importance=1, vis=SECRET, pri=-2, action `숨겨진 알림 보기`) intact (Observable step 5). Observable steps 5/6/7 + Exit state hold; #427 ships its intended behavior. Known gap "MessagingStyle 힌트 미사용" already marked resolved in same PR. `last-verified` 2026-04-26 → 2026-04-27 (frontmatter + index 동시 갱신). |
 
 ### 2026-04-27 (journey-tester — digest-suppression post-#417 timeout sweep, emulator-5554)
 
