@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: ../journeys/notification-detail.md
 ---
 
 # NotificationDetailScreen 을 sub-section composable 로 split Plan
@@ -146,3 +148,10 @@ status: planned
 ## Related journey
 
 [notification-detail](../journeys/notification-detail.md) — Known gaps 의 "code health (2026-04-27): `app/src/main/java/com/smartnoti/app/ui/screens/detail/NotificationDetailScreen.kt` — file is 687 lines (close to 700 critical threshold), `NotificationDetailScreen` composable body ~493 lines (line 91→~580+) inlining 4 anonymous-object repository overrides + several reason / delivery / classifier sub-sections. Refactor candidate — extract reason card + delivery card + reclassify-bottom-sheet wiring into sibling composables; hoist the inline anonymous repository wrappers into a fake-friendly factory." 항목이 본 plan 의 source gap. ship 시 해당 bullet 을 Change log 한 줄로 대체. (Anonymous-object repository wrapper hoisting 부분은 본 plan 의 Out-of-scope — 별도 follow-up plan 후보.)
+
+---
+
+## Change log
+
+- 2026-04-27: Task 1 shipped via #465 — 32-case `NotificationDetailScreenCharacterizationTest` 가 redirect/visibility/empty/click 모두 픽스 (root file 687 lines, refactor 직전 baseline GREEN).
+- 2026-04-27: Tasks 2–4 shipped (this PR) — `NotificationDetailScreen.kt` 687 → 271 lines. 신규 sub-file 3개: `NotificationDetailReasonSection.kt` (149 lines, reason card + onboarding card + ReasonSubSection helper), `NotificationDetailDeliverySection.kt` (175 lines, delivery profile + source suppression + ARCHIVED completion), `NotificationDetailReclassifyActions.kt` (289 lines, DetailTopBar + reclassify CTA + sheet/editor host + 2 helper funs). 동작 변경 없음 — characterization tests + full unit suite GREEN. journey notification-detail Known gaps 의 code-health bullet 제거 + Change log 추가. Status flipped to shipped.
