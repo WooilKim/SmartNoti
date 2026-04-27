@@ -14,6 +14,7 @@ class NotificationClassifier(
     private val shoppingPackages: Set<String>,
     @Suppress("UNUSED_PARAMETER") ruleConflictResolver: RuleConflictResolver = RuleConflictResolver(),
     private val categoryConflictResolver: CategoryConflictResolver = CategoryConflictResolver(),
+    private val advertisingPrefixDetector: KoreanAdvertisingPrefixDetector = KoreanAdvertisingPrefixDetector(),
 ) {
     /**
      * Classify [input] against the user's Rule / Category graph.
@@ -75,10 +76,19 @@ class NotificationClassifier(
                 category.ruleIds.any { ruleId -> ruleId in matchedRuleIds }
             }
             if (owning.isNotEmpty()) {
+                // Issue #478 (Bug A): pre-compute KCC `(광고)` prefix presence
+                // and hand it to the resolver. When true, the resolver drops
+                // PRIORITY-action Categories from the matched set if any
+                // non-PRIORITY peer matched too — so KCC-disclosed ads never
+                // reach the priority tray even when their copy mentions an
+                // IMPORTANT keyword (배송 / 결제 / 대출).
+                val hasAdvertisingPrefix = advertisingPrefixDetector
+                    .hasAdvertisingPrefix(body = input.body, title = input.title)
                 val winner = categoryConflictResolver.resolve(
                     matched = owning,
                     allCategories = categories,
                     matchedRuleTypes = effectiveRules.associate { it.id to it.type },
+                    hasAdvertisingPrefix = hasAdvertisingPrefix,
                 )
                 if (winner != null) {
                     return NotificationClassification(

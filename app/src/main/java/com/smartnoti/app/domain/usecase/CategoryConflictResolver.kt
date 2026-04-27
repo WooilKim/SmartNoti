@@ -1,6 +1,7 @@
 package com.smartnoti.app.domain.usecase
 
 import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.CategoryAction
 import com.smartnoti.app.domain.model.RuleTypeUi
 
 /**
@@ -29,6 +30,21 @@ import com.smartnoti.app.domain.model.RuleTypeUi
  * `allCategories` is accepted so future tie-break logic (e.g. global drag
  * order across non-matching Categories) can slot in without churning the
  * callsite again. Task 6 itself only consults the matched subset.
+ *
+ * **Issue #478 (3차 진단) — KCC `(광고)` precedence override.** When the caller
+ * sets [hasAdvertisingPrefix] to true (because [KoreanAdvertisingPrefixDetector]
+ * matched the body's KCC-mandated promotional marker), and the matched set
+ * contains at least one non-PRIORITY Category, every Category whose
+ * `action == PRIORITY` is filtered out before the standard tie-break runs.
+ * This ensures KCC-disclosed advertisements never reach the priority tray —
+ * even when the ad copy mentions an IMPORTANT keyword (배송 / 결제 / 대출) that
+ * a PRIORITY Category's KEYWORD rule also matches.
+ *
+ * The override degrades gracefully:
+ *  - When the only matched Categories are PRIORITY (no PROMO match), the
+ *    PRIORITY set survives and the standard tie-break still picks one of them.
+ *    The classifier's null-fallback is reserved for "no matches at all".
+ *  - When [hasAdvertisingPrefix] is false (default), behavior is unchanged.
  */
 class CategoryConflictResolver {
 
@@ -36,10 +52,26 @@ class CategoryConflictResolver {
         matched: List<Category>,
         @Suppress("UNUSED_PARAMETER") allCategories: List<Category>,
         matchedRuleTypes: Map<String, RuleTypeUi> = emptyMap(),
+        hasAdvertisingPrefix: Boolean = false,
     ): Category? {
         if (matched.isEmpty()) return null
 
-        return matched
+        // Issue #478 (Bug A): if the body opens with a KCC `(광고)` marker and
+        // the matched set has at least one non-PRIORITY Category, drop every
+        // PRIORITY Category before tie-breaking. PROMO/SILENT/DIGEST/IGNORE
+        // all qualify as "non-PRIORITY" — the resolver is action-agnostic
+        // beyond "anything but priority". The standard ladder + drag-order
+        // tie-break then runs on the filtered set.
+        val effective = if (
+            hasAdvertisingPrefix &&
+            matched.any { it.action != CategoryAction.PRIORITY }
+        ) {
+            matched.filter { it.action != CategoryAction.PRIORITY }
+        } else {
+            matched
+        }
+
+        return effective
             .asSequence()
             .sortedWith(
                 compareByDescending<Category> { specificityScore(it, matchedRuleTypes) }
