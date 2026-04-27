@@ -44,7 +44,7 @@
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
-| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-24 |
+| [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-27 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-26 |
 
 ### Categories, Rules & onboarding
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — ignored-archive post-#433 bulk-affordance end-to-end sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| ignored-archive | PASS | PR #433 (multi-select state + ActionBar + ConfirmDialog + 헤더 두 OutlinedButton + per-row 복구) merged 03:08 UTC; 신규 APK build (`lastUpdateTime=2026-04-27 11:56:47`) 설치됨. 직접 sqlite `INSERT` 로 IGNORE row 3건 seed 후 화면 재진입 → 헤더 카드 "보관 중 3건" + helper text + 두 OutlinedButton (`모두 PRIORITY 로 복구` / `모두 지우기`) + per-row `PRIORITY 로 복구` 모두 노출 (Observable step 6). 헤더 `모두 지우기` AlertDialog "무시된 알림 3건을 모두 지울까요?" 일치 (Observable step 8). 카드 long-press → `IgnoredArchiveActionBar` ("1개 선택됨" / `모두 지우기` / `취소`) 마운트 + 헤더 OutlinedButton 두 개 + per-row 복구 자동 hide (Observable step 7). 두번째 카드 탭 → "2개 선택됨", ActionBar `모두 지우기` → AlertDialog "선택한 알림 2건을 지울까요?" 확인 → snackbar `"선택한 알림 2건을 지웠어요"` + 카운트 3→1 + multi-select 자동 종료 (Observable step 9). per-row `PRIORITY 로 복구` 탭 → snackbar `"이 알림을 PRIORITY 로 복구했어요"` + EmptyState 분기 전환. 추가 IGNORE row 2건 seed + 헤더 `모두 PRIORITY 로 복구` 탭 → confirm 없이 즉시 snackbar `"무시된 알림 2건을 PRIORITY 로 복구했어요"` (비파괴 직접 실행). DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — onboarding-bootstrap rotation sweep, SKIP)
 
