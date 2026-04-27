@@ -408,3 +408,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T17:10:09Z | journey-tester | #497 | hidden-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/25008784356 |
 | 2026-04-27T17:22:28Z | project-manager | #498 | docs/plans/ batch flip #480 + #488 to status:shipped (toggle-gated verification deferred) | https://github.com/WooilKim/SmartNoti/actions/runs/25009195876 |
 | 2026-04-27T17:36:36Z | project-manager | #499 | meta-plan: coverage-guardian decommission-or-auto-trigger | https://github.com/WooilKim/SmartNoti/actions/runs/25009840531/job/73242382695 |
+| 2026-04-27T17:57:07Z | project-manager | #500 | meta-plan audit findings appended (coverage-guardian decommission evidence, Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/25010759770/job/73245593103 |
