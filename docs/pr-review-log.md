@@ -414,3 +414,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T08:22:52Z | #460 | gap-planner | DEFER | CI pending (Unit tests + debug APK) |
 | 2026-04-27T08:27:33Z | #460 | gap-planner | APPROVE+merge | docs-only plan + Known-gap link; CI 3m13s SUCCESS; squashed |
 | 2026-04-27T08:34:35Z | #461 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) — Task 1 characterization tests for Home split |
+| 2026-04-27T08:39:16Z | #461 | plan-implementer | APPROVE+merge | Home split Task 1 — 27 characterization tests, CI green |
