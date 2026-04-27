@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarDuration
@@ -340,11 +343,22 @@ internal fun IgnoredArchiveHeaderBulkActions(
 
 /**
  * Per-row item extracted from [IgnoredArchiveScreen] by plan
- * `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1. Today the
- * `PRIORITY 로 복구` TextButton sits in a `Column` next to [NotificationCard]
- * — outside the card border. Task 3 will wrap card + button in a single
- * shared border so the action visually anchors to its row. Test tags let the
- * affordance test pin both shapes without binding to layout coordinates.
+ * `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1. Plan Task 3
+ * (Risks Q2 Option D) wraps [NotificationCard] and the per-row
+ * `PRIORITY 로 복구` TextButton in a single shared [Card] container so the
+ * action visually anchors to the card it acts on (instead of floating in the
+ * sibling slot of the prior `Column` parent, outside the card border).
+ *
+ * The wrapping [Card] uses `containerColor = Color.Transparent` and elevation
+ * 0 so that [NotificationCard]'s own colored container (status-tinted
+ * background + selection accent border) keeps owning the visual surface — the
+ * outer card only contributes a thin border that visually groups the action
+ * with the row. This avoids stacking two opaque surfaces, which would dilute
+ * the status tint that the rest of the inbox uses to communicate priority.
+ *
+ * The wrapper carries the [IgnoredArchiveAffordanceTags.ROW_CARD_AND_RESTORE_WRAPPER]
+ * test tag so the affordance test can pin "card + button share one parent"
+ * without binding to layout coordinates.
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -357,29 +371,55 @@ internal fun IgnoredArchiveRow(
     onRestoreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.testTag(IgnoredArchiveAffordanceTags.ROW_ROOT),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(IgnoredArchiveAffordanceTags.ROW_CARD_AND_RESTORE_WRAPPER),
+        colors = CardDefaults.cardColors(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
+        ),
     ) {
-        NotificationCard(
-            model = notification,
-            onClick = onCardClick,
-            onLongClick = onCardLongClick,
-            isSelected = isSelected,
-        )
-        // Plan Task 5 step 6 — single-row PRIORITY restore is exposed only
-        // while selection mode is inactive. The recovery is non-destructive
-        // (status flip + dedup reason tag), so a confirmation dialog would
-        // feel heavier than the action warrants — snackbar is sufficient
-        // feedback.
-        if (!isMultiSelectActive) {
-            TextButton(
-                onClick = onRestoreClick,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .testTag(IgnoredArchiveAffordanceTags.ROW_RESTORE_BUTTON),
-            ) {
-                Text(IgnoredArchiveAffordanceCopy.ROW_RESTORE_LABEL)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(IgnoredArchiveAffordanceTags.ROW_ROOT),
+        ) {
+            NotificationCard(
+                model = notification,
+                onClick = onCardClick,
+                onLongClick = onCardLongClick,
+                isSelected = isSelected,
+            )
+            // Plan Task 5 step 6 — single-row PRIORITY restore is exposed
+            // only while selection mode is inactive. The recovery is non-
+            // destructive (status flip + dedup reason tag), so a
+            // confirmation dialog would feel heavier than the action
+            // warrants — snackbar is sufficient feedback. Plan
+            // `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 3
+            // moves the button inside the same wrapper as the card and
+            // separates the two with a divider so the action reads as
+            // attached to the row above.
+            if (!isMultiSelectActive) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = onRestoreClick,
+                        modifier = Modifier
+                            .testTag(IgnoredArchiveAffordanceTags.ROW_RESTORE_BUTTON),
+                    ) {
+                        Text(IgnoredArchiveAffordanceCopy.ROW_RESTORE_LABEL)
+                    }
+                }
             }
         }
     }
@@ -400,24 +440,27 @@ internal object IgnoredArchiveAffordanceTags {
 }
 
 /**
- * Centralized copy for the affordance composables. The header restore label is
- * intentionally pinned to the **post-fix** Option A copy so the failing test
- * (Task 1) initially observes a mismatch with the current source string — and
- * Task 2 simply rewrites the constant to GREEN the test.
+ * Centralized copy for the affordance composables.
+ *
+ * Plan `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 2 (Risks Q1
+ * Option A) shortened the header restore label from `모두 PRIORITY 로 복구`
+ * (which wrapped onto a second line in the half-width slot) to
+ * `PRIORITY 모두 복구` so it fits on one line. [HEADER_RESTORE_ALL_LABEL_FIXED]
+ * is retained as the source of truth the affordance test asserts against —
+ * [HEADER_RESTORE_ALL_LABEL] now points at the same value.
  */
 internal object IgnoredArchiveAffordanceCopy {
-    const val HEADER_RESTORE_ALL_LABEL = "모두 PRIORITY 로 복구"
     const val HEADER_CLEAR_ALL_LABEL = "모두 지우기"
     const val ROW_RESTORE_LABEL = "PRIORITY 로 복구"
 
     /**
      * Plan Risks Q1 commits to Option A (label shortening). The affordance
-     * test asserts that the actual restore-all label matches this constant —
-     * Task 2 flips [HEADER_RESTORE_ALL_LABEL] to this value and the test goes
-     * GREEN. Stored as a separate constant (not yet wired into the composable)
-     * so the failing test in Task 1 has a precise expectation.
+     * test asserts that the actual restore-all label matches this constant.
      */
     const val HEADER_RESTORE_ALL_LABEL_FIXED = "PRIORITY 모두 복구"
+
+    /** Active label rendered by [IgnoredArchiveHeaderBulkActions]. */
+    const val HEADER_RESTORE_ALL_LABEL = HEADER_RESTORE_ALL_LABEL_FIXED
 }
 
 /**
