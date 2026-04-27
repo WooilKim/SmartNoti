@@ -2,6 +2,7 @@ package com.smartnoti.app.notification
 
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.DeliveryProfile
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationStatusUi
@@ -9,7 +10,6 @@ import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
 import com.smartnoti.app.domain.model.VibrationMode
-import com.smartnoti.app.domain.model.toDecision
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,30 +18,28 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Plan `2026-04-27-refactor-listener-process-notification-extract.md` Task 1.
+ * Plan `2026-04-27-refactor-listener-process-notification-extract.md` Task 1
+ * (initial pinning) → Task 2 (re-pointed at production helper).
  *
- * Pins the production behavior of the post-classifier "decision → side-effect" branch
- * inside `SmartNotiNotificationListenerService.processNotification` (lines ~336-463
- * at the time of this test's authoring). Task 2 will extract this branch into a
- * `NotificationDecisionPipeline.dispatch(...)` helper; these tests must keep passing
- * unchanged after that extraction so the carve-out is provably behavior-preserving.
- *
- * The pipeline under test is defined inline in this file and mirrors the exact
- * statement order of the production code so the characterization is faithful.
- * Once Task 2 lands, swap [InlineDecisionPipeline] for the real
- * `NotificationDecisionPipeline` and the assertions below stay intact.
+ * Pins the production behavior of the post-classifier "decision → side-effect"
+ * branch that previously lived inline in
+ * `SmartNotiNotificationListenerService.processNotification`. Since Task 2
+ * landed, the assertions exercise the real
+ * [NotificationDecisionPipeline] / [SourceTrayActions] surface so the
+ * extraction is provably behavior-preserving — the same five outcome
+ * branches that pinned the inline code now pin the helper.
  */
 class NotificationDecisionPipelineCharacterizationTest {
 
     @Test
     fun ignore_decision_cancels_source_saves_with_cancel_attempted_and_no_replacement() = runTest {
         val actions = RecordingSourceTrayActions()
-        val pipeline = InlineDecisionPipeline(actions)
+        val pipeline = NotificationDecisionPipeline(actions)
 
         val baseNotification = baseNotification(status = NotificationStatusUi.IGNORE)
 
         pipeline.dispatch(
-            DispatchInput(
+            NotificationDecisionPipeline.DispatchInput(
                 baseNotification = baseNotification,
                 sourceEntryKey = "com.example|123",
                 packageName = "com.example",
@@ -70,12 +68,12 @@ class NotificationDecisionPipelineCharacterizationTest {
     @Test
     fun silent_unprotected_capture_archives_in_tray_without_cancel_or_replacement() = runTest {
         val actions = RecordingSourceTrayActions()
-        val pipeline = InlineDecisionPipeline(actions)
+        val pipeline = NotificationDecisionPipeline(actions)
 
         val baseNotification = baseNotification(status = NotificationStatusUi.SILENT)
 
         pipeline.dispatch(
-            DispatchInput(
+            NotificationDecisionPipeline.DispatchInput(
                 baseNotification = baseNotification,
                 sourceEntryKey = "com.example|silent",
                 packageName = "com.example",
@@ -108,12 +106,12 @@ class NotificationDecisionPipelineCharacterizationTest {
     @Test
     fun silent_protected_source_skips_cancel_and_replacement_and_saves_without_replacement() = runTest {
         val actions = RecordingSourceTrayActions()
-        val pipeline = InlineDecisionPipeline(actions)
+        val pipeline = NotificationDecisionPipeline(actions)
 
         val baseNotification = baseNotification(status = NotificationStatusUi.SILENT)
 
         pipeline.dispatch(
-            DispatchInput(
+            NotificationDecisionPipeline.DispatchInput(
                 baseNotification = baseNotification,
                 sourceEntryKey = "com.example|protected",
                 packageName = "com.example",
@@ -144,12 +142,12 @@ class NotificationDecisionPipelineCharacterizationTest {
     @Test
     fun digest_persistent_with_hide_persistent_cancels_source_and_saves() = runTest {
         val actions = RecordingSourceTrayActions()
-        val pipeline = InlineDecisionPipeline(actions)
+        val pipeline = NotificationDecisionPipeline(actions)
 
         val baseNotification = baseNotification(status = NotificationStatusUi.DIGEST)
 
         pipeline.dispatch(
-            DispatchInput(
+            NotificationDecisionPipeline.DispatchInput(
                 baseNotification = baseNotification,
                 sourceEntryKey = "com.example|digest",
                 packageName = "com.example",
@@ -178,12 +176,12 @@ class NotificationDecisionPipelineCharacterizationTest {
     @Test
     fun priority_no_suppression_keeps_source_in_tray_and_saves_priority_kept() = runTest {
         val actions = RecordingSourceTrayActions()
-        val pipeline = InlineDecisionPipeline(actions)
+        val pipeline = NotificationDecisionPipeline(actions)
 
         val baseNotification = baseNotification(status = NotificationStatusUi.PRIORITY)
 
         pipeline.dispatch(
-            DispatchInput(
+            NotificationDecisionPipeline.DispatchInput(
                 baseNotification = baseNotification,
                 sourceEntryKey = "com.example|priority",
                 packageName = "com.example",
@@ -242,25 +240,6 @@ class NotificationDecisionPipelineCharacterizationTest {
     )
 }
 
-/**
- * Bundle of inputs the future `NotificationDecisionPipeline.dispatch(...)` will accept.
- * Defined here (test-only) so the characterization test compiles without depending on
- * the production type that Task 2 introduces. Field names and ordering match the plan's
- * Architecture paragraph so the eventual production type can be a drop-in rename.
- */
-internal data class DispatchInput(
-    val baseNotification: NotificationUiModel,
-    val sourceEntryKey: String,
-    val packageName: String,
-    val appName: String,
-    val postedAtMillis: Long,
-    val contentSignature: String,
-    val settings: SmartNotiSettings,
-    val isPersistent: Boolean,
-    val shouldBypassPersistentHiding: Boolean,
-    val isProtectedSourceNotification: Boolean,
-)
-
 internal data class SavedNotificationCall(
     val notification: NotificationUiModel,
     val postedAtMillis: Long,
@@ -268,11 +247,11 @@ internal data class SavedNotificationCall(
 )
 
 /**
- * Fake [SourceTrayActions]-style port that captures cancel / replacement / save calls so
- * the characterization test can assert against them directly. Mirrors the surface
- * Task 2 will introduce as a real `SourceTrayActions` interface.
+ * Production [SourceTrayActions] fake. Captures cancel / replacement / save
+ * / setSuppressedApps calls so the characterization test can assert against
+ * them directly.
  */
-internal class RecordingSourceTrayActions {
+internal class RecordingSourceTrayActions : SourceTrayActions {
     val cancelledKeys = mutableListOf<String>()
     var replacementCalls: Int = 0
         private set
@@ -280,125 +259,33 @@ internal class RecordingSourceTrayActions {
     var lastSuppressedAppsWrite: Set<String>? = null
         private set
 
-    suspend fun cancelSource(key: String) {
+    override suspend fun cancelSource(key: String) {
         cancelledKeys += key
     }
 
-    fun postReplacement() {
+    override fun postReplacement(
+        decision: NotificationDecision,
+        packageName: String,
+        appName: String,
+        title: String,
+        body: String,
+        notificationId: String,
+        reasonTags: List<String>,
+        settings: SmartNotiSettings,
+        deliveryProfile: DeliveryProfile,
+    ) {
         replacementCalls += 1
     }
 
-    suspend fun save(notification: NotificationUiModel, postedAtMillis: Long, contentSignature: String) {
-        savedNotifications += SavedNotificationCall(notification, postedAtMillis, contentSignature)
-    }
-
-    fun setSuppressedApps(apps: Set<String>) {
+    override suspend fun setSuppressedApps(apps: Set<String>) {
         lastSuppressedAppsWrite = apps
     }
-}
 
-/**
- * Inline mirror of the production "decision → side-effect" branch in
- * [SmartNotiNotificationListenerService.processNotification] (lines ~336-463). Statement
- * order matches the production code so the characterization is faithful.
- *
- * Task 2 of the plan extracts the same logic into `NotificationDecisionPipeline`. When
- * that lands, this inline pipeline can be deleted and the test re-pointed at the real
- * helper without changing any assertion above.
- */
-internal class InlineDecisionPipeline(
-    private val actions: RecordingSourceTrayActions,
-) {
-    suspend fun dispatch(input: DispatchInput) {
-        val baseNotification = input.baseNotification
-        val decision = baseNotification.status.toDecision()
-        val isPersistent = input.isPersistent
-        val shouldBypassPersistentHiding = input.shouldBypassPersistentHiding
-        val settings = input.settings
-
-        // IGNORE early-return — plan `2026-04-21-ignore-tier-fourth-decision` Task 4.
-        if (decision == NotificationDecision.IGNORE) {
-            actions.cancelSource(input.sourceEntryKey)
-            val ignoredNotification = baseNotification.copy(
-                sourceSuppressionState = SourceNotificationSuppressionState.CANCEL_ATTEMPTED,
-                replacementNotificationIssued = false,
-                isPersistent = isPersistent,
-            )
-            actions.save(ignoredNotification, input.postedAtMillis, input.contentSignature)
-            return
-        }
-
-        val shouldHidePersistentSourceNotification =
-            (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
-        val isProtectedSourceNotification = input.isProtectedSourceNotification
-        val autoExpandedApps = if (!isProtectedSourceNotification) {
-            SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
-                decision = decision,
-                suppressSourceForDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                packageName = input.packageName,
-                currentApps = settings.suppressedSourceApps,
-                excludedApps = settings.suppressedSourceAppsExcluded,
-            )
-        } else {
-            null
-        }
-        if (autoExpandedApps != null) {
-            actions.setSuppressedApps(autoExpandedApps)
-        }
-        val effectiveSuppressedApps = autoExpandedApps ?: settings.suppressedSourceApps
-        val shouldSuppressSourceNotification = !isProtectedSourceNotification &&
-            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
-                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                suppressedApps = effectiveSuppressedApps,
-                packageName = input.packageName,
-                decision = decision,
-            )
-        val capturedSilentMode = SilentCaptureRoutingSelector.silentModeFor(
-            decision = decision,
-            isPersistent = isPersistent,
-            shouldBypassPersistentHiding = shouldBypassPersistentHiding,
-            isProtectedSourceNotification = isProtectedSourceNotification,
-        )
-        val sourceRouting = if (isProtectedSourceNotification) {
-            SourceNotificationRouting(
-                cancelSourceNotification = false,
-                notifyReplacementNotification = false,
-            )
-        } else {
-            SourceNotificationRoutingPolicy.route(
-                decision = decision,
-                hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
-                suppressSourceNotification = shouldSuppressSourceNotification,
-                silentMode = capturedSilentMode,
-            )
-        }
-        val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
-            decision = decision,
-            suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-            suppressedApps = settings.suppressedSourceApps,
-            packageName = input.packageName,
-            hidePersistentSourceNotifications = settings.hidePersistentSourceNotifications,
-            isPersistent = isPersistent,
-            bypassPersistentHiding = shouldBypassPersistentHiding,
-            sourceRouting = sourceRouting,
-        )
-        var replacementNotificationPosted = false
-        if (sourceRouting.cancelSourceNotification) {
-            actions.cancelSource(input.sourceEntryKey)
-        }
-        if (sourceRouting.notifyReplacementNotification) {
-            actions.postReplacement()
-            replacementNotificationPosted = true
-        }
-        val notification = baseNotification.copy(
-            sourceSuppressionState = suppressionState,
-            replacementNotificationIssued = SourceNotificationSuppressionStateResolver.replacementNotificationRecorded(
-                sourceRouting = sourceRouting,
-                replacementNotificationPosted = replacementNotificationPosted,
-            ),
-            isPersistent = isPersistent,
-            silentMode = capturedSilentMode ?: baseNotification.silentMode,
-        )
-        actions.save(notification, input.postedAtMillis, input.contentSignature)
+    override suspend fun save(
+        notification: NotificationUiModel,
+        postedAtMillis: Long,
+        contentSignature: String,
+    ) {
+        savedNotifications += SavedNotificationCall(notification, postedAtMillis, contentSignature)
     }
 }

@@ -1,5 +1,6 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
 ---
 
 # Listener `processNotification` 파이프라인 단계 추출 Plan
@@ -141,3 +142,10 @@ status: planned
 ## Related journey
 
 [notification-capture-classify](../journeys/notification-capture-classify.md) — Known gaps line 120 ("code health (2026-04-27): … `processNotification` is ~251 lines …"). 본 plan ship 후 그 줄을 `(resolved YYYY-MM-DD, plan ...)` 로 prepend, plan frontmatter 를 `status: shipped` 로 flip + Change log 추가.
+
+---
+
+## Change log
+
+- 2026-04-27: Task 1 (characterization tests) shipped via PR #468 — 5-branch `NotificationDecisionPipelineCharacterizationTest` pinned production behavior. PR body surfaced a SILENT spec drift: a fresh non-persistent unprotected SILENT capture lands as `SilentMode.ARCHIVED` (keep source in tray, no replacement), not the legacy "cancel + replacement" behavior the plan draft assumed. Test characterizes the live code.
+- 2026-04-27: Tasks 2-4 shipped — `NotificationDecisionPipeline` + `SourceTrayActions` extracted (Task 2), `NotificationDuplicateContextBuilder` + `NotificationPipelineInputBuilder` extracted (Task 3), journey gap annotated + plan flipped to `status: shipped` (Task 4). `processNotification` body collapsed from 251 lines to ~80; characterization test re-pointed at the production helper and stayed GREEN throughout. Listener service file: 627 → 521 lines (residual mass is the `onListenerConnected` silent-summary collector, declared out of scope by this plan). Two new builder unit tests added; full `:app:testDebugUnitTest` + `:app:assembleDebug` GREEN.

@@ -9,13 +9,8 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.local.toEntity
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
-import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationUiModel
-import com.smartnoti.app.domain.model.SourceNotificationSuppressionState
-import com.smartnoti.app.domain.model.toDecision
-import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
-import com.smartnoti.app.domain.model.withContext
 import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
 import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
 import com.smartnoti.app.domain.usecase.LiveDuplicateCountTracker
@@ -213,110 +208,42 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     }
 
     private suspend fun processNotification(sbn: StatusBarNotification) {
-        val extras = sbn.notification.extras
-        val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
-        val body = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
-        // Plan `2026-04-27-silent-sender-messagingstyle-gate.md` Task 2:
-        // gate the EXTRA_TITLE → sender fallback behind a MessagingStyle hint
-        // so non-messaging apps (shopping / news / promo) no longer leak
-        // product names into NotificationEntity.sender. The grouping policy's
-        // App-fallback then takes over for those rows.
-        @Suppress("DEPRECATION")
-        val messages = extras.getParcelableArray(android.app.Notification.EXTRA_MESSAGES)
-        val sender = MessagingStyleSenderResolver.resolve(
-            MessagingStyleSenderInput(
-                conversationTitle = extras.getCharSequence(android.app.Notification.EXTRA_CONVERSATION_TITLE)?.toString(),
-                title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString(),
-                template = extras.getString(android.app.Notification.EXTRA_TEMPLATE),
-                hasMessages = (messages?.isNotEmpty() == true),
-            )
-        )
-
-        val appName = try {
-            val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
-            packageManager.getApplicationLabel(appInfo).toString()
-        } catch (_: Exception) {
-            sbn.packageName
-        }
-
         val repository = NotificationRepository.getInstance(applicationContext)
         val rulesRepository = RulesRepository.getInstance(applicationContext)
         val categoriesRepository = CategoriesRepository.getInstance(applicationContext)
         val settingsRepository = SettingsRepository.getInstance(applicationContext)
 
-        val rules = rulesRepository.currentRules()
         // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 4 (Drift #1):
-        // without this read the Classifier always falls back to SILENT because
-        // the Category.action it routes through is never in scope. Read at
-        // the same call site as rules so both snapshots are consistent.
-        val categories = categoriesRepository.currentCategories()
+        // read Rules + Categories + Settings at the same call site so the
+        // Classifier can apply Category.action consistently. Plan
+        // `2026-04-27-refactor-listener-process-notification-extract.md`
+        // Task 3: the snapshot read stays inline so the duplicate-context
+        // builder can be driven by the same `settings` instance the
+        // decision pipeline later receives.
         val settings = settingsRepository.observeSettings().first()
-        val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
-            isOngoing = sbn.isOngoing,
-            isClearable = sbn.isClearable,
-        )
-        val shouldBypassPersistentHiding = if (isPersistent) {
-            persistentNotificationPolicy.shouldBypassPersistentHiding(
-                packageName = sbn.packageName,
-                title = title,
-                body = body,
-                protectCriticalPersistentNotifications = settings.protectCriticalPersistentNotifications,
-            )
-        } else {
-            false
-        }
-        // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
-        // build the policy from the freshly-read settings snapshot so a
-        // dropdown change in Settings reaches the very next notification
-        // without an app restart. The signature path is window-independent
-        // (legacy field-level `duplicatePolicy` would do) but we use the
-        // settings-driven instance everywhere in this method to keep the
-        // call site coherent.
-        val settingsDrivenDuplicatePolicy = DuplicateNotificationPolicy(
-            windowMillis = settings.duplicateWindowMinutes * 60_000L,
-        )
-        val contentSignature = settingsDrivenDuplicatePolicy.contentSignature(
-            title = title,
-            body = body,
-        ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
-        val duplicateWindowStart = settingsDrivenDuplicatePolicy.windowStart(sbn.postTime)
-        val duplicateCount = liveDuplicateCountTracker.recordAndCount(
-            packageName = sbn.packageName,
-            contentSignature = contentSignature,
-            sourceEntryKey = sbn.key,
-            postedAtMillis = sbn.postTime,
-            windowStartMillis = duplicateWindowStart,
-            persistedDuplicateCount = repository.countRecentDuplicates(
-                packageName = sbn.packageName,
-                contentSignature = contentSignature,
-                sinceMillis = duplicateWindowStart,
-            ),
-        )
 
-        val captureInput = CapturedNotificationInput(
-            packageName = sbn.packageName,
-            appName = appName,
-            sender = sender,
-            title = title,
-            body = body,
-            postedAtMillis = sbn.postTime,
-            quietHours = false,
-            duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
-            isPersistent = isPersistent && !shouldBypassPersistentHiding,
-            sourceEntryKey = sbn.key,
-            // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
-            // forward the user-tunable threshold to the classifier through
-            // the processor. `settings` is the snapshot read above at the
-            // same call site as rules / categories, so all three knobs are
-            // mutually consistent for this notification.
-            duplicateThreshold = settings.duplicateDigestThreshold,
-        ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
+        // Plan `2026-04-27-refactor-listener-process-notification-extract.md`
+        // Task 3: the pre-classifier "input build" stage (extras parsing,
+        // MessagingStyle sender, appName, persistent flags, duplicate
+        // signature/count, CapturedNotificationInput.withContext) is now
+        // owned by [NotificationPipelineInputBuilder]. The builder still
+        // reads the same fields verbatim — only call-site shape changed.
+        val inputBuilder = NotificationPipelineInputBuilder(
+            persistentNotificationPolicy = persistentNotificationPolicy,
+            duplicateContextBuilder = NotificationDuplicateContextBuilder(
+                tracker = liveDuplicateCountTracker,
+                persistedDuplicateCount = repository::countRecentDuplicates,
+            ),
+            appNameLookup = ::resolveApplicationLabel,
+            contextLookup = settingsRepository::currentNotificationContext,
+        )
+        val pipelineInput = inputBuilder.build(sbn, settings)
 
         val classifiedNotification = processor.process(
-            input = captureInput,
-            rules = rules,
+            input = pipelineInput.captureInput,
+            rules = rulesRepository.currentRules(),
             settings = settings,
-            categories = categories,
+            categories = categoriesRepository.currentCategories(),
         )
 
         // Debug-only override — lets the journey-tester priority-inbox
@@ -328,139 +255,106 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         // entirely under minification.
         // Plan: docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md
         val baseNotification = if (BuildConfig.DEBUG) {
-            DebugClassificationOverride.resolve(extras, classifiedNotification)
+            DebugClassificationOverride.resolve(sbn.notification.extras, classifiedNotification)
         } else {
             classifiedNotification
         }
 
-        val decision = baseNotification.status.toDecision()
-        val deliveryProfile = baseNotification.toDeliveryProfileOrDefault()
-
-        // IGNORE early-return — plan `2026-04-21-ignore-tier-fourth-decision`
-        // Task 4. The user has declared (via a RuleActionUi.IGNORE rule) that
-        // this notification is trash: delete from the source tray, never post
-        // a replacement alert, but still persist the DB row so audit /
-        // recovery / weekly-insights can see it existed. We short-circuit
-        // BEFORE the DIGEST/SILENT auto-expand, silent-mode, and
-        // suppression-state machinery because none of those user-visible
-        // surfaces apply to an IGNORE row. Default-view filtering keeps it
-        // out of Home / Hidden / Digest / Priority (Task 6). The tray cancel
-        // still runs unconditionally — the gating here matches
-        // [NotificationSuppressionPolicy.shouldSuppressSourceNotification]
-        // returning true for IGNORE regardless of the opt-in flags.
-        if (decision == NotificationDecision.IGNORE) {
-            withContext(Dispatchers.Main) {
-                cancelNotification(sbn.key)
-            }
-            val ignoredNotification = baseNotification.copy(
-                sourceSuppressionState = SourceNotificationSuppressionState.CANCEL_ATTEMPTED,
-                replacementNotificationIssued = false,
-                isPersistent = isPersistent,
-            )
-            repository.save(ignoredNotification, sbn.postTime, contentSignature)
-            return
-        }
-
-        val shouldHidePersistentSourceNotification =
-            (isPersistent && !shouldBypassPersistentHiding) && settings.hidePersistentSourceNotifications
         val isProtectedSourceNotification = ProtectedSourceNotificationDetector.isProtected(
             ProtectedSourceNotificationDetector.signalsFrom(sbn),
         )
-        val autoExpandedApps = if (!isProtectedSourceNotification) {
-            SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull(
-                decision = decision,
-                suppressSourceForDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                packageName = sbn.packageName,
-                currentApps = settings.suppressedSourceApps,
-                // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md`
-                // Task 5: wire the persisted sticky-exclude set into the
-                // policy. Apps the user explicitly unchecked in Settings stay
-                // excluded across DIGEST notifications instead of being
-                // re-added by auto-expansion.
-                excludedApps = settings.suppressedSourceAppsExcluded,
-            )
-        } else {
-            null
-        }
-        if (autoExpandedApps != null) {
-            settingsRepository.setSuppressedSourceApps(autoExpandedApps)
-        }
-        val effectiveSuppressedApps = autoExpandedApps ?: settings.suppressedSourceApps
-        val shouldSuppressSourceNotification = !isProtectedSourceNotification &&
-            NotificationSuppressionPolicy.shouldSuppressSourceNotification(
-                suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-                suppressedApps = effectiveSuppressedApps,
-                packageName = sbn.packageName,
-                decision = decision,
-            )
-        val capturedSilentMode = SilentCaptureRoutingSelector.silentModeFor(
-            decision = decision,
-            isPersistent = isPersistent,
-            shouldBypassPersistentHiding = shouldBypassPersistentHiding,
-            isProtectedSourceNotification = isProtectedSourceNotification,
+
+        // Plan `2026-04-27-refactor-listener-process-notification-extract.md`
+        // Task 2: the post-classifier "decision → side-effect" branch lives
+        // in [NotificationDecisionPipeline]. Statement order inside dispatch
+        // is identical to the previous inline implementation; the pipeline
+        // routes side effects through [SourceTrayActions] so
+        // `NotificationDecisionPipelineCharacterizationTest` can assert
+        // against a fake without the listener.
+        val pipeline = NotificationDecisionPipeline(
+            actions = ListenerSourceTrayActions(
+                service = this,
+                notifier = notifier,
+                repository = repository,
+                settingsRepository = settingsRepository,
+            ),
         )
-        val sourceRouting = if (isProtectedSourceNotification) {
-            // Media / call / navigation / foreground-service notifications back a live
-            // MediaSession or foreground service. Cancelling them breaks playback
-            // (for example YouTube Music stops) or tears down the service, so we never
-            // route them through suppression regardless of user settings.
-            SourceNotificationRouting(
-                cancelSourceNotification = false,
-                notifyReplacementNotification = false,
+        pipeline.dispatch(
+            NotificationDecisionPipeline.DispatchInput(
+                baseNotification = baseNotification,
+                sourceEntryKey = sbn.key,
+                packageName = sbn.packageName,
+                appName = pipelineInput.appName,
+                postedAtMillis = sbn.postTime,
+                contentSignature = pipelineInput.contentSignature,
+                settings = settings,
+                isPersistent = pipelineInput.isPersistent,
+                shouldBypassPersistentHiding = pipelineInput.shouldBypassPersistentHiding,
+                isProtectedSourceNotification = isProtectedSourceNotification,
             )
-        } else {
-            SourceNotificationRoutingPolicy.route(
-                decision = decision,
-                hidePersistentSourceNotification = shouldHidePersistentSourceNotification,
-                suppressSourceNotification = shouldSuppressSourceNotification,
-                silentMode = capturedSilentMode,
-            )
-        }
-        val suppressionState = SourceNotificationSuppressionStateResolver.resolve(
-            decision = decision,
-            suppressDigestAndSilent = settings.suppressSourceForDigestAndSilent,
-            suppressedApps = settings.suppressedSourceApps,
-            packageName = sbn.packageName,
-            hidePersistentSourceNotifications = settings.hidePersistentSourceNotifications,
-            isPersistent = isPersistent,
-            bypassPersistentHiding = shouldBypassPersistentHiding,
-            sourceRouting = sourceRouting,
         )
-        var replacementNotificationPosted = false
-        if (sourceRouting.cancelSourceNotification) {
+    }
+
+    private fun resolveApplicationLabel(packageName: String): String =
+        try {
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(appInfo).toString()
+        } catch (_: Exception) {
+            packageName
+        }
+
+    /**
+     * Production [SourceTrayActions] that bridges the pure pipeline back to
+     * the listener-service-only `cancelNotification` (main dispatcher) and
+     * the existing notifier / repository / settings-repository singletons.
+     */
+    private class ListenerSourceTrayActions(
+        private val service: SmartNotiNotificationListenerService,
+        private val notifier: SmartNotiNotifier,
+        private val repository: NotificationRepository,
+        private val settingsRepository: SettingsRepository,
+    ) : SourceTrayActions {
+        override suspend fun cancelSource(key: String) {
             withContext(Dispatchers.Main) {
-                cancelNotification(sbn.key)
+                service.cancelNotification(key)
             }
         }
-        if (sourceRouting.notifyReplacementNotification) {
+
+        override fun postReplacement(
+            decision: NotificationDecision,
+            packageName: String,
+            appName: String,
+            title: String,
+            body: String,
+            notificationId: String,
+            reasonTags: List<String>,
+            settings: com.smartnoti.app.data.settings.SmartNotiSettings,
+            deliveryProfile: com.smartnoti.app.domain.model.DeliveryProfile,
+        ) {
             notifier.notifySuppressedNotification(
                 decision = decision,
-                packageName = sbn.packageName,
+                packageName = packageName,
                 appName = appName,
-                title = baseNotification.title,
-                body = baseNotification.body,
-                notificationId = baseNotification.id,
-                reasonTags = baseNotification.reasonTags,
+                title = title,
+                body = body,
+                notificationId = notificationId,
+                reasonTags = reasonTags,
                 settings = settings,
                 deliveryProfile = deliveryProfile,
             )
-            replacementNotificationPosted = true
         }
-        val notification = baseNotification.copy(
-            sourceSuppressionState = suppressionState,
-            replacementNotificationIssued = SourceNotificationSuppressionStateResolver.replacementNotificationRecorded(
-                sourceRouting = sourceRouting,
-                replacementNotificationPosted = replacementNotificationPosted,
-            ),
-            isPersistent = isPersistent,
-            // Persist the ARCHIVED split so fresh SILENT captures land in the Hidden
-            // inbox "보관 중" tab. Classifier / processor chain already leaves
-            // `silentMode = null` for legacy SILENT rows; when the capture selector
-            // picks ARCHIVED we override here. We only override on ARCHIVED to avoid
-            // trampling modes a future task might set earlier in the pipeline.
-            silentMode = capturedSilentMode ?: baseNotification.silentMode,
-        )
-        repository.save(notification, sbn.postTime, contentSignature)
+
+        override suspend fun setSuppressedApps(apps: Set<String>) {
+            settingsRepository.setSuppressedSourceApps(apps)
+        }
+
+        override suspend fun save(
+            notification: NotificationUiModel,
+            postedAtMillis: Long,
+            contentSignature: String,
+        ) {
+            repository.save(notification, postedAtMillis, contentSignature)
+        }
     }
 
     override fun onDestroy() {
