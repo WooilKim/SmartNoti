@@ -461,3 +461,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T14:04:00Z | #485 | plan-implementer | DEFER | CI_RED_BY_DESIGN (Task 1 failing-test gate). Parallel subagent pushing Tasks 2-4 to flip CI green. Re-sweep next tick. |
 | 2026-04-27T14:31:02Z | #485 | plan-implementer | APPROVE+merge | DiagnosticLogger module Tasks 1-4 of #480; CI green; tests-first ratio strong; Tasks 5-6 deferred per plan |
 | 2026-04-27T14:42:54Z | #487 | gap-planner | APPROVE | docs/plans only; 3rd-diagnosis for #478 (Bug A precedence + Bug B2); supersede chain to #483/#486 plans correct |
+| 2026-04-27T15:07:15Z | #489 | plan-implementer | APPROVE | Bug A (KCC (광고) prefix precedence) Task 1+2 of issue #478 plan; tests-first 3/3 fixtures RED→GREEN; CI green; body edit Closes→Refs to keep #478 open for Bug B2 follow-up |
