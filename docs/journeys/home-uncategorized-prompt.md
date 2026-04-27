@@ -109,7 +109,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 카드 copy 가 `sampleAppLabels` 를 ", " 로 join 하여 라벨 길면 긴 줄로 줄바꿈 — FlowRow 등 레이아웃 조정은 후속 UI polish.
 - (resolved 2026-04-26, plan `docs/plans/2026-04-26-uncategorized-prompt-editor-autoopen.md`) "분류 만들기" 가 첫 sample app 으로 prefill 된 editor 다이얼로그를 자동으로 띄움 (4-step 마찰 → 1-step). Multi-app 동시 분류 / 전용 multi-step wizard 는 별도 후속 — 본 plan 은 첫 sample 1건만 prefill (사용자는 editor 의 multi-rule selector 로 추가 가능).
 - ~~Recipe end-to-end 는 journey-tester 가 ADB 로 검증 전 (`last-verified` 비어 있음).~~ **Resolved 2026-04-26**: emulator-5554 ADB 로 PASS 확인 (Verification log 참고).
-- `UncategorizedAppsDetector` 는 `Category.appPackageName` 으로만 커버 판정 — KEYWORD 타입 Rule 만 소속된 Category 는 커버리지 기여 없음. 의도된 동작이지만 사용자 입장에서는 "키워드 Category 가 있어도 카드가 계속 뜬다" 고 느낄 수 있음.
+- `UncategorizedAppsDetector` 는 `Category.appPackageName` 으로만 커버 판정 — KEYWORD 타입 Rule 만 소속된 Category 는 커버리지 기여 없음. 의도된 동작이지만 사용자 입장에서는 "키워드 Category 가 있어도 카드가 계속 뜬다" 고 느낄 수 있음. → plan: `docs/plans/2026-04-27-uncategorized-prompt-app-rule-coverage.md` (APP-type Rule 까지 커버 확장 — KEYWORD/PERSON 은 Open question 으로 보존)
 
 ## Change log
 
