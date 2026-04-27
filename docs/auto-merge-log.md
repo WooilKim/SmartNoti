@@ -380,3 +380,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T09:16:01Z | project-manager | #464 | gap-planner docs-only plan for NotificationDetailScreen split | https://github.com/WooilKim/SmartNoti/actions/runs/24986483239 |
 | 2026-04-27T09:27:28Z | project-manager | #465 | NotificationDetail split Task 1 — 32 characterization tests pin affordances before cut-paste | https://github.com/WooilKim/SmartNoti/actions/runs/24987007235 |
 | 2026-04-27T09:43:11Z | project-manager | #466 | NotificationDetail split Tasks 2-4 (687→271 lines) + plan flip + journey sync | https://github.com/WooilKim/SmartNoti/actions/runs/24987655056/job/73164928414 |
+| 2026-04-27T09:54:37Z | project-manager | #467 | docs-only gap-planner plan: listener processNotification stage extract | https://github.com/WooilKim/SmartNoti/actions/runs/24988179027 |
