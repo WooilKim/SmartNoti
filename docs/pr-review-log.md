@@ -434,3 +434,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T10:37:22Z | #470 | gap-planner | DEFER | CI pending; docs-only plan draft for settings suppression cluster split |
 | 2026-04-27T10:41:09Z | #470 | gap-planner | APPROVE | docs-only; CI SUCCESS; merged |
 | 2026-04-27T10:48:44Z | #471 | plan-implementer | DEFER+ESCALATE | CI IN_PROGRESS; escalated bypass commit 9338618 (direct push to main of plan status flip, outside PM audit-row carve-out) |
+| 2026-04-27T10:51:21Z | #471 | plan-implementer | APPROVE+merge | Task 1 characterization tests for Settings suppression cluster split; test-only diff, CI green, mirrors PR #457 pattern |
