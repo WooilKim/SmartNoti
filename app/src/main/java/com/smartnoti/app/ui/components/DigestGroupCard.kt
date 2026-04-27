@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.DigestGroupUiModel
+import com.smartnoti.app.ui.screens.inbox.InboxCardLanguage
 import com.smartnoti.app.ui.theme.BorderSubtle
 
 /**
@@ -75,13 +76,23 @@ fun DigestGroupCard(
         showAll = showAll,
     )
 
+    // Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+    // finding **F4** — "different card visual languages on one screen".
+    // The outer DigestGroupCard surface is the [InboxCardLanguage.Subtle]
+    // language: the surface-variant tint distinguishes a group container
+    // from the [InboxCardLanguage.Primary] summary card without breaking
+    // the shared rhythm (corner radius / border / padding all sourced from
+    // the [InboxCardLanguage] constants). Same primitive is reused for
+    // legacy `Routes.Digest` deep-link entries and for Hidden archived /
+    // processed group cards (via [HiddenNotificationsScreen]).
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(InboxCardLanguage.CARD_CORNER_RADIUS_DP.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f)),
-        border = BorderStroke(1.dp, BorderSubtle),
+        border = BorderStroke(InboxCardLanguage.CARD_BORDER_WIDTH_DP.dp, BorderSubtle),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(InboxCardLanguage.CARD_PADDING_DP.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(

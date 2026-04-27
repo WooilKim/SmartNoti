@@ -53,6 +53,7 @@ import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SmartSurfaceCard
+import com.smartnoti.app.ui.screens.inbox.InboxCardLanguage
 import com.smartnoti.app.ui.theme.BorderSubtle
 import kotlinx.coroutines.launch
 
@@ -261,7 +262,17 @@ fun HiddenNotificationsScreen(
             }
         } else {
             item {
-                SmartSurfaceCard {
+                // Plan
+                // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+                // finding **F4** — summary card uses the [InboxCardLanguage.Primary]
+                // surface (16dp radius, 1dp BorderSubtle, 16dp padding) so it
+                // shares the rhythm with the [DigestGroupCard] (Subtle)
+                // surfaces stacked below it. Hidden's standalone deep-link
+                // entry hosts the same composable so the unification flows
+                // through both call paths.
+                SmartSurfaceCard(
+                    shape = RoundedCornerShape(InboxCardLanguage.CARD_CORNER_RADIUS_DP.dp),
+                ) {
                     Text(
                         text = when (selectedTab) {
                             HiddenTab.Archived -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 보관 중이에요."
@@ -313,10 +324,16 @@ private fun HiddenTabRow(
     processedCount: Int,
     onSelected: (HiddenTab) -> Unit,
 ) {
+    // Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+    // finding **F4** — Standalone deep-link entry's tab row stays in lockstep
+    // with the embedded [InboxTabRow] by sourcing radius / border tokens from
+    // [InboxCardLanguage]. Tab row picks the smaller [TAB_ROW_CORNER_RADIUS_DP]
+    // (12dp) intentionally — segmented controls have their own visual
+    // convention.
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(InboxCardLanguage.TAB_ROW_CORNER_RADIUS_DP.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, BorderSubtle),
+        border = BorderStroke(InboxCardLanguage.CARD_BORDER_WIDTH_DP.dp, BorderSubtle),
     ) {
         Row(
             modifier = Modifier

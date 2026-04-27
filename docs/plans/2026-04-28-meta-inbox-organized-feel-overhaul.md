@@ -68,7 +68,7 @@ Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-
 
 **Proposed fix (small):** Remove the per-row orange `Digest` status chip when the row appears inside the Digest sub-tab — the parent context (sub-tab name, group card header) already declares status. Keep the per-group count badge (`3건`) but downgrade it from orange-filled to a neutral outlined chip (`outlineVariant` border, `onSurfaceVariant` text). Result: orange appears once on the screen — the selected sub-tab segment.
 
-### F4 — Three different card visual languages on one screen
+### F4 — Three different card visual languages on one screen [IN PROGRESS via PR fix/issue-506-f4-inbox-unified-card-language]
 
 **Evidence:** Within `/tmp/ui-emu-archived.png` alone:
 1. **Summary card** (`1개 앱에서 11건을 보관 중이에요.` + helper text + outlined `전체 숨긴 알림 모두 지우기` button) — large, navy-tinted, ~280px tall.
