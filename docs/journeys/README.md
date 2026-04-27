@@ -37,7 +37,7 @@
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-25 |
+| [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-27 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-26 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — home-overview post-#425/#430/#433 sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-overview | PASS | Fresh APK `lastUpdateTime=2026-04-27 11:56:47`. 3 shell notifications posted, Home 탭 진입 후 dump. Steps 3/4/5/6/8/9/10/11 모두 doc-as-written 렌더 — StatPill "오늘 알림 45개 중 중요한 19개" + `즉시 19 / Digest 4 / 조용히 22`, PassthroughReviewCard "검토 대기 19" + "검토하기", connected InlineRow "연결됨", InsightCard "Shell 알림 15개" + 3 reason chips, TimelineCard "최근 흐름" + 3h/24h, recent list 5건 + "전체 45건 보기" footer, BottomNav 4-tab. Steps 2/7 비표시는 intended (snooze 잔존 + ack consumed). 최근 ship 3건 (#425 digest empty-state, #430 detector APP-Rule wiring, #433 archive bulk) Home rendering 무영향 확인. DRIFT 없음. `last-verified: 2026-04-26 → 2026-04-27`. |
 
 ### 2026-04-27 (journey-tester — duplicate-suppression sweep, emulator-5554)
 
