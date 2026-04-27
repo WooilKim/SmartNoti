@@ -58,7 +58,7 @@ superseded-by: ../journeys/home-uncategorized-prompt.md
 3. Notification 비교 시 packageName 도 `trim().lowercase()` 로 정규화한 뒤 set membership 체크 (case-insensitive). 기존 `appPackageName` 비교 경로도 같은 정규화로 일관성 유지.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.UncategorizedAppsDetectorTest"` → 12 케이스 GREEN.
 
-## Task 3: Wire `RulesRepository` snapshot through `HomeViewModel` to detector [SHIPPED via PR #TBD]
+## Task 3: Wire `RulesRepository` snapshot through `HomeViewModel` to detector [SHIPPED via PR #430]
 
 **Objective:** Production 호출 사이트가 새 인자를 채워주게.
 
@@ -71,7 +71,7 @@ superseded-by: ../journeys/home-uncategorized-prompt.md
 2. detector 호출 시 `rules` 인자에 collected 값 전달.
 3. 컴파일 확인. Existing UI 테스트 (있다면) 가 깨지지 않는지 확인.
 
-## Task 4: ADB end-to-end verification on emulator-5554 [SHIPPED via PR #TBD]
+## Task 4: ADB end-to-end verification on emulator-5554 [SHIPPED via PR #430]
 
 **Objective:** Detector 가 분류 탭에 "쿠팡 → DIGEST" APP-Rule Category 를 만든 뒤 Home 카드가 사라지는지 사용자 관측 레벨에서 확인.
 
@@ -104,7 +104,7 @@ superseded-by: ../journeys/home-uncategorized-prompt.md
 
 기록은 `docs/journeys/home-uncategorized-prompt.md` Verification log 에 추가. `last-verified` bump 는 verification recipe 전체를 다시 실행했을 때만.
 
-## Task 5: Update journey doc [SHIPPED via PR #TBD]
+## Task 5: Update journey doc [SHIPPED via PR #430]
 
 **Objective:** Known gap 해소를 journey 에 반영.
 
