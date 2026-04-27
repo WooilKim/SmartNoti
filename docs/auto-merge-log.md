@@ -400,3 +400,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T15:07:24Z | project-manager | #489 | Bug A KCC (광고) prefix precedence (Task 1+2 of issue #478 plan) | https://github.com/WooilKim/SmartNoti/actions/runs/25002710081 |
 | 2026-04-27T15:15:27Z | project-manager | #490 | gap-planner plan for issue #488 Bug 2 (signature normalize) | https://github.com/WooilKim/SmartNoti/actions/runs/25003197808 |
 | 2026-04-27T15:31:16Z | project-manager | #491 | Task 3 of #478 — Bug B2 PROMO default DIGEST + M1 DataStore codec migration (column 7 add, backward-compat decode, one-shot flag-gated runner) | https://github.com/WooilKim/SmartNoti/actions/runs/25003993693 |
+| 2026-04-27T15:58:40Z | project-manager | #492 | ContentSignatureNormalizer + Settings toggle (Tasks 1-4 of #488 plan); 14 files (8 prod / 5 test / 1 plan) | https://github.com/WooilKim/SmartNoti/actions/runs/25005375915 |
