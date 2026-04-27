@@ -52,7 +52,7 @@
 |---|---|---|---|
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-24 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-27 |
-| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-25 |
+| [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-27 |
 | [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-27 |
 
 ## 아직 문서화하지 않은 영역
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — rules-management 4-path sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-management | PASS | Settings → 고급 규칙 편집 (BottomNav 4탭, "규칙" 탭 부재 재확인). Editor 다이얼로그 3섹션 (`기본 정보 / 규칙 타입 / 예외 규칙`, action dropdown 부재 — D3 회귀 가드). 키워드 룰 `VTest`/`vtestkw` 저장 → `CategoryAssignBottomSheet` 4 Category + 두 dismiss CTA ("분류 없이 보류" + "작업 목록에 두기"). Path B (작업 목록에 두기) → 활성 규칙 8→9 + "작업 필요" sub-section + "미분류" chip + 비활성 배너. Path C (row 탭 → sheet 재오픈 → 분류 없이 보류) → row 가 "보류" sub-section 으로 이동 ("보류" chip + "사용자가 보류함" 배너 + "작업으로 끌어올리기" TextButton); 빈 "작업 필요" 라벨 사라짐. Path D (끌어올리기) → row 가 다시 "작업 필요" 로 승격; 빈 "보류" 라벨 사라짐 (양방향 regression guard PASS). 테스트 후 VTest 삭제로 baseline 9→8 복원. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — rules-feedback-loop Path A sweep, emulator-5554)
 
