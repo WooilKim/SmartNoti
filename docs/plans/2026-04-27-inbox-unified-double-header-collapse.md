@@ -35,7 +35,7 @@ status: planned
 
 ## Tasks
 
-### Task 1 — `DigestScreenMode` sealed class 도입
+### Task 1 — `DigestScreenMode` sealed class 도입 [IN PROGRESS via PR #452]
 
 - [ ] (test-first) `DigestScreenMode` sealed class 신설: `Standalone` (data object) + `Embedded` (data object). `HiddenScreenMode` 의 시그니처 mirror — 미래에 mode 별 파라미터가 생기면 같은 자리에 추가.
 - [ ] `DigestScreenModeContractTest` — `Standalone.shouldRenderHeader()` / `Embedded.shouldRenderHeader()` 의 boolean 계약 (Hidden 측 패턴 mirror).
@@ -44,7 +44,7 @@ status: planned
 
 **검증:** `./gradlew test --tests "*DigestScreenModeContractTest"` 통과.
 
-### Task 2 — `DigestScreen` 시그니처에 `mode: DigestScreenMode` 추가 (default = `Standalone`)
+### Task 2 — `DigestScreen` 시그니처에 `mode: DigestScreenMode` 추가 (default = `Standalone`) [IN PROGRESS via PR #452]
 
 - [ ] `DigestScreen(...)` 의 시그니처에 `mode: DigestScreenMode = DigestScreenMode.Standalone` 추가. `Standalone` 분기는 기존 `ScreenHeader` + SmartSurfaceCard 요약을 그대로 렌더, `Embedded` 분기는 두 item 을 LazyColumn 에서 빼고 그룹 카드부터 시작.
 - [ ] empty branch (`groups.isEmpty()`) 도 동일하게 mode 분기 — Embedded 에서는 EmptyState 만 렌더 (InboxScreen 헤더가 이미 컨텍스트 전달).
@@ -54,7 +54,7 @@ status: planned
 
 **검증:** `./gradlew assembleDebug` 통과 + 기존 `DigestScreenBulkActionsWiringTest` / `DigestEmptyStateContractTest` 회귀 없음.
 
-### Task 3 — `InboxScreen` 호출부를 `Embedded` 로 전환
+### Task 3 — `InboxScreen` 호출부를 `Embedded` 로 전환 [IN PROGRESS via PR #452]
 
 - [ ] `InboxScreen` 의 `DigestScreen(...)` 호출부에 `mode = DigestScreenMode.Embedded` 추가. 다른 prop 무변경.
 - [ ] 빌드 후 ADB smoke: `정리함` 탭 진입 → 헤더 1개 (`정리함 / 알림 정리함 / Digest 묶음과 숨긴 알림을…`) + sort dropdown + InboxTabRow 직후 그룹 카드 LazyColumn — 중복 헤더 + SmartSurfaceCard 요약 카드 부재 확인. uiautomator dump 의 `정리함` 텍스트 노드 1회만 등장.
@@ -63,7 +63,7 @@ status: planned
 
 **검증:** ADB end-to-end smoke + 헤더 텍스트 노드 카운트 (`grep -c '정리함' uiautomator-dump`).
 
-### Task 4 — Standalone deep-link 회귀 가드
+### Task 4 — Standalone deep-link 회귀 가드 [IN PROGRESS via PR #452]
 
 - [ ] `Routes.Digest` deep-link 의 NavHost composable 등록에서 `DigestScreen` 호출이 mode 를 명시적으로 `Standalone` 으로 (혹은 default 이용) 호출하는지 확인. 호출부 변경 없음.
 - [ ] ADB 검증: `am start -a android.intent.action.VIEW -d "smartnoti://digest" com.smartnoti.app` (현 deep-link scheme 이 있다면 사용, 없으면 Routes.Digest 직접 navigate 확인) → standalone 진입에서 헤더 + 요약 카드 정상 렌더.
@@ -72,7 +72,7 @@ status: planned
 
 **검증:** standalone 진입에서 헤더 1회, embedded 진입에서 헤더 1회 — DRIFT 없음.
 
-### Task 5 — `inbox-unified` journey 갱신
+### Task 5 — `inbox-unified` journey 갱신 [IN PROGRESS via PR #452]
 
 - [ ] Observable steps 5 (지금 `groups.isEmpty()` 분기 + 헤더 카피 단일 source 명시) 와 7 (Digest 탭 본문) 에 `DigestScreen(mode = Embedded)` 위임 사실 추가. Code pointers 에 `DigestScreenMode` 신규 항목 추가.
 - [ ] Known gaps 의 dual-header bullet 제거 + Change log 에 본 plan 의 ship 결과 한 줄 (날짜 + "DigestScreen embed mode 도입으로 정리함 통합 탭 dual-header 회귀 해소" + commit hash).
