@@ -185,8 +185,11 @@ fun HiddenNotificationsScreen(
         val indexInVisible = visibleGroups.indexOfFirst { it.id == targetId }
         if (indexInVisible < 0) return@LaunchedEffect
         // Leading items in standalone mode: header row + tab row + summary card = 3.
-        // Embedded mode skips the header row + tab row, so only the summary card precedes
-        // the group items (1). Deep-link scroll only fires in standalone mode anyway.
+        // Embedded mode skips the header row + tab row, and after F5
+        // (`docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`) the
+        // summary card is collapsed to a single compact caption + clear-all
+        // text-button row — still exactly one leading item before the group
+        // list. Deep-link scroll only fires in standalone mode anyway.
         val leadingItems = when (mode) {
             is HiddenScreenMode.Standalone -> 3
             is HiddenScreenMode.Embedded -> 1
@@ -261,39 +264,72 @@ fun HiddenNotificationsScreen(
                 HiddenTabEmptyState(tab = selectedTab)
             }
         } else {
-            item {
-                // Plan
-                // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
-                // finding **F4** — summary card uses the [InboxCardLanguage.Primary]
-                // surface (16dp radius, 1dp BorderSubtle, 16dp padding) so it
-                // shares the rhythm with the [DigestGroupCard] (Subtle)
-                // surfaces stacked below it. Hidden's standalone deep-link
-                // entry hosts the same composable so the unification flows
-                // through both call paths.
-                SmartSurfaceCard(
-                    shape = RoundedCornerShape(InboxCardLanguage.CARD_CORNER_RADIUS_DP.dp),
-                ) {
-                    Text(
-                        text = when (selectedTab) {
-                            HiddenTab.Archived -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 보관 중이에요."
-                            HiddenTab.Processed -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 처리했어요."
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = when (selectedTab) {
-                            HiddenTab.Archived -> "같은 앱의 여러 알림은 한 카드로 모아서 보여줘요. 탭하면 최신 내용을 바로 확인할 수 있어요."
-                            HiddenTab.Processed -> "이미 확인했거나 이전 버전에서 넘어온 알림이에요. 필요하면 한 번에 지울 수 있어요."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OutlinedButton(
-                        onClick = { pendingClearAll = true },
-                        modifier = Modifier.fillMaxWidth(),
+            // Plan `2026-04-28-meta-inbox-organized-feel-overhaul.md` finding
+            // F5 — "summary card on 보관 중 / 처리됨 says the same thing twice".
+            // Standalone deep-link entries keep the full SmartSurfaceCard
+            // (count restatement + helper line + outlined clear-all button)
+            // because they arrive without the outer InboxTabRow context that
+            // already declares the count. Embedded entries (inbox-unified
+            // sub-tabs) collapse the slot to a compact caption + a small
+            // text-button so the count is no longer restated three times in
+            // the top half of the screen. See [HiddenSummaryCardSpec].
+            // F4: SmartSurfaceCard uses [InboxCardLanguage.Primary] surface
+            // (16dp radius / 1dp BorderSubtle / 16dp padding) so it shares
+            // rhythm with the DigestGroupCard (Subtle) surfaces below.
+            if (HiddenSummaryCardSpec.fullSummaryCardVisible(mode)) {
+                item {
+                    SmartSurfaceCard(
+                        shape = RoundedCornerShape(InboxCardLanguage.CARD_CORNER_RADIUS_DP.dp),
                     ) {
-                        Text("전체 숨긴 알림 모두 지우기")
+                        Text(
+                            text = when (selectedTab) {
+                                HiddenTab.Archived -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 보관 중이에요."
+                                HiddenTab.Processed -> "${visibleGroups.size}개 앱에서 ${visibleCount}건을 처리했어요."
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = when (selectedTab) {
+                                HiddenTab.Archived -> HiddenSummaryCardSpec.ARCHIVED_CAPTION
+                                HiddenTab.Processed -> HiddenSummaryCardSpec.PROCESSED_CAPTION
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedButton(
+                            onClick = { pendingClearAll = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("전체 숨긴 알림 모두 지우기")
+                        }
+                    }
+                }
+            } else {
+                val embeddedSilentMode = (mode as HiddenScreenMode.Embedded).silentMode
+                val caption = HiddenSummaryCardSpec.embeddedCaptionFor(mode, embeddedSilentMode)
+                val clearLabel = HiddenSummaryCardSpec.embeddedClearAllLabel(mode)
+                if (caption != null || clearLabel != null) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (caption != null) {
+                                Text(
+                                    text = caption,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            if (clearLabel != null) {
+                                TextButton(onClick = { pendingClearAll = true }) {
+                                    Text(clearLabel)
+                                }
+                            }
+                        }
                     }
                 }
             }
