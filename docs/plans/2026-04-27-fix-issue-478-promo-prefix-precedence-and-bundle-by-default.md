@@ -88,7 +88,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 4. Settings 노출은 일단 코드 default 만 — UI 노출은 out-of-scope (i18n 확장은 future plan).
 5. `(광고)` 가 본문이 아니라 title 에만 있는 케이스도 detector 가 본문 fallback 으로 title 을 검사 (title 에 prefix 박는 앱도 있음). PR #486 의 fixture 표를 보고 결정.
 
-## Task 3: Bug B2 fix — PROMO_QUIETING seeder action change + migration v3
+## Task 3: Bug B2 fix — PROMO_QUIETING seeder action change + migration v3 [IN PROGRESS via PR #491]
 
 **Objective:** Task 1 의 OnboardingQuickStartCategorySeederPromoActionTest / SettingsRepositoryPromoActionMigrationTest 가 GREEN. 신규 install 의 PROMO_QUIETING owning Category = DIGEST. 기존 install 도 (수동 변경 안 했으면) DIGEST 로 자동 bump.
 
@@ -196,6 +196,14 @@ grep -oE '광고[^"]*' /tmp/ui.xml
 4. (선택) `onboarding-bootstrap.md` Change log 에도 cross-link 한 줄.
 
 ---
+
+## Definition of done
+
+- All 6 tasks landed (Tasks 1+2 in PR #489 / Bug A; Task 3 in PR #491 / Bug B2 + M1 migration; Tasks 4–6 follow).
+- Real-device ADB recipe (Task 5) on `R3CY2058DLJ` reproduces the user's three fixture notifications and shows them in the SmartNoti 정리함 (DIGEST) instead of the priority tray.
+- B2 chosen by user (2026-04-27, message "B2 로 진행해줘"); M1 migration policy chosen by implicit confirmation through repeated /journey-loop fires after wrapper recommended M1.
+- B1 and B3 explicitly rejected by user — see Product intent / assumptions section.
+- Both `notification-capture-classify` and `digest-suppression` journey docs `last-verified` bumped + Change log row added (Task 6).
 
 ## Scope
 
