@@ -166,6 +166,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - (resolved 2026-04-24, plan `2026-04-24-rule-editor-remove-action-dropdown`) **Rule 조건 편집 시 action 변경** — editor 에서 action dropdown 자체가 사라졌고, 저장 경로가 `upsertRule` 단일 persist 만 호출하므로 두-개-persist 의 원자성 누락 문제 자체가 사라짐. action 변경은 이제 분류 탭 Category editor 에서 단일 `upsertCategory` 로만 가능.
 - (resolved 2026-04-26, plan `2026-04-26-rule-explicit-draft-flag`) **신규 미분류 Rule sheet 거부 흐름** — Rule 에 영속 `draft: Boolean` 필드가 추가되어 "이 Rule 은 영원히 미분류로 두겠다" (sheet "분류 없이 보류" CTA, draft=false) 와 "sheet 를 깜빡 닫았다" (sheet "작업 목록에 두기" CTA, draft=true 유지) 가 storage 레벨에서 구분된다. RulesScreen 의 미분류 섹션은 "작업 필요" + "보류" 두 sub-section 으로 분리되어 사용자가 의도적 보류와 미처리 draft 를 한눈에 구별할 수 있고, 보류 row 의 "작업으로 끌어올리기" TextButton 으로 다시 작업 필요 로 승격 가능. classifier 동작은 변경 없음 (둘 다 owning Category 없음 → SILENT fall-through; `draft` 는 순수 UI/UX hint).
 - (resolved 2026-04-26, plan `2026-04-26-rules-bulk-assign-unassigned`) **bulk 미분류 분류** 미지원 — 미분류 Rule N 개를 한 분류에 한꺼번에 할당하는 흐름은 현재 없음. 한 건씩 sheet 를 거쳐야 함. 후속 plan. → plan: `docs/plans/2026-04-26-rules-bulk-assign-unassigned.md`
+- **code health (2026-04-27)**: `app/src/main/java/com/smartnoti/app/ui/screens/rules/RulesScreen.kt` — file is 1446 lines (over 700 critical threshold), root composable + 14 private composables (UnassignedRuleRowSlot / CategoryAssignSheetContent / RuleOverrideEditorSection / RepeatBundleThresholdEditor ...) + nested editor dialog all in one file. Refactor candidate — see `docs/plans/2026-04-27-refactor-rules-screen-split.md`.
 
 ## Change log
 

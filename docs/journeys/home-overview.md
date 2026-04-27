@@ -84,6 +84,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 - 인사이트가 0건일 때의 카드 표시 규칙이 현재 모든 builder 에 균일하지 않음.
 - (resolved 2026-04-22) "스크롤이 길어지면 위치 복원 UX 미검증" — `HomeRecentNotificationsTruncation` 의 5건 cap 으로 Home 의 최대 스크롤 길이 자체가 짧아져 시급성이 사라짐. 더 긴 리뷰는 정리함에서 수행.
+- **code health (2026-04-27)**: `app/src/main/java/com/smartnoti/app/ui/screens/home/HomeScreen.kt` — file is 877 lines (over 700 critical threshold), root composable body spans ~270 lines (line 97→368), then 12 private composables (InsightCard / TimelineCard / TimelineBarChart / HomeNotificationAccessCard / ReasonBreakdownChart ...). Refactor candidate — split insight / timeline / access subsections into per-card files (mirrors the SettingsScreen split plan pattern).
 
 ## Change log
 
