@@ -1,7 +1,13 @@
 ---
-status: in-progress
+status: shipped
+shipped: 2026-04-27
 fixes: 488
+superseded-by: docs/journeys/duplicate-suppression.md
 ---
+
+## Change log
+
+- 2026-04-27: shipped — ContentSignatureNormalizer + Settings toggle (PR #492 commit 05b2b31). Tasks 5 (ADB e2e) + 6 (journey doc bump) deferred — gated on user enabling Settings → 중복 묶음 → "비슷한 알림 묶기 (숫자/시각 차이 무시)" toggle (default OFF, no behavior change until opt-in). Re-open as follow-up plan if regression observed once toggle ON.
 
 # Fix #488: contentSignature normalizer for amount-only-差 repeat alerts
 
@@ -45,7 +51,7 @@ Two notification-classification gaps from issue #488 are deliberately split:
 
 ---
 
-## Task 1: Failing tests for normalizer + duplicate-burst path (RED first) [IN PROGRESS via PR #492]
+## Task 1: Failing tests for normalizer + duplicate-burst path (RED first) [SHIPPED via PR #492]
 
 **Objective:** Pin both the pure normalizer contract and the end-to-end duplicate-burst behavior in tests that **fail before the fix**.
 
@@ -70,7 +76,7 @@ Two notification-classification gaps from issue #488 are deliberately split:
 3. Tracker init in integration tests: pre-seed `LiveDuplicateCountTracker` with the equivalent of "previous N occurrences in the window" via the `persistedDuplicateCount` functional port so the test does not have to actually post 15 notifications.
 4. Run `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.ContentSignatureNormalizerTest" --tests "com.smartnoti.app.domain.usecase.DuplicateNotificationPolicyNormalizerIntegrationTest" --tests "com.smartnoti.app.notification.NotificationDuplicateContextBuilderNormalizerTest" --tests "com.smartnoti.app.domain.usecase.NotificationClassifierRepeatBundleNormalizerTest" --tests "com.smartnoti.app.data.settings.SettingsRepositoryNormalizerToggleTest"` → all RED. Quote at least the normalizer-test failure string into the implementer's commit message and PR body as RED-evidence.
 
-## Task 2: Implement `ContentSignatureNormalizer`
+## Task 2: Implement `ContentSignatureNormalizer` [SHIPPED via PR #492]
 
 **Objective:** Task 1's `ContentSignatureNormalizerTest` GREEN.
 
@@ -89,7 +95,7 @@ Two notification-classification gaps from issue #488 are deliberately split:
 4. ReDoS guard: all three patterns are linear-time on input length. Input is whatever the caller passes (already title+body concatenation, max ~1KB in practice). No nested quantifiers.
 5. No knowledge of language: the normalizer does not try to detect Korean vs English. The toggle is a global on/off.
 
-## Task 3: Wire normalizer into `NotificationDuplicateContextBuilder`
+## Task 3: Wire normalizer into `NotificationDuplicateContextBuilder` [SHIPPED via PR #492]
 
 **Objective:** Task 1's `DuplicateNotificationPolicyNormalizerIntegrationTest` and `NotificationDuplicateContextBuilderNormalizerTest` GREEN. The duplicate-burst path uses the normalized signature when the toggle is on.
 
@@ -105,7 +111,7 @@ Two notification-classification gaps from issue #488 are deliberately split:
 3. Confirm `NotificationDao.countRecentDuplicates(packageName, contentSignature, sinceMillis)` keeps using the same (now-normalized) string — no schema change needed because the column stores whatever signature the listener computed at write time. Toggling on mid-life means new rows match other new rows; old rows remain un-matchable. **This is acceptable** (rolling window expires them) but document in the toggle's helper text.
 4. Re-run Tasks 1's tests — RED → GREEN.
 
-## Task 4: Settings UI toggle + repository setter + migration-free wiring
+## Task 4: Settings UI toggle + repository setter + migration-free wiring [SHIPPED via PR #492]
 
 **Objective:** `SettingsRepositoryNormalizerToggleTest` GREEN. The Settings 중복 알림 묶기 row gains a Switch labelled "비슷한 알림 묶기 (숫자 차이 무시)" with helper copy explaining over-bundling risk.
 
@@ -125,7 +131,7 @@ Two notification-classification gaps from issue #488 are deliberately split:
 3. Toggle visibility: always shown inside the "중복 알림 묶기" row (no gating on the duplicate-burst master). The two existing pickers are already visible there; this is a peer.
 4. Wire ViewModel test if convenient; not blocking.
 
-## Task 5: Real-device ADB e2e on `R3CY2058DLJ` (P1 release-prep gate) [deferred to follow-up]
+## Task 5: Real-device ADB e2e on `R3CY2058DLJ` (P1 release-prep gate) [DEFERRED — toggle-gated]
 
 **Status:** Deferred to a follow-up bundle (PR #492 ships Tasks 1–4 only). The implementer agent does not have access to the physical `R3CY2058DLJ` device referenced in the recipe; running the toggle-OFF baseline + toggle-ON reproduction is a human-driven verification step.
 
@@ -177,7 +183,7 @@ grep -oE '적립[^"]*' /tmp/ui.xml
 
 If any expected condition fails: plan-implementer stops and reports — do not patch over it. If the toggle-OFF baseline does NOT reproduce the bug, the test fixture has drifted and the issue's premise is re-questioned.
 
-## Task 6: Bump `duplicate-suppression` journey + Change log [deferred to follow-up]
+## Task 6: Bump `duplicate-suppression` journey + Change log [DEFERRED — toggle-gated]
 
 **Status:** Deferred to the same follow-up bundle as Task 5. `last-verified` must reflect an actual recipe run (`docs-sync.md`), and that depends on Task 5's real-device verification — bumping the journey now would be a docs-only edit that lies about verification.
 

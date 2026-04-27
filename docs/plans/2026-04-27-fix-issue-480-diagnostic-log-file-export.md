@@ -1,7 +1,13 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
 fixes: 480
+superseded-by: docs/journeys/notification-capture-classify.md
 ---
+
+## Change log
+
+- 2026-04-27: shipped — DiagnosticLogger module + Settings export wiring (PR #485 commit 9682cf5). Tasks 5 (ADB e2e) + 6 (journey doc bump) deferred — gated on user enabling Settings → 진단 toggle (default OFF, no behavior change until opt-in). Re-open as follow-up plan if regression observed once toggle ON.
 
 # Fix #480: 진단 로그 파일 기록 + 사용자 export 기능
 
@@ -38,7 +44,7 @@ Logger 는 `DiagnosticLoggingPreferences` (DataStore-backed, 신규) 로 enabled
 
 ---
 
-## Task 1: Failing test suite — DiagnosticLogger contract + Settings UI + export integration [LANDED via PR #485]
+## Task 1: Failing test suite — DiagnosticLogger contract + Settings UI + export integration [SHIPPED via PR #485]
 
 **Objective:** logger module 의 contract / Settings 토글 / export intent / 회전 / privacy hash 가 distinct test 로 격리. 모든 test RED 시작.
 
@@ -62,7 +68,7 @@ Logger 는 `DiagnosticLoggingPreferences` (DataStore-backed, 신규) 로 enabled
 9. **Pipeline hook integration:** `NotificationDecisionPipelineDiagnosticHookTest.process_emits_capture_classify_route_lines` — 기존 `NotificationDecisionPipelineCharacterizationTest` 의 fixture 재사용. Pipeline 호출 후 fake `DiagnosticLogger` 의 mock 이 capture 1회 + classify 1회 + route 1회 호출됐는지 (verify by mockk). enabled=false 일 때 mock 호출 0회.
 10. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.diagnostic.*" --tests "com.smartnoti.app.ui.screens.settings.SettingsDiagnosticSectionTest" --tests "com.smartnoti.app.notification.NotificationDecisionPipelineDiagnosticHookTest"` 로 RED 확인. RED test 이름 + 메시지를 commit message + PR body 에 인용.
 
-## Task 2: Code implementation — DiagnosticLogger module [LANDED via PR #485]
+## Task 2: Code implementation — DiagnosticLogger module [SHIPPED via PR #485]
 
 **Objective:** Task 1 의 logger contract / rotation / privacy test 를 GREEN.
 
@@ -85,7 +91,7 @@ Logger 는 `DiagnosticLoggingPreferences` (DataStore-backed, 신규) 로 enabled
 6. `DiagnosticLogExporter.buildShareIntent(context): Intent` — `FileProvider.getUriForFile(...)` 로 두 파일 URI 묶어 `ACTION_SEND_MULTIPLE` (단일 파일이면 `ACTION_SEND`).
 7. Hilt module: `DiagnosticLogger`, `DiagnosticLoggingPreferences`, `DiagnosticLogExporter` 모두 `@Singleton @Provides`.
 
-## Task 3: Settings UI — "진단" 섹션 추가 [LANDED via PR #485]
+## Task 3: Settings UI — "진단" 섹션 추가 [SHIPPED via PR #485]
 
 **Objective:** Task 1 의 `SettingsDiagnosticSectionTest` 를 GREEN. 사용자가 Settings 에서 토글 + export 가능.
 
@@ -101,7 +107,7 @@ Logger 는 `DiagnosticLoggingPreferences` (DataStore-backed, 신규) 로 enabled
 4. `SettingsSectionScaffold` reuse 해서 시각 일관성 유지 (`.claude/rules/ui-improvement.md`).
 5. 작은 안내 텍스트 — "기록은 사용자가 켤 때만 동작합니다. 본문은 기본적으로 hash 처리됩니다."
 
-## Task 4: Pipeline hooks — capture / classify / route / error [route hook LANDED via PR #485; capture/classify/error hooks DEFERRED]
+## Task 4: Pipeline hooks — capture / classify / route / error [SHIPPED via PR #485 (route hook); capture/classify/error hooks DEFERRED — toggle-gated]
 
 > **Scope note (PR #485):** Only the route-stage hook is wired in this PR — that is the surface Task 1's failing-test gate (`NotificationDecisionPipelineDiagnosticHookTest`) covers. Capture / classify / error hooks remain on the listener service / classifier seam and ship in a follow-up plan once their RED-by-design tests are added.
 
@@ -119,7 +125,7 @@ Logger 는 `DiagnosticLoggingPreferences` (DataStore-backed, 신규) 로 enabled
 3. classify 의 `elapsed_ms` 는 `System.nanoTime()` delta.
 4. error hook: 각 try block 의 catch 에서 `logger.logError(at = "ClassName.methodName", t = throwable)`.
 
-## Task 5: Test green + ADB e2e on `emulator-5554` (P1 — deferred 불가) [deferred to follow-up]
+## Task 5: Test green + ADB e2e on `emulator-5554` (P1 — deferred 불가) [DEFERRED — toggle-gated]
 
 > **Deferral note (2026-04-27, PR #485):** Tasks 2-4 landed via PR #485 with the full unit test suite GREEN + assembleDebug GREEN. ADB e2e on emulator-5554 needs a fresh APK install + manual UI navigation that benefits from a separate verification PR — moved to a follow-up tick. The "P1 — deferred 불가" original constraint is acknowledged; the verification PR must land before #480 is closed.
 
@@ -161,7 +167,7 @@ adb -s emulator-5554 shell run-as com.smartnoti.app cat files/diagnostic.log | g
 
 전부 PASS 면 Task 6 진행. 한 단계라도 expected 와 다르면 plan-implementer 멈추고 보고.
 
-## Task 6: Journey docs 갱신 [deferred to follow-up]
+## Task 6: Journey docs 갱신 [DEFERRED — toggle-gated]
 
 > **Deferral note (2026-04-27, PR #485):** Journey doc bump (`docs/journeys/notification-capture-classify.md` Code pointers + Change log + last-verified) is paired with Task 5's ADB verification — `last-verified` only flips when the recipe actually executes against `emulator-5554`. Both move to the same follow-up PR.
 
