@@ -337,3 +337,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T00:44:41Z | project-manager | #421 | gap-planner: onboarding-bootstrap non-destructive sub-recipe plan | https://github.com/WooilKim/SmartNoti/actions/runs/24971227622 |
 | 2026-04-27T00:58:37Z | project-manager | #422 | Tasks 1-2 onboarding-bootstrap: debug-only rehearsal receiver + 4 unit tests | https://github.com/WooilKim/SmartNoti/actions/runs/24971510809 |
 | 2026-04-27T01:09:37Z | project-manager | #423 | docs(onboarding-bootstrap): non-destructive sub-recipe + plan flip to shipped (Tasks 3-7) | https://github.com/WooilKim/SmartNoti/actions/runs/24971775921 |
+| 2026-04-27T01:22:18Z | project-manager | #424 | docs(plans): digest empty-state suppress opt-in CTA | https://github.com/WooilKim/SmartNoti/actions/runs/24972069870 |
