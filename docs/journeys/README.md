@@ -53,7 +53,7 @@
 | [onboarding-bootstrap](onboarding-bootstrap.md) | 첫 온보딩 및 기존 알림 부트스트랩 | shipped | 2026-04-24 |
 | [categories-management](categories-management.md) | 분류 (Category) CRUD + drag-reorder | shipped | 2026-04-27 |
 | [rules-management](rules-management.md) | 고급 규칙 편집 (Settings 하위) | shipped | 2026-04-25 |
-| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-24 |
+| [rules-feedback-loop](rules-feedback-loop.md) | 알림 피드백 → 룰 저장 | shipped | 2026-04-27 |
 
 ## 아직 문서화하지 않은 영역
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — rules-feedback-loop Path A sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-feedback-loop | PASS | Shell-posted `DetailTest_0427` (no sender → derivation type=APP) → 정리함 > 보관 중 > Shell 카드 > preview 탭 → Detail "분류 변경" → `CategoryAssignBottomSheet` 4 Category rows + "+ 새 분류 만들기" terminal. "중요 알림" 탭 → 시트 dismiss + 스낵바 `"중요 알림 분류로 옮겼어요"` + Detail `분류` 가 `즉시 전달` 즉시 갱신 + reasonTag `사용자 분류` append. APP:com.android.shell rule 이미 `cat-onboarding-important_priority.ruleIds` 에 존재로 dedup-noop (계약 idempotent 명시대로). 후속 알림 → Home StatPill 즉시 22→24, 조용히 25→24 — classifier cascade 자동 PRIORITY routing 라이브 확인. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — quiet-hours rotation sweep, emulator-5554)
 
