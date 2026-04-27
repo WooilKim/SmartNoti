@@ -19,6 +19,15 @@ shipped: 2026-04-27
   app-selection / notification-access composable cluster (~750 lines)
   was not named as a sub-file in this plan — a follow-up plan should
   address it.
+- 2026-04-27 — Residual suppression cluster shipped via follow-up plan
+  `docs/plans/2026-04-27-refactor-settings-suppression-cluster-split.md`.
+  Root file 1118 → 307 lines after extracting four sub-files
+  (`SettingsSuppressionInsightSection.kt`,
+  `SettingsSuppressionManagementSection.kt`,
+  `SettingsAppSelectionSection.kt`,
+  `SettingsNotificationAccessSection.kt`) plus
+  `SettingsSectionScaffold.kt` for the three reusable scaffold
+  composables. Behavior unchanged.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. Refactor — behavior must not change.
 
