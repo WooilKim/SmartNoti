@@ -66,6 +66,15 @@
 ## Verification log
 
 
+### 2026-04-27 (ui-ux sweep — recently-shipped UI changes audit, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | ⚠️ MODERATE | PR #418 (sort dropdown) 자체 wiring 정상 — `정렬: 최신순` chevron + 메뉴 3옵션 + 선택 시 라벨/정렬 즉시 반영 (`/tmp/ui-inbox-sort-dropdown-closed.png`). 단, sweep 중 외부 `InboxScreen.ScreenHeader` + sort dropdown + InboxTabRow 직후 임베드된 `DigestScreen` 이 자기 헤더 + `현재 N개 묶음` SmartSurfaceCard 를 또 그리는 dual-header 회귀 발견 — 화면 상단 절반 중복 chrome. Plan: `docs/plans/2026-04-27-inbox-unified-double-header-collapse.md` (Hidden 측 `Embedded` 패턴 mirror 권장). Known gaps 갱신. |
+| ignored-archive | ⚠️ MODERATE | PR #433 (bulk ActionBar + ConfirmDialog) wiring 정상 — empty branch + 헤더 두 OutlinedButton + 카드 + per-row TextButton 모두 노출 (sqlite 로 IGNORE row 3건 seed, `/tmp/ui-ignored-archive.png`). 단, 헤더 첫 OutlinedButton (`모두 PRIORITY 로 복구`) 의 라벨이 `weight(1f)` 폭을 넘어 `복구` 가 두 번째 줄로 wrap 되어 affordance 위계 손상. per-row `PRIORITY 로 복구` TextButton 이 NotificationCard 외부에 floating — anchor 약함. 두 건 모두 Known gaps 갱신, 별도 plan 미작성 (라벨 단축 vs Column stack 은 product copy 판단 필요). |
+| digest-empty-state CTA (PR #425) | ✅ CLEAN | 별도 journey 없음 — `inbox-unified` Code pointers `DigestEmptyStateAction` 의 카피/라벨 단일화 + `EmptyState` action 슬롯 사용. 시각 treatment (`FilledTonalButton` + 중앙 정렬 + 8.dp spacer) 가 categories empty-state CTA (PR #253) 와 일관, accent 절제 OK. Empty branch 자체는 본 sweep 시점 DB 상태 (Digest 8건) 로 직접 캡처는 미수행 — 2026-04-27 inbox-unified Change log 의 실측 (`bounds[359,1540][722,1645]`) 결과를 인용. |
+| settings (tray auto-dismiss, PR #417) | ✅ CLEAN | `SuppressionManagementCard` 안 `고급 숨김 옵션` 전개 시 `SmartNoti 알림 자동 정리` SettingsToggleRow + 활성 시 `자동 정리 시간` AssistChip + DropdownMenu (`5분 / 15분 / 30분 / 1시간 / 3시간`, `/tmp/ui-tray-autodismiss-zoom.png` + `/tmp/ui-tray-autodismiss-dropdown-open.png`). `DuplicateWindowPicker` 패턴과 시각 일관 — 별도 journey 미존재 (settings 화면 자체는 README 의 `## 아직 문서화하지 않은 영역` 가버넌스). |
+
 ### 2026-04-27 (journey-tester — protected-source-notifications rotation sweep, emulator-5554)
 
 | Journey | Result | Notes |
