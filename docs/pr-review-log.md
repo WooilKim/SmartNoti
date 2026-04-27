@@ -426,3 +426,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T09:38:52Z | #466 | plan-implementer | DEFER | CI pending — Unit tests + debug APK |
 | 2026-04-27T09:43:23Z | #466 | plan-implementer | APPROVE+merge | NotificationDetail split Tasks 2-4; CI green; plan flipped to shipped |
 | 2026-04-27T09:50:46Z | #467 | gap-planner | DEFER | CI pending (Unit tests + debug APK); docs-only plan + journey gap pointer, scope OK |
+| 2026-04-27T09:54:51Z | #467 | gap-planner | APPROVE+merge | docs-only plan + journey gap pointer; CI green |
