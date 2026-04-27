@@ -468,3 +468,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T16:35:14Z | #495 | project-manager | APPROVE | docs-only plan-flip 2026-04-27 #478 promo-prefix; merged 1f29a98-equiv squash; verification chain PRs #489/#491/#494 |
 | 2026-04-27T17:18:51Z | #498 | project-manager | DEFER | CI IN_PROGRESS; pure docs flip 480+488 to shipped, will re-check next sweep |
 | 2026-04-27T17:22:43Z | #498 | plan-flip-batch | APPROVE+merge | docs-only plan flip; #480 + #488 → status:shipped; CI green; toggle-gated verification deferred with re-open path |
+| 2026-04-27T17:32:49Z | #499 | gap-planner | DEFER | CI Unit tests + debug APK IN_PROGRESS at sweep time; meta-plan single-doc PR, scope/traceability clean |
