@@ -497,3 +497,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T21:48:28Z | #517 | plan-implementer | APPROVE | #511 Tasks 6-7 closure; CI SUCCESS; doc-only; closes #511 on merge |
 | 2026-04-27T21:55:07Z | #518 | gap-planner | APPROVE+merged | meta-plan flip 2026-04-28 to shipped; CI green; F1-F5 cohort complete |
 | 2026-04-27T22:01:04Z | #519 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) — re-check next sweep |
+| 2026-04-27T22:08:48Z | #519 | gap-planner | APPROVE+merge | plan for issue #510 replacement icon source/action overlay; squash 116e750 |
