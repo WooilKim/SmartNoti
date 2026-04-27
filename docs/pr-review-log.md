@@ -417,3 +417,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T08:39:16Z | #461 | plan-implementer | APPROVE+merge | Home split Task 1 — 27 characterization tests, CI green |
 | 2026-04-27T08:47:25Z | #462 | plan-implementer | DEFER | CI pending (Unit tests + debug APK); re-review next sweep |
 | 2026-04-27T08:51:26Z | #462 | plan-implementer | APPROVE | Home split Tasks 2-4 — code carve-out, CI green, merged |
+| 2026-04-27T08:57:22Z | #463 | loop-retrospective (ops) | DEFER | CI pending (Unit tests + debug APK); docs-only retro-log row; prompt-injection in tool output suppressed |
