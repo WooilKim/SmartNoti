@@ -335,3 +335,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T00:26:47Z | journey-tester | #419 | inbox-unified | https://github.com/WooilKim/SmartNoti/actions/runs/24970837775 |
 | 2026-04-27T00:34:41Z | journey-tester | #420 | onboarding-bootstrap | https://github.com/WooilKim/SmartNoti/actions/runs/24971026806 |
 | 2026-04-27T00:44:41Z | project-manager | #421 | gap-planner: onboarding-bootstrap non-destructive sub-recipe plan | https://github.com/WooilKim/SmartNoti/actions/runs/24971227622 |
+| 2026-04-27T00:58:37Z | project-manager | #422 | Tasks 1-2 onboarding-bootstrap: debug-only rehearsal receiver + 4 unit tests | https://github.com/WooilKim/SmartNoti/actions/runs/24971510809 |
