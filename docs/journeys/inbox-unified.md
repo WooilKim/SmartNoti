@@ -120,6 +120,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - IGNORE 카운트는 어느 서브탭 헤더에도 표시되지 않음 (의도) — Settings 의 `showIgnoredArchive` 토글을 켜야만 별도 경로로 노출.
 - Recipe 는 journey-tester 가 ADB 로 아직 end-to-end 검증하지 않음 — `last-verified` 비어 있음.
 - 기존 `digest-inbox` / `hidden-inbox` 문서는 `status: deprecated` + `superseded-by: inbox-unified` 로 전환되지만, tray deep-link (`Routes.Digest` / `Routes.Hidden` ) 는 legacy route 를 직접 열어 통합 탭을 우회하므로 두 문서의 "진입 경로 = 딥링크" 서브셋은 여전히 계약 — 해당 부분은 deprecated 표시와 함께 Code pointers + Verification 으로 남긴다.
+- **2026-04-28 ui-ux sweep (MODERATE × 5)** — 사용자 정성 피드백 "정리함이 정돈된 느낌이 전혀 없어" 에 대응한 audit (emulator-5554) 에서 5개 시각 부채 발견: (F1) Digest 서브탭의 `DigestGroupCard` 가 카드 안에 카드를 중첩 (preview row 도 자체 outlined surface), (F2) ScreenHeader + subtitle + sort dropdown row + InboxTabRow 가 첫 화면 25% 를 chrome 으로 점유, (F3) 같은 화면에 orange accent 가 6회 등장 (group `Nn건` badge × 2 + 행별 `Digest` chip × 4) — accent 절제 원칙 위반, (F4) 한 화면 안에 4종의 카드 시각 언어 (summary / group / preview / nav) 가 corner radius / border / padding 모두 다름, (F5) 보관 중 / 처리됨 의 summary 카드가 탭 라벨과 그룹 카드와 카운트를 3중으로 반복. 후속: `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md` 에서 cohort 결정 후 fix 별 별도 plan 으로 분기.
 
 ## Change log
 

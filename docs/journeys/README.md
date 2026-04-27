@@ -66,7 +66,11 @@
 ## Verification log
 
 
-### 2026-04-27 (journey-tester — digest-inbox rotation sweep post-#491 PROMO→DIGEST, emulator-5554)
+### 2026-04-28 (ui-ux sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | MODERATE × 5 | UTC 18:48Z. `ui-ux-inspector` audit triggered by user qualitative feedback "정리함이 정돈된 느낌이 전혀 없어". Captured `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-archived.png`, `/tmp/ui-emu-processed.png`, `/tmp/ui-emu-digest-fresh.png` on emulator-5554 against seeded data (4 Digest groups / 11 archived / 12 processed). Five visual debt findings against `.claude/rules/ui-improvement.md`: F1 cards-inside-cards (`DigestGroupCard` preview rows are themselves outlined surfaces — three nested rectangle layers per group), F2 header chrome eats ~25% of first screen (eyebrow + title + 2-line subtitle + sort row + tab row stacked), F3 orange accent appears 6× per Digest screen (group `Nn건` badges + per-row `Digest` status chips redundant inside Digest sub-tab), F4 four different card visual languages on one screen (summary / group / preview / nav — different radii/border/padding), F5 보관 중·처리됨 summary card repeats the count three times in same viewport (tab segment + summary card + group row chip). Drafted `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md` (kind: meta-plan) sized as 5 cohort-pickable fixes; appended Known gaps bullet to `inbox-unified.md`. No production code touched. |
 
 | Journey | Result | Notes |
 |---|---|---|
