@@ -14,6 +14,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -112,10 +113,17 @@ class SmartNotiNotifierIconTest {
             "DIGEST replacement must set largeIcon to the source app launcher bitmap",
             largeIcon,
         )
-        assertSame(
-            "DIGEST replacement largeIcon must be the bitmap returned by AppIconResolver",
-            coupangIcon,
-            largeIcon,
+        // NotificationCompat.Builder.setLargeIcon(Bitmap) wraps the
+        // bitmap into an IconCompat → Icon and the system parcels it
+        // through `notify(...)`, so identity is not preserved on API 23+
+        // even though the production builder calls setLargeIcon with the
+        // exact bitmap the resolver returned. `Bitmap.sameAs` checks
+        // pixel-by-pixel equivalence which is what the contract actually
+        // wants — "the bitmap surfaced in the tray equals the resolver's
+        // output, not some default substitute".
+        assertTrue(
+            "DIGEST replacement largeIcon pixels must match the AppIconResolver bitmap",
+            coupangIcon.sameAs(largeIcon),
         )
     }
 
@@ -147,10 +155,16 @@ class SmartNotiNotifierIconTest {
             R.drawable.ic_replacement_silent,
             posted.smallIcon.resId,
         )
-        assertSame(
-            "SILENT replacement largeIcon must be the bitmap returned by AppIconResolver",
-            gmailIcon,
-            posted.getLargeIconBitmap(),
+        // See `digest_replacement_…` for the rationale on `sameAs` vs
+        // `assertSame`.
+        val largeIcon = posted.getLargeIconBitmap()
+        assertNotNull(
+            "SILENT replacement must set largeIcon to the source app launcher bitmap",
+            largeIcon,
+        )
+        assertTrue(
+            "SILENT replacement largeIcon pixels must match the AppIconResolver bitmap",
+            gmailIcon.sameAs(largeIcon),
         )
     }
 
@@ -202,17 +216,36 @@ class SmartNotiNotifierIconTest {
 
     /**
      * Reads back the bitmap that `setLargeIcon(Bitmap)` stored on the
-     * notification. On API 23+ the legacy `Notification.largeIcon`
-     * field is still populated by `NotificationCompat.Builder
-     * .setLargeIcon(Bitmap)`, and Robolectric mirrors that — so the
-     * field read works without going through `Notification.extras
-     * .getParcelable(EXTRA_LARGE_ICON)`. Returning null distinguishes
-     * "notifier omitted setLargeIcon" from "notifier called it with a
-     * null bitmap" (the latter is impossible because the production
-     * builder ignores null inputs to `setLargeIcon`).
+     * notification. On API 23+ AndroidX
+     * `NotificationCompat.Builder.setLargeIcon(Bitmap)` wraps the bitmap
+     * into an `IconCompat` and emits it via `Notification.Builder
+     * .setLargeIcon(Icon)`, so the legacy
+     * `Notification.largeIcon` field is null and the bitmap is reachable
+     * only through `notification.getLargeIcon()` → `Icon.getBitmap()`.
+     * The helper checks the legacy field first (covers older API paths
+     * exercised by other tests) then falls through to the Icon path.
+     * Returning null distinguishes "notifier omitted setLargeIcon" from
+     * "notifier called it with a null bitmap" (the latter is impossible
+     * because the production builder ignores null inputs to
+     * `setLargeIcon`).
      */
     @Suppress("DEPRECATION")
-    private fun android.app.Notification.getLargeIconBitmap(): Bitmap? = this.largeIcon
+    private fun android.app.Notification.getLargeIconBitmap(): Bitmap? {
+        this.largeIcon?.let { return it }
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) return null
+        val icon = this.getLargeIcon() ?: return null
+        if (icon.type != android.graphics.drawable.Icon.TYPE_BITMAP &&
+            icon.type != android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP
+        ) {
+            return null
+        }
+        // Icon.getBitmap() is available since API 23 but @hide; resort to
+        // reflection so the test stays on the public surface w.r.t. lint.
+        return runCatching {
+            val m = android.graphics.drawable.Icon::class.java.getMethod("getBitmap")
+            m.invoke(icon) as? Bitmap
+        }.getOrNull()
+    }
 
     private fun bitmap(): Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
 

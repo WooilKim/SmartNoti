@@ -22,6 +22,17 @@ import com.smartnoti.app.onboarding.OnboardingPermissions
 class SmartNotiNotifier(
     private val context: Context,
     private val timeoutPolicy: ReplacementNotificationTimeoutPolicy = ReplacementNotificationTimeoutPolicy(),
+    // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+    // Task 4: source-app launcher icon resolver injected via the
+    // listener service's AppContainer-equivalent. Default no-op resolver
+    // (FakeAppIconSource over an empty map) keeps legacy callers /
+    // existing tests that do not pass an explicit resolver compiling — the
+    // resolver returns null for every package so notifications fall back
+    // to "small icon only" rather than carrying a stale large icon. The
+    // production listener service wiring (see
+    // SmartNotiNotificationListenerService.appIconResolver) always passes
+    // a real `AndroidAppIconSource`-backed resolver.
+    private val appIconResolver: AppIconResolver = AppIconResolver(NoOpAppIconSource),
 ) {
     private val notificationManager by lazy { NotificationManagerCompat.from(context) }
 
@@ -78,8 +89,21 @@ class SmartNotiNotifier(
             parentRoute = parentRoute,
             requestCode = replacementNotificationId,
         )
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: pick a SmartNoti action-specific small icon (DIGEST /
+        // SILENT) so a single tray row visually identifies what SmartNoti
+        // did. Replaces the legacy `android.R.drawable.ic_dialog_info`
+        // which was identical for every replacement action.
+        val actionIcon = when (decision) {
+            NotificationDecision.DIGEST -> ReplacementActionIcon.DIGEST
+            NotificationDecision.SILENT -> ReplacementActionIcon.SILENT
+            // PRIORITY / IGNORE early-return above — branches kept for
+            // exhaustiveness so a future routing change surfaces here.
+            NotificationDecision.PRIORITY -> ReplacementActionIcon.PRIORITY
+            NotificationDecision.IGNORE -> ReplacementActionIcon.SILENT
+        }
         val notificationBuilder = NotificationCompat.Builder(context, channelSpec.id)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(actionIcon.drawableRes)
             .setContentTitle(contentTitle)
             .setContentText(contentText)
             .setSubText("$appName • $label")
@@ -90,6 +114,16 @@ class SmartNotiNotifier(
             .setOnlyAlertOnce(true)
             .setVisibility(channelSpec.notificationVisibility)
             .setContentIntent(contentIntent)
+
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: source-app launcher icon as the large icon so the row
+        // visually identifies the source. Resolver returns null when the
+        // package has no displayable launcher icon (system service /
+        // disabled / etc.); in that case we deliberately omit
+        // setLargeIcon so the row is honest rather than mis-branded with
+        // a SmartNoti default. The action small icon above still
+        // identifies what SmartNoti did.
+        appIconResolver.resolve(packageName)?.let { bitmap -> notificationBuilder.setLargeIcon(bitmap) }
 
         // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 2:
         // when the user has the auto-dismiss toggle ON, ask Android to

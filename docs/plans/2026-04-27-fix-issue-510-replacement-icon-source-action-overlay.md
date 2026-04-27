@@ -1,8 +1,12 @@
 ---
-status: planned
+status: in-progress
 fixes: 510
 last-updated: 2026-04-27
 ---
+
+> **Status (2026-04-27):** Tasks 1-4 shipped via PR #521 (RED tests then GREEN
+> implementation). Tasks 5-7 (ADB end-to-end on R3CY2058DLJ, journey doc updates,
+> closure PR) deferred to a follow-up bundle.
 
 # Fix issue #510 — replacement notification icons distinguish source app + action
 
