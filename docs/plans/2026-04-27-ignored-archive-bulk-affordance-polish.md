@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: ../journeys/ignored-archive.md
 ---
 
 # 무시됨 아카이브 — 헤더 bulk 버튼 폭 회귀 + per-row 복구 anchor 강화
@@ -31,44 +33,44 @@ status: planned
 
 ## Tasks
 
-### Task 1 — characterization test 추가 (failing-first)
+### Task 1 — characterization test 추가 (failing-first) [SHIPPED via PR #474, `b9e5a10`]
 
-- [ ] `IgnoredArchiveScreenAffordanceTest` (Compose UI test, `androidTest` 또는 `app/src/test` 의 `createComposeRule` 기반) 신설. 다음 3 케이스:
+- [x] `IgnoredArchiveScreenAffordanceTest` (Compose UI test, `androidTest` 또는 `app/src/test` 의 `createComposeRule` 기반) 신설. 다음 3 케이스:
   1. 헤더 카드의 두 OutlinedButton (`모두 PRIORITY 로 복구` / `모두 지우기`) 이 모두 visible 하고, **각자 한 줄로 렌더된다** (Compose 의 `onAllNodes` + `assertTextEquals` 또는 layout 노드 height 비교로 가드). 라벨 단축 옵션을 채택하면 단축된 라벨이 사용된다.
   2. multi-select 비활성 상태에서 per-row `PRIORITY 로 복구` TextButton 이 NotificationCard 와 **동일한 parent semantics 노드 트리** 안에 있다 (현재 코드: `Column { NotificationCard(...) ; TextButton(...) }` → 트리상 sibling 이지만 부모 보더 없음. fix 후: `Card { NotificationCard(...) ; TextButton(...) }` 또는 NotificationCard 안 trailing slot — 어느 fix 든 같은 부모 노드).
   3. multi-select 활성 시 per-row `PRIORITY 로 복구` TextButton 이 트리에서 사라진다 (기존 분기 보존 회귀 가드).
-- [ ] 본 테스트는 fix 적용 전 RED 여야 한다 (현 코드는 (1) 라벨 wrap, (2) 카드와 버튼이 같은 부모 보더 없음).
+- [x] 본 테스트는 fix 적용 전 RED 여야 한다 (현 코드는 (1) 라벨 wrap, (2) 카드와 버튼이 같은 부모 보더 없음).
 
 **파일:** `app/src/androidTest/java/com/smartnoti/app/ui/screens/ignored/IgnoredArchiveScreenAffordanceTest.kt` (신규) 또는 `app/src/test/.../IgnoredArchiveScreenAffordanceTest.kt` (Compose runtime test 가 host JVM 에서 가능하면).
 
 **검증:** `./gradlew :app:testDebugUnitTest --tests "*IgnoredArchiveScreenAffordanceTest"` (또는 connectedAndroidTest) 가 RED — 정확히 3 케이스 중 (1) + (2) 가 실패해야 한다.
 
-### Task 2 — 헤더 bulk 버튼 라벨 단축 또는 세로 stack 적용
+### Task 2 — 헤더 bulk 버튼 라벨 단축 또는 세로 stack 적용 [SHIPPED via PR #474, `1f09c2d`]
 
-- [ ] Risks open question (A vs B) 의 product 판단 결과를 반영. 권장 (A) 채택 시: `IgnoredArchiveScreen.kt:233` (`Text("모두 PRIORITY 로 복구")`) 의 라벨을 product 결정값 (예: `"PRIORITY 모두 복구"`) 으로 교체. `Modifier.weight(1f)` 유지.
-- [ ] 채택 (B) 시: 두 OutlinedButton 을 감싸던 `Row` 를 `Column` (verticalArrangement = `Arrangement.spacedBy(8.dp)`) 으로 교체, `Modifier.weight(1f)` → `Modifier.fillMaxWidth()` 로 전환.
-- [ ] Task 1 의 (1) 케이스가 GREEN 으로 전환되는지 확인.
+- [x] Risks open question (A vs B) 의 product 판단 결과를 반영. 권장 (A) 채택: `IgnoredArchiveAffordanceCopy.HEADER_RESTORE_ALL_LABEL` 을 `HEADER_RESTORE_ALL_LABEL_FIXED` (`PRIORITY 모두 복구`) 로 alias. `Modifier.weight(1f)` 유지.
+- [ ] 채택 (B) 시: 두 OutlinedButton 을 감싸던 `Row` 를 `Column` (verticalArrangement = `Arrangement.spacedBy(8.dp)`) 으로 교체, `Modifier.weight(1f)` → `Modifier.fillMaxWidth()` 로 전환. (미채택)
+- [x] Task 1 의 (1) 케이스가 GREEN 으로 전환되는지 확인.
 
 **파일:** `app/src/main/java/com/smartnoti/app/ui/screens/ignored/IgnoredArchiveScreen.kt` (라벨 또는 layout 수정).
 
 **검증:** `./gradlew assembleDebug` + Task 1 의 (1) 케이스 GREEN. 헤더 카드의 두 OutlinedButton 라벨이 모두 한 줄로 렌더되는지 emulator 에서 시각 확인 (`uiautomator dump` + `bounds` 검사).
 
-### Task 3 — per-row 복구 TextButton 을 카드 안쪽 anchor 로 흡수
+### Task 3 — per-row 복구 TextButton 을 카드 안쪽 anchor 로 흡수 [SHIPPED via PR #474, `1f09c2d`]
 
-- [ ] Risks open question (C vs D) 의 product 판단 결과 반영. 권장 (D) 채택 시: 현재 `Column { NotificationCard(...) ; TextButton(...) }` 패턴을 `Card { NotificationCard(...) ; HorizontalDivider() ; TextButton(...) }` 또는 `Surface(border = ...) { Column { NotificationCard(...) ; TextButton(modifier = Modifier.align(Alignment.End)...) } }` 로 wrap. 카드와 버튼이 동일 보더 안쪽에 위치하도록 정렬.
-- [ ] multi-select 활성 시 wrap 안의 TextButton 만 숨기는 기존 `if (!multiSelect.active)` 분기 보존.
-- [ ] 채택 (C) 시: `NotificationCard` 의 시그니처에 `trailingSlot: (@Composable () -> Unit)? = null` 추가 + 다른 호출처 (4–6곳) 에 default null 전달. 본 화면만 trailing 에 TextButton 전달. **권장하지 않음** (Risks 참고).
-- [ ] Task 1 의 (2) + (3) 케이스 모두 GREEN.
+- [x] Risks open question (C vs D) 의 product 판단 결과 반영. 권장 (D) 채택: 현재 `Column { NotificationCard(...) ; TextButton(...) }` 패턴을 `Card(border = outlineVariant, container = transparent, elevation = 0) { Column { NotificationCard(...) ; HorizontalDivider() ; Row(End) { TextButton(...) } } }` 로 wrap. NotificationCard 의 status-tinted background 가 안쪽 surface 를 그대로 owning 하도록 wrapper 를 transparent 처리.
+- [x] multi-select 활성 시 wrap 안의 TextButton 만 숨기는 기존 `if (!multiSelect.active)` 분기 보존.
+- [ ] 채택 (C) 시: `NotificationCard` 의 시그니처에 `trailingSlot: (@Composable () -> Unit)? = null` 추가 + 다른 호출처 (4–6곳) 에 default null 전달. 본 화면만 trailing 에 TextButton 전달. (미채택 — NotificationCard 시그니처 무영향)
+- [x] Task 1 의 (2) + (3) 케이스 모두 GREEN.
 
 **파일:** `app/src/main/java/com/smartnoti/app/ui/screens/ignored/IgnoredArchiveScreen.kt` (per-row layout 수정).
 
 **검증:** `./gradlew assembleDebug` + Task 1 의 (2) + (3) GREEN. emulator 에서 sqlite 로 IGNORE row 3건 seed → 각 카드와 `PRIORITY 로 복구` 버튼이 같은 시각 보더 안에 묶여 보이는지 + long-press 시 버튼 사라지는지 확인.
 
-### Task 4 — `ignored-archive` journey 갱신
+### Task 4 — `ignored-archive` journey 갱신 [SHIPPED via PR #474]
 
-- [ ] Known gaps 의 두 (2026-04-27 ui-ux sweep) bullet 제거 (헤더 button wrap + per-row TextButton anchor) — 본 plan 결과로 해소됨. 두 bullet 옆에 plan 링크 annotation 을 미리 박지 않고 ship 시점에 직접 제거 (resolution 서술은 Change log 로 이동).
-- [ ] Change log 에 본 plan 의 ship 결과 한 줄 추가 (날짜 + "헤더 bulk 버튼 라벨 회귀 + per-row 복구 anchor 회복" + commit hash + "Pinned by `IgnoredArchiveScreenAffordanceTest`").
-- [ ] `last-verified` 는 verification recipe 전체 재실행 시점에만 갱신 (per `.claude/rules/docs-sync.md`). 본 plan 은 시각 polish + behavior 무변경이라 `last-verified` 갱신은 분리.
+- [x] Known gaps 의 두 (2026-04-27 ui-ux sweep) bullet 제거 (헤더 button wrap + per-row TextButton anchor) — 본 plan 결과로 해소됨. 두 bullet 옆에 plan 링크 annotation 을 미리 박지 않고 ship 시점에 직접 제거 (resolution 서술은 Change log 로 이동).
+- [x] Change log 에 본 plan 의 ship 결과 한 줄 추가 (날짜 + "헤더 bulk 버튼 라벨 회귀 + per-row 복구 anchor 회복" + commit hash + "Pinned by `IgnoredArchiveScreenAffordanceTest`").
+- [x] `last-verified` 는 verification recipe 전체 재실행 시점에만 갱신 (per `.claude/rules/docs-sync.md`). 본 plan 은 시각 polish + behavior 무변경이라 `last-verified` 갱신은 분리.
 
 **파일:** `docs/journeys/ignored-archive.md`.
 
@@ -124,3 +126,4 @@ status: planned
 ## Change log
 
 - 2026-04-27: planned — 2026-04-27 ui-ux sweep (`/tmp/ui-ignored-archive.png`) 에서 발견된 두 회귀 (헤더 OutlinedButton 라벨 wrap + per-row TextButton anchor 약함) 를 한 plan 으로 묶음. characterization test (`IgnoredArchiveScreenAffordanceTest`) 를 RED 로 추가한 뒤 두 fix 적용 후 GREEN 으로 전환하는 tests-first 순서. Risks 의 product judgment 두 가지 (Q1 헤더 fix 방향 / Q2 per-row anchor 방향) 는 구현 PR 에서 결정.
+- 2026-04-27: shipped — Task 1 의 RED characterization test 가 PR #474 의 첫 commit (`b9e5a10`) 으로 landed (3 케이스 중 2 RED + 1 GREEN). Task 2 (Risks Q1 Option A: `모두 PRIORITY 로 복구` → `PRIORITY 모두 복구` 단축) + Task 3 (Risks Q2 Option D: 카드 + 액션을 transparent-container `Card` 보더 + `HorizontalDivider` 로 wrap) 가 같은 PR 의 후속 commit (`1f09c2d`) 으로 landed — 두 RED 케이스가 GREEN 으로 전환, 3/3 GREEN. `./gradlew :app:testDebugUnitTest :app:assembleDebug` 전체 스위트 GREEN. NotificationCard 시그니처 무영향 (다른 화면 zero blast radius). Task 4 의 journey doc 갱신 (Known gaps 의 두 ui-ux bullet 제거 + Observable steps 의 새 라벨 / wrapper Card 반영 + Change log 추가) 까지 같은 PR 에 포함. `last-verified` 는 미갱신 (시각 polish, recipe 재실행 분리).

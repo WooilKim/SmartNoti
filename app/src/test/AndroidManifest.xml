@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Test-only manifest. Plan
+    `docs/plans/2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1
+    introduces host-JVM Compose UI tests via Robolectric +
+    `androidx.compose.ui:ui-test-junit4`. The Compose test harness launches
+    `androidx.activity.ComponentActivity` to host the test composition;
+    Robolectric resolves activities against the merged manifest and would
+    otherwise fail with "Unable to resolve activity for Intent".
+
+    The activity entry is replicated from the AAR ui-test-manifest published
+    by Compose for instrumented tests — kept minimal so it never bleeds into
+    release.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="androidx.activity.ComponentActivity"
+            android:exported="true" />
+    </application>
+</manifest>
