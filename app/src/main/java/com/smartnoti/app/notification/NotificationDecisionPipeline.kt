@@ -1,6 +1,7 @@
 package com.smartnoti.app.notification
 
 import com.smartnoti.app.data.settings.SmartNotiSettings
+import com.smartnoti.app.diagnostic.DiagnosticLogger
 import com.smartnoti.app.domain.model.DeliveryProfile
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationUiModel
@@ -30,6 +31,13 @@ import com.smartnoti.app.domain.model.toDeliveryProfileOrDefault
  */
 internal class NotificationDecisionPipeline(
     private val actions: SourceTrayActions,
+    // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+    // Task 4 (route hook). Default `null` keeps the existing
+    // [NotificationDecisionPipelineCharacterizationTest] callers untouched —
+    // when omitted the dispatch path is a strict no-op for the diagnostic
+    // hook. Production wires `DiagnosticLoggerProvider.getInstance(context)`
+    // from the listener service.
+    private val diagnosticLogger: DiagnosticLogger? = null,
 ) {
     /**
      * Bundle of inputs that mirrors the locals in flight inside
@@ -78,6 +86,17 @@ internal class NotificationDecisionPipeline(
                 isPersistent = isPersistent,
             )
             actions.save(ignoredNotification, input.postedAtMillis, input.contentSignature)
+            // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+            // Task 4: log the IGNORE routing decision so a user reproduction
+            // shows "this notification was IGNORE'd". The logger short-circuits
+            // when disabled so this is a no-op when the user has not opted in.
+            diagnosticLogger?.logRoute(
+                packageName = input.packageName,
+                sourceCancelled = true,
+                replacementPosted = false,
+                channelId = null,
+                targetMode = "IGNORE",
+            )
             return
         }
 
@@ -177,5 +196,16 @@ internal class NotificationDecisionPipeline(
             silentMode = capturedSilentMode ?: baseNotification.silentMode,
         )
         actions.save(notification, input.postedAtMillis, input.contentSignature)
+        // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+        // Task 4: log the post-routing tuple so a user reproduction shows
+        // whether the source was cancelled / a replacement was posted, and
+        // the final target mode. The logger short-circuits when disabled.
+        diagnosticLogger?.logRoute(
+            packageName = input.packageName,
+            sourceCancelled = sourceRouting.cancelSourceNotification,
+            replacementPosted = replacementNotificationPosted,
+            channelId = null,
+            targetMode = decision.name,
+        )
     }
 }

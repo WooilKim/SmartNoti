@@ -17,9 +17,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 
+import android.content.Intent
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
+import com.smartnoti.app.diagnostic.DiagnosticLogExporter
+import com.smartnoti.app.diagnostic.DiagnosticLoggerProvider
+import com.smartnoti.app.diagnostic.DiagnosticLoggingPreferences
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
@@ -30,6 +34,7 @@ import com.smartnoti.app.ui.notificationaccess.openNotificationAccessSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun SettingsScreen(
@@ -50,6 +55,26 @@ fun SettingsScreen(
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
+    // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+    // Task 3 — diagnostic logging preferences + export wiring. Both
+    // singletons resolved via `remember(context)` so they survive recomposition
+    // without re-initialising the DataStore-backed cache.
+    val diagnosticPreferences = remember(context) {
+        DiagnosticLoggingPreferences.getInstance(context)
+    }
+    val diagnosticExporter = remember(context) {
+        // The provider creates the logger AND the diagnostic/ subfolder; we
+        // point the exporter at the same subfolder so URIs resolve under the
+        // FileProvider authority declared in AndroidManifest.xml.
+        DiagnosticLoggerProvider.getInstance(context) // ensure subfolder exists
+        DiagnosticLogExporter(
+            File(context.filesDir, DiagnosticLoggerProvider.DIAGNOSTIC_DIR_NAME),
+        )
+    }
+    val diagnosticLoggingEnabled by diagnosticPreferences.observeEnabled()
+        .collectAsStateWithLifecycle(initialValue = false)
+    val diagnosticRawTitleBody by diagnosticPreferences.observeRawTitleBody()
+        .collectAsStateWithLifecycle(initialValue = false)
     val suppressionInsightsBuilder = remember { SuppressionInsightsBuilder() }
     val suppressionBreakdownBuilder = remember { SuppressionBreakdownChartModelBuilder() }
     val suppressionDrillDownTargetsBuilder = remember { SuppressionInsightDrillDownTargetsBuilder() }
@@ -299,6 +324,30 @@ fun SettingsScreen(
                 summary = notificationAccessSummary,
                 onOpenSettings = {
                     openNotificationAccessSettings(context)
+                },
+            )
+        }
+        item {
+            // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+            // Task 3 — Settings → "진단" section. Default OFF; opt-in
+            // toggles wire through `DiagnosticLoggingPreferences` which the
+            // logger reads on every call.
+            SettingsDiagnosticSection(
+                state = SettingsDiagnosticSectionState(
+                    loggingEnabled = diagnosticLoggingEnabled,
+                    rawTitleBodyEnabled = diagnosticRawTitleBody,
+                ),
+                onLoggingEnabledChange = { enabled ->
+                    scope.launch { diagnosticPreferences.setEnabled(enabled) }
+                },
+                onRawTitleBodyEnabledChange = { enabled ->
+                    scope.launch { diagnosticPreferences.setRawTitleBodyEnabled(enabled) }
+                },
+                onExportClick = {
+                    val intent = diagnosticExporter.buildShareIntent(context)
+                    val chooser = Intent.createChooser(intent, "진단 로그 공유")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(chooser)
                 },
             )
         }

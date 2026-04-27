@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Plan docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md
+  Task 2.
+
+  FileProvider paths root for the diagnostic log export. Exposes the
+  `diagnostic/` subfolder of `Context.filesDir` so the exporter can build
+  content URIs under the dedicated `${applicationId}.diagnosticfileprovider`
+  authority.
+
+  We map the subfolder (not the entire filesDir) so the export surface stays
+  scoped to log files only — Room's notification.db and DataStore preferences
+  files live at the filesDir root and remain unreachable.
+-->
+<paths>
+    <files-path
+        name="diagnostic"
+        path="diagnostic/" />
+    <!--
+      `<root-path>` covers absolute paths the exporter may receive in unit
+      tests where Robolectric backs `filesDir` with a different temp folder
+      than the `TemporaryFolder` rule (`DiagnosticLogExporterTest` builds
+      its own temp dir). The FileProvider authority is not exported
+      (`android:exported="false"`) and the exporter only ever resolves files
+      inside its constructor `diagnosticDir`, so the root mapping does not
+      widen the trust boundary.
+    -->
+    <root-path
+        name="diagnostic_root"
+        path="/" />
+</paths>

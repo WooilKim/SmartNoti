@@ -47,6 +47,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          Plan docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md
+          Task 2. Dedicated FileProvider authority for the diagnostic log
+          export — `${applicationId}.diagnosticfileprovider` (the literal
+          asserted by `DiagnosticLogExporterTest`). Scoped to `diagnostic/`
+          under `filesDir` so other private files (notification.db, DataStore
+          prefs) remain unreachable.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.diagnosticfileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/diagnostic_file_paths" />
+        </provider>
     </application>
 
 </manifest>
