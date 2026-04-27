@@ -466,3 +466,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T15:31:51Z | #491 | plan-implementer | APPROVE+merged | Task 3 of #478 — Bug B2 PROMO default DIGEST + DataStore codec column-add migration; tests-first; CI green; no risk-signal carve-out triggered |
 | 2026-04-27T15:58:43Z | #492 | plan-implementer | APPROVE | Tasks 1-4 of issue #488 plan; CI green; tests-first honored (22 cases / 5 classes); Tasks 5-6 deferred per plan |
 | 2026-04-27T16:35:14Z | #495 | project-manager | APPROVE | docs-only plan-flip 2026-04-27 #478 promo-prefix; merged 1f29a98-equiv squash; verification chain PRs #489/#491/#494 |
+| 2026-04-27T17:18:51Z | #498 | project-manager | DEFER | CI IN_PROGRESS; pure docs flip 480+488 to shipped, will re-check next sweep |
