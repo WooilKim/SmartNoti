@@ -32,7 +32,7 @@
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-27 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-27 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
-| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-26 |
+| [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-27 |
 
 ### Inboxes & UI
 | ID | Title | Status | Last verified |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — persistent-notification-protection policy sweep, host JVM)
+
+| Journey | Result | Notes |
+|---|---|---|
+| persistent-notification-protection | PASS | `./gradlew :app:testDebugUnitTest --tests PersistentNotificationPolicyTest` → 13/13 PASS, 0.016s (Mini.local 2026-04-27T04:54:48Z). Bypass 키워드 (통화/전화/내비/녹화/카메라/마이크) + 합성어 false-positive 회귀 (전화번호/녹화본/통화기록/내비게이션) + 영문 단독/멀티워드 한계 documenting 케이스 모두 green. End-to-end (실제 ongoing 알림) 는 sample/실통신 앱 필요로 SKIP — recipe 명시대로 policy-level만 실행. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — priority-inbox debug-inject sweep, emulator-5554)
 

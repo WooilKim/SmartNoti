@@ -3,7 +3,7 @@ id: persistent-notification-protection
 title: 지속 알림 키워드 기반 보호
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-26
+last-verified: 2026-04-27
 ---
 
 ## Goal
@@ -90,4 +90,5 @@ last-verified: 2026-04-26
 - 2026-04-22: Policy-level verification re-run (`PersistentNotificationPolicyTest`, 7/7 PASS, 0.016s). `last-verified` 갱신.
 - 2026-04-24: Policy-level verification re-run (`PersistentNotificationPolicyTest`, 7/7 PASS, 0.015s). `last-verified` 갱신.
 - 2026-04-26: Policy-level verification re-run (`PersistentNotificationPolicyTest`, 7/7 PASS, 0.013s). `last-verified` 갱신.
+- 2026-04-27: Policy-level verification re-run (`PersistentNotificationPolicyTest`, 13/13 PASS, 0.016s). `last-verified` 갱신.
 - 2026-04-26: Word-boundary 매처 도입 — 합성어 false-positive (`전화번호`, `녹화본`, `통화기록`, `내비게이션` 등) 차단. 회귀 테스트 6종 추가 (false-positive 4 + 영문 한계 documenting 2). 총 13/13 PASS, 0.017s. plan `2026-04-26-persistent-bypass-keyword-word-boundary` (PR #399 + Tasks 3-6 후속 PR).
