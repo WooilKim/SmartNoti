@@ -1,7 +1,9 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-28
 fixes: 503
-last-updated: 2026-04-27
+last-updated: 2026-04-28
+superseded-by: docs/journeys/notification-capture-classify.md
 ---
 
 # Fix issue #503 — appName falls back to packageName for 16 popular apps
@@ -105,7 +107,7 @@ last-updated: 2026-04-27
    - Resolver 가 일부 packageName 은 fallback (packageName 그대로) 반환 → 그 row 는 update 되지 않고 남음 (다음 launch 에서 또 시도 가능).
 4. `./gradlew :app:testDebugUnitTest` GREEN.
 
-## Task 5: Update notification-capture-classify journey doc
+## Task 5: Update notification-capture-classify journey doc [SHIPPED via PR closure-503]
 
 **Files:**
 - `docs/journeys/notification-capture-classify.md`
@@ -115,7 +117,7 @@ last-updated: 2026-04-27
   - **`last-verified`** frontmatter 는 ADB recipe 가 GREEN 일 때만 bump.
 - (선택) `docs/journeys/categories-management.md` — appLabel 표시는 categories 화면에서도 노출되므로 references 만 한 줄 추가 (Optional).
 
-## Task 6: ADB end-to-end verification on R3CY2058DLJ
+## Task 6: ADB end-to-end verification on R3CY2058DLJ [SHIPPED via PR closure-503]
 
 **Objective:** P1 5-step gate 의 마지막 칸 — 실제 디바이스에서 친절한 라벨이 회수됐음을 SQL 로 증명.
 
@@ -143,7 +145,7 @@ sqlite3 /tmp/smartnoti-after.db "SELECT packageName, appName FROM notifications 
 
 기록물 (PR 본문 첨부): SQL output before/after + 16 패키지 라벨 회복 표.
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [SHIPPED via PR closure-503]
 
 - 모든 단위 테스트 GREEN (resolver + cache + runner + 기존 회귀 0건).
 - ADB end-to-end 증거 (Task 6) PR 본문 첨부.
@@ -184,3 +186,11 @@ sqlite3 /tmp/smartnoti-after.db "SELECT packageName, appName FROM notifications 
 ## Related journey
 
 - [`notification-capture-classify`](../journeys/notification-capture-classify.md) — appName 컬럼은 이 journey 의 step 3 (extras parsing + PackageManager 라벨 조회) 에서 채워짐. 본 plan 이 shipped 되면 해당 journey 의 Known gap (현재 미기재 — issue 가 user-filed 라 journey 에 등록 전) 를 본 plan 의 "→ plan: …" 링크로 대체하지 않고 Change log 에 직접 기록한다.
+
+---
+
+## Change log
+
+- 2026-04-27: Plan drafted (#504).
+- 2026-04-27: Tasks 1–4 shipped via PR #507 (commit `73c63b5`) — `AppLabelResolver` with explicit fallback chain (`loadLabel` → `getApplicationLabel` → `getNameForUid` → packageName), per-package memoization, install/upgrade/remove broadcast invalidation, `MigrateAppLabelRunner` cold-start one-shot migration gated by `app_label_resolution_migration_v1_applied` Settings flag.
+- 2026-04-28: Tasks 5–7 (this PR) — ADB end-to-end re-verification on R3CY2058DLJ. DB row count `appName == packageName` = **0** (down from 16 distinct broken packages). All 61 distinct packages resolve to friendly labels (Gmail / 쿠팡 / 하나카드 / NAVER / YouTube / LinkedIn / 카카오톡 / 신한은행 / Discord / Disney+ / 캐치테이블 / 토스 / 당근 / 스타벅스 등). Migration runner ran idempotently at cold-start, flag flipped. `notification-capture-classify` journey Code pointers + Change log updated. Plan flipped to `status: shipped`. Closes #503.
