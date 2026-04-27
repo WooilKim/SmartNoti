@@ -81,7 +81,7 @@ related-agent: ../../.claude/agents/coverage-guardian.md
 
 ---
 
-## Task 3: User decision point — A / B / C
+## Task 3: User decision point — A / B / C [RESOLVED 2026-04-27 — user chose A; implementation IN PROGRESS via PR #501]
 
 **Objective:** The user picks one of the three options based on Tasks 1–2 evidence. This task has no implementation steps — it is the explicit gate.
 
@@ -97,7 +97,7 @@ related-agent: ../../.claude/agents/coverage-guardian.md
 
 ---
 
-## Task 4: If A chosen — implementation PR (separate, not this PR)
+## Task 4: If A chosen — implementation PR (separate, not this PR) [IN PROGRESS via PR #501]
 
 **Objective:** Decommission coverage-guardian without losing its history.
 
