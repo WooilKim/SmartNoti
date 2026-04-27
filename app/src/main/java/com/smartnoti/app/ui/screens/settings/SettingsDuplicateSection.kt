@@ -11,6 +11,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.smartnoti.app.ui.components.SettingsToggleRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,8 +24,10 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun DuplicateThresholdEditorRow(
     spec: DuplicateThresholdEditorSpec,
+    normalizeNumericTokens: Boolean,
     onThresholdSelected: (Int) -> Unit,
     onWindowMinutesSelected: (Int) -> Unit,
+    onNormalizeNumericTokensChange: (Boolean) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -57,6 +60,20 @@ internal fun DuplicateThresholdEditorRow(
                 modifier = Modifier.weight(1f),
             )
         }
+        // Plan `2026-04-27-fix-issue-488-signature-normalize-numbers-time.md`
+        // Task 4. Opt-in normalizer toggle. Default OFF — over-bundling risk
+        // (e.g. `100원 결제` collapsing with `100,000원 결제`) is documented in
+        // the helper text so the user opts into the trade-off knowingly.
+        SettingsToggleRow(
+            title = "비슷한 알림 묶기 (숫자/시각 차이 무시)",
+            checked = normalizeNumericTokens,
+            onCheckedChange = onNormalizeNumericTokensChange,
+            subtitle = if (normalizeNumericTokens) {
+                "‘8원/28원 적립’처럼 숫자만 다른 알림을 같은 알림으로 묶어요. 결제 금액 차이도 같이 묶일 수 있어요. 곧 들어올 알림부터 적용돼요."
+            } else {
+                "켜면 ‘8원/28원 적립’처럼 숫자만 다른 알림을 같은 알림으로 인식해 묶음 처리해요. 결제 금액 차이도 같이 묶일 수 있어요."
+            },
+        )
     }
 }
 

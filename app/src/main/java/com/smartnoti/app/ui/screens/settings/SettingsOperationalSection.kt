@@ -88,6 +88,7 @@ internal fun OperationalSummaryCard(
     quietHoursPickerSpec: QuietHoursWindowPickerSpec,
     quietHoursPackagesPickerSpec: QuietHoursPackagesPickerSpec,
     duplicateThresholdEditorSpec: DuplicateThresholdEditorSpec,
+    normalizeNumericTokensInSignature: Boolean,
     onQuietHoursEnabledChange: (Boolean) -> Unit,
     onQuietHoursStartHourChange: (Int) -> Unit,
     onQuietHoursEndHourChange: (Int) -> Unit,
@@ -96,6 +97,7 @@ internal fun OperationalSummaryCard(
     onQuietHoursPackagesReplace: (Set<String>) -> Unit,
     onDuplicateThresholdChange: (Int) -> Unit,
     onDuplicateWindowMinutesChange: (Int) -> Unit,
+    onNormalizeNumericTokensInSignatureChange: (Boolean) -> Unit,
 ) {
     // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
     // Task 6: bottom-sheet visibility for the picker is owned by the card so
@@ -157,8 +159,10 @@ internal fun OperationalSummaryCard(
             // direction (반복 N회 / 최근 N분).
             DuplicateThresholdEditorRow(
                 spec = duplicateThresholdEditorSpec,
+                normalizeNumericTokens = normalizeNumericTokensInSignature,
                 onThresholdSelected = onDuplicateThresholdChange,
                 onWindowMinutesSelected = onDuplicateWindowMinutesChange,
+                onNormalizeNumericTokensChange = onNormalizeNumericTokensInSignatureChange,
             )
             HorizontalDivider(color = BorderSubtle.copy(alpha = 0.7f))
             OperationalSummaryRow(

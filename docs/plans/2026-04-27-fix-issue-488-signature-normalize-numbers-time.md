@@ -1,9 +1,19 @@
 ---
-status: planned
+status: in-progress
 fixes: 488
 ---
 
 # Fix #488: contentSignature normalizer for amount-only-差 repeat alerts
+
+> **Implementation status (2026-04-27):** Tasks 1–4 ship together via PR #492.
+> Task 1 RED tests + Task 2 normalizer impl + Task 3 builder wiring + Task 4
+> Settings UI toggle are all on the branch and the full unit-test suite +
+> `:app:assembleDebug` are GREEN. **Tasks 5 (real-device ADB e2e on
+> `R3CY2058DLJ`) and 6 (`duplicate-suppression` journey doc bump + Change log)
+> are deferred to a follow-up bundle** because they require the physical device
+> + a `last-verified` recipe run; the implementer agent does not have access to
+> `R3CY2058DLJ`. The PR carries `Refs #488` (not `Closes`) so the issue stays
+> open until the deferred bundle lands.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. P1 release-prep — 5-step gate (failing tests → impl → wiring → settings UI → ADB e2e on `R3CY2058DLJ`) is non-negotiable. The normalizer ships **opt-in default OFF** to bound the over-bundling risk; do not flip the default without user sign-off.
 
@@ -115,7 +125,9 @@ Two notification-classification gaps from issue #488 are deliberately split:
 3. Toggle visibility: always shown inside the "중복 알림 묶기" row (no gating on the duplicate-burst master). The two existing pickers are already visible there; this is a peer.
 4. Wire ViewModel test if convenient; not blocking.
 
-## Task 5: Real-device ADB e2e on `R3CY2058DLJ` (P1 release-prep gate)
+## Task 5: Real-device ADB e2e on `R3CY2058DLJ` (P1 release-prep gate) [deferred to follow-up]
+
+**Status:** Deferred to a follow-up bundle (PR #492 ships Tasks 1–4 only). The implementer agent does not have access to the physical `R3CY2058DLJ` device referenced in the recipe; running the toggle-OFF baseline + toggle-ON reproduction is a human-driven verification step.
 
 **Objective:** Reproduce the issue 488 scenario on the user's real device with the toggle ON, verify `repeat_bundle:3` fires and the 4th–15th 포인트뽑기 alerts collapse into a single DIGEST. With the toggle OFF, verify the bug is **still reproducible** (regression guard for the safety default).
 
@@ -165,7 +177,9 @@ grep -oE '적립[^"]*' /tmp/ui.xml
 
 If any expected condition fails: plan-implementer stops and reports — do not patch over it. If the toggle-OFF baseline does NOT reproduce the bug, the test fixture has drifted and the issue's premise is re-questioned.
 
-## Task 6: Bump `duplicate-suppression` journey + Change log
+## Task 6: Bump `duplicate-suppression` journey + Change log [deferred to follow-up]
+
+**Status:** Deferred to the same follow-up bundle as Task 5. `last-verified` must reflect an actual recipe run (`docs-sync.md`), and that depends on Task 5's real-device verification — bumping the journey now would be a docs-only edit that lies about verification.
 
 **Objective:** Document the new normalizer step in the journey contract.
 
