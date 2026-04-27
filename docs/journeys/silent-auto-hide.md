@@ -130,7 +130,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity \
 ## Known gaps
 
 - **Cross-status 그룹핑 미구현** — sender-단위 그룹은 현재 SILENT (ARCHIVED) 만 대상으로 한다. 같은 sender 의 PRIORITY / DIGEST 알림은 기존 채널로 독립 게시되어, 예컨대 "엄마" PRIORITY 1 + DIGEST 2 + SILENT 3 이 "엄마 6건" 단일 그룹으로 묶이지 않는다. plan silent-tray-sender-grouping Non-goals 에 명시된 후속 작업.
-- **MessagingStyle 힌트 미사용** — `SilentNotificationGroupingPolicy` 는 `sender` 필드만 보고 MessagingStyle 여부를 직접 조회하지 않는다. 쇼핑/뉴스 앱이 상품명/기사 제목을 `sender` 로 흘리면 그 title 이 Sender 그룹 키가 되어 잘못 묶일 수 있음. Plan Q2 의 후속 개선 포인트.
+- **MessagingStyle 힌트 미사용** — `SilentNotificationGroupingPolicy` 는 `sender` 필드만 보고 MessagingStyle 여부를 직접 조회하지 않는다. 쇼핑/뉴스 앱이 상품명/기사 제목을 `sender` 로 흘리면 그 title 이 Sender 그룹 키가 되어 잘못 묶일 수 있음. Plan Q2 의 후속 개선 포인트. → plan: `docs/plans/2026-04-27-silent-sender-messagingstyle-gate.md`
 - **기존 SILENT row 마이그레이션** — 업그레이드 이전 SILENT 는 `silentMode = null` 로 남아 있고, Hidden "처리됨" 탭에 모여 보인다. 이미 tray 에서 사라진 상태라 UX 상 모순은 없지만 사용자에게는 "언제 처리됐는지 불명" 으로 보일 수 있음.
 - 사용자가 요약을 swipe dismiss 한 뒤 count 가 변하지 않으면 재게시되지 않음 (의도된 동작 — swipe 를 "확인함" 으로 해석). 요약 알림 본문 카피에 해당 의미를 명시.
 - 2026-04-21: 에뮬레이터에 설치된 0.1.0 APK (lastUpdateTime 2026-04-20 15:05) 가 `acf7c39` (초기 구현) 의 copy 를 serve 중 — `android.text=탭해서 숨겨진 알림 보기` + bigText `탭하면 전체 목록을 확인할 수 있어요.` 로, `50e04ef` 에서 갱신된 `탭: 목록 보기 · 스와이프: 확인으로 처리` + bigText `옆으로 밀어 없애면 확인한 것으로 처리돼요` 가 반영되어 있지 않음. 소스 (`SilentHiddenSummaryNotifier#post`) 는 이미 새 copy 를 가지고 있으므로 contract drift 아닌 env noise — 릴리즈 빌드 재설치로 해소.
