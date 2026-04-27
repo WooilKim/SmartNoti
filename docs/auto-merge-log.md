@@ -412,3 +412,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T18:34:10Z | human | #501 | meta-plan: coverage-guardian decommission Option A (Tasks 3-4); SELF_MOD merged on user instruction ("#501 머지해줘") | https://github.com/WooilKim/SmartNoti/actions/runs/25011600254/job/73248504980 |
 | 2026-04-27T18:58:09Z | project-manager | #504 | gap-planner plan for issue #503 appName fallback chain | https://github.com/WooilKim/SmartNoti/actions/runs/25013226149 |
 | 2026-04-27T18:58:27Z | project-manager | #505 | ui-ux-inspector inbox-unified sweep + meta-plan (5 MODERATE findings) | https://github.com/WooilKim/SmartNoti/actions/runs/25013563273 |
+| 2026-04-27T18:59:22Z | human | #502 | meta-plan: coverage-guardian decommission Tasks 5-6 finalization (#499 closure); SELF_MOD merged on user instruction "502 머지해줘" | https://github.com/WooilKim/SmartNoti/actions/runs/25012828828/job/73252822155 |
