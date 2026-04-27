@@ -21,13 +21,20 @@ private val Context.dataStore by preferencesDataStore(name = "smartnoti_settings
 class SettingsRepository private constructor(
     private val context: Context,
 ) {
+    // Plan `2026-04-27-refactor-settings-repository-facade-split.md`: every
+    // sibling shares the single DataStore instance owned by the façade so
+    // they all hit the same on-disk file (no per-sibling lazy init path).
+    private val dataStore = context.dataStore
+    private val quietHours = SettingsQuietHoursRepository(dataStore)
+    private val duplicate = SettingsDuplicateRepository(dataStore)
+
     fun observeSettings(): Flow<SmartNotiSettings> {
         val defaults = SmartNotiSettings()
-        return context.dataStore.data.map { prefs ->
+        return dataStore.data.map { prefs ->
             SmartNotiSettings(
-                quietHoursEnabled = prefs[QUIET_HOURS_ENABLED] ?: defaults.quietHoursEnabled,
-                quietHoursStartHour = prefs[QUIET_HOURS_START_HOUR] ?: defaults.quietHoursStartHour,
-                quietHoursEndHour = prefs[QUIET_HOURS_END_HOUR] ?: defaults.quietHoursEndHour,
+                quietHoursEnabled = prefs[SettingsQuietHoursRepository.Keys.ENABLED] ?: defaults.quietHoursEnabled,
+                quietHoursStartHour = prefs[SettingsQuietHoursRepository.Keys.START_HOUR] ?: defaults.quietHoursStartHour,
+                quietHoursEndHour = prefs[SettingsQuietHoursRepository.Keys.END_HOUR] ?: defaults.quietHoursEndHour,
                 digestHours = defaults.digestHours,
                 priorityAlertLevel = prefs[PRIORITY_ALERT_LEVEL] ?: defaults.priorityAlertLevel,
                 priorityVibrationMode = prefs[PRIORITY_VIBRATION_MODE] ?: defaults.priorityVibrationMode,
@@ -48,9 +55,9 @@ class SettingsRepository private constructor(
                 hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
                 protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
                 showIgnoredArchive = prefs[SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
-                duplicateDigestThreshold = prefs[DUPLICATE_DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
-                duplicateWindowMinutes = prefs[DUPLICATE_WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
-                quietHoursPackages = prefs[QUIET_HOURS_PACKAGES] ?: defaults.quietHoursPackages,
+                duplicateDigestThreshold = prefs[SettingsDuplicateRepository.Keys.DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
+                duplicateWindowMinutes = prefs[SettingsDuplicateRepository.Keys.WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
+                quietHoursPackages = prefs[SettingsQuietHoursRepository.Keys.PACKAGES] ?: defaults.quietHoursPackages,
                 replacementAutoDismissEnabled = prefs[REPLACEMENT_AUTO_DISMISS_ENABLED]
                     ?: defaults.replacementAutoDismissEnabled,
                 replacementAutoDismissMinutes = prefs[REPLACEMENT_AUTO_DISMISS_MINUTES]
@@ -74,119 +81,21 @@ class SettingsRepository private constructor(
         )
     }
 
-    suspend fun setQuietHoursEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[QUIET_HOURS_ENABLED] = enabled
-        }
-    }
+    suspend fun setQuietHoursEnabled(enabled: Boolean) = quietHours.setEnabled(enabled)
 
-    /**
-     * Plan `2026-04-26-settings-quiet-hours-window-editor.md` Task 2.
-     *
-     * Persists the start hour of the quiet-hours window. Caller (Settings UI)
-     * is responsible for keeping the value within `0..23`; the repository does
-     * not validate so the model contract stays in lockstep with
-     * `QuietHoursPolicy.startHour: Int`.
-     */
-    suspend fun setQuietHoursStartHour(hour: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[QUIET_HOURS_START_HOUR] = hour
-        }
-    }
+    suspend fun setQuietHoursStartHour(hour: Int) = quietHours.setStartHour(hour)
 
-    /**
-     * Plan `2026-04-26-settings-quiet-hours-window-editor.md` Task 2.
-     *
-     * Persists the end hour of the quiet-hours window. See
-     * [setQuietHoursStartHour] for validation contract.
-     */
-    suspend fun setQuietHoursEndHour(hour: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[QUIET_HOURS_END_HOUR] = hour
-        }
-    }
+    suspend fun setQuietHoursEndHour(hour: Int) = quietHours.setEndHour(hour)
 
-    /**
-     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 2.
-     *
-     * Persists the minimum duplicate count that promotes a notification to
-     * DIGEST in the base heuristic (when no rule / priority keyword matches).
-     * The setter coerces to `>= 1` so a programmatic 0 / negative value
-     * cannot effectively disable duplicate-burst suppression entirely. The UI
-     * is a dropdown so this is defense-in-depth.
-     */
-    suspend fun setDuplicateDigestThreshold(threshold: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[DUPLICATE_DIGEST_THRESHOLD] = threshold.coerceAtLeast(1)
-        }
-    }
+    suspend fun setDuplicateDigestThreshold(threshold: Int) = duplicate.setDigestThreshold(threshold)
 
-    /**
-     * Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 2.
-     *
-     * Persists the rolling-window length (minutes) that
-     * `DuplicateNotificationPolicy` uses to count repeats. Coerces to `>= 1`
-     * for the same reason as [setDuplicateDigestThreshold].
-     */
-    suspend fun setDuplicateWindowMinutes(minutes: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[DUPLICATE_WINDOW_MINUTES] = minutes.coerceAtLeast(1)
-        }
-    }
+    suspend fun setDuplicateWindowMinutes(minutes: Int) = duplicate.setWindowMinutes(minutes)
 
-    /**
-     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2.
-     *
-     * Bulk replace of the quiet-hours-eligible package set. The classifier
-     * reads this set on every `processNotification` call (Task 4 wiring), so
-     * the next notification after the write picks up the new value. Empty
-     * set is allowed and means no quiet-hours candidates — the master switch
-     * may still be ON but the branch never fires until the user adds a
-     * package back. Mirrors `setSuppressedSourceApps` in atomicity.
-     */
-    suspend fun setQuietHoursPackages(packageNames: Set<String>) {
-        context.dataStore.edit { prefs ->
-            prefs[QUIET_HOURS_PACKAGES] = packageNames
-        }
-    }
+    suspend fun setQuietHoursPackages(packageNames: Set<String>) = quietHours.setPackages(packageNames)
 
-    /**
-     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2.
-     *
-     * Idempotent insertion: re-adding an existing member is a no-op (the
-     * underlying Set semantics dedup). Used by the Settings picker's
-     * "앱 추가" affordance for single-package additions.
-     */
-    suspend fun addQuietHoursPackage(packageName: String) {
-        context.dataStore.edit { prefs ->
-            val current = prefs[QUIET_HOURS_PACKAGES] ?: SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES
-            if (packageName !in current) {
-                prefs[QUIET_HOURS_PACKAGES] = current + packageName
-            } else if (QUIET_HOURS_PACKAGES !in prefs) {
-                // Materialize the default into the store so subsequent
-                // observers see a stable on-disk value rather than the
-                // implicit fallback. Mirrors the pattern in
-                // `applyPendingMigrations()` for the suppress-source default.
-                prefs[QUIET_HOURS_PACKAGES] = current
-            }
-        }
-    }
+    suspend fun addQuietHoursPackage(packageName: String) = quietHours.addPackage(packageName)
 
-    /**
-     * Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2.
-     *
-     * Removes a single package from the set. Removing the last member leaves
-     * an empty set (the UI surfaces an inline warning so the user knows the
-     * branch is silently no-op'ing). Removing an unknown package is a no-op.
-     */
-    suspend fun removeQuietHoursPackage(packageName: String) {
-        context.dataStore.edit { prefs ->
-            val current = prefs[QUIET_HOURS_PACKAGES] ?: SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES
-            if (packageName in current) {
-                prefs[QUIET_HOURS_PACKAGES] = current - packageName
-            }
-        }
-    }
+    suspend fun removeQuietHoursPackage(packageName: String) = quietHours.removePackage(packageName)
 
     /**
      * Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
@@ -606,9 +515,6 @@ class SettingsRepository private constructor(
     }
 
     companion object {
-        private val QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")
-        private val QUIET_HOURS_START_HOUR = intPreferencesKey("quiet_hours_start_hour")
-        private val QUIET_HOURS_END_HOUR = intPreferencesKey("quiet_hours_end_hour")
         private val PRIORITY_ALERT_LEVEL = stringPreferencesKey("priority_alert_level")
         private val PRIORITY_VIBRATION_MODE = stringPreferencesKey("priority_vibration_mode")
         private val PRIORITY_HEADS_UP_ENABLED = booleanPreferencesKey("priority_heads_up_enabled")
@@ -653,21 +559,6 @@ class SettingsRepository private constructor(
         // user has set since.
         private val SUPPRESS_SOURCE_MIGRATION_V1_APPLIED =
             booleanPreferencesKey("suppress_source_migration_v1_applied")
-        // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 2.
-        // User-tunable base heuristic for the duplicate-burst → DIGEST
-        // cascade. Read by the listener at every `processNotification` call
-        // site so the new value takes effect on the next notification.
-        private val DUPLICATE_DIGEST_THRESHOLD =
-            intPreferencesKey("duplicate_digest_threshold")
-        private val DUPLICATE_WINDOW_MINUTES =
-            intPreferencesKey("duplicate_window_minutes")
-        // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md`
-        // Task 2: user-editable list of packages the classifier treats as
-        // quiet-hours-eligible. Default is supplied via
-        // `SmartNotiSettings.DEFAULT_QUIET_HOURS_PACKAGES` (single source of
-        // truth shared with `OnboardingQuickStartSettingsApplier`).
-        private val QUIET_HOURS_PACKAGES =
-            stringSetPreferencesKey("quiet_hours_packages")
         // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
         // Master toggle (default ON) and duration in minutes (default 30) for
         // SmartNoti-posted replacement / summary auto-dismiss. The notifier
