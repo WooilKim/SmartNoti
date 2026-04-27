@@ -43,7 +43,7 @@
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-26 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-27 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-27 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-27 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — notification-detail post-#377/#378/#379 inline-CTA sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | PASS | Fresh APK `lastUpdateTime=2026-04-27 11:56:47`. Recipe 시드 (`cmd notification post -S bigtext -t DetailTest_0427 FbTest1 '분류 변경 테스트'`) → 정리함 → Shell digest 묶음 → preview row 탭 → Detail 마운트. Observable steps 1–6 모두 PASS — `DetailTopBar` "알림 상세", 알림 요약 `StatusBadge=Digest`, "왜 이렇게 처리됐나요?" + "적용된 규칙" 서브섹션 (`반복 알림` clickable rule chip), "어떻게 전달되나요?" 5 라벨, "원본 알림 처리 상태" 2 라벨, 단일 `Button("분류 변경")`. 버튼 탭 → `CategoryAssignBottomSheet` (4 기존 Category row [중요 알림 / 프로모션 알림 / 반복 알림 / BulkNewCat] + terminal `+ 새 분류 만들기`). Path A "중요 알림" 탭 → snackbar `"중요 알림 분류로 옮겼어요"` 렌더 + 같은 Detail 의 reasonTags 에 `사용자 분류` 즉시 append + "어떻게 전달되나요?" 카피 `Digest 묶음 전달` → `즉시 전달` 즉시 전환 (Observable step 6 — `ApplyCategoryActionToNotificationUseCase` row write 증명). DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — notification-capture-classify rotation sweep, emulator-5554)
 
