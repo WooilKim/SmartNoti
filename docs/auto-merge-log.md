@@ -346,3 +346,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T02:32:11Z | project-manager | #430 | Wire RulesRepository into UncategorizedAppsDetector (Tasks 3-5) + plan flip + journey sync | https://github.com/WooilKim/SmartNoti/actions/runs/24973696336 |
 | 2026-04-27T02:42:11Z | project-manager | #431 | gap-planner: ignored-archive bulk restore/clear plan (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24973937804 |
 | 2026-04-27T02:50:01Z | project-manager | #432 | ignored-archive bulk repo ops (Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/24974118064 |
+| 2026-04-27T03:08:08Z | project-manager | #433 | ignored-archive bulk header CTAs + multi-select + per-row PRIORITY restore | https://github.com/WooilKim/SmartNoti/actions/runs/24974522877 |
