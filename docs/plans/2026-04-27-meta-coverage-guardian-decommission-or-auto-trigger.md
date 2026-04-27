@@ -1,10 +1,12 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
 type: meta
 kind: meta-plan
 related-rule: ../../.claude/rules/agent-loop.md
 related-command: ../../.claude/commands/journey-loop.md
-related-agent: ../../.claude/agents/coverage-guardian.md
+related-agent: ../../.claude/agents-archive/coverage-guardian.md
+superseded-by: ../../.claude/rules/agent-loop.md
 ---
 
 # Meta — Decide whether `coverage-guardian` gets decommissioned or auto-triggered (4-retro QUIET streak)
@@ -113,7 +115,7 @@ related-agent: ../../.claude/agents/coverage-guardian.md
 
 ---
 
-## Task 5: If B chosen — implementation PR (separate, not this PR)
+## Task 5: If B chosen — implementation PR (separate, not this PR) [SHIPPED-AS-NOOP via PR #502 — Option A was chosen, Option B implementation never happened; this task is closed by the finalization PR that flips the plan to status:shipped]
 
 **Objective:** Auto-trigger coverage-guardian whenever an implementer-origin PR with prod-code changes is in the open queue.
 
@@ -130,7 +132,7 @@ related-agent: ../../.claude/agents/coverage-guardian.md
 
 ---
 
-## Task 6: If C chosen — implementation PR (separate, scope follows user's wording)
+## Task 6: If C chosen — implementation PR (separate, scope follows user's wording) [SHIPPED-AS-NOOP via PR #502 — Option A was chosen, Option C path never executed; this task is closed by the finalization PR that flips the plan to status:shipped]
 
 **Objective:** Implement the user's third path. The implementer plan-implementer agent receives the user's one-line wording from Task 3 as the scope and produces a follow-up plan accordingly.
 
@@ -202,3 +204,12 @@ Evidence gathered 2026-04-27T17:48Z by plan-implementer (Tasks 1 + 2). These fin
 Based on Task 1 (zero invocations, zero log rows, zero PM consumption) + Task 2 (signal ~85% redundant with PM + implementer combined), **Option A (decommission, archive at `.claude/agents-archive/`)** has the strongest evidence base. Option B's auto-trigger would close the invocation gap mechanically, but Risk-1 in this plan (`100% ADEQUATE` rows under tests-first implementer) suggests B's signal would be near-noise. Option C remains open if the user wants to fold a numeric-ratio bullet into PM's Quality gate without keeping a standalone agent — the Risk: PM's existing gate is not actually sufficient mitigation in Task 4 already plans for this.
 
 The user retains the call. This recommendation is non-binding and the implementer PR (Task 4 / 5 / 6) follows whichever letter the user picks.
+
+---
+
+## Change log
+
+- **2026-04-27** — Plan opened (PR #499) with Option A/B/C decision-first framing and Tasks 1+2 audit findings.
+- **2026-04-27** — Tasks 1+2 audit landed inline (PR #500 added the "Audit findings" section).
+- **2026-04-27T18:33:29Z** — Option A chosen by user ("A로 가자"); implementation landed via PR #501 (squash-merged as `1c4b7ef` per user instruction "#501 머지해줘"). Files moved/edited under PR #501: `git mv .claude/agents/coverage-guardian.md .claude/agents-archive/coverage-guardian.md`, `.claude/rules/agent-loop.md` (eleven-agent table → ten-agent table; coverage-guardian row replaced with archive note), `.claude/commands/coverage-check.md` (deprecated banner), `docs/coverage-log.md` (archived header). Audit chain: plan #499 → audit #500 → implementation #501.
+- **2026-04-27** — Plan flipped to `status: shipped` + `superseded-by: .claude/rules/agent-loop.md` via PR #502 (this finalization PR). Task 5 (Option B) and Task 6 (Option C) marked SHIPPED-AS-NOOP since Option A was the chosen path. `.claude/agents/loop-retrospective.md` updated to annotate that coverage-guardian is excluded from per-agent dead-air tracking (archived agent → "no activity" signal is meaningless). User explicitly authorized this finalization PR. PM review will ESCALATE per `kind: meta-plan` carve-out + SELF_MOD edit on `loop-retrospective.md`; user must merge.

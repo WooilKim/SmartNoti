@@ -59,7 +59,7 @@ Meta-level findings beyond per-agent:
 
 - **REDUNDANT** — two agents flag the same artifact without coordination (e.g. journey-tester DRIFT + ui-ux-inspector moderate on the same file). Suggests merge or clearer ownership.
 - **MISSING** — a type of issue that isn't being caught by any agent (e.g. dependency bump missed, perf regression slipped through). This is the case most relevant to adding a new agent.
-- **OVERLAPPING GATES** — PM + coverage-guardian + self-merge gates are redundantly checking the same thing. Suggests simplification.
+- **OVERLAPPING GATES** — PM + self-merge gates are redundantly checking the same thing. Suggests simplification. (Historical example: PM + coverage-guardian + self-merge — coverage-guardian was decommissioned 2026-04-27 via PR #501 / plan `2026-04-27-meta-coverage-guardian-decommission-or-auto-trigger.md`; exclude `coverage-guardian` from per-agent dead-air tracking since the agent is archived under `.claude/agents-archive/` and any "no activity" signal is meaningless.)
 
 ## Output formats
 
