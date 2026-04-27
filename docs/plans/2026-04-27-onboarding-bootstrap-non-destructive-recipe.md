@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/onboarding-bootstrap.md
 ---
 
 # Onboarding-Bootstrap Non-Destructive Verification Sub-Recipe (debug-only rehearsal hook)
@@ -62,7 +64,7 @@ status: planned
 3. 결과를 logcat 안정 태그 (`Log.i("BootstrapRehearsal", "processed=$n skipped=$s")`) 로 emit.
 4. (선택, open question) DataStore 에 `debug_last_rehearsal_processed_count` 도 함께 기록 — verification recipe 가 `run-as` + DataStore dump 로 확인.
 
-## Task 3: BuildConfig.DEBUG guard + release dead-strip 확인
+## Task 3: BuildConfig.DEBUG guard + release dead-strip 확인 [DONE]
 
 **Objective:** release APK 에는 rehearsal 코드가 일절 포함되지 않게.
 
@@ -74,7 +76,7 @@ status: planned
 1. `./gradlew :app:assembleRelease` PASS — R8 mapping 에 `DebugBootstrapRehearsal*` 클래스가 없는지 확인 (`app/build/outputs/mapping/release/mapping.txt` 검색).
 2. `./gradlew :app:assembleDebug` PASS.
 
-## Task 4: Update onboarding-bootstrap journey verification recipe
+## Task 4: Update onboarding-bootstrap journey verification recipe [DONE]
 
 **Objective:** journey 의 Verification recipe 가 destructive `pm clear` 만 가지지 않고, **non-destructive sub-recipe** 도 함께 노출. journey-tester 의 default rotation 은 sub-recipe 를 쓴다.
 
@@ -104,7 +106,7 @@ status: planned
 3. Known gap "시스템 tray 가 비어 있는 상태로 온보딩이 완료되면 …" / "리스너가 꺼져 있는 동안 시스템이 이미 dismiss 한 알림은 …" 두 줄은 그대로 유지.
 4. Known gap 의 "destructive recipe — 자동화 SKIP" 사유에 한 줄 plan 링크 (`→ plan: docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md`) 만 annotate. bullet 원문은 수정 금지.
 
-## Task 5: Journey Change log + cross-references
+## Task 5: Journey Change log + cross-references [DONE]
 
 **Objective:** sweep 자동화가 새 sub-recipe 를 안다는 것을 명시 + sweep 결과를 첫 verify 로 기록.
 
@@ -112,7 +114,7 @@ status: planned
 - `docs/journeys/onboarding-bootstrap.md` — Change log 에 오늘 날짜 entry: "Debug-only rehearsal hook (`DebugBootstrapRehearsalReceiver`) 추가. Verification recipe 에 non-destructive sub-recipe 절 추가. Plan: `docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md`. `last-verified` 는 ADB 검증 완료 후 bump."
 - `docs/journeys/notification-capture-classify.md` — Code pointers 에 짧게 "debug-only bootstrap rehearsal entry (`DebugBootstrapRehearsal`, BuildConfig.DEBUG 한정) 존재" 한 줄 추가 (오남용 방지 신호).
 
-## Task 6: End-to-end ADB verification + last-verified bump
+## Task 6: End-to-end ADB verification + last-verified bump [DONE]
 
 **Objective:** 실제 emulator 에서 sub-recipe 가 PASS 로 분류되는지 관측.
 
@@ -140,7 +142,7 @@ python3 -c "import sqlite3; c=sqlite3.connect('/tmp/check.db').cursor(); \
 ```
 결과가 맞으면 `docs/journeys/onboarding-bootstrap.md` 의 `last-verified:` 를 오늘 (시스템 `date -u`) 날짜로 bump + Change log 에 "Non-destructive sub-recipe first PASS" 라인 추가.
 
-## Task 7: Self-review + PR
+## Task 7: Self-review + PR [DONE]
 
 - `./gradlew :app:testDebugUnitTest` 전체 PASS.
 - `./gradlew :app:assembleRelease` PASS (rehearsal dead-stripped).

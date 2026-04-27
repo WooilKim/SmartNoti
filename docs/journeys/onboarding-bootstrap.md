@@ -3,7 +3,7 @@ id: onboarding-bootstrap
 title: 첫 온보딩 및 기존 알림 부트스트랩
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-24
+last-verified: 2026-04-27
 ---
 
 ## Goal
@@ -82,6 +82,10 @@ last-verified: 2026-04-24
 
 ## Verification recipe
 
+두 가지 sub-recipe 가 있다. 자동화 (journey-tester rotation) 는 (B) 를 사용하고, release 사이클의 cold-start 검증은 (A) 를 사용한다.
+
+### (A) Destructive cold-start (release 검증용, 수동)
+
 ⚠️ `pm clear` 는 **기기에 누적된 앱 상태를 전부 지웁니다** — 테스트 기기에서만 실행.
 실행 후 NotificationListener 권한도 초기화되므로 Settings 에서 재허용해야 합니다.
 
@@ -102,12 +106,37 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 # 5. 다시 bootstrap 이 재실행되지 않는지 확인 — 앱 재시작해도 중복 캡처 없어야 함
 ```
 
+### (B) Non-destructive bootstrap rehearsal (debug build, 자동화 default)
+
+Production bootstrap 의 1회성 consume 계약은 변하지 않는다 — rehearsal 은 별도 debug entry point (`DebugBootstrapRehearsalReceiver`, debug source set 한정) 가 production flag 와 무관하게 `ActiveStatusBarNotificationBootstrapper.bootstrap` 을 다시 한 번 통과시키는 형태. release APK 에는 receiver 자체가 dead-stripped (debug source set 격리 + `BuildConfig.DEBUG` 가드). 사전 조건: 앱이 한 번 온보딩되어 있고 NotificationListener 권한이 grant 된 상태 (즉 `pm clear` 없이 가능한 상태).
+
+```bash
+# 1. 이미 onboarded 된 emulator 에서 tray 에 sample 알림 N건 게시
+adb -s emulator-5554 shell cmd notification post -S bigtext -t Bank Sample1 "인증번호 000000"
+adb -s emulator-5554 shell cmd notification post -S bigtext -t Promo Sample2 "광고 배너입니다"
+
+# 2. rehearsal trigger
+adb -s emulator-5554 shell am broadcast \
+  -a com.smartnoti.debug.REHEARSE_BOOTSTRAP \
+  -p com.smartnoti.app
+
+# 3. 결과 관측
+adb -s emulator-5554 logcat -d -s BootstrapRehearsal | tail
+#   기대 한 줄: "processed=N skipped=M" — N 은 shouldProcess 통과한 알림 수,
+#   M 은 SmartNoti 자체 알림 등 필터링된 수. 두 값 모두 정수면 PASS.
+
+# 4. (옵션) DB 에 두 알림 row 가 status 분류된 채 저장됐는지 확인 — dedup 이 잘 동작했다면
+#    같은 dedup key 로 동일 알림이 두 번 들어가지 않음.
+#    `adb exec-out run-as com.smartnoti.app cat databases/smartnoti.db > /tmp/check.db`
+#    뒤에 sqlite3 로 같은 dedup key cardinality 검사.
+```
+
 ## Known gaps
 
 - Onboarding bootstrap 플래그 자체는 여전히 1회성 (consume 후 재실행되지 않음). 단, 매 `onListenerConnected` 에서 `enqueueReconnectSweep` 이 함께 돌기 때문에, 사용자가 앱 데이터를 보존한 채 리스너 권한을 토글하면 tray 에 남은 미처리 알림은 sweep 이 소급 캡처한다. 실제 "bootstrap 을 재실행" 하는 것은 아니고 누락 메움만 제공.
 - 시스템 tray 가 비어 있는 상태로 온보딩이 완료되면 bootstrap 은 아무 것도 하지 않고 consume 됨. 이후 sweep 도 tray 가 비어 있는 한 no-op.
 - 리스너가 꺼져 있는 동안 시스템이 이미 dismiss 한 알림은 `activeNotifications` 에 남지 않아 bootstrap / sweep 모두 복구할 수 없음.
-- Verification recipe step 1 (`adb shell pm clear com.smartnoti.app`) 이 destructive — `journey-tester` 가 매 rotation sweep 마다 SKIP 처리 (2026-04-26 / 2026-04-27 sweep 동일 사유). `last-verified` 가 rotation tick 으로 bump 되지 못하고 정체 중. → plan: `docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md` (debug-only rehearsal hook 으로 non-destructive sub-recipe 추가 예정).
+- Destructive recipe (A) 는 release-cycle 수동 검증 전용 — `journey-tester` rotation 은 sub-recipe (B) 를 사용.
 
 ## Change log
 
@@ -116,3 +145,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-22: **Launch crash 해소** — Categories Phase P1 이후 `LegacyRuleActionReader` 가 `preferencesDataStore("smartnoti_rules")` delegate 를 두 번 선언해 AndroidX 가 앱 기동 즉시 `IllegalStateException: There are multiple DataStores active for the same file` 로 크래시했고, 그 결과 `MigrateRulesToCategoriesRunner` 와 bootstrap 경로 전체가 실행 전에 사망. Fix: `RulesRepository` 를 단일 DataStore 소유자로 두고 `LegacyRuleActionReader` 가 그 handle 을 생성자 주입으로 받는다. Cold-launch 시 migration runner 가 크래시 없이 정상 수행 → bootstrap 재개. Robolectric regression (`RulesDataStoreSingleOwnerTest`). Plan: `docs/plans/2026-04-22-rules-datastore-dedup-fix.md` (this PR). `last-verified` 변경 없음 — onboarding recipe 전체 재실행은 별도 sweep 에서.
 - 2026-04-23: **Categories quick-start seed 추가** — `OnboardingQuickStartCategoryApplier` 가 quick-start 셀렉션으로부터 1:1 Category (`cat-onboarding-<presetId.lowercase>`) 들을 만들어 `OnboardingQuickStartSettingsApplier.applySelection` 안에서 rule upsert 직후 `CategoriesRepository.upsertCategory` 로 영속화한다. `IMPORTANT_PRIORITY → PRIORITY`, `PROMO_QUIETING → DIGEST`, `REPEAT_BUNDLING → DIGEST`. 결정적 id 로 idempotent — 동일 셀렉션 재적용은 in-place upsert. `CategoriesRepository` 가 비어 있던 첫-진입 UX gap (rules-feedback-loop 의 Path A 가 빈 리스트로 강제되던 현상) 해소. Robolectric coverage: `OnboardingQuickStartCategoriesWiringTest`. Plan: `docs/plans/2026-04-23-onboarding-quick-start-seed-categories.md` (this PR). `last-verified` 변경 없음 — ADB recipe 재실행은 다음 journey-tester sweep 에 위임.
 - 2026-04-23: **ADB end-to-end PASS** — emulator-5554 에서 `pm clear` → 권한 grant → quick-start "이대로 시작할게요" 까지 진행 후 `smartnoti_categories.preferences_pb` 검사. `cat-onboarding-important_priority` (PRIORITY, order 0), `cat-onboarding-promo_quieting` (DIGEST, order 1), `cat-onboarding-repeat_bundling` (DIGEST, order 2) 세 Category 가 모두 결정적 id / 정확한 action / 정확한 ruleIds 로 영속화됨을 확인. `smartnoti_rules.preferences_pb` 도 대응 3개 룰을 가짐. PR #281 의 RED→GREEN 가설을 실기기에서 재현.
+- 2026-04-27: **Non-destructive sub-recipe shipped + first PASS** — Debug-only rehearsal hook (`DebugBootstrapRehearsalReceiver`, action `com.smartnoti.debug.REHEARSE_BOOTSTRAP`) 추가. Verification recipe 가 (A) destructive (release-cycle 수동) + (B) rehearsal-broadcast (debug 자동화 default) 두 sub-recipe 로 분리. Production bootstrap 1회성 contract 변경 0; release APK 에 rehearsal 클래스 dead-stripped (debug source set 격리, `assembleRelease` 의 `classes*.dex` 에 `DebugBootstrapRehearsal*` 부재 확인). emulator-5554 ADB 검증: 두 차례 broadcast → `BootstrapRehearsal: processed=31 skipped=14`, 재실행 `processed=14 skipped=21`. `last-verified` 를 오늘로 bump. Plan: `docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md` (PR #422 = Tasks 1-2; this PR = Tasks 3-7, 종결).
