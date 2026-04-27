@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.smartnoti.app.data.categories.MigratePromoCategoryActionRunner
 import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
 import com.smartnoti.app.data.local.MigrateAppLabelRunner
+import com.smartnoti.app.data.local.MigrateOrphanedSourceCancellationRunner
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.navigation.AppNavHost
 import com.smartnoti.app.navigation.ReplacementNotificationEntry
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
         runRulesToCategoriesMigration()
         runPromoCategoryActionMigration()
         runAppLabelResolutionMigration()
+        runOrphanedSourceCancellationMigration()
         setContent {
             SmartNotiTheme {
                 // Plan `2026-04-25-category-chip-app-label-lookup.md` Task 3:
@@ -143,6 +145,27 @@ class MainActivity : ComponentActivity() {
             runCatching { runner.run() }
                 .onFailure { error ->
                     Log.e(TAG, "App label resolution migration failed", error)
+                }
+        }
+    }
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+     * Task 4. Cold-start one-shot pass that recovers the existing Railway
+     * cohort — rows whose `replacementNotificationIssued = 1` AND whose
+     * source notification is still live in the system tray. Idempotent —
+     * gated by
+     * `SettingsRepository.isMigrateOrphanedSourceCancellationV1Applied()`.
+     * Risks R4: when the listener service is not yet bound the runner
+     * defers without flipping the flag, so the next cold start retries.
+     */
+    private fun runOrphanedSourceCancellationMigration() {
+        val runner = MigrateOrphanedSourceCancellationRunner.create(applicationContext)
+        lifecycleScope.launch {
+            runCatching { runner.run() }
+                .onFailure { error ->
+                    Log.e(TAG, "Orphaned source cancellation migration failed", error)
                 }
         }
     }

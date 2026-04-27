@@ -205,6 +205,33 @@ internal class SettingsOnboardingRepository(
         }
     }
 
+    /**
+     * One-shot gate for plan
+     * `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+     * Task 4. False until
+     * [com.smartnoti.app.data.local.MigrateOrphanedSourceCancellationRunner]
+     * has scanned the existing cohort of rows where
+     * `replacementNotificationIssued = 1` AND the source notification is
+     * still live in the system tray, and cancelled each orphaned source.
+     * The flag prevents re-scanning on every cold start.
+     *
+     * The runner deliberately leaves the flag UNFLIPPED when the listener
+     * service is not currently bound (Risks R4) so the next cold start
+     * retries — `cancelNotification(key)` requires a live
+     * NotificationListenerService instance.
+     */
+    suspend fun isMigrateOrphanedSourceCancellationV1Applied(): Boolean {
+        return dataStore.data.map { prefs ->
+            prefs[Keys.MIGRATE_ORPHANED_SOURCE_CANCELLATION_V1_APPLIED] ?: false
+        }.first()
+    }
+
+    suspend fun setMigrateOrphanedSourceCancellationV1Applied(applied: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.MIGRATE_ORPHANED_SOURCE_CANCELLATION_V1_APPLIED] = applied
+        }
+    }
+
     internal object Keys {
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val BOOTSTRAP_PENDING =
@@ -223,5 +250,7 @@ internal class SettingsOnboardingRepository(
             booleanPreferencesKey("promo_quieting_action_migration_v3_applied")
         val APP_LABEL_RESOLUTION_MIGRATION_V1_APPLIED =
             booleanPreferencesKey("app_label_resolution_migration_v1_applied")
+        val MIGRATE_ORPHANED_SOURCE_CANCELLATION_V1_APPLIED =
+            booleanPreferencesKey("migrate_orphaned_source_cancellation_v1_applied")
     }
 }

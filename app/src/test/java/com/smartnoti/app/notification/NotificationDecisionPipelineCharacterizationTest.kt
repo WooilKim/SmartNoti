@@ -66,7 +66,7 @@ class NotificationDecisionPipelineCharacterizationTest {
     }
 
     @Test
-    fun silent_unprotected_capture_archives_in_tray_without_cancel_or_replacement() = runTest {
+    fun silent_unprotected_capture_cancels_source_posts_replacement_and_persists_archived_silent_mode() = runTest {
         val actions = RecordingSourceTrayActions()
         val pipeline = NotificationDecisionPipeline(actions)
 
@@ -90,16 +90,21 @@ class NotificationDecisionPipelineCharacterizationTest {
             )
         )
 
-        // Plan `silent-archive-vs-process-split` Task 2: a fresh non-persistent unprotected
-        // SILENT capture lands as ARCHIVED, which keeps the source in the tray. Even with
-        // `suppressSourceForDigestAndSilent = true` and the package opted in, the routing
-        // policy short-circuits the cancel for ARCHIVED (`silentMode == ARCHIVED` →
-        // `keepSourceInTray = true`). SILENT also never posts a replacement notification.
-        assertTrue(actions.cancelledKeys.isEmpty())
-        assertEquals(0, actions.replacementCalls)
+        // Plan `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+        // Task 3 (Option C invariant): every fresh SILENT capture posts the
+        // replacement (silent_group tray entry + Hidden inbox row) AND
+        // cancels the source. The previous SilentMode-gated `keepSourceInTray`
+        // branch was the root cause of issue #511 (Quiet Hours SILENT
+        // duplicates). SilentMode is still persisted on the row so inbox-tab
+        // routing keeps landing the row in 보관 중 vs 처리됨.
+        assertEquals(listOf("com.example|silent"), actions.cancelledKeys)
+        assertEquals(1, actions.replacementCalls)
         val saved = actions.savedNotifications.single()
-        assertFalse(saved.notification.replacementNotificationIssued)
-        // SILENT + capture path with non-persistent + non-protected → ARCHIVED.
+        assertEquals(SourceNotificationSuppressionState.CANCEL_ATTEMPTED, saved.notification.sourceSuppressionState)
+        assertTrue(saved.notification.replacementNotificationIssued)
+        // SILENT + capture path with non-persistent + non-protected → ARCHIVED
+        // (still persisted; the inbox 보관 중 tab still wins this row even
+        // though the tray cancel runs).
         assertEquals(SilentMode.ARCHIVED, saved.notification.silentMode)
     }
 

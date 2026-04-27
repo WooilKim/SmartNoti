@@ -31,7 +31,7 @@ last-updated: 2026-04-27
 
 ---
 
-## Task 1: Failing test — Railway fixture asserts source cancellation
+## Task 1: Failing test — Railway fixture asserts source cancellation [IN PROGRESS via PR #513]
 
 **Objective:** Issue body 의 정확한 fixture (SILENT 분류 + Quiet Hours + `sourceSuppressionState = NOT_CONFIGURED` + replacement posted) 가 들어왔을 때 `cancelNotification(sourceKey)` 가 호출되는지 RED 상태로 고정.
 
