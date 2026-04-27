@@ -369,3 +369,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T06:51:13Z | project-manager | #453 | docs(plans): flip 2 stale plans to status: shipped (reconcile inventory) | https://github.com/WooilKim/SmartNoti/actions/runs/24980605206 |
 | 2026-04-27T07:07:24Z | project-manager | #454 | code-health-scout sweep 2026-04-27 (5 journeys + 2 refactor plans) | https://github.com/WooilKim/SmartNoti/actions/runs/24981207201 |
 | 2026-04-27T07:24:07Z | project-manager | #455 | refactor(rules) characterization tests before split | https://github.com/WooilKim/SmartNoti/actions/runs/24981803047 |
+| 2026-04-27T07:39:23Z | project-manager | #456 | refactor(rules): split RulesScreen.kt into per-section sub-files | https://github.com/WooilKim/SmartNoti/actions/runs/24982395564 |
