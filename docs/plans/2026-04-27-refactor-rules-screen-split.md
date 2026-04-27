@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: ../journeys/rules-management.md
 ---
 
 # Rules 화면을 sub-section composable 로 split Plan
