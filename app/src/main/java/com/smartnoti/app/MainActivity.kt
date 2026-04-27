@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
 import com.smartnoti.app.data.categories.MigratePromoCategoryActionRunner
 import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
+import com.smartnoti.app.data.local.MigrateAppLabelRunner
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.navigation.AppNavHost
 import com.smartnoti.app.navigation.ReplacementNotificationEntry
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
         runSettingsMigrations()
         runRulesToCategoriesMigration()
         runPromoCategoryActionMigration()
+        runAppLabelResolutionMigration()
         setContent {
             SmartNotiTheme {
                 // Plan `2026-04-25-category-chip-app-label-lookup.md` Task 3:
@@ -122,6 +124,25 @@ class MainActivity : ComponentActivity() {
             runCatching { runner.run() }
                 .onFailure { error ->
                     Log.e(TAG, "PROMO Category action migration failed", error)
+                }
+        }
+    }
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+     * Task 4. Cold-start one-shot pass that re-resolves the 16-package
+     * `appName == packageName` regression rows via the new
+     * [com.smartnoti.app.notification.AppLabelResolver] (explicit fallback
+     * chain). Idempotent — gated by
+     * `SettingsRepository.isAppLabelResolutionMigrationV1Applied()`.
+     */
+    private fun runAppLabelResolutionMigration() {
+        val runner = MigrateAppLabelRunner.create(applicationContext)
+        lifecycleScope.launch {
+            runCatching { runner.run() }
+                .onFailure { error ->
+                    Log.e(TAG, "App label resolution migration failed", error)
                 }
         }
     }

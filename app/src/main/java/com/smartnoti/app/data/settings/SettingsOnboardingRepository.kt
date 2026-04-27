@@ -182,6 +182,29 @@ internal class SettingsOnboardingRepository(
         }
     }
 
+    /**
+     * One-shot gate for plan
+     * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+     * Task 4. False until
+     * [com.smartnoti.app.data.local.MigrateAppLabelRunner] has scanned the
+     * 16-package `appName == packageName` regression rows and re-resolved
+     * each via the new explicit-fallback-chain
+     * [com.smartnoti.app.notification.AppLabelResolver]. The flag prevents
+     * re-scanning on every cold start AND prevents undoing a user's
+     * deliberate post-migration manual edit to `appName`.
+     */
+    suspend fun isAppLabelResolutionMigrationV1Applied(): Boolean {
+        return dataStore.data.map { prefs ->
+            prefs[Keys.APP_LABEL_RESOLUTION_MIGRATION_V1_APPLIED] ?: false
+        }.first()
+    }
+
+    suspend fun setAppLabelResolutionMigrationV1Applied(applied: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.APP_LABEL_RESOLUTION_MIGRATION_V1_APPLIED] = applied
+        }
+    }
+
     internal object Keys {
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val BOOTSTRAP_PENDING =
@@ -198,5 +221,7 @@ internal class SettingsOnboardingRepository(
             booleanPreferencesKey("categories_migration_announcement_seen")
         val PROMO_QUIETING_ACTION_MIGRATION_V3_APPLIED =
             booleanPreferencesKey("promo_quieting_action_migration_v3_applied")
+        val APP_LABEL_RESOLUTION_MIGRATION_V1_APPLIED =
+            booleanPreferencesKey("app_label_resolution_migration_v1_applied")
     }
 }

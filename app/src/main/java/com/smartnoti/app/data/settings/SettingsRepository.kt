@@ -170,6 +170,10 @@ class SettingsRepository private constructor(
         onboarding.isPromoQuietingActionMigrationV3Applied()
     suspend fun setPromoQuietingActionMigrationV3Applied(applied: Boolean) =
         onboarding.setPromoQuietingActionMigrationV3Applied(applied)
+    suspend fun isAppLabelResolutionMigrationV1Applied(): Boolean =
+        onboarding.isAppLabelResolutionMigrationV1Applied()
+    suspend fun setAppLabelResolutionMigrationV1Applied(applied: Boolean) =
+        onboarding.setAppLabelResolutionMigrationV1Applied(applied)
 
     // MigrationRunner delegate — single `dataStore.edit` transaction inside
     // the runner keeps v1 + v2 + INBOX_SORT default materialization atomic.
