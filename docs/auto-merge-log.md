@@ -390,3 +390,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T11:50:19Z | project-manager | #474 | ignored-archive bulk affordance polish Task 1 (extraction + failing-first tests) | https://github.com/WooilKim/SmartNoti/actions/runs/24993090792 |
 | 2026-04-27T12:01:50Z | project-manager | #475 | gap-planner docs plan SettingsRepository façade split | https://github.com/WooilKim/SmartNoti/actions/runs/24993613232 |
 | 2026-04-27T12:11:57Z | project-manager | #476 | refactor(settings) Task 1 pin SettingsRepository facade | https://github.com/WooilKim/SmartNoti/actions/runs/24994033641 |
+| 2026-04-27T12:38:16Z | project-manager | #477 | refactor: SettingsRepository façade split (Tasks 2-5) — last in-flight refactor pre-release-prep quarantine | https://github.com/WooilKim/SmartNoti/actions/runs/24994991656 |
