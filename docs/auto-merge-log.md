@@ -373,3 +373,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T07:51:25Z | project-manager | #457 | settings characterization tests + plan | https://github.com/WooilKim/SmartNoti/actions/runs/24982839549 |
 | 2026-04-27T08:05:14Z | project-manager | #458 | Settings split Tasks 2-4: extract 4 sub-files, 2244→1118 lines, plan→shipped | https://github.com/WooilKim/SmartNoti/actions/runs/24983480318 |
 | 2026-04-27T08:15:21Z | journey-tester | #459 | home-uncategorized-prompt | https://github.com/WooilKim/SmartNoti/actions/runs/24983898473 |
+| 2026-04-27T08:27:19Z | project-manager | #460 | gap-planner plan: HomeScreen 877-line split refactor (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24984347242 |
