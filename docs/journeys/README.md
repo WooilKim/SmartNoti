@@ -22,7 +22,7 @@
 ### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-27 |
+| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-28 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-27 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-27 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-28 (journey-tester — notification-capture-classify post-#485/#489/#491/#492 sweep, R3CY2058DLJ)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | PASS | Re-verified after today's four classifier-touching merges (PR #485 DiagnosticLogger, PR #489 Bug A KCC `(광고)` precedence, PR #491 Bug B2 PROMO SILENT→DIGEST + M1 migration via DataStore codec, PR #492 ContentSignatureNormalizer toggle default OFF). R3CY2058DLJ (Galaxy S24) `lastUpdateTime=2026-04-28 00:34:37` then re-installed local debug-build. **Bug A**: debug-injected via `am broadcast com.smartnoti.debug.INJECT_NOTIFICATION` (`title=BugA_KCC_Test`, `body=(광고) 배송 결제 인증번호 이벤트`, `package_name=com.example.adtest`) → DB row `status=DIGEST` even though both IMPORTANT keywords (인증번호/결제/배송) AND PROMO keywords (광고/이벤트) match. `ruleHitIds` contains BOTH category rule sets, `reasonTags` includes both `중요 알림`+`중요 키워드`+`프로모션 알림` — yet final action=DIGEST proves `KoreanAdvertisingPrefixDetector.hasAdvertisingPrefix()` correctly fired and `CategoryConflictResolver` honored the KCC override to pick non-PRIORITY winner. **Bug B2 + M1**: `smartnoti_categories.preferences_pb` PROMO row stored with new 7-column codec `…|DIGEST|1|…|0` (`userModifiedAction=false`, `order=1`); `smartnoti_settings.preferences_pb` has `promo_quieting_action_migration_v3_applied` flag — `MigratePromoCategoryActionRunner.run()` ran idempotently on cold start. **Historical PRIORITY rows** (Gmail/NaverShopping `(광고) 배송…` rows posted before 15:32 UTC PR #489 merge) are pre-fix data, not contract drift. **DiagnosticLogger**: `files/diagnostic/` directory present but log file empty — toggle is PIN-locked OFF (out of scope for this journey). DRIFT 없음. `last-verified` 2026-04-27 → 2026-04-28. Code pointers added for `KoreanAdvertisingPrefixDetector`, `MigratePromoCategoryActionRunner`, `ContentSignatureNormalizer`, `DiagnosticLogger`. |
 
 ### 2026-04-27 (journey-tester — categories-management post-#485/#489/#491 sweep, emulator-5554 + R3CY2058DLJ)
 
