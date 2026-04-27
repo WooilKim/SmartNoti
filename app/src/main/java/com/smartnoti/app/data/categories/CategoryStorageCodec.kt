@@ -22,6 +22,9 @@ import java.nio.charset.StandardCharsets
  *  4: order (Int.toString)
  *  5: ruleIds (empty cell == empty list; otherwise comma-separated, each
  *     member URL-encoded individually so commas inside ids survive)
+ *  6: userModifiedAction (`"1"` for true, `"0"` for false; missing column
+ *     decoded as `false` for backward compat with pre-Task-3 payloads).
+ *     Plan `docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`.
  */
 object CategoryStorageCodec {
 
@@ -44,6 +47,7 @@ object CategoryStorageCodec {
                 category.action.name,
                 category.order.toString(),
                 category.ruleIds.joinToString(RULE_IDS_SEPARATOR) { it.escape() },
+                if (category.userModifiedAction) "1" else "0",
             ).joinToString("|") { it.escape() }
         }
     }
@@ -70,6 +74,13 @@ object CategoryStorageCodec {
                     .filter { it.isNotEmpty() }
                     .map { it.unescape() }
 
+                // Plan `docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`
+                // Task 3: backward-compat for pre-Task-3 payloads that
+                // shipped 6 columns. Missing column 7 means "the user has
+                // not been observed touching the action picker yet" so
+                // the migration is allowed to bump the seeded default.
+                val userModifiedAction = parts.getOrNull(6) == "1"
+
                 Category(
                     id = parts[0],
                     name = parts[1],
@@ -77,6 +88,7 @@ object CategoryStorageCodec {
                     ruleIds = ruleIds,
                     action = action,
                     order = order,
+                    userModifiedAction = userModifiedAction,
                 )
             }
             .toList()

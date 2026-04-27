@@ -20,6 +20,15 @@ package com.smartnoti.app.domain.model
  * @property order Drag-reorder index used as the specificity tie-break.
  *   Lower == higher priority (top of the 분류 tab wins ties). Task 6 wires
  *   this into `CategoryConflictResolver`; Task 2 only stores it.
+ * @property userModifiedAction Whether the user has explicitly chosen
+ *   [action] via the editor (vs. accepting a seeded/migrated default).
+ *   Plan `docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`
+ *   Task 3 (Bug B2 + M1 migration) — the PROMO `SILENT → DIGEST` bump
+ *   migration only rewrites Categories where this is `false`, so user
+ *   choice is never silently overwritten. Defaults to `false` so legacy
+ *   payloads (pre-Task-3) and seeder writes are migration-eligible. The
+ *   `CategoryEditorScreen` save path stamps this to `true` when the user
+ *   touches the action picker.
  */
 data class Category(
     val id: String,
@@ -28,6 +37,7 @@ data class Category(
     val ruleIds: List<String>,
     val action: CategoryAction,
     val order: Int,
+    val userModifiedAction: Boolean = false,
 )
 
 /**

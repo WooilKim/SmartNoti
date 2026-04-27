@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.lifecycleScope
+import com.smartnoti.app.data.categories.MigratePromoCategoryActionRunner
 import com.smartnoti.app.data.categories.MigrateRulesToCategoriesRunner
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.navigation.AppNavHost
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
         pendingDeepLinkRoute.value = intent?.extractDeepLinkRoute()
         runSettingsMigrations()
         runRulesToCategoriesMigration()
+        runPromoCategoryActionMigration()
         setContent {
             SmartNotiTheme {
                 // Plan `2026-04-25-category-chip-app-label-lookup.md` Task 3:
@@ -101,6 +103,25 @@ class MainActivity : ComponentActivity() {
             runCatching { runner.run() }
                 .onFailure { error ->
                     Log.e(TAG, "Rules -> Categories migration failed", error)
+                }
+        }
+    }
+
+    /**
+     * Plan `docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`
+     * Task 3 (Bug B2 + M1 migration). One-shot pass that bumps the seeded
+     * onboarding PROMO Category from `action=SILENT` to `action=DIGEST` for
+     * existing installs so source-tray auto-expansion fires for KCC-marked
+     * `(광고)` notifications. User-modified rows (`userModifiedAction=true`)
+     * are preserved. Idempotent — gated by
+     * `SettingsRepository.isPromoQuietingActionMigrationV3Applied()`.
+     */
+    private fun runPromoCategoryActionMigration() {
+        val runner = MigratePromoCategoryActionRunner.create(applicationContext)
+        lifecycleScope.launch {
+            runCatching { runner.run() }
+                .onFailure { error ->
+                    Log.e(TAG, "PROMO Category action migration failed", error)
                 }
         }
     }

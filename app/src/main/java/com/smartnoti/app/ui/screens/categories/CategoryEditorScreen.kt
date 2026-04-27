@@ -351,7 +351,7 @@ fun CategoryEditorScreen(
             Button(
                 enabled = canSave && !saving,
                 onClick = {
-                    val persisted = persistCategory(
+                    val persisted = buildCategoryFromDraft(
                         editing = editingCategory,
                         name = draftName.trim(),
                         appPackageName = draftAppPackage,
@@ -454,8 +454,25 @@ internal suspend fun saveCategoryDraft(
  *
  * New-Category ids use a `cat-user-<epoch>` prefix that avoids colliding
  * with the migration's `cat-from-rule-<ruleId>` scheme.
+ *
+ * `userModifiedAction` semantics — plan
+ * `docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`
+ * Task 3 (Bug B2):
+ *
+ *  - **New Category**: stamped to `true`. Saving a brand-new Category is
+ *    itself a deliberate user choice; future preset-default migrations
+ *    must never overwrite it.
+ *  - **Edit, action changed**: stamped to `true`. The user moved off the
+ *    seeded/migrated default.
+ *  - **Edit, action unchanged**: previous flag preserved. We do not
+ *    promote a never-touched seed just because the user edited the name
+ *    or rule membership; we also do not downgrade a previously-true flag.
+ *
+ * Internal visibility (not `private`) so the contract test
+ * `CategoryEditorPersistUserModifiedActionTest` can pin it without
+ * Compose machinery.
  */
-private fun persistCategory(
+internal fun buildCategoryFromDraft(
     editing: Category?,
     name: String,
     appPackageName: String?,
@@ -463,6 +480,11 @@ private fun persistCategory(
     action: CategoryAction,
     currentCategoriesCount: Int,
 ): Category {
+    val userModifiedAction = when {
+        editing == null -> true
+        editing.action != action -> true
+        else -> editing.userModifiedAction
+    }
     return Category(
         id = editing?.id ?: "cat-user-${System.currentTimeMillis()}",
         name = name,
@@ -470,5 +492,6 @@ private fun persistCategory(
         ruleIds = selectedRuleIds,
         action = action,
         order = editing?.order ?: currentCategoriesCount,
+        userModifiedAction = userModifiedAction,
     )
 }
