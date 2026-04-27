@@ -482,3 +482,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T19:35:54Z | #508 | plan-implementer | APPROVE+MERGE | F2 inbox header chrome collapse; CI green (run 25015249768); merged 2beca5c |
 | 2026-04-27T19:53:50Z | #509 | plan-implementer | DEFER | mergeStateStatus=DIRTY, no CI runs fired (conflict blocks workflow). Needs rebase onto main before re-review. |
 | 2026-04-27T20:02:40Z | #512 | gap-planner | APPROVE | Plan for #511 P0 (Option C cancel-source-on-replacement). Single docs/plans file, CI green. Filename forward-dated 2026-04-28 vs UTC 2026-04-27 — clock-discipline drift, non-blocking. |
+| 2026-04-27T20:02:43Z | #509 | plan-implementer | DEFER | CI pending post-rebase (F3 orange accent restraint). |
