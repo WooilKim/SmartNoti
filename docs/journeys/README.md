@@ -22,7 +22,7 @@
 ### Capture & classification
 | ID | Title | Status | Last verified |
 |---|---|---|---|
-| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-26 |
+| [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-27 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-27 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — notification-capture-classify rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | PASS | APK `lastUpdateTime=2026-04-27 11:56:47`. Recipe end-to-end (`adb shell cmd notification post -S bigtext -t Bank CaptureClassifyTest_0427 "인증번호 123456을 입력하세요"`) → DB row `Bank|PRIORITY|com.android.shell|keyword:인증번호,결제,배송,출발|사용자 규칙\|중요 알림\|온보딩 추천\|중요 키워드`. 23-column v9 schema 재확인 (`PRAGMA user_version=9`, `ruleHitIds` 컬럼 영속). Listener → coordinator → classifier cascade (rule keyword match → category lift → PRIORITY decision) end-to-end 정상. 최근 #254 (categories empty-state CTA) 머지 후 capture/classification regression 없음. DRIFT 없음. `last-verified: 2026-04-26 → 2026-04-27`. |
 
 ### 2026-04-27 (journey-tester — insight-drilldown rotation sweep, emulator-5554)
 

@@ -3,7 +3,7 @@ id: notification-capture-classify
 title: 알림 캡처 및 분류
 status: shipped
 owner: @wooilkim
-last-verified: 2026-04-26
+last-verified: 2026-04-27
 ---
 
 ## Goal
@@ -134,3 +134,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-24: **미분류 Rule 의 no-op 분기 doc-level 명시** — plan `docs/plans/2026-04-24-rule-editor-remove-action-dropdown.md`. 고급 규칙 편집의 액션 dropdown 제거 + 1:1 Category auto-upsert 제거 결과로, 사용자가 "나중에 분류에 추가" 를 누르면 Rule 이 owning Category 없이 "미분류" 상태로 살아남게 됨. classifier 동작은 변경 없음 — `NotificationClassifier.classify` 의 `findMatchingRules` 가 미분류 Rule 도 매치할 수 있지만, `categories.filter { ruleIds 교집합 }` 이 빈 리스트가 되어 winner 가 정해지지 않고 `NotificationDecision.SILENT` 로 fall-through. 즉 미분류 Rule 은 user-routed (PRIORITY/DIGEST/IGNORE) 결정을 만들지 않는다. 새 단위 테스트 `RuleWithoutCategoryNoOpTest` 가 이 contract 를 회귀 고정. `last-verified` 변경 없음.
 - 2026-04-26: **Duplicate threshold / window 가 settings-driven 으로 일반화** — `DuplicateNotificationPolicy` 의 default window 제거 (caller-injected only), `NotificationClassifier` 의 하드코딩 `>= 3` 은 `ClassificationInput.duplicateThreshold` 비교로 변경. `CapturedNotificationInput.duplicateThreshold` (default 3) 가 listener 에서 `settings.duplicateDigestThreshold` 를 받아 classifier 까지 전달. base heuristic 만 영향 — Rule/Category cascade 와 priority keyword path 는 그대로 우선. Plan: `docs/plans/2026-04-26-duplicate-threshold-window-settings.md`. 자세한 사용자 관측 동작은 [duplicate-suppression](duplicate-suppression.md) 참고.
 - 2026-04-26: journey-tester 재검증 sweep PASS (APK `lastUpdateTime=2026-04-26 15:43:43`). Recipe end-to-end (`cmd notification post -S bigtext -t Bank CaptureClassifyTest_0426 "인증번호 123456을 입력하세요"`) → DB row `status=PRIORITY, packageName=com.android.shell, ruleHitIds=keyword:인증번호,결제,배송,출발` 저장. 23-column v9 schema (`ruleHitIds` 컬럼) 재확인. Home StatPill `즉시 9 / Digest 20 / 조용히 21` 로 PRIORITY tier 반영, "오늘 알림 50개 중 중요한 9개를 먼저 전달했어요" surfaced. 최근 #295 (duplicate threshold settings-driven) 머지 후 capture/classification regression 없음. DRIFT 없음.
+- 2026-04-27: journey-tester 재검증 sweep PASS (APK `lastUpdateTime=2026-04-27 11:56:47`). Recipe end-to-end (`cmd notification post -S bigtext -t Bank CaptureClassifyTest_0427 "인증번호 123456을 입력하세요"`) → DB row `status=PRIORITY, packageName=com.android.shell, ruleHitIds=keyword:인증번호,결제,배송,출발, reasonTags=사용자 규칙|중요 알림|온보딩 추천|중요 키워드` 저장. 23-column v9 schema 재확인 (`PRAGMA user_version=9`). 최근 #254 (categories empty-state CTA) 머지 후 capture/classification regression 없음. DRIFT 없음.
