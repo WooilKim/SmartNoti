@@ -66,6 +66,8 @@ class SettingsRepository private constructor(
                 showIgnoredArchive = prefs[SettingsSuppressionRepository.Keys.SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
                 duplicateDigestThreshold = prefs[SettingsDuplicateRepository.Keys.DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
                 duplicateWindowMinutes = prefs[SettingsDuplicateRepository.Keys.WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
+                normalizeNumericTokensInSignature = prefs[SettingsDuplicateRepository.Keys.NORMALIZE_NUMERIC_TOKENS]
+                    ?: defaults.normalizeNumericTokensInSignature,
                 quietHoursPackages = prefs[SettingsQuietHoursRepository.Keys.PACKAGES] ?: defaults.quietHoursPackages,
                 replacementAutoDismissEnabled = prefs[SettingsDeliveryProfileRepository.Keys.REPLACEMENT_AUTO_DISMISS_ENABLED]
                     ?: defaults.replacementAutoDismissEnabled,
@@ -101,6 +103,8 @@ class SettingsRepository private constructor(
     // Duplicate sibling delegates
     suspend fun setDuplicateDigestThreshold(threshold: Int) = duplicate.setDigestThreshold(threshold)
     suspend fun setDuplicateWindowMinutes(minutes: Int) = duplicate.setWindowMinutes(minutes)
+    suspend fun setNormalizeNumericTokensInSignature(enabled: Boolean) =
+        duplicate.setNormalizeNumericTokens(enabled)
 
     // DeliveryProfile sibling delegates
     suspend fun setInboxSortMode(mode: InboxSortMode) = deliveryProfile.setInboxSortMode(mode)

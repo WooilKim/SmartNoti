@@ -58,6 +58,19 @@ data class SmartNotiSettings(
     // fires when the user has neither a matching rule nor a priority keyword.
     val duplicateDigestThreshold: Int = 3,
     val duplicateWindowMinutes: Int = 10,
+    // Plan `2026-04-27-fix-issue-488-signature-normalize-numbers-time.md`.
+    // Opt-in toggle for the duplicate-burst signature normalizer (issue #488
+    // Bug 2). When `true`, `NotificationDuplicateContextBuilder` runs the
+    // policy's lowercase + whitespace-collapsed signature through
+    // `ContentSignatureNormalizer` so amount-only-差 templates (네이버페이
+    // 포인트뽑기 `8/12/16/28원이 적립되었어요` 등) collapse to a single shape and
+    // `repeat_bundle:N` / base `duplicateDigestThreshold` heuristics fire as
+    // intended. **Default is `false`** because collapsing meaningful payment
+    // amounts (e.g. `100원 결제` vs `100,000원 결제`) into the same signature
+    // is a per-user judgment call — fresh installs and existing users see no
+    // behavior change until they opt in via Settings → 중복 알림 묶기. No
+    // migration is needed because `false` matches the "key never set" branch.
+    val normalizeNumericTokensInSignature: Boolean = false,
     // Plan `2026-04-26-quiet-hours-shopping-packages-user-extensible.md` Task 2:
     // Set of packageNames the classifier treats as quiet-hours-eligible.
     // Default mirrors the previously-hardcoded `setOf("com.coupang.mobile")`

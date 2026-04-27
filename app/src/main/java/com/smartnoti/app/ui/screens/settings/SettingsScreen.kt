@@ -197,6 +197,7 @@ fun SettingsScreen(
                 quietHoursPickerSpec = quietHoursPickerSpec,
                 quietHoursPackagesPickerSpec = quietHoursPackagesPickerSpec,
                 duplicateThresholdEditorSpec = duplicateThresholdEditorSpec,
+                normalizeNumericTokensInSignature = settings.normalizeNumericTokensInSignature,
                 onQuietHoursEnabledChange = { enabled ->
                     scope.launch { repository.setQuietHoursEnabled(enabled) }
                 },
@@ -224,6 +225,9 @@ fun SettingsScreen(
                 },
                 onDuplicateWindowMinutesChange = { value ->
                     scope.launch { repository.setDuplicateWindowMinutes(value) }
+                },
+                onNormalizeNumericTokensInSignatureChange = { enabled ->
+                    scope.launch { repository.setNormalizeNumericTokensInSignature(enabled) }
                 },
             )
         }
