@@ -1161,7 +1161,7 @@ private fun CategoryAssignRow(
     }
 }
 
-private fun categoryActionLabel(action: com.smartnoti.app.domain.model.CategoryAction): String = when (action) {
+internal fun categoryActionLabel(action: com.smartnoti.app.domain.model.CategoryAction): String = when (action) {
     com.smartnoti.app.domain.model.CategoryAction.PRIORITY -> "즉시 전달"
     com.smartnoti.app.domain.model.CategoryAction.DIGEST -> "Digest"
     com.smartnoti.app.domain.model.CategoryAction.SILENT -> "조용히"
@@ -1290,7 +1290,7 @@ private fun <T> EnumSelectorRow(
     }
 }
 
-private fun typeLabel(type: RuleTypeUi): String = when (type) {
+internal fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.PERSON -> "사람"
     RuleTypeUi.APP -> "앱"
     RuleTypeUi.KEYWORD -> "키워드"
@@ -1298,7 +1298,7 @@ private fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.REPEAT_BUNDLE -> "반복"
 }
 
-private fun matchLabelFor(type: RuleTypeUi): String = when (type) {
+internal fun matchLabelFor(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.PERSON -> "이름 또는 발신자"
     RuleTypeUi.APP -> "패키지명"
     RuleTypeUi.KEYWORD -> "키워드"
@@ -1411,7 +1411,7 @@ private fun RuleOverrideBaseDropdown(
     }
 }
 
-private fun supersetWarningMessage(reason: RuleOverrideSupersetValidator.Reason): String = when (reason) {
+internal fun supersetWarningMessage(reason: RuleOverrideSupersetValidator.Reason): String = when (reason) {
     RuleOverrideSupersetValidator.Reason.BASE_MISSING ->
         "기준 규칙을 찾을 수 없어요. 삭제됐거나 아직 저장되지 않은 규칙일 수 있어요."
     RuleOverrideSupersetValidator.Reason.TYPE_MISMATCH ->
@@ -1422,7 +1422,7 @@ private fun supersetWarningMessage(reason: RuleOverrideSupersetValidator.Reason)
         "기준 규칙과 조건 값이 달라서 예외가 적용되지 않을 수 있어요."
 }
 
-private fun ruleRowPresentationFor(
+internal fun ruleRowPresentationFor(
     node: RuleListNode,
     baseTitle: String?,
 ): RuleRowPresentation {
