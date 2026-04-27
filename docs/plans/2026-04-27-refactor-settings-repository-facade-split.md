@@ -43,7 +43,7 @@ status: planned
 
 ---
 
-## Task 1: Pin behavior with characterization tests + caller-grep audit
+## Task 1: Pin behavior with characterization tests + caller-grep audit [IN PROGRESS via PR #476]
 
 **Objective:** Refactor 전에 `SettingsRepository` 의 모든 public API 가 caller 코드와 6개 test 의 시그니처를 통해 호출되는지 grep 으로 매핑하고, 부족한 cover (특히 `clearAllForTest`, `currentNotificationContext`, `consumeOnboardingActiveNotificationBootstrapRequest` 같은 multi-key 동작) 를 추가 characterization test 로 채운다. 41 호출 site 중 façade-only 호출 비율 100% 임을 입증해야 sibling 분해가 caller-impact-zero 임이 보장된다.
 
