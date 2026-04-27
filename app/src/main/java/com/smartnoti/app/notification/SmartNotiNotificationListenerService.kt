@@ -9,10 +9,8 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.local.toEntity
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
-import com.smartnoti.app.domain.model.CapturedNotificationInput
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationUiModel
-import com.smartnoti.app.domain.model.withContext
 import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
 import com.smartnoti.app.domain.usecase.DuplicateNotificationPolicy
 import com.smartnoti.app.domain.usecase.LiveDuplicateCountTracker
@@ -210,110 +208,42 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     }
 
     private suspend fun processNotification(sbn: StatusBarNotification) {
-        val extras = sbn.notification.extras
-        val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
-        val body = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
-        // Plan `2026-04-27-silent-sender-messagingstyle-gate.md` Task 2:
-        // gate the EXTRA_TITLE → sender fallback behind a MessagingStyle hint
-        // so non-messaging apps (shopping / news / promo) no longer leak
-        // product names into NotificationEntity.sender. The grouping policy's
-        // App-fallback then takes over for those rows.
-        @Suppress("DEPRECATION")
-        val messages = extras.getParcelableArray(android.app.Notification.EXTRA_MESSAGES)
-        val sender = MessagingStyleSenderResolver.resolve(
-            MessagingStyleSenderInput(
-                conversationTitle = extras.getCharSequence(android.app.Notification.EXTRA_CONVERSATION_TITLE)?.toString(),
-                title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString(),
-                template = extras.getString(android.app.Notification.EXTRA_TEMPLATE),
-                hasMessages = (messages?.isNotEmpty() == true),
-            )
-        )
-
-        val appName = try {
-            val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
-            packageManager.getApplicationLabel(appInfo).toString()
-        } catch (_: Exception) {
-            sbn.packageName
-        }
-
         val repository = NotificationRepository.getInstance(applicationContext)
         val rulesRepository = RulesRepository.getInstance(applicationContext)
         val categoriesRepository = CategoriesRepository.getInstance(applicationContext)
         val settingsRepository = SettingsRepository.getInstance(applicationContext)
 
-        val rules = rulesRepository.currentRules()
         // Plan `2026-04-22-categories-runtime-wiring-fix.md` Task 4 (Drift #1):
-        // without this read the Classifier always falls back to SILENT because
-        // the Category.action it routes through is never in scope. Read at
-        // the same call site as rules so both snapshots are consistent.
-        val categories = categoriesRepository.currentCategories()
+        // read Rules + Categories + Settings at the same call site so the
+        // Classifier can apply Category.action consistently. Plan
+        // `2026-04-27-refactor-listener-process-notification-extract.md`
+        // Task 3: the snapshot read stays inline so the duplicate-context
+        // builder can be driven by the same `settings` instance the
+        // decision pipeline later receives.
         val settings = settingsRepository.observeSettings().first()
-        val isPersistent = persistentNotificationPolicy.shouldTreatAsPersistent(
-            isOngoing = sbn.isOngoing,
-            isClearable = sbn.isClearable,
-        )
-        val shouldBypassPersistentHiding = if (isPersistent) {
-            persistentNotificationPolicy.shouldBypassPersistentHiding(
-                packageName = sbn.packageName,
-                title = title,
-                body = body,
-                protectCriticalPersistentNotifications = settings.protectCriticalPersistentNotifications,
-            )
-        } else {
-            false
-        }
-        // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
-        // build the policy from the freshly-read settings snapshot so a
-        // dropdown change in Settings reaches the very next notification
-        // without an app restart. The signature path is window-independent
-        // (legacy field-level `duplicatePolicy` would do) but we use the
-        // settings-driven instance everywhere in this method to keep the
-        // call site coherent.
-        val settingsDrivenDuplicatePolicy = DuplicateNotificationPolicy(
-            windowMillis = settings.duplicateWindowMinutes * 60_000L,
-        )
-        val contentSignature = settingsDrivenDuplicatePolicy.contentSignature(
-            title = title,
-            body = body,
-        ) + if (isPersistent) "|persistent:${sbn.packageName}:${sbn.id}" else ""
-        val duplicateWindowStart = settingsDrivenDuplicatePolicy.windowStart(sbn.postTime)
-        val duplicateCount = liveDuplicateCountTracker.recordAndCount(
-            packageName = sbn.packageName,
-            contentSignature = contentSignature,
-            sourceEntryKey = sbn.key,
-            postedAtMillis = sbn.postTime,
-            windowStartMillis = duplicateWindowStart,
-            persistedDuplicateCount = repository.countRecentDuplicates(
-                packageName = sbn.packageName,
-                contentSignature = contentSignature,
-                sinceMillis = duplicateWindowStart,
-            ),
-        )
 
-        val captureInput = CapturedNotificationInput(
-            packageName = sbn.packageName,
-            appName = appName,
-            sender = sender,
-            title = title,
-            body = body,
-            postedAtMillis = sbn.postTime,
-            quietHours = false,
-            duplicateCountInWindow = if (isPersistent) 1 else duplicateCount,
-            isPersistent = isPersistent && !shouldBypassPersistentHiding,
-            sourceEntryKey = sbn.key,
-            // Plan `2026-04-26-duplicate-threshold-window-settings.md` Task 4:
-            // forward the user-tunable threshold to the classifier through
-            // the processor. `settings` is the snapshot read above at the
-            // same call site as rules / categories, so all three knobs are
-            // mutually consistent for this notification.
-            duplicateThreshold = settings.duplicateDigestThreshold,
-        ).withContext(settingsRepository.currentNotificationContext(if (isPersistent) 1 else duplicateCount))
+        // Plan `2026-04-27-refactor-listener-process-notification-extract.md`
+        // Task 3: the pre-classifier "input build" stage (extras parsing,
+        // MessagingStyle sender, appName, persistent flags, duplicate
+        // signature/count, CapturedNotificationInput.withContext) is now
+        // owned by [NotificationPipelineInputBuilder]. The builder still
+        // reads the same fields verbatim — only call-site shape changed.
+        val inputBuilder = NotificationPipelineInputBuilder(
+            persistentNotificationPolicy = persistentNotificationPolicy,
+            duplicateContextBuilder = NotificationDuplicateContextBuilder(
+                tracker = liveDuplicateCountTracker,
+                persistedDuplicateCount = repository::countRecentDuplicates,
+            ),
+            appNameLookup = ::resolveApplicationLabel,
+            contextLookup = settingsRepository::currentNotificationContext,
+        )
+        val pipelineInput = inputBuilder.build(sbn, settings)
 
         val classifiedNotification = processor.process(
-            input = captureInput,
-            rules = rules,
+            input = pipelineInput.captureInput,
+            rules = rulesRepository.currentRules(),
             settings = settings,
-            categories = categories,
+            categories = categoriesRepository.currentCategories(),
         )
 
         // Debug-only override — lets the journey-tester priority-inbox
@@ -325,7 +255,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         // entirely under minification.
         // Plan: docs/plans/2026-04-22-priority-recipe-debug-inject-hook.md
         val baseNotification = if (BuildConfig.DEBUG) {
-            DebugClassificationOverride.resolve(extras, classifiedNotification)
+            DebugClassificationOverride.resolve(sbn.notification.extras, classifiedNotification)
         } else {
             classifiedNotification
         }
@@ -335,10 +265,10 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         )
 
         // Plan `2026-04-27-refactor-listener-process-notification-extract.md`
-        // Task 2: the post-classifier "decision → side-effect" branch now
-        // lives in [NotificationDecisionPipeline]. Statement order inside
-        // dispatch is identical to the previous inline implementation; the
-        // pipeline routes side effects through [SourceTrayActions] so
+        // Task 2: the post-classifier "decision → side-effect" branch lives
+        // in [NotificationDecisionPipeline]. Statement order inside dispatch
+        // is identical to the previous inline implementation; the pipeline
+        // routes side effects through [SourceTrayActions] so
         // `NotificationDecisionPipelineCharacterizationTest` can assert
         // against a fake without the listener.
         val pipeline = NotificationDecisionPipeline(
@@ -354,16 +284,24 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 baseNotification = baseNotification,
                 sourceEntryKey = sbn.key,
                 packageName = sbn.packageName,
-                appName = appName,
+                appName = pipelineInput.appName,
                 postedAtMillis = sbn.postTime,
-                contentSignature = contentSignature,
+                contentSignature = pipelineInput.contentSignature,
                 settings = settings,
-                isPersistent = isPersistent,
-                shouldBypassPersistentHiding = shouldBypassPersistentHiding,
+                isPersistent = pipelineInput.isPersistent,
+                shouldBypassPersistentHiding = pipelineInput.shouldBypassPersistentHiding,
                 isProtectedSourceNotification = isProtectedSourceNotification,
             )
         )
     }
+
+    private fun resolveApplicationLabel(packageName: String): String =
+        try {
+            val appInfo = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(appInfo).toString()
+        } catch (_: Exception) {
+            packageName
+        }
 
     /**
      * Production [SourceTrayActions] that bridges the pure pipeline back to
