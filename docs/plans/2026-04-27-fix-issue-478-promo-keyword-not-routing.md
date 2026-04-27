@@ -1,9 +1,12 @@
 ---
-status: planned
+status: superseded
 fixes: 478
+superseded-by: docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md
 ---
 
 # Fix #478: "(광고)" 알림이 분류되지 않고 시스템 트레이에 그대로 남음
+
+> **SUPERSEDED 2026-04-27** — PR #483 의 6-hypothesis sweep 모두 GREEN 격리 (라우팅 자체는 정상). 실제 root cause 는 real-device DB 분석에서 식별된 두 개의 distinct bug — `(광고)` prefix vs IMPORTANT 키워드 precedence 충돌, 그리고 PROMO_QUIETING preset 의 SILENT default 가 자동 확장을 trigger 안 하는 것. 후속 plan: [`docs/plans/2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md`](2026-04-27-fix-issue-478-promo-prefix-precedence-and-bundle-by-default.md).
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. P0 release-blocker — ADB e2e on `emulator-5554` is mandatory (deferred not allowed).
 
