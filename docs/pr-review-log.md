@@ -387,3 +387,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T01:56:04Z | #427 | plan-implementer | DEFER | CI pending (Unit tests + debug APK). Re-review next sweep. |
 | 2026-04-27T02:00:21Z | #427 | plan-implementer | APPROVE+merge | MessagingStyle gate plan all 3 tasks shipped + plan flip + ADB A/B verified; CI green 2m52s |
 | 2026-04-27T02:07:15Z | #428 | gap-planner | DEFER | CI IN_PROGRESS — Unit tests + debug APK pending; scope/traceability OK (docs-only, journey link + 8/9 leverage cited) |
+| 2026-04-27T02:11:01Z | #428 | gap-planner | APPROVE+MERGE | docs-only plan for home-uncategorized-prompt APP-Rule coverage; CI SUCCESS |
