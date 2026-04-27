@@ -26,7 +26,7 @@ created: 2026-04-27
 
 ---
 
-## Task 1: Add failing tests for APP-Rule coverage
+## Task 1: Add failing tests for APP-Rule coverage [IN PROGRESS via PR #429]
 
 **Objective:** 현재 detector 가 KEYWORD-only / APP-rule-via-Category coverage 를 어떻게 다루는지 테스트로 고정.
 
@@ -41,7 +41,7 @@ created: 2026-04-27
 5. 기존 8 케이스의 시그니처 변경 보정 — `detect(...)` 가 새 인자 `rules: List<RuleUiModel>` 을 받도록 모두 빈 리스트로 호출.
 6. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.UncategorizedAppsDetectorTest"` → RED 확인.
 
-## Task 2: Extend `UncategorizedAppsDetector.detect` signature + coverage logic
+## Task 2: Extend `UncategorizedAppsDetector.detect` signature + coverage logic [IN PROGRESS via PR #429]
 
 **Objective:** Task 1 의 RED 케이스를 GREEN 으로.
 
