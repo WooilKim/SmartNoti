@@ -484,3 +484,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T20:02:40Z | #512 | gap-planner | APPROVE | Plan for #511 P0 (Option C cancel-source-on-replacement). Single docs/plans file, CI green. Filename forward-dated 2026-04-28 vs UTC 2026-04-27 — clock-discipline drift, non-blocking. |
 | 2026-04-27T20:02:43Z | #509 | plan-implementer | DEFER | CI pending post-rebase (F3 orange accent restraint). |
 | 2026-04-27T20:22:02Z | #509 | plan-implementer | APPROVE+MERGE | F3 inbox-unified orange accent restraint; squash 8102d63 |
+| 2026-04-27T20:22:05Z | #513 | plan-implementer | DEFER | Task 1 of #511 plan; CI red by-design (failing tests + compile-RED stubs); awaiting human disposition on tests-first staging |
