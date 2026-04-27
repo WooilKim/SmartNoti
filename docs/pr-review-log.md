@@ -373,3 +373,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T00:10:26Z | #418 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) |
 | 2026-04-27T00:15:16Z | #418 | plan-implementer | APPROVE+merge | InboxSortDropdown wiring (Tasks 3-5) merged 5a844d8 |
 | 2026-04-27T00:40:57Z | #421 | gap-planner | DEFER | CI pending (Unit tests + debug APK); re-review next sweep |
+| 2026-04-27T00:44:53Z | #421 | gap-planner | APPROVE+MERGE | onboarding-bootstrap non-destructive sub-recipe plan; docs-only carve-out; CI green |
