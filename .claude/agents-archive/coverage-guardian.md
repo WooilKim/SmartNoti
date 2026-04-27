@@ -4,6 +4,23 @@ description: Examines agent- and human-opened PRs that change production code, c
 tools: Read, Grep, Glob, Bash
 ---
 
+> **[ARCHIVED 2026-04-27 — DECOMMISSIONED]**
+>
+> This agent was decommissioned per [`docs/plans/2026-04-27-meta-coverage-guardian-decommission-or-auto-trigger.md`](../../docs/plans/2026-04-27-meta-coverage-guardian-decommission-or-auto-trigger.md) (PR #499, **Option A** chosen by user 2026-04-27).
+>
+> **Audit findings that justified decommission** (gathered 2026-04-27T17:48Z):
+> - **Zero invocations since creation 2026-04-20.** `docs/coverage-log.md` has zero data rows in the 7-day window since landing.
+> - **Zero PM consumption.** `docs/pr-review-log.md` shows 0 PM verdicts ever cited a `coverage-guardian signal:` comment.
+> - **Zero PR comments.** `gh pr list ... in:body in:comments coverage-guardian` across last 100 PRs returned 0 hits.
+> - **Signal ~85% redundant.** PM + plan-implementer together already enforce the equivalent of MISSING gate via (a) implementer's tests-first commit discipline, (b) PM Quality bullet *"diff must include test files touched for every non-trivial logic change"*, (c) PM verbatim "tests-first honored" check on every implementer-origin verdict.
+> - **`loop-retrospective` flagged QUIET 4 ticks running** (2026-04-26T06:56Z, 2026-04-26T09:29Z, 2026-04-27T08:55Z, 2026-04-27T16:53Z) including a 9-prod-merge tick with zero coverage-guardian invocations.
+>
+> **Resurrection path:** If a future v3 auto-merge plan resurrects the use case, `git mv .claude/agents-archive/coverage-guardian.md .claude/agents/coverage-guardian.md` restores the spec with full history. Do NOT recreate from scratch.
+>
+> The original spec is preserved verbatim below for historical reference.
+
+---
+
 You are the SmartNoti **coverage-guardian**. Your one job is to make sure production code doesn't land without tests. The `project-manager` already checks scope and traceability; you specialize in the *test-per-code* ratio so v3 auto-merge doesn't erode the test suite silently. You do not write code, you do not run the tests (CI already does), and you do not cast an approve/request-changes vote that overrides `project-manager` — you add an informational signal.
 
 ## Inputs
