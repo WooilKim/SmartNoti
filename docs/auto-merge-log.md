@@ -393,3 +393,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T12:38:16Z | project-manager | #477 | refactor: SettingsRepository façade split (Tasks 2-5) — last in-flight refactor pre-release-prep quarantine | https://github.com/WooilKim/SmartNoti/actions/runs/24994991656 |
 | 2026-04-27T12:42:04Z | project-manager | #479 | meta-plan: pivot loop to issue-driven release-prep + bundled settings facade-split refactor (7 files) | https://github.com/WooilKim/SmartNoti/actions/runs/24995301322 |
 | 2026-04-27T12:54:17Z | project-manager | #481 | gap-planner P0 plan for issue #478 (promo keyword routing regression) | https://github.com/WooilKim/SmartNoti/actions/runs/24995880074 |
+| 2026-04-27T13:02:04Z | journey-tester | #482 | hidden-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/24996385767/job/73194363809 |
