@@ -402,3 +402,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T15:31:16Z | project-manager | #491 | Task 3 of #478 — Bug B2 PROMO default DIGEST + M1 DataStore codec migration (column 7 add, backward-compat decode, one-shot flag-gated runner) | https://github.com/WooilKim/SmartNoti/actions/runs/25003993693 |
 | 2026-04-27T15:58:40Z | project-manager | #492 | ContentSignatureNormalizer + Settings toggle (Tasks 1-4 of #488 plan); 14 files (8 prod / 5 test / 1 plan) | https://github.com/WooilKim/SmartNoti/actions/runs/25005375915 |
 | 2026-04-27T16:11:28Z | journey-tester | #493 | categories-management (post-#491 sweep) | https://github.com/WooilKim/SmartNoti/actions/runs/25006073960 |
+| 2026-04-27T16:26:06Z | journey-tester | #494 | notification-capture-classify | https://github.com/WooilKim/SmartNoti/actions/runs/25006758286/job/73231535142 |
