@@ -9,6 +9,7 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.local.toEntity
 import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
+import com.smartnoti.app.diagnostic.DiagnosticLoggerProvider
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.domain.usecase.DeliveryProfilePolicy
@@ -278,6 +279,12 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 repository = repository,
                 settingsRepository = settingsRepository,
             ),
+            // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+            // Task 4 — wire the route diagnostic hook. The provider returns a
+            // singleton logger backed by `filesDir/diagnostic/diagnostic.log`;
+            // the logger short-circuits when the user has not opted in via
+            // Settings → 진단, so this is a strict no-op for default users.
+            diagnosticLogger = DiagnosticLoggerProvider.getInstance(applicationContext),
         )
         pipeline.dispatch(
             NotificationDecisionPipeline.DispatchInput(
