@@ -38,7 +38,7 @@ related-journey: ../journeys/inbox-unified.md
 
 Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-scroll.png`, `/tmp/ui-emu-archived.png`, `/tmp/ui-emu-processed.png`, `/tmp/ui-emu-digest-fresh.png`.
 
-### F1 — Digest sub-tab: cards inside cards (highest impact)
+### F1 — Digest sub-tab: cards inside cards (highest impact) [IN PROGRESS via PR fix/issue-506-f1-inbox-preview-no-double-card]
 
 **Evidence:** `/tmp/ui-emu-inbox-digest.png` middle section — the Shell group card (outer rounded border) contains 3 preview "cards" (`Shell / 광고 / 30%` each with its own outlined surface, chips, timestamp). Outer card + inner cards + chip row create three nested rectangle layers in 600px of vertical space.
 

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -145,7 +146,8 @@ fun DigestGroupCard(
                         title = "최근 묶음 미리보기",
                         subtitle = "탭하면 원본 알림 상세를 확인할 수 있어요",
                     )
-                    model.items.take(previewState.visibleCount).forEach { item ->
+                    val previewItems = model.items.take(previewState.visibleCount)
+                    previewItems.forEachIndexed { index, item ->
                         // Plan
                         // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
                         // finding F3: hide the per-row orange `Digest` /
@@ -156,11 +158,25 @@ fun DigestGroupCard(
                         // the actual content. Standalone NotificationCard
                         // call sites (Home, IgnoredArchive, Detail, Priority)
                         // keep the badge on by default.
+                        //
+                        // F1 (this PR): pass embeddedInCard = true so the
+                        // preview row drops its own outlined card surface —
+                        // the parent group card BE the only card boundary.
+                        // Rows are visually separated by a 1dp BorderSubtle
+                        // divider (the gap between rows below) instead of
+                        // nested rectangles.
                         NotificationCard(
                             model = item,
                             onClick = onNotificationClick,
                             showStatusBadge = false,
+                            embeddedInCard = true,
                         )
+                        if (index != previewItems.lastIndex) {
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = BorderSubtle,
+                            )
+                        }
                     }
                     previewState.ctaCopy?.let { copy ->
                         TextButton(onClick = { showAll = !showAll }) {
