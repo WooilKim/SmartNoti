@@ -526,6 +526,44 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         }
 
         /**
+         * Debug-only re-entry point invoked from
+         * `com.smartnoti.app.debug.DebugBootstrapRehearsalReceiver`. Hands the
+         * connected listener's `activeNotifications` snapshot, app package
+         * name, dedup-recording hook, and `processNotification` callback to
+         * [block] — the receiver wires those into
+         * `DebugBootstrapRehearsal.rehearse` to re-run the bootstrap pipeline
+         * without consulting the production one-shot pending flag, so the
+         * `onboarding-bootstrap` journey verification recipe can be automated
+         * (no `pm clear`, no permission grant wipe). Returns `false` when the
+         * listener is not currently bound — the receiver then requests a
+         * rebind.
+         *
+         * The call site in production is the static
+         * [rehearseOnboardingBootstrapIfConnected] helper below; the only
+         * caller is the debug-source-set receiver, so release APKs never
+         * exercise this path. Plan:
+         * `docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md`.
+         */
+        fun rehearseOnboardingBootstrapIfConnected(
+            block: (
+                appPackageName: String,
+                actives: Array<StatusBarNotification>,
+                recordProcessedByBootstrap: (StatusBarNotification) -> Unit,
+                processNotification: suspend (StatusBarNotification) -> Unit,
+            ) -> Unit,
+        ): Boolean {
+            val service = activeService ?: return false
+            val actives = runCatching { service.activeNotifications }.getOrNull() ?: emptyArray()
+            block(
+                service.packageName,
+                actives,
+                { sbn -> service.reconnectSweepCoordinator.recordProcessedByBootstrap(service.dedupKeyFor(sbn)) },
+                { sbn -> service.processNotification(sbn) },
+            )
+            return true
+        }
+
+        /**
          * Ask the currently connected listener service instance (if any) to cancel
          * the tray entry identified by [key].
          *
