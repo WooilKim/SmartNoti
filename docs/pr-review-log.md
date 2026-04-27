@@ -436,3 +436,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T10:48:44Z | #471 | plan-implementer | DEFER+ESCALATE | CI IN_PROGRESS; escalated bypass commit 9338618 (direct push to main of plan status flip, outside PM audit-row carve-out) |
 | 2026-04-27T10:51:21Z | #471 | plan-implementer | APPROVE+merge | Task 1 characterization tests for Settings suppression cluster split; test-only diff, CI green, mirrors PR #457 pattern |
 | 2026-04-27T11:03:04Z | #472 | plan-implementer | DEFER | CI pending — Unit tests + debug APK still running |
+| 2026-04-27T11:06:17Z | #472 | plan-implementer | APPROVE+MERGE | settings suppression cluster split Tasks 2-4; CI green; pure refactor pinned by 28-case characterization test |
