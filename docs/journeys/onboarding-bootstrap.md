@@ -107,6 +107,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - Onboarding bootstrap 플래그 자체는 여전히 1회성 (consume 후 재실행되지 않음). 단, 매 `onListenerConnected` 에서 `enqueueReconnectSweep` 이 함께 돌기 때문에, 사용자가 앱 데이터를 보존한 채 리스너 권한을 토글하면 tray 에 남은 미처리 알림은 sweep 이 소급 캡처한다. 실제 "bootstrap 을 재실행" 하는 것은 아니고 누락 메움만 제공.
 - 시스템 tray 가 비어 있는 상태로 온보딩이 완료되면 bootstrap 은 아무 것도 하지 않고 consume 됨. 이후 sweep 도 tray 가 비어 있는 한 no-op.
 - 리스너가 꺼져 있는 동안 시스템이 이미 dismiss 한 알림은 `activeNotifications` 에 남지 않아 bootstrap / sweep 모두 복구할 수 없음.
+- Verification recipe step 1 (`adb shell pm clear com.smartnoti.app`) 이 destructive — `journey-tester` 가 매 rotation sweep 마다 SKIP 처리 (2026-04-26 / 2026-04-27 sweep 동일 사유). `last-verified` 가 rotation tick 으로 bump 되지 못하고 정체 중. → plan: `docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md` (debug-only rehearsal hook 으로 non-destructive sub-recipe 추가 예정).
 
 ## Change log
 
