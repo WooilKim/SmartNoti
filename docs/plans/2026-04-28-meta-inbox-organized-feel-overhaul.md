@@ -58,7 +58,7 @@ Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-
 
 **Proposed fix (smallest):** Drop the subtitle line on the Inbox screen specifically (keep eyebrow + title). Move `정렬: <mode>` dropdown into the same row as the title (right-aligned next to it) instead of its own row below. Estimated header height drops from ~600px to ~280px. The eyebrow + title alone already establishes context.
 
-### F3 — Tab segments and group header chips share the same orange accent
+### F3 — Tab segments and group header chips share the same orange accent [IN PROGRESS via PR pending — fix/issue-506-f3-inbox-orange-accent-restraint]
 
 **Evidence:** `/tmp/ui-emu-inbox-digest.png` — selected `Digest · 4건` segment uses primary blue tint (correct). But each group card header shows a **bright orange `3건` badge** (e.g. Shell group), and each preview row also shows an **orange `Digest` status chip**. On a single screen with 2 group cards and 4 previews, orange appears 6 times. Per `.claude/rules/ui-improvement.md`: *"Use accent color sparingly for selection, status, and primary actions"*.
 
