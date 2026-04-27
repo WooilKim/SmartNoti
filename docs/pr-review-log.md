@@ -456,3 +456,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T13:23:32Z | #484 | gap-planner | APPROVE | scope:plans/ + traceability:#480 + CI:green; merged squash |
 | 2026-04-27T13:48:01Z | #485 | plan-implementer | DEFER | CI_RED_BY_DESIGN — Task 1 failing-test gate for plan #480; next implementer push (Tasks 2-4) flips green |
 | 2026-04-27T13:48:09Z | #483 | plan-implementer | REQUEST_CHANGES | Plan premise invalidated by user evidence (promo markers live in extended-content fields, not title/body); superseding plan being drafted; PR is dead-end |
+| 2026-04-27T14:03:55Z | #483 | plan-implementer | CLOSE | Hypothesis invalidated by real-device dump; CategoryConflictResolver precedence is real bug. See #486 comment thread. |
