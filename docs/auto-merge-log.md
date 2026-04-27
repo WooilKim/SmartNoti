@@ -383,3 +383,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T09:54:37Z | project-manager | #467 | docs-only gap-planner plan: listener processNotification stage extract | https://github.com/WooilKim/SmartNoti/actions/runs/24988179027 |
 | 2026-04-27T10:04:48Z | project-manager | #468 | refactor(listener): characterization tests Task 1 | https://github.com/WooilKim/SmartNoti/actions/runs/24988641786 |
 | 2026-04-27T10:26:25Z | project-manager | #469 | listener refactor Tasks 2-4: extract pipeline/builders + plan shipped + journey annotated | https://github.com/WooilKim/SmartNoti/actions/runs/24989542179 |
+| 2026-04-27T10:41:06Z | project-manager | #470 | docs-only plan: settings suppression cluster split | https://github.com/WooilKim/SmartNoti/actions/runs/24990174418 |
