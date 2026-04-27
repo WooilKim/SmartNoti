@@ -350,3 +350,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T03:23:32Z | journey-tester | #434 | ignored-archive | https://github.com/WooilKim/SmartNoti/actions/runs/24974929073 |
 | 2026-04-27T03:34:08Z | journey-tester | #435 | categories-management | https://github.com/WooilKim/SmartNoti/actions/runs/24975193202 |
 | 2026-04-27T03:41:54Z | journey-tester | #436 | digest-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24975375072/job/73126204277 |
+| 2026-04-27T03:50:37Z | journey-tester | #437 | silent-auto-hide | https://github.com/WooilKim/SmartNoti/actions/runs/24975582492 |
