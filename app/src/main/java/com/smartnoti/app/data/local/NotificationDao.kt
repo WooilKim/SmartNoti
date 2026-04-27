@@ -91,4 +91,33 @@ interface NotificationDao {
      */
     @Query("UPDATE notifications SET appName = :label WHERE packageName = :packageName AND appName = packageName")
     suspend fun updateAppLabel(packageName: String, label: String): Int
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+     * Task 4. Returns rows whose SmartNoti replacement was posted but whose
+     * source tray entry MIGHT still be live —
+     * [com.smartnoti.app.data.local.MigrateOrphanedSourceCancellationRunner]
+     * pairs each `sourceEntryKey` with
+     * [com.smartnoti.app.notification.ActiveSourceNotificationInspector]
+     * to confirm the entry is still in the tray before cancelling.
+     *
+     * Filters rows where:
+     *  - `replacementNotificationIssued = 1` (only rows SmartNoti owns the
+     *    replacement for; PRIORITY-style "let it through unmodified" rows
+     *    have `replacementNotificationIssued = 0` and must NEVER be
+     *    cancelled — that would silently delete a notification the user
+     *    is actively expecting).
+     *  - `sourceEntryKey IS NOT NULL` (legacy rows saved before the
+     *    `sourceEntryKey` column existed cannot be cancelled — there is
+     *    no key to pass to `cancelNotification`).
+     */
+    @Query(
+        """
+        SELECT sourceEntryKey FROM notifications
+        WHERE replacementNotificationIssued = 1
+          AND sourceEntryKey IS NOT NULL
+        """
+    )
+    suspend fun selectOrphanedSourceCancellationKeys(): List<String>
 }

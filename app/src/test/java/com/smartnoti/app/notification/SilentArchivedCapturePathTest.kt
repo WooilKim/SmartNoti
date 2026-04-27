@@ -3,7 +3,6 @@ package com.smartnoti.app.notification
 import com.smartnoti.app.domain.model.NotificationDecision
 import com.smartnoti.app.domain.model.SilentMode
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -34,11 +33,14 @@ class SilentArchivedCapturePathTest {
     }
 
     @Test
-    fun fresh_silent_capture_routes_keep_source_in_tray() {
-        // End-to-end composition check: the selector's mode, fed into the shipped
-        // SourceNotificationRoutingPolicy, must keep the source notification in the
-        // tray (cancelSourceNotification = false) so the user still sees it while
-        // it sits in the Hidden inbox "보관 중" tab.
+    fun fresh_silent_capture_routes_cancel_source_and_post_replacement() {
+        // Plan `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+        // Task 3 (Option C invariant): the selector still picks ARCHIVED so
+        // the persisted row lands in the Hidden inbox "보관 중" tab, but
+        // SourceNotificationRoutingPolicy no longer gates the source-tray
+        // decision on SilentMode. The source is cancelled and the
+        // SmartNoti replacement (silent_group child + Hidden inbox row) is
+        // posted — Issue #511 fix.
         val mode = SilentCaptureRoutingSelector.silentModeFor(
             decision = NotificationDecision.SILENT,
             isPersistent = false,
@@ -53,8 +55,11 @@ class SilentArchivedCapturePathTest {
             silentMode = mode,
         )
 
-        assertFalse(routing.cancelSourceNotification)
-        assertFalse(routing.notifyReplacementNotification)
+        assertTrue(routing.cancelSourceNotification)
+        assertTrue(routing.notifyReplacementNotification)
+        // Selector mode is still ARCHIVED — that drives DB persistence, not
+        // tray routing.
+        assertEquals(SilentMode.ARCHIVED, mode)
     }
 
     @Test
@@ -119,11 +124,12 @@ class SilentArchivedCapturePathTest {
     }
 
     @Test
-    fun legacy_routing_shape_still_cancels_when_mode_is_null() {
-        // Safety: if Task 2 regresses the selector back to null for the fresh SILENT
-        // branch, the legacy policy must still perform the old cancel — this locks
-        // in that we haven't accidentally made SILENT leak into the tray whenever
-        // someone forgets to pass a mode.
+    fun null_silent_mode_still_cancels_and_now_also_posts_replacement() {
+        // Plan `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+        // Task 3: SILENT with no mode hint also follows the unified Option C
+        // invariant — cancel + replace. The previous "legacy null cancels
+        // without replacement" shape is gone; SmartNoti always posts the
+        // replacement when it owns SILENT routing.
         val routing = SourceNotificationRoutingPolicy.route(
             decision = NotificationDecision.SILENT,
             hidePersistentSourceNotification = false,
@@ -132,6 +138,6 @@ class SilentArchivedCapturePathTest {
         )
 
         assertTrue(routing.cancelSourceNotification)
-        assertFalse(routing.notifyReplacementNotification)
+        assertTrue(routing.notifyReplacementNotification)
     }
 }

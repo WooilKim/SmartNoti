@@ -552,6 +552,28 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 service.cancelNotification(key)
             }.isSuccess
         }
+
+        /**
+         * Snapshot of the currently active StatusBarNotification keys held by the
+         * connected listener service, or `null` when the listener is not bound.
+         *
+         * Used by
+         * [com.smartnoti.app.data.local.ListenerActiveSourceNotificationInspector]
+         * (plan
+         * `docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`
+         * Task 5) so the cold-start
+         * [com.smartnoti.app.data.local.MigrateOrphanedSourceCancellationRunner]
+         * can decide whether each persisted `sourceEntryKey` still has a live
+         * tray entry to cancel. A returned `null` (listener not bound)
+         * intentionally distinguishes from an empty set (listener bound but
+         * tray currently empty) so the migration runner can defer-without-
+         * flipping-the-flag in the former case.
+         */
+        fun activeSourceKeysSnapshotIfConnected(): Set<String>? {
+            val service = activeService ?: return null
+            val actives = runCatching { service.activeNotifications }.getOrNull() ?: return emptySet()
+            return actives.mapTo(HashSet(actives.size)) { it.key }
+        }
     }
 }
 

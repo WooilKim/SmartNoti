@@ -174,6 +174,10 @@ class SettingsRepository private constructor(
         onboarding.isAppLabelResolutionMigrationV1Applied()
     suspend fun setAppLabelResolutionMigrationV1Applied(applied: Boolean) =
         onboarding.setAppLabelResolutionMigrationV1Applied(applied)
+    suspend fun isMigrateOrphanedSourceCancellationV1Applied(): Boolean =
+        onboarding.isMigrateOrphanedSourceCancellationV1Applied()
+    suspend fun setMigrateOrphanedSourceCancellationV1Applied(applied: Boolean) =
+        onboarding.setMigrateOrphanedSourceCancellationV1Applied(applied)
 
     // MigrationRunner delegate — single `dataStore.edit` transaction inside
     // the runner keeps v1 + v2 + INBOX_SORT default materialization atomic.
