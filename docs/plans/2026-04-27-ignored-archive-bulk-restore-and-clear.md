@@ -25,7 +25,7 @@ status: planned
 
 ---
 
-## Task 1: Failing tests for new repository ops
+## Task 1: Failing tests for new repository ops [IN PROGRESS via PR pending]
 
 **Objective:** 두 신규 repository 메서드의 contract 를 테스트로 고정.
 
@@ -39,7 +39,7 @@ status: planned
 4. Empty IGNORE set 에서 두 메서드 호출 → 0 row affected, no exception.
 5. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.local.NotificationRepositoryIgnoredBulkTest"` 로 RED 확인.
 
-## Task 2: Implement repository bulk ops
+## Task 2: Implement repository bulk ops [IN PROGRESS via PR pending]
 
 **Objective:** Task 1 의 테스트 GREEN.
 
