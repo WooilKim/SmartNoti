@@ -417,3 +417,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T19:35:33Z | project-manager | #508 | F2 inbox header chrome collapse — drop subtitle + inline sort dropdown + pin contract spec | https://github.com/WooilKim/SmartNoti/actions/runs/25015249768 |
 | 2026-04-27T20:02:49Z | project-manager | #512 | gap-planner plan for #511 P0 cancel-source-on-replacement | https://github.com/WooilKim/SmartNoti/actions/runs/25016379284 |
 | 2026-04-27T20:21:33Z | project-manager | #509 | F3 inbox-unified orange accent restraint (post-rebase) | https://github.com/WooilKim/SmartNoti/actions/runs/25016476402 |
+| 2026-04-27T20:40:36Z | project-manager | #513 | Tasks 1-5 of #511 P0: cancel-source-on-replacement Option C invariant + orphan migration | https://github.com/WooilKim/SmartNoti/actions/runs/25018122193 |
