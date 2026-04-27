@@ -41,7 +41,7 @@ status: planned
 
 ---
 
-## Task 1: Pin behavior with characterization tests
+## Task 1: Pin behavior with characterization tests [IN PROGRESS via PR #468]
 
 **Objective:** 250-line 핫패스를 조각내기 전에 현재 outcome 을 테스트로 고정. 기존 `SmartNotiNotificationListenerServiceCategoryInjectionTest` 는 coordinator 계약만 cover — 그 외 IGNORE early-return / replacement-notify / DB save / source cancel 분기는 unit-level coverage 가 listener-shape 으로 묶여 있지 않다.
 
