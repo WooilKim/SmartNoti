@@ -30,7 +30,7 @@ fixes: 478
 
 ---
 
-## Task 1: Failing test suite — 6개 가설 각각 distinct reproduction [IN PROGRESS via PR #N]
+## Task 1: Failing test suite — 6개 가설 각각 distinct reproduction [IN PROGRESS via PR #483]
 
 **Objective:** 어느 hypothesis 가 실제 root cause 인지 test 결과로 식별. 모든 test 는 RED 로 시작. Task 2 후에는 root-cause test 가 GREEN 으로, 나머지는 "이미 PASS 인 contract test" 로 남아 회귀 가드 역할.
 
