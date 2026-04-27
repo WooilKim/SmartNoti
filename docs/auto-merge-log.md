@@ -419,3 +419,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T20:21:33Z | project-manager | #509 | F3 inbox-unified orange accent restraint (post-rebase) | https://github.com/WooilKim/SmartNoti/actions/runs/25016476402 |
 | 2026-04-27T20:40:36Z | project-manager | #513 | Tasks 1-5 of #511 P0: cancel-source-on-replacement Option C invariant + orphan migration | https://github.com/WooilKim/SmartNoti/actions/runs/25018122193 |
 | 2026-04-27T21:10:41Z | project-manager | #514 | F1 preview rows no outlined surface (issue #506) | https://github.com/WooilKim/SmartNoti/actions/runs/25019038351 |
+| 2026-04-27T21:26:44Z | project-manager | #515 | F4 inbox card language unification (meta-plan 2026-04-28 inbox overhaul) | https://github.com/WooilKim/SmartNoti/actions/runs/25020276667 |
