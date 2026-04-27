@@ -17,10 +17,10 @@ import com.smartnoti.app.domain.model.NotificationUiModel
  * - Otherwise fall back to `packageName` so non-messaging surfaces (news, promos, system
  *   alerts) still cluster sensibly by app.
  *
- * Note: the "MessagingStyle hint" from the plan is encoded implicitly by the listener — it is
- * the listener's responsibility to leave `sender` null for non-messaging notifications. Task 3
- * of the plan tightens that contract in the listener; this policy only reacts to what the row
- * carries.
+ * Note: the "MessagingStyle hint" is encoded by the listener via
+ * `MessagingStyleSenderResolver` (plan `2026-04-27-silent-sender-messagingstyle-gate.md`) — the
+ * listener leaves `sender` null for non-messaging notifications so this policy's App-fallback
+ * naturally kicks in. This policy only reacts to what the row carries.
  */
 class SilentNotificationGroupingPolicy {
 
