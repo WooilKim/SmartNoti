@@ -168,3 +168,37 @@ related-agent: ../../.claude/agents/coverage-guardian.md
 ## Related journey
 
 This plan does not resolve a `docs/journeys/<id>.md` Known gap — `coverage-guardian` is loop infrastructure, not a user-facing feature. The triggering signal is the **`loop-retrospective` standing leverage-9 finding** logged at `docs/loop-retrospective-log.md` row 2026-04-27T08:55:00Z (and re-confirmed 2026-04-27T16:53:11Z). When this plan + its follow-up implementation PR ship, the next retrospective row should no longer list coverage-guardian as a standing leverage target. No journey doc changes in either PR.
+
+---
+
+## Audit findings
+
+Evidence gathered 2026-04-27T17:48Z by plan-implementer (Tasks 1 + 2). These findings are intended as neutral input to the user's A/B/C decision in Task 3 — recommendation noted at the end but the user still picks.
+
+### Task 1 — Invocation history (ground truth)
+
+- **`docs/coverage-log.md` data rows: 0.** File created 2026-04-20 (commit `6ce50fe` — initial agent landing) with header + format example only. Zero analysis rows in the 7-day window since file creation through 2026-04-27T17:48Z. The "example" row inside the Format code-fence (`#123 ADEQUATE`, `#124 MISSING`) is illustrative, not a real analysis.
+- **`git log --all --grep=coverage-guardian` matches: 4 commits**, all infrastructural — none are coverage-guardian invocation outputs:
+  - `6ce50fe` / `f1bb02c` — agent + log file landing (PR #21)
+  - `634a864` / `11439f6` — this very meta-plan landing (PR #499)
+- **`docs/loop-retrospective-log.md` mentions: 1 substantive line (row 2026-04-27T08:55:00Z)** flags `MISSING: coverage-guardian zero rows in 30-day window despite ~50 prod-touching PRs — agent never invoked; PM substitutes ad-hoc judgment.` The 2026-04-27T16:53Z retro logged 9 prod merges in one tick with **zero coverage-guardian invocations**.
+- **`docs/pr-review-log.md` references to coverage-guardian signal: 0.** Across the entire log, no PM verdict ever cites a `coverage-guardian signal:` comment, classification (OK/ADEQUATE/THIN/MISSING), or coverage-log row.
+- **`docs/auto-merge-log.md` references: 1 row, but it's THIS PLAN's own merge audit (#499)** — not an actual coverage-guardian invocation.
+- **`gh pr list ... in:body in:comments coverage-guardian` across last 100 PRs: 0 hits.** No PR comment thread on any PR (agent or human) contains the literal `coverage-guardian signal:` marker the agent's spec mandates for THIN/MISSING flags.
+
+**Task 1 verdict: coverage-guardian has NEVER fired in production since being created 2026-04-20. No invocations, no comments, no log rows, no PM consumption. The agent exists only as a spec.**
+
+### Task 2 — Redundancy survey (does PM already cover this?)
+
+- **`project-manager.md` literal references to coverage / test-per-prod / test ratio / MISSING tests / THIN tests: 0.** PM's review checklist has no explicit ratio-based gate. The closest item is Quality gate bullet: *"For code PRs (plan-implementer): the diff must include test files touched for every non-trivial logic change. If a plan task said 'tests-first' and the diff shows code with no matching test change, request changes."* — this is a binary "any-tests-present" check, not a ratio classification.
+- **PM diff-size escalation (informational only):** Quality gate also says *"PRs touching > 25 files OR deleting > 50 lines of production code without proportional test changes: surface in comment for human attention but still merge if checklist passes."* — this is a heuristic comment, not a hard gate, and triggers on volume not ratio.
+- **Implementer's tests-first guarantee:** `plan-implementer.md` Step 2 mandates *"If the task says 'write failing tests', write them first and run `./gradlew :app:testDebugUnitTest --tests "<class>"` to confirm they fail for the intended reason."* Safety rules add *"Never commit code with failing tests locally."* This is a per-plan-task discipline, contingent on the plan saying "tests-first".
+- **PM verdicts on the last 10 implementer-origin PRs (2026-04-27T11:50Z → T15:58Z, PRs #474/#476/#477/#479/#483/#485/#489/#491/#492):** Of the 10 verdicts, **6 explicitly mention `tests-first honored`** (#477, #485, #489, #491, #492, plus #491 says `tests-first`); **2 cite `RED-by-design` failing-test gate** (#483 ESCALATE, #485 DEFER) which is itself the implementer's tests-first pattern visible in CI; **2 are pure refactor / pure docs** (#474 polish, #476 refactor + characterization tests, #479 meta-plan) where ratio gates would not apply. **0 verdicts cite a coverage-guardian signal.** PM's substitute is the literal phrase "tests-first honored" written from inspecting the diff itself.
+
+**Task 2 verdict: Signal is ~85% redundant.** PM + implementer together enforce the equivalent of coverage-guardian's MISSING gate via (a) implementer's tests-first commit discipline + (b) PM's "must include test files touched for non-trivial logic change" Quality bullet + (c) PM verbatim-checking "tests-first honored" in every implementer-origin verdict. The marginal signal coverage-guardian would add: a numeric ratio (e.g., `0.36`) and a THIN classification for ratios in `[0.05, 0.20)`. Whether that numeric precision is worth a separate agent + auto-trigger overhead is the user's judgment call — but the existence-of-tests gate is already covered.
+
+### Optional recommendation (informational, user still picks A/B/C)
+
+Based on Task 1 (zero invocations, zero log rows, zero PM consumption) + Task 2 (signal ~85% redundant with PM + implementer combined), **Option A (decommission, archive at `.claude/agents-archive/`)** has the strongest evidence base. Option B's auto-trigger would close the invocation gap mechanically, but Risk-1 in this plan (`100% ADEQUATE` rows under tests-first implementer) suggests B's signal would be near-noise. Option C remains open if the user wants to fold a numeric-ratio bullet into PM's Quality gate without keeping a standalone agent — the Risk: PM's existing gate is not actually sufficient mitigation in Task 4 already plans for this.
+
+The user retains the call. This recommendation is non-binding and the implementer PR (Task 4 / 5 / 6) follows whichever letter the user picks.
