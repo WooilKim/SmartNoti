@@ -32,7 +32,7 @@ status: planned
 
 ---
 
-## Task 1: Pin behavior with characterization tests
+## Task 1: Pin behavior with characterization tests [IN PROGRESS via PR #465]
 
 **Objective:** Refactor 전에 현 화면의 가시 contract 를 테스트로 고정. 테스트 없이 687-line composable 을 조각내면 사용자 동작 회귀 (예: ARCHIVED 카드 visibility 조건, quiet-hours explainer 출현 조건, `사용자 규칙` higher-precedence suppression) 를 잡을 방법이 없다. SettingsScreen / HomeScreen split 의 PR #457 / #461 패턴 재사용.
 
