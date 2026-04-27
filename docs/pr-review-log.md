@@ -472,3 +472,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T17:36:49Z | #499 | gap-planner | APPROVE+MERGE | meta-plan, docs-only, CI green, A/B/C user gate preserved |
 | 2026-04-27T17:53:11Z | #500 | plan-implementer | DEFER | CI IN_PROGRESS (Unit tests + debug APK started 17:50:06Z); docs-only meta-plan audit-findings append, scope/traceability pre-pass; re-check next sweep |
 | 2026-04-27T17:57:17Z | #500 | plan-implementer | APPROVE | Meta-plan audit findings (Tasks 1-2 of #499); 1 file docs-only; CI green; non-binding recommendation, user A/B/C gate preserved |
+| 2026-04-27T18:12:25Z | #501 | project-manager | ESCALATE | SELF_MOD recursion: archives coverage-guardian agent spec + edits agent-loop.md topology + tombstones /coverage-check. PM cannot impartially review own-loop topology changes. CI pending at verdict. Waiting human disposition. |
