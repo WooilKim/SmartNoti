@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -63,6 +64,19 @@ fun NotificationCard(
      * PriorityScreen) so cross-status feeds stay scannable.
      */
     showStatusBadge: Boolean = true,
+    /**
+     * Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+     * finding F1 (cards-inside-cards collapse on inbox-unified Digest
+     * sub-tab): when this card is rendered inside a parent group card the
+     * outlined card surface (rounded outer container + status-tinted fill +
+     * border) is suppressed so the parent card BE the only card boundary.
+     * Preview rows render as flat row content; the caller provides the
+     * divider/separation rhythm between rows. Default `false` keeps the
+     * outlined surface for every standalone call site (Home recent feed,
+     * IgnoredArchive, Detail-related list, PriorityScreen) so cross-status
+     * feeds keep the per-row card affordance.
+     */
+    embeddedInCard: Boolean = false,
 ) {
     val (containerColor, baseBorderColor) = when (model.status) {
         NotificationStatusUi.PRIORITY -> PriorityContainer.copy(alpha = 0.42f) to PriorityOnContainer.copy(alpha = 0.35f)
@@ -95,53 +109,90 @@ fun NotificationCard(
         Modifier.clickable { onClick(model.id) }
     }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(clickModifier),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = BorderStroke(borderWidth, borderColor),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+    val showSurface = notificationCardSurfaceVisible(embeddedInCard = embeddedInCard)
+
+    if (showSurface) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(clickModifier),
+            colors = CardDefaults.cardColors(containerColor = containerColor),
+            border = BorderStroke(borderWidth, borderColor),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    model.appName,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    model.receivedAtLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                model.sender ?: model.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+            NotificationCardBody(
+                model = model,
+                showStatusBadge = showStatusBadge,
+                contentPadding = PaddingValues(16.dp),
             )
-            Text(
-                model.body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (notificationCardStatusBadgeVisible(
-                    status = model.status,
-                    showStatusBadge = showStatusBadge,
-                )
-            ) {
-                StatusBadge(model.status)
-            }
-            ReasonChipRow(model.reasonTags)
         }
+    } else {
+        // Plan
+        // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+        // finding F1: embedded preview rows render as flat row content
+        // (no Card surface, no status-tinted fill, no per-row border) so
+        // the parent group card BE the only card boundary. The caller
+        // (DigestGroupCard) provides the divider rhythm between rows. We
+        // keep the same `clickModifier` so tap-to-Detail and PriorityScreen
+        // multi-select long-press semantics carry over unchanged.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(clickModifier),
+        ) {
+            NotificationCardBody(
+                model = model,
+                showStatusBadge = showStatusBadge,
+                contentPadding = PaddingValues(vertical = 12.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun NotificationCardBody(
+    model: NotificationUiModel,
+    showStatusBadge: Boolean,
+    contentPadding: PaddingValues,
+) {
+    Column(
+        modifier = Modifier.padding(contentPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                model.appName,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                model.receivedAtLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            model.sender ?: model.title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            model.body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (notificationCardStatusBadgeVisible(
+                status = model.status,
+                showStatusBadge = showStatusBadge,
+            )
+        ) {
+            StatusBadge(model.status)
+        }
+        ReasonChipRow(model.reasonTags)
     }
 }
 
@@ -169,3 +220,22 @@ internal fun notificationCardStatusBadgeVisible(
     // a one-line change without a call-site refactor.
     return showStatusBadge
 }
+
+/**
+ * Pure visibility decision for the outlined card surface (rounded outer
+ * container + status-tinted fill + border) wrapped around the
+ * [NotificationCard] body.
+ *
+ * Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md` finding
+ * **F1** (cards-inside-cards collapse on inbox-unified Digest sub-tab).
+ * Extracted so the contract "default on, callers opt out for nested-context
+ * rows" is unit-pinned by [NotificationCardSurfaceVisibilityTest] without
+ * spinning up a Compose runtime — mirrors the codebase pattern used by
+ * [notificationCardStatusBadgeVisible] and [digestGroupCardPreviewState].
+ *
+ * Today the only opt-out call site is [DigestGroupCard]'s preview rows; a
+ * future caller (e.g. a hidden-group inline preview) can flip the same flag
+ * without touching the renderer.
+ */
+internal fun notificationCardSurfaceVisible(embeddedInCard: Boolean): Boolean =
+    !embeddedInCard
