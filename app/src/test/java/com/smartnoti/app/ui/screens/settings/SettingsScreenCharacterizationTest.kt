@@ -1,10 +1,15 @@
 package com.smartnoti.app.ui.screens.settings
 
+import com.smartnoti.app.data.local.CapturedAppSelectionItem
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.AlertLevel
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.VibrationMode
+import com.smartnoti.app.domain.usecase.SuppressedAppInsight
+import com.smartnoti.app.domain.usecase.SuppressionInsightsSummary
+import com.smartnoti.app.onboarding.OnboardingStatus
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -391,6 +396,350 @@ class SettingsScreenCharacterizationTest {
         )
     }
 
+    // =====================================================================
+    // Plan `docs/plans/2026-04-27-refactor-settings-suppression-cluster-split.md`
+    // Task 1 — characterization tests for the suppression / app-selection /
+    // notification-access cluster that the follow-up split (Tasks 2-3) will
+    // move out of `SettingsScreen.kt`. Same pattern as the affordance pins
+    // above: pure spec / builder contracts + literal-copy mirrors for the
+    // strings that live only inside the private composables today.
+    // =====================================================================
+
+    // ---------- Suppression insight metric strip + supporting copy --------
+    // `SuppressionInsightMetricStrip` (top of `SuppressionManagementCard`)
+    // renders the metrics list and supporting message produced by
+    // `SettingsSuppressionInsightSummaryBuilder.buildTokens`. Pin the three
+    // visible branches (Disabled / NeedsAppSelection / Active) so the
+    // carve-out cannot drift the user-facing copy or metric set.
+
+    @Test
+    fun suppressionInsightTokens_disabled_branch_renders_off_message_with_no_metrics() {
+        val tokens = SettingsSuppressionInsightSummaryBuilder().buildTokens(
+            suppressEnabled = false,
+            insights = SuppressionInsightsSummary(
+                selectedAppCount = 0,
+                selectedCapturedCount = 0,
+                selectedFilteredCount = 0,
+                selectedFilteredSharePercent = 0,
+            ),
+        )
+
+        assertEquals(SuppressionInsightState.Disabled, tokens.state)
+        assertTrue(tokens.metrics.isEmpty())
+        assertEquals(
+            "기능을 켜고 앱을 선택하면 원본 알림 숨김 시도 상태를 여기서 확인할 수 있어요.",
+            tokens.supportingMessage,
+        )
+    }
+
+    @Test
+    fun suppressionInsightTokens_needs_app_selection_branch_renders_prompt_with_no_metrics() {
+        val tokens = SettingsSuppressionInsightSummaryBuilder().buildTokens(
+            suppressEnabled = true,
+            insights = SuppressionInsightsSummary(
+                selectedAppCount = 0,
+                selectedCapturedCount = 0,
+                selectedFilteredCount = 0,
+                selectedFilteredSharePercent = 0,
+            ),
+        )
+
+        assertEquals(SuppressionInsightState.NeedsAppSelection, tokens.state)
+        assertTrue(tokens.metrics.isEmpty())
+        assertEquals(
+            "아래 앱 목록에서 숨기고 싶은 앱을 선택하면 원본 숨김 시도 요약이 여기에 표시돼요.",
+            tokens.supportingMessage,
+        )
+    }
+
+    @Test
+    fun suppressionInsightTokens_active_branch_emits_three_metrics_plus_top_app() {
+        val tokens = SettingsSuppressionInsightSummaryBuilder().buildTokens(
+            suppressEnabled = true,
+            insights = SuppressionInsightsSummary(
+                selectedAppCount = 4,
+                selectedCapturedCount = 100,
+                selectedFilteredCount = 75,
+                selectedFilteredSharePercent = 75,
+                topSelectedAppName = "Coupang",
+                topSelectedAppFilteredCount = 42,
+            ),
+        )
+
+        assertEquals(SuppressionInsightState.Active, tokens.state)
+        assertEquals(
+            listOf("선택 앱", "숨김 시도", "비율", "상위 앱"),
+            tokens.metrics.map { it.label },
+        )
+        assertEquals(
+            listOf("4개", "75건", "75%", "Coupang 42건"),
+            tokens.metrics.map { it.value },
+        )
+        assertTrue(tokens.supportingMessage.contains("75%"))
+        assertTrue(tokens.supportingMessage.contains("Coupang"))
+        assertTrue(tokens.supportingMessage.contains("42건"))
+    }
+
+    @Test
+    fun suppressionInsightTokens_active_branch_omits_top_app_metric_when_no_top_app() {
+        val tokens = SettingsSuppressionInsightSummaryBuilder().buildTokens(
+            suppressEnabled = true,
+            insights = SuppressionInsightsSummary(
+                selectedAppCount = 1,
+                selectedCapturedCount = 5,
+                selectedFilteredCount = 3,
+                selectedFilteredSharePercent = 60,
+            ),
+        )
+
+        assertEquals(SuppressionInsightState.Active, tokens.state)
+        assertEquals(
+            listOf("선택 앱", "숨김 시도", "비율"),
+            tokens.metrics.map { it.label },
+        )
+        assertEquals(
+            "선택한 앱의 원본 숨김 시도 상태를 계속 집계하고 있어요.",
+            tokens.supportingMessage,
+        )
+    }
+
+    // ---------- Suppression breakdown row copy ----------------------------
+    // `SuppressionBreakdownRow` renders the chart row label as
+    // `"${item.filteredCount}건 정리 · ${(item.shareFraction * 100).toInt()}%"`.
+    // The literal format only lives in the private composable today; pin
+    // the formatter (mirrored as a helper) so the carve-out cannot rewrite
+    // the row supporting line.
+
+    @Test
+    fun suppressionBreakdownRow_supporting_label_pin() {
+        assertEquals(
+            "12건 정리 · 25%",
+            suppressionBreakdownRowSupportingLabel(filteredCount = 12, shareFraction = 0.25f),
+        )
+        assertEquals(
+            "0건 정리 · 0%",
+            suppressionBreakdownRowSupportingLabel(filteredCount = 0, shareFraction = 0f),
+        )
+        // Truncates fractional percent to int (mirrors `(.*100).toInt()`).
+        assertEquals(
+            "1건 정리 · 49%",
+            suppressionBreakdownRowSupportingLabel(filteredCount = 1, shareFraction = 0.499f),
+        )
+    }
+
+    // ---------- Suppressed app insight row copy ---------------------------
+    // `SuppressedAppInsightRow` builds its supporting line from the
+    // `SuppressedAppInsight` model + a "선택됨" / "관찰 중" prefix that
+    // depends on `isSuppressed`. Pin the formatter mirror so the carve-out
+    // can't rewrite the row even though the composable is leaving the file.
+
+    @Test
+    fun suppressedAppInsightRow_supporting_label_uses_selected_prefix_when_suppressed() {
+        val insight = SuppressedAppInsight(
+            packageName = "com.coupang.mobile",
+            appName = "Coupang",
+            capturedCount = 10,
+            filteredCount = 7,
+            filteredSharePercent = 70,
+            lastSeenLabel = "오늘",
+            isSuppressed = true,
+        )
+
+        assertEquals("선택됨 · 7건 정리 · 70%", suppressedAppInsightRowSupportingLabel(insight))
+    }
+
+    @Test
+    fun suppressedAppInsightRow_supporting_label_uses_observing_prefix_when_not_suppressed() {
+        val insight = SuppressedAppInsight(
+            packageName = "com.example.shop",
+            appName = "ExampleShop",
+            capturedCount = 5,
+            filteredCount = 0,
+            filteredSharePercent = 0,
+            lastSeenLabel = "어제",
+            isSuppressed = false,
+        )
+
+        assertEquals("관찰 중 · 0건 정리 · 0%", suppressedAppInsightRowSupportingLabel(insight))
+    }
+
+    // ---------- Suppression management card literal copy ------------------
+    // The `SuppressionManagementCard` headers + toggle subtitles live only
+    // inside the private composable. Pin them as compiled constants the
+    // Compose source must mirror; carve-out drift fails here.
+
+    @Test
+    fun suppressionManagementCard_header_and_toggle_copy_pin() {
+        // SettingsSubsection title + `SuppressionInsightTokens.supportingMessage`
+        // are surfaced as the card's first sub-section header.
+        assertEquals("원본 알림 숨김 상태", SUPPRESSION_INSIGHT_SUBSECTION_TITLE)
+        // Master toggle row.
+        assertEquals(
+            "Digest·조용히 알림의 원본 숨기기",
+            SUPPRESSION_MASTER_TOGGLE_TITLE,
+        )
+        assertEquals(
+            "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요. 기기/앱에 따라 원본이 남을 수 있어요.",
+            SUPPRESSION_MASTER_TOGGLE_SUBTITLE_ON,
+        )
+        assertEquals(
+            "먼저 이 옵션을 켜면 아래 고급 옵션과 앱별 선택이 활성화돼요.",
+            SUPPRESSION_MASTER_TOGGLE_SUBTITLE_OFF,
+        )
+        // ExpandableSettingsSubsection titles.
+        assertEquals("고급 숨김 옵션", SUPPRESSION_ADVANCED_SUBSECTION_TITLE)
+        assertEquals("숨길 앱 선택", SUPPRESSION_APP_SELECTION_SUBSECTION_TITLE)
+    }
+
+    @Test
+    fun suppressionAdvancedToggles_copy_pin() {
+        assertEquals(
+            "지속 알림은 SmartNoti 목록에서 숨기기",
+            SUPPRESSION_HIDE_PERSISTENT_TITLE,
+        )
+        assertEquals(
+            "지속 알림은 시스템 알림센터에서도 숨기기",
+            SUPPRESSION_HIDE_PERSISTENT_SOURCE_TITLE,
+        )
+        assertEquals(
+            "통화·길안내·녹화 중 알림은 항상 보이기",
+            SUPPRESSION_PROTECT_CRITICAL_TITLE,
+        )
+        assertEquals(
+            "SmartNoti 알림 자동 정리",
+            REPLACEMENT_AUTO_DISMISS_TOGGLE_TITLE,
+        )
+    }
+
+    // ---------- SuppressedSourceAppChips action buttons + empty copy -----
+    // The two bulk-action buttons + the "no captured apps" empty message
+    // live only inside the private composable. Pin the copy + the bulk
+    // button enablement contract that the renderer reads.
+
+    @Test
+    fun suppressedSourceAppChips_action_button_and_empty_copy_pin() {
+        assertEquals("모두 선택", BULK_SELECT_BUTTON_LABEL)
+        assertEquals("모두 해제", BULK_CLEAR_BUTTON_LABEL)
+        assertEquals(
+            "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요.",
+            SUPPRESSED_APPS_EMPTY_COPY,
+        )
+    }
+
+    @Test
+    fun suppressedAppPresentation_emits_selected_and_available_groups_with_summary() {
+        val capturedApps = listOf(
+            CapturedAppSelectionItem(
+                packageName = "com.coupang.mobile",
+                appName = "Coupang",
+                notificationCount = 50,
+                lastSeenLabel = "오늘",
+            ),
+            CapturedAppSelectionItem(
+                packageName = "com.example.shop",
+                appName = "ExampleShop",
+                notificationCount = 10,
+                lastSeenLabel = "어제",
+            ),
+        )
+
+        val presentation = SettingsSuppressedAppPresentationBuilder().build(
+            capturedApps = capturedApps,
+            suppressedSourceApps = setOf("com.coupang.mobile"),
+            excludedApps = setOf("com.example.shop"),
+        )
+
+        assertEquals("선택 1개 · 추가 가능 1개", presentation.summary)
+        assertEquals(2, presentation.groups.size)
+        assertEquals("이미 선택한 앱", presentation.groups[0].title)
+        assertEquals(listOf("com.coupang.mobile"), presentation.groups[0].items.map { it.packageName })
+        assertEquals("추가로 숨길 수 있는 앱", presentation.groups[1].title)
+        assertEquals(listOf("com.example.shop"), presentation.groups[1].items.map { it.packageName })
+    }
+
+    @Test
+    fun suppressedAppPresentation_isEffectivelySelected_obeys_sticky_exclude_and_default_optin() {
+        // Sticky exclude wins.
+        assertFalse(
+            SettingsSuppressedAppPresentationBuilder.isEffectivelySelected(
+                packageName = "com.foo",
+                suppressedSourceApps = setOf("com.foo"),
+                excludedApps = setOf("com.foo"),
+            ),
+        )
+        // Default opt-in when suppressedSourceApps is empty.
+        assertTrue(
+            SettingsSuppressedAppPresentationBuilder.isEffectivelySelected(
+                packageName = "com.foo",
+                suppressedSourceApps = emptySet(),
+                excludedApps = emptySet(),
+            ),
+        )
+        // Membership match when set is non-empty.
+        assertTrue(
+            SettingsSuppressedAppPresentationBuilder.isEffectivelySelected(
+                packageName = "com.foo",
+                suppressedSourceApps = setOf("com.foo"),
+                excludedApps = emptySet(),
+            ),
+        )
+        assertFalse(
+            SettingsSuppressedAppPresentationBuilder.isEffectivelySelected(
+                packageName = "com.bar",
+                suppressedSourceApps = setOf("com.foo"),
+                excludedApps = emptySet(),
+            ),
+        )
+    }
+
+    // ---------- NotificationAccessCard copy + summary contract -----------
+    // The `NotificationAccessCard` composable reads the
+    // `SettingsNotificationAccessSummary` produced by the builder. Pin the
+    // builder's two-branch contract + the literal "현재 반영 효과" /
+    // "켜면 생기는 변화" + "설정 경로" labels that live only inside the
+    // private composable.
+
+    @Test
+    fun notificationAccessCard_granted_branch_summary_pin() {
+        val summary = SettingsNotificationAccessSummaryBuilder().build(
+            OnboardingStatus(
+                notificationListenerGranted = true,
+                postNotificationsGranted = true,
+                postNotificationsRequired = true,
+            ),
+        )
+
+        assertEquals(true, summary.granted)
+        assertEquals("연결됨", summary.statusLabel)
+        assertEquals("실제 알림이 Home에 반영되고 있어요", summary.headline)
+        assertEquals("알림 접근 설정 다시 열기", summary.actionLabel)
+    }
+
+    @Test
+    fun notificationAccessCard_disconnected_branch_summary_pin() {
+        val summary = SettingsNotificationAccessSummaryBuilder().build(
+            OnboardingStatus(
+                notificationListenerGranted = false,
+                postNotificationsGranted = true,
+                postNotificationsRequired = true,
+            ),
+        )
+
+        assertEquals(false, summary.granted)
+        assertEquals("연결 필요", summary.statusLabel)
+        assertEquals("아직 실제 알림을 읽지 못하고 있어요", summary.headline)
+        assertEquals("알림 접근 설정 열기", summary.actionLabel)
+    }
+
+    @Test
+    fun notificationAccessCard_in_card_literal_copy_pin() {
+        // Mirrors `Text(text = "설정 경로", ...)` inside `NotificationAccessCard`.
+        assertEquals("설정 경로", NOTIFICATION_ACCESS_PATH_LABEL)
+        // Mirrors the `impactTitle = if (summary.granted) "현재 반영 효과" else "켜면 생기는 변화"` branch.
+        assertEquals("현재 반영 효과", NOTIFICATION_ACCESS_IMPACT_TITLE_GRANTED)
+        assertEquals("켜면 생기는 변화", NOTIFICATION_ACCESS_IMPACT_TITLE_DENIED)
+    }
+
     private companion object {
         // ---- Literal-copy mirrors --------------------------------------
         // These constants mirror Korean copy that lives inside private
@@ -408,5 +757,54 @@ class SettingsScreenCharacterizationTest {
         const val IGNORED_ARCHIVE_TOGGLE_SUBTITLE_OFF =
             "켜면 설정 화면에 아카이브 진입 버튼이 나타나요. 알림 분류 동작은 바뀌지 않아요."
         const val IGNORED_ARCHIVE_OPEN_BUTTON_LABEL = "무시됨 아카이브 열기"
+
+        // ---- Suppression cluster mirrors -------------------------------
+        // Plan `2026-04-27-refactor-settings-suppression-cluster-split.md`
+        // Task 1 — pin the literal copy that lives only inside the private
+        // composables `SuppressionManagementCard`, `SuppressedSourceAppChips`,
+        // and `NotificationAccessCard` until Tasks 2-3 move them into
+        // sibling files.
+
+        const val SUPPRESSION_INSIGHT_SUBSECTION_TITLE = "원본 알림 숨김 상태"
+        const val SUPPRESSION_MASTER_TOGGLE_TITLE = "Digest·조용히 알림의 원본 숨기기"
+        const val SUPPRESSION_MASTER_TOGGLE_SUBTITLE_ON =
+            "선택한 앱의 Digest·조용히 알림에 대해 원본 숨김을 시도하고, SmartNoti 대체 알림으로 이어줘요. 기기/앱에 따라 원본이 남을 수 있어요."
+        const val SUPPRESSION_MASTER_TOGGLE_SUBTITLE_OFF =
+            "먼저 이 옵션을 켜면 아래 고급 옵션과 앱별 선택이 활성화돼요."
+        const val SUPPRESSION_ADVANCED_SUBSECTION_TITLE = "고급 숨김 옵션"
+        const val SUPPRESSION_APP_SELECTION_SUBSECTION_TITLE = "숨길 앱 선택"
+        const val SUPPRESSION_HIDE_PERSISTENT_TITLE =
+            "지속 알림은 SmartNoti 목록에서 숨기기"
+        const val SUPPRESSION_HIDE_PERSISTENT_SOURCE_TITLE =
+            "지속 알림은 시스템 알림센터에서도 숨기기"
+        const val SUPPRESSION_PROTECT_CRITICAL_TITLE =
+            "통화·길안내·녹화 중 알림은 항상 보이기"
+        const val REPLACEMENT_AUTO_DISMISS_TOGGLE_TITLE = "SmartNoti 알림 자동 정리"
+        const val BULK_SELECT_BUTTON_LABEL = "모두 선택"
+        const val BULK_CLEAR_BUTTON_LABEL = "모두 해제"
+        const val SUPPRESSED_APPS_EMPTY_COPY =
+            "아직 캡처된 앱이 없어요. 알림이 몇 건 쌓이면 여기서 앱별로 선택할 수 있어요."
+        const val NOTIFICATION_ACCESS_PATH_LABEL = "설정 경로"
+        const val NOTIFICATION_ACCESS_IMPACT_TITLE_GRANTED = "현재 반영 효과"
+        const val NOTIFICATION_ACCESS_IMPACT_TITLE_DENIED = "켜면 생기는 변화"
+
+        // ---- Pure formatter mirrors ------------------------------------
+        // The `SuppressionBreakdownRow` and `SuppressedAppInsightRow`
+        // composables build their supporting label inline. Mirror the
+        // formatter so the carve-out cannot drift the format string. If
+        // the composable starts to use a different format, these tests
+        // (above) will fail.
+
+        fun suppressionBreakdownRowSupportingLabel(
+            filteredCount: Int,
+            shareFraction: Float,
+        ): String = "${filteredCount}건 정리 · ${(shareFraction * 100).toInt()}%"
+
+        fun suppressedAppInsightRowSupportingLabel(
+            insight: SuppressedAppInsight,
+        ): String {
+            val prefix = if (insight.isSuppressed) "선택됨" else "관찰 중"
+            return "$prefix · ${insight.filteredCount}건 정리 · ${insight.filteredSharePercent}%"
+        }
     }
 }
