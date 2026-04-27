@@ -454,3 +454,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T12:54:26Z | #481 | gap-planner | APPROVE | docs-only P0 plan for issue #478, CI green, scope+traceability OK |
 | 2026-04-27T13:16:06Z | #483 | plan-implementer | ESCALATE | CI RED-by-design (H5 sole failure, matches plan Task 1 contract); cannot APPROVE under Quality gate, instructed not to REQUEST_CHANGES — left for human disposition |
 | 2026-04-27T13:23:32Z | #484 | gap-planner | APPROVE | scope:plans/ + traceability:#480 + CI:green; merged squash |
+| 2026-04-27T13:48:01Z | #485 | plan-implementer | DEFER | CI_RED_BY_DESIGN — Task 1 failing-test gate for plan #480; next implementer push (Tasks 2-4) flips green |
