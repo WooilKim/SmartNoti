@@ -41,7 +41,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 
 ---
 
-## Task 1: Failing tests for both bugs (RED first) [IN PROGRESS via PR #N]
+## Task 1: Failing tests for both bugs (RED first) [IN PROGRESS via PR #489]
 
 **Objective:** Bug A 의 precedence 회귀와 Bug B 의 seeder/migration 동작을 distinct test 로 격리. 모든 test 는 RED 로 시작.
 
