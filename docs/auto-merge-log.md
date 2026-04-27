@@ -366,3 +366,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T06:00:58Z | journey-tester | #450 | home-uncategorized-prompt | https://github.com/WooilKim/SmartNoti/actions/runs/24978986261 |
 | 2026-04-27T06:29:03Z | project-manager | #451 | ui-ux sweep 2026-04-27 (4 surfaces, 2 CLEAN / 2 MODERATE) — docs-only journey + plan | https://github.com/WooilKim/SmartNoti/actions/runs/24979827616 |
 | 2026-04-27T06:41:07Z | project-manager | #452 | Collapse inbox-unified Digest sub-tab dual-header chrome (DigestScreenMode + Embedded delegation) | https://github.com/WooilKim/SmartNoti/actions/runs/24980244441 |
+| 2026-04-27T06:51:13Z | project-manager | #453 | docs(plans): flip 2 stale plans to status: shipped (reconcile inventory) | https://github.com/WooilKim/SmartNoti/actions/runs/24980605206 |
