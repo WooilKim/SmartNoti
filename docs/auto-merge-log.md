@@ -355,3 +355,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T04:07:51Z | journey-tester | #439 | duplicate-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/24975975502 |
 | 2026-04-27T04:17:14Z | journey-tester | #440 | home-overview | https://github.com/WooilKim/SmartNoti/actions/runs/24976203682/job/73128517628 |
 | 2026-04-27T04:27:23Z | journey-tester | #441 | insight-drilldown | https://github.com/WooilKim/SmartNoti/actions/runs/24976450060 |
+| 2026-04-27T04:35:12Z | journey-tester | #442 | notification-capture-classify | https://github.com/WooilKim/SmartNoti/actions/runs/24976645208 |
