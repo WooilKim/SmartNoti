@@ -257,6 +257,19 @@ class NotificationRepository(
         return dao.deleteAllIgnored()
     }
 
+    /**
+     * Plan `docs/plans/2026-04-27-ignored-archive-bulk-restore-and-clear.md` Task 6.
+     *
+     * Hard-delete the supplied IGNORE-status row [ids]. Backs the multi-select
+     * "모두 지우기" CTA on `IgnoredArchiveScreen`. The DAO query is scoped to
+     * `status = 'IGNORE'` so a stale id reused by a re-classified row is left
+     * untouched. Returns the number of rows deleted (zero if [ids] is empty).
+     */
+    suspend fun deleteIgnoredByIds(ids: Set<String>): Int {
+        if (ids.isEmpty()) return 0
+        return dao.deleteIgnoredByIds(ids)
+    }
+
     private fun appendUserReasonTag(existing: String): String {
         val tag = "사용자 복구"
         if (existing.isBlank()) return tag

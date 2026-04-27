@@ -161,6 +161,63 @@ class NotificationRepositoryIgnoredBulkTest {
         assertEquals(NotificationStatusUi.PRIORITY, rows.getValue("ignore-without-tag").status)
     }
 
+    /**
+     * Plan Task 6 — per-id bulk delete query that backs the multi-select
+     * ActionBar's "모두 지우기" CTA. Mixed-status seed makes sure the WHERE
+     * clause does not accidentally widen beyond the supplied id set.
+     */
+    @Test
+    fun deleteIgnoredByIds_only_deletes_supplied_ignore_rows() = runBlocking {
+        seed("ignore-1", status = NotificationStatusUi.IGNORE)
+        seed("ignore-2", status = NotificationStatusUi.IGNORE)
+        seed("ignore-3", status = NotificationStatusUi.IGNORE)
+        seed("digest-1", status = NotificationStatusUi.DIGEST)
+        seed("priority-1", status = NotificationStatusUi.PRIORITY)
+
+        val affected = repository.deleteIgnoredByIds(setOf("ignore-1", "ignore-3"))
+
+        assertEquals(2, affected)
+        val rows = repository.observeAll().first().associateBy { it.id }
+        assertNull(rows["ignore-1"])
+        assertNull(rows["ignore-3"])
+        // Untouched IGNORE row preserved.
+        assertEquals(NotificationStatusUi.IGNORE, rows.getValue("ignore-2").status)
+        // Other status rows preserved.
+        assertEquals(NotificationStatusUi.DIGEST, rows.getValue("digest-1").status)
+        assertEquals(NotificationStatusUi.PRIORITY, rows.getValue("priority-1").status)
+    }
+
+    @Test
+    fun deleteIgnoredByIds_skips_non_ignore_rows_even_when_id_matches() = runBlocking {
+        // Defensive: the call site only ever passes IGNORE ids (multi-select
+        // is rendered inside IgnoredArchiveScreen), but the WHERE clause
+        // should still scope to status='IGNORE' so a stale id reused by a
+        // re-classified row never accidentally wipes it.
+        seed("ignore-1", status = NotificationStatusUi.IGNORE)
+        seed("digest-1", status = NotificationStatusUi.DIGEST)
+
+        val affected = repository.deleteIgnoredByIds(setOf("ignore-1", "digest-1"))
+
+        assertEquals(1, affected)
+        val rows = repository.observeAll().first().associateBy { it.id }
+        assertNull(rows["ignore-1"])
+        assertEquals(NotificationStatusUi.DIGEST, rows.getValue("digest-1").status)
+    }
+
+    @Test
+    fun deleteIgnoredByIds_returns_zero_for_empty_set() = runBlocking {
+        seed("ignore-1", status = NotificationStatusUi.IGNORE)
+        seed("digest-1", status = NotificationStatusUi.DIGEST)
+
+        val affected = repository.deleteIgnoredByIds(emptySet())
+
+        assertEquals(0, affected)
+        val rows = repository.observeAll().first().associateBy { it.id }
+        // Nothing touched.
+        assertEquals(NotificationStatusUi.IGNORE, rows.getValue("ignore-1").status)
+        assertEquals(NotificationStatusUi.DIGEST, rows.getValue("digest-1").status)
+    }
+
     private suspend fun seed(
         id: String,
         title: String = "제목 $id",
