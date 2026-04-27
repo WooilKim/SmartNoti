@@ -3,10 +3,7 @@ package com.smartnoti.app.data.settings
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.NotificationContext
@@ -27,6 +24,8 @@ class SettingsRepository private constructor(
     private val dataStore = context.dataStore
     private val quietHours = SettingsQuietHoursRepository(dataStore)
     private val duplicate = SettingsDuplicateRepository(dataStore)
+    private val deliveryProfile = SettingsDeliveryProfileRepository(dataStore)
+    private val suppression = SettingsSuppressionRepository(dataStore)
 
     fun observeSettings(): Flow<SmartNotiSettings> {
         val defaults = SmartNotiSettings()
@@ -36,33 +35,33 @@ class SettingsRepository private constructor(
                 quietHoursStartHour = prefs[SettingsQuietHoursRepository.Keys.START_HOUR] ?: defaults.quietHoursStartHour,
                 quietHoursEndHour = prefs[SettingsQuietHoursRepository.Keys.END_HOUR] ?: defaults.quietHoursEndHour,
                 digestHours = defaults.digestHours,
-                priorityAlertLevel = prefs[PRIORITY_ALERT_LEVEL] ?: defaults.priorityAlertLevel,
-                priorityVibrationMode = prefs[PRIORITY_VIBRATION_MODE] ?: defaults.priorityVibrationMode,
-                priorityHeadsUpEnabled = prefs[PRIORITY_HEADS_UP_ENABLED] ?: defaults.priorityHeadsUpEnabled,
-                priorityLockScreenVisibility = prefs[PRIORITY_LOCK_SCREEN_VISIBILITY] ?: defaults.priorityLockScreenVisibility,
-                digestAlertLevel = prefs[DIGEST_ALERT_LEVEL] ?: defaults.digestAlertLevel,
-                digestVibrationMode = prefs[DIGEST_VIBRATION_MODE] ?: defaults.digestVibrationMode,
-                digestHeadsUpEnabled = prefs[DIGEST_HEADS_UP_ENABLED] ?: defaults.digestHeadsUpEnabled,
-                digestLockScreenVisibility = prefs[DIGEST_LOCK_SCREEN_VISIBILITY] ?: defaults.digestLockScreenVisibility,
-                silentAlertLevel = prefs[SILENT_ALERT_LEVEL] ?: defaults.silentAlertLevel,
-                silentVibrationMode = prefs[SILENT_VIBRATION_MODE] ?: defaults.silentVibrationMode,
-                silentHeadsUpEnabled = prefs[SILENT_HEADS_UP_ENABLED] ?: defaults.silentHeadsUpEnabled,
-                silentLockScreenVisibility = prefs[SILENT_LOCK_SCREEN_VISIBILITY] ?: defaults.silentLockScreenVisibility,
-                suppressSourceForDigestAndSilent = prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: defaults.suppressSourceForDigestAndSilent,
-                suppressedSourceApps = prefs[SUPPRESSED_SOURCE_APPS] ?: defaults.suppressedSourceApps,
-                suppressedSourceAppsExcluded = prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: defaults.suppressedSourceAppsExcluded,
-                hidePersistentNotifications = prefs[HIDE_PERSISTENT_NOTIFICATIONS] ?: defaults.hidePersistentNotifications,
-                hidePersistentSourceNotifications = prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
-                protectCriticalPersistentNotifications = prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
-                showIgnoredArchive = prefs[SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
+                priorityAlertLevel = prefs[SettingsDeliveryProfileRepository.Keys.PRIORITY_ALERT_LEVEL] ?: defaults.priorityAlertLevel,
+                priorityVibrationMode = prefs[SettingsDeliveryProfileRepository.Keys.PRIORITY_VIBRATION_MODE] ?: defaults.priorityVibrationMode,
+                priorityHeadsUpEnabled = prefs[SettingsDeliveryProfileRepository.Keys.PRIORITY_HEADS_UP_ENABLED] ?: defaults.priorityHeadsUpEnabled,
+                priorityLockScreenVisibility = prefs[SettingsDeliveryProfileRepository.Keys.PRIORITY_LOCK_SCREEN_VISIBILITY] ?: defaults.priorityLockScreenVisibility,
+                digestAlertLevel = prefs[SettingsDeliveryProfileRepository.Keys.DIGEST_ALERT_LEVEL] ?: defaults.digestAlertLevel,
+                digestVibrationMode = prefs[SettingsDeliveryProfileRepository.Keys.DIGEST_VIBRATION_MODE] ?: defaults.digestVibrationMode,
+                digestHeadsUpEnabled = prefs[SettingsDeliveryProfileRepository.Keys.DIGEST_HEADS_UP_ENABLED] ?: defaults.digestHeadsUpEnabled,
+                digestLockScreenVisibility = prefs[SettingsDeliveryProfileRepository.Keys.DIGEST_LOCK_SCREEN_VISIBILITY] ?: defaults.digestLockScreenVisibility,
+                silentAlertLevel = prefs[SettingsDeliveryProfileRepository.Keys.SILENT_ALERT_LEVEL] ?: defaults.silentAlertLevel,
+                silentVibrationMode = prefs[SettingsDeliveryProfileRepository.Keys.SILENT_VIBRATION_MODE] ?: defaults.silentVibrationMode,
+                silentHeadsUpEnabled = prefs[SettingsDeliveryProfileRepository.Keys.SILENT_HEADS_UP_ENABLED] ?: defaults.silentHeadsUpEnabled,
+                silentLockScreenVisibility = prefs[SettingsDeliveryProfileRepository.Keys.SILENT_LOCK_SCREEN_VISIBILITY] ?: defaults.silentLockScreenVisibility,
+                suppressSourceForDigestAndSilent = prefs[SettingsSuppressionRepository.Keys.SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] ?: defaults.suppressSourceForDigestAndSilent,
+                suppressedSourceApps = prefs[SettingsSuppressionRepository.Keys.SUPPRESSED_SOURCE_APPS] ?: defaults.suppressedSourceApps,
+                suppressedSourceAppsExcluded = prefs[SettingsSuppressionRepository.Keys.SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: defaults.suppressedSourceAppsExcluded,
+                hidePersistentNotifications = prefs[SettingsSuppressionRepository.Keys.HIDE_PERSISTENT_NOTIFICATIONS] ?: defaults.hidePersistentNotifications,
+                hidePersistentSourceNotifications = prefs[SettingsSuppressionRepository.Keys.HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
+                protectCriticalPersistentNotifications = prefs[SettingsSuppressionRepository.Keys.PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
+                showIgnoredArchive = prefs[SettingsSuppressionRepository.Keys.SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
                 duplicateDigestThreshold = prefs[SettingsDuplicateRepository.Keys.DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
                 duplicateWindowMinutes = prefs[SettingsDuplicateRepository.Keys.WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
                 quietHoursPackages = prefs[SettingsQuietHoursRepository.Keys.PACKAGES] ?: defaults.quietHoursPackages,
-                replacementAutoDismissEnabled = prefs[REPLACEMENT_AUTO_DISMISS_ENABLED]
+                replacementAutoDismissEnabled = prefs[SettingsDeliveryProfileRepository.Keys.REPLACEMENT_AUTO_DISMISS_ENABLED]
                     ?: defaults.replacementAutoDismissEnabled,
-                replacementAutoDismissMinutes = prefs[REPLACEMENT_AUTO_DISMISS_MINUTES]
+                replacementAutoDismissMinutes = prefs[SettingsDeliveryProfileRepository.Keys.REPLACEMENT_AUTO_DISMISS_MINUTES]
                     ?: defaults.replacementAutoDismissMinutes,
-                inboxSortMode = prefs[INBOX_SORT_MODE] ?: defaults.inboxSortMode,
+                inboxSortMode = prefs[SettingsDeliveryProfileRepository.Keys.INBOX_SORT_MODE] ?: defaults.inboxSortMode,
             )
         }
     }
@@ -97,24 +96,9 @@ class SettingsRepository private constructor(
 
     suspend fun removeQuietHoursPackage(packageName: String) = quietHours.removePackage(packageName)
 
-    /**
-     * Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
-     *
-     * Persists the user-selected inbox sort mode. Stored as the enum's `name`
-     * so adding new modes is a backward-compatible append (existing stored
-     * values still round-trip via [InboxSortMode.valueOf]).
-     */
-    suspend fun setInboxSortMode(mode: InboxSortMode) {
-        context.dataStore.edit { prefs ->
-            prefs[INBOX_SORT_MODE] = mode.name
-        }
-    }
+    suspend fun setInboxSortMode(mode: InboxSortMode) = deliveryProfile.setInboxSortMode(mode)
 
-    suspend fun setSuppressSourceForDigestAndSilent(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = enabled
-        }
-    }
+    suspend fun setSuppressSourceForDigestAndSilent(enabled: Boolean) = suppression.setSuppressSourceForDigestAndSilent(enabled)
 
     /**
      * One-shot data migrations. Safe to call multiple times — each migration
@@ -138,7 +122,7 @@ class SettingsRepository private constructor(
     suspend fun applyPendingMigrations() {
         context.dataStore.edit { prefs ->
             if (prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] != true) {
-                prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = true
+                prefs[SettingsSuppressionRepository.Keys.SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = true
                 prefs[SUPPRESS_SOURCE_MIGRATION_V1_APPLIED] = true
             }
             // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
@@ -152,210 +136,72 @@ class SettingsRepository private constructor(
             // re-run short-circuits (idempotent).
             if (prefs[REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED] != true) {
                 val defaults = SmartNotiSettings()
-                prefs[REPLACEMENT_AUTO_DISMISS_ENABLED] = defaults.replacementAutoDismissEnabled
-                prefs[REPLACEMENT_AUTO_DISMISS_MINUTES] = defaults.replacementAutoDismissMinutes
+                prefs[SettingsDeliveryProfileRepository.Keys.REPLACEMENT_AUTO_DISMISS_ENABLED] =
+                    defaults.replacementAutoDismissEnabled
+                prefs[SettingsDeliveryProfileRepository.Keys.REPLACEMENT_AUTO_DISMISS_MINUTES] =
+                    defaults.replacementAutoDismissMinutes
                 prefs[REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED] = true
             }
             // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
             // Materialize the inbox sort mode default so on-disk state matches
             // what `observeSettings()` reports on the first read. Skipped if
             // the user has already chosen a mode (key already present).
-            if (prefs[INBOX_SORT_MODE] == null) {
-                prefs[INBOX_SORT_MODE] = InboxSortMode.RECENT.name
+            if (prefs[SettingsDeliveryProfileRepository.Keys.INBOX_SORT_MODE] == null) {
+                prefs[SettingsDeliveryProfileRepository.Keys.INBOX_SORT_MODE] = InboxSortMode.RECENT.name
             }
         }
     }
 
-    /**
-     * Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
-     *
-     * Master toggle for auto-dismissing SmartNoti-posted replacement / summary
-     * notifications. OFF restores legacy behavior (notification stays in the
-     * tray until the user swipes). The notifier reads the latest snapshot via
-     * [observeSettings] so the next post-after-the-write picks up the change.
-     */
-    suspend fun setReplacementAutoDismissEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[REPLACEMENT_AUTO_DISMISS_ENABLED] = enabled
-        }
-    }
+    suspend fun setReplacementAutoDismissEnabled(enabled: Boolean) =
+        deliveryProfile.setReplacementAutoDismissEnabled(enabled)
 
-    /**
-     * Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
-     *
-     * Persists the auto-dismiss duration in minutes. The Settings UI offers a
-     * `5 / 15 / 30 / 60 / 180` preset; the setter coerces to `>= 1` so a
-     * programmatic 0 / negative value cannot disable the feature without the
-     * user toggling [setReplacementAutoDismissEnabled] OFF.
-     * [ReplacementNotificationTimeoutPolicy] additionally guards `<= 0` at
-     * read time as defense-in-depth.
-     */
-    suspend fun setReplacementAutoDismissMinutes(minutes: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[REPLACEMENT_AUTO_DISMISS_MINUTES] = minutes.coerceAtLeast(1)
-        }
-    }
+    suspend fun setReplacementAutoDismissMinutes(minutes: Int) =
+        deliveryProfile.setReplacementAutoDismissMinutes(minutes)
 
-    suspend fun setPriorityAlertLevel(value: String) = setString(PRIORITY_ALERT_LEVEL, value)
+    suspend fun setPriorityAlertLevel(value: String) = deliveryProfile.setPriorityAlertLevel(value)
 
-    suspend fun setPriorityVibrationMode(value: String) = setString(PRIORITY_VIBRATION_MODE, value)
+    suspend fun setPriorityVibrationMode(value: String) = deliveryProfile.setPriorityVibrationMode(value)
 
-    suspend fun setPriorityHeadsUpEnabled(enabled: Boolean) = setBoolean(PRIORITY_HEADS_UP_ENABLED, enabled)
+    suspend fun setPriorityHeadsUpEnabled(enabled: Boolean) = deliveryProfile.setPriorityHeadsUpEnabled(enabled)
 
-    suspend fun setPriorityLockScreenVisibility(value: String) = setString(PRIORITY_LOCK_SCREEN_VISIBILITY, value)
+    suspend fun setPriorityLockScreenVisibility(value: String) = deliveryProfile.setPriorityLockScreenVisibility(value)
 
-    suspend fun setDigestAlertLevel(value: String) = setString(DIGEST_ALERT_LEVEL, value)
+    suspend fun setDigestAlertLevel(value: String) = deliveryProfile.setDigestAlertLevel(value)
 
-    suspend fun setDigestVibrationMode(value: String) = setString(DIGEST_VIBRATION_MODE, value)
+    suspend fun setDigestVibrationMode(value: String) = deliveryProfile.setDigestVibrationMode(value)
 
-    suspend fun setDigestHeadsUpEnabled(enabled: Boolean) = setBoolean(DIGEST_HEADS_UP_ENABLED, enabled)
+    suspend fun setDigestHeadsUpEnabled(enabled: Boolean) = deliveryProfile.setDigestHeadsUpEnabled(enabled)
 
-    suspend fun setDigestLockScreenVisibility(value: String) = setString(DIGEST_LOCK_SCREEN_VISIBILITY, value)
+    suspend fun setDigestLockScreenVisibility(value: String) = deliveryProfile.setDigestLockScreenVisibility(value)
 
-    suspend fun setSilentAlertLevel(value: String) = setString(SILENT_ALERT_LEVEL, value)
+    suspend fun setSilentAlertLevel(value: String) = deliveryProfile.setSilentAlertLevel(value)
 
-    suspend fun setSilentVibrationMode(value: String) = setString(SILENT_VIBRATION_MODE, value)
+    suspend fun setSilentVibrationMode(value: String) = deliveryProfile.setSilentVibrationMode(value)
 
-    suspend fun setSilentHeadsUpEnabled(enabled: Boolean) = setBoolean(SILENT_HEADS_UP_ENABLED, enabled)
+    suspend fun setSilentHeadsUpEnabled(enabled: Boolean) = deliveryProfile.setSilentHeadsUpEnabled(enabled)
 
-    suspend fun setSilentLockScreenVisibility(value: String) = setString(SILENT_LOCK_SCREEN_VISIBILITY, value)
+    suspend fun setSilentLockScreenVisibility(value: String) = deliveryProfile.setSilentLockScreenVisibility(value)
 
-    /**
-     * Bulk replace of the Suppressed Apps set written by auto-expansion and
-     * the legacy "select-all / clear-all" Settings affordances.
-     *
-     * NOTE (plan `2026-04-26-digest-suppression-sticky-exclude-list.md`): this
-     * API does NOT touch `suppressedSourceAppsExcluded`. Callers that need to
-     * honor the user's sticky-exclude intent must use
-     * [setSuppressedSourceAppExcluded] for per-package toggles, or check the
-     * excluded set themselves before calling this with a set that re-includes
-     * a previously excluded package. The auto-expansion path is already
-     * gated by `SuppressedSourceAppsAutoExpansionPolicy.expandedAppsOrNull`
-     * so it cannot violate this contract.
-     */
-    suspend fun setSuppressedSourceApps(packageNames: Set<String>) {
-        context.dataStore.edit { prefs ->
-            prefs[SUPPRESSED_SOURCE_APPS] = packageNames
-        }
-    }
+    suspend fun setSuppressedSourceApps(packageNames: Set<String>) = suppression.setSuppressedSourceApps(packageNames)
 
-    /**
-     * Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 3.
-     *
-     * Atomic per-package toggle for the sticky-exclude list:
-     *  - `excluded = true`: add `packageName` to `suppressedSourceAppsExcluded`
-     *    AND remove it from `suppressedSourceApps`. After this call, the
-     *    auto-expansion policy will refuse to re-add the package even if a
-     *    fresh DIGEST notification arrives from it.
-     *  - `excluded = false`: remove `packageName` from
-     *    `suppressedSourceAppsExcluded` only. This does NOT re-add to
-     *    `suppressedSourceApps` — the user must opt-in explicitly via the
-     *    Settings toggle (which calls [setSuppressedSourceApps]) or auto-
-     *    expansion must observe the package again on a future DIGEST.
-     *
-     * Both writes happen inside a single `dataStore.edit { ... }` block so
-     * concurrent readers always see a consistent (excluded, suppressed) pair.
-     */
-    suspend fun setSuppressedSourceAppExcluded(packageName: String, excluded: Boolean) {
-        context.dataStore.edit { prefs ->
-            val currentExcluded = (prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: emptySet()).toMutableSet()
-            if (excluded) {
-                currentExcluded.add(packageName)
-                prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = currentExcluded
-                val currentSuppressed = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet())
-                if (packageName in currentSuppressed) {
-                    prefs[SUPPRESSED_SOURCE_APPS] = currentSuppressed - packageName
-                }
-            } else {
-                if (packageName in currentExcluded) {
-                    currentExcluded.remove(packageName)
-                    prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = currentExcluded
-                }
-            }
-        }
-    }
+    suspend fun setSuppressedSourceAppExcluded(packageName: String, excluded: Boolean) =
+        suppression.setSuppressedSourceAppExcluded(packageName, excluded)
 
-    /**
-     * Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 6.4.
-     *
-     * Bulk variant of [setSuppressedSourceAppExcluded] for the
-     * "모두 선택 / 모두 해제" buttons in the Suppressed Apps editor.
-     *  - `excluded = true`: add `packageNames` to the exclude set AND
-     *    remove them from `suppressedSourceApps` so the next DIGEST
-     *    cannot re-add any of them.
-     *  - `excluded = false`: remove `packageNames` from the exclude set
-     *    only. Re-adding to `suppressedSourceApps` is the caller's
-     *    responsibility (the "모두 선택" path pairs this with
-     *    [setSuppressedSourceApps]).
-     *
-     * Both writes happen inside a single `dataStore.edit { ... }` block so
-     * concurrent readers always see a consistent (excluded, suppressed) pair.
-     */
-    suspend fun setSuppressedSourceAppsExcludedBulk(packageNames: Set<String>, excluded: Boolean) {
-        if (packageNames.isEmpty()) return
-        context.dataStore.edit { prefs ->
-            val currentExcluded = (prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] ?: emptySet()).toMutableSet()
-            if (excluded) {
-                currentExcluded.addAll(packageNames)
-                prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = currentExcluded
-                val currentSuppressed = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet())
-                val updatedSuppressed = currentSuppressed - packageNames
-                if (updatedSuppressed.size != currentSuppressed.size) {
-                    prefs[SUPPRESSED_SOURCE_APPS] = updatedSuppressed
-                }
-            } else {
-                val updatedExcluded = currentExcluded - packageNames
-                if (updatedExcluded.size != currentExcluded.size) {
-                    prefs[SUPPRESSED_SOURCE_APPS_EXCLUDED] = updatedExcluded
-                }
-            }
-        }
-    }
+    suspend fun setSuppressedSourceAppsExcludedBulk(packageNames: Set<String>, excluded: Boolean) =
+        suppression.setSuppressedSourceAppsExcludedBulk(packageNames, excluded)
 
-    suspend fun setHidePersistentNotifications(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[HIDE_PERSISTENT_NOTIFICATIONS] = enabled
-        }
-    }
+    suspend fun setHidePersistentNotifications(enabled: Boolean) = suppression.setHidePersistentNotifications(enabled)
 
-    suspend fun setHidePersistentSourceNotifications(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] = enabled
-        }
-    }
+    suspend fun setHidePersistentSourceNotifications(enabled: Boolean) =
+        suppression.setHidePersistentSourceNotifications(enabled)
 
-    suspend fun setProtectCriticalPersistentNotifications(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] = enabled
-        }
-    }
+    suspend fun setProtectCriticalPersistentNotifications(enabled: Boolean) =
+        suppression.setProtectCriticalPersistentNotifications(enabled)
 
-    /**
-     * Opt-in toggle for the 무시됨 아카이브 screen (plan
-     * `2026-04-21-ignore-tier-fourth-decision` Task 6). Default OFF: when
-     * false, the archive route is absent from the nav graph entirely so
-     * IGNORE rows stay invisible. Turning it on adds a conditional nav entry
-     * in Settings; it does not alter the classifier or the repository write
-     * path — IGNORE rows are always persisted.
-     */
-    suspend fun setShowIgnoredArchive(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[SHOW_IGNORED_ARCHIVE] = enabled
-        }
-    }
+    suspend fun setShowIgnoredArchive(enabled: Boolean) = suppression.setShowIgnoredArchive(enabled)
 
-    suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            val updated = (prefs[SUPPRESSED_SOURCE_APPS] ?: emptySet()).toMutableSet().apply {
-                if (enabled) {
-                    add(packageName)
-                } else {
-                    remove(packageName)
-                }
-            }
-            prefs[SUPPRESSED_SOURCE_APPS] = updated
-        }
-    }
+    suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) =
+        suppression.toggleSuppressedSourceApp(packageName, enabled)
 
     fun observeOnboardingCompleted(): Flow<Boolean> {
         return context.dataStore.data.map { prefs ->
@@ -502,44 +348,7 @@ class SettingsRepository private constructor(
         }
     }
 
-    private suspend fun setString(key: androidx.datastore.preferences.core.Preferences.Key<String>, value: String) {
-        context.dataStore.edit { prefs ->
-            prefs[key] = value
-        }
-    }
-
-    private suspend fun setBoolean(key: androidx.datastore.preferences.core.Preferences.Key<Boolean>, value: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[key] = value
-        }
-    }
-
     companion object {
-        private val PRIORITY_ALERT_LEVEL = stringPreferencesKey("priority_alert_level")
-        private val PRIORITY_VIBRATION_MODE = stringPreferencesKey("priority_vibration_mode")
-        private val PRIORITY_HEADS_UP_ENABLED = booleanPreferencesKey("priority_heads_up_enabled")
-        private val PRIORITY_LOCK_SCREEN_VISIBILITY = stringPreferencesKey("priority_lock_screen_visibility")
-        private val DIGEST_ALERT_LEVEL = stringPreferencesKey("digest_alert_level")
-        private val DIGEST_VIBRATION_MODE = stringPreferencesKey("digest_vibration_mode")
-        private val DIGEST_HEADS_UP_ENABLED = booleanPreferencesKey("digest_heads_up_enabled")
-        private val DIGEST_LOCK_SCREEN_VISIBILITY = stringPreferencesKey("digest_lock_screen_visibility")
-        private val SILENT_ALERT_LEVEL = stringPreferencesKey("silent_alert_level")
-        private val SILENT_VIBRATION_MODE = stringPreferencesKey("silent_vibration_mode")
-        private val SILENT_HEADS_UP_ENABLED = booleanPreferencesKey("silent_heads_up_enabled")
-        private val SILENT_LOCK_SCREEN_VISIBILITY = stringPreferencesKey("silent_lock_screen_visibility")
-        private val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT = booleanPreferencesKey("suppress_source_for_digest_and_silent")
-        private val SUPPRESSED_SOURCE_APPS = stringSetPreferencesKey("suppressed_source_apps")
-        // Plan `2026-04-26-digest-suppression-sticky-exclude-list.md` Task 3.
-        // Sticky exclude list — packages the user has explicitly removed from
-        // the Suppressed Apps list. `SuppressedSourceAppsAutoExpansionPolicy`
-        // never re-adds these to `SUPPRESSED_SOURCE_APPS`. Default empty set
-        // means existing users are unaffected by this key's introduction.
-        private val SUPPRESSED_SOURCE_APPS_EXCLUDED =
-            stringSetPreferencesKey("suppressed_source_apps_excluded")
-        private val HIDE_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_notifications")
-        private val HIDE_PERSISTENT_SOURCE_NOTIFICATIONS = booleanPreferencesKey("hide_persistent_source_notifications")
-        private val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS = booleanPreferencesKey("protect_critical_persistent_notifications")
-        private val SHOW_IGNORED_ARCHIVE = booleanPreferencesKey("show_ignored_archive")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         private val ONBOARDING_ACTIVE_NOTIFICATION_BOOTSTRAP_PENDING =
             booleanPreferencesKey("onboarding_active_notification_bootstrap_pending")
@@ -559,27 +368,11 @@ class SettingsRepository private constructor(
         // user has set since.
         private val SUPPRESS_SOURCE_MIGRATION_V1_APPLIED =
             booleanPreferencesKey("suppress_source_migration_v1_applied")
-        // Plan `2026-04-27-tray-replacement-auto-dismiss-timeout.md` Task 3.
-        // Master toggle (default ON) and duration in minutes (default 30) for
-        // SmartNoti-posted replacement / summary auto-dismiss. The notifier
-        // threads these into `ReplacementNotificationTimeoutPolicy` which
-        // returns the timeout the builder hands to
-        // `NotificationCompat.Builder.setTimeoutAfter`.
-        private val REPLACEMENT_AUTO_DISMISS_ENABLED =
-            booleanPreferencesKey("replacement_auto_dismiss_enabled")
-        private val REPLACEMENT_AUTO_DISMISS_MINUTES =
-            intPreferencesKey("replacement_auto_dismiss_minutes")
         // Gate for the v2 one-shot migration that stamps the auto-dismiss
         // defaults. Once true, the migration short-circuits and respects any
         // user-driven changes.
         private val REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED =
             booleanPreferencesKey("replacement_auto_dismiss_migration_v2_applied")
-        // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
-        // User-selected inbox sort mode. Stored as `InboxSortMode.name`.
-        // Default is materialized on first `applyPendingMigrations()` so the
-        // on-disk state is stable for downstream observers.
-        private val INBOX_SORT_MODE =
-            stringPreferencesKey("inbox_sort_mode")
 
         @Volatile private var instance: SettingsRepository? = null
 
