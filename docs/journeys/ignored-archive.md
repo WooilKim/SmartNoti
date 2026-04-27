@@ -34,14 +34,14 @@ last-verified: 2026-04-27
    - `EmptyState` — "무시된 알림이 없어요 / IGNORE 액션 규칙을 만들면 여기에 쌓이기 시작해요."
 6. 알림이 있을 때:
    - `ScreenHeader` subtitle 이 "SmartNoti 가 IGNORE 규칙으로 즉시 정리한 알림이에요. 원본 알림센터에서도 사라진 상태예요." 로 전환.
-   - `SmartSurfaceCard` — "보관 중 N건" + "최신 순으로 정렬돼 있어요. 길게 누르면 여러 건을 한 번에 지울 수 있어요." + 헤더 두 OutlinedButton (`모두 PRIORITY 로 복구` / `모두 지우기`). multi-select 활성 시 두 버튼은 숨겨지고 [`IgnoredArchiveActionBar`](../../app/src/main/java/com/smartnoti/app/ui/screens/ignored/IgnoredArchiveActionBar.kt) (카운트 + `모두 지우기` + `취소`) 가 헤더 카드 바로 아래에 inline 으로 마운트.
-   - LazyColumn 이 `NotificationCard` 로 개별 row 렌더 (그룹 collapse 없음 — 의도적으로 plain list). 각 카드 우하단 `PRIORITY 로 복구` TextButton 이 multi-select 비활성 시 노출.
+   - `SmartSurfaceCard` — "보관 중 N건" + "최신 순으로 정렬돼 있어요. 길게 누르면 여러 건을 한 번에 지울 수 있어요." + 헤더 두 OutlinedButton (`PRIORITY 모두 복구` / `모두 지우기`). 두 라벨은 모두 한 줄로 렌더되도록 단축돼 있다 (plan `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 2). multi-select 활성 시 두 버튼은 숨겨지고 [`IgnoredArchiveActionBar`](../../app/src/main/java/com/smartnoti/app/ui/screens/ignored/IgnoredArchiveActionBar.kt) (카운트 + `모두 지우기` + `취소`) 가 헤더 카드 바로 아래에 inline 으로 마운트.
+   - LazyColumn 이 `IgnoredArchiveRow` 로 개별 row 렌더 (그룹 collapse 없음 — 의도적으로 plain list). 각 row 는 `Card` 보더 안쪽에 `NotificationCard` + (multi-select 비활성 시) `HorizontalDivider` + 우정렬 `PRIORITY 로 복구` TextButton 이 함께 묶인 형태 — 카드와 액션이 같은 시각 보더 안에 anchor 된다 (plan `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 3).
 7. 카드 인터랙션:
    - 단일 탭 (multi-select 비활성) → `navController.navigate(Routes.Detail.create(id))` (→ [notification-detail](notification-detail.md)). Detail 에서는 `StatusBadge` 가 IGNORE 케이스로 중립 회색 tone 렌더. 재분류는 Detail 의 단일 "분류 변경" CTA 경유.
    - long-press → `IgnoredArchiveMultiSelectState.enterSelection(id)`. 선택 상태에서 다른 카드 탭은 `toggle(id)` 로 selection 가산/감산. 빈 set 이 되면 자동 비활성.
    - 우하단 `PRIORITY 로 복구` TextButton → `repository.updateNotification(...)` 단일 write (status=PRIORITY + reasonTags 에 `사용자 분류` dedup-append) + snackbar `"이 알림을 PRIORITY 로 복구했어요"`.
 8. 헤더 bulk action:
-   - `모두 PRIORITY 로 복구` → 즉시 `repository.restoreAllIgnoredToPriority()` + snackbar `"무시된 알림 N건을 PRIORITY 로 복구했어요"` (확인 다이얼로그 없음 — 비파괴).
+   - `PRIORITY 모두 복구` → 즉시 `repository.restoreAllIgnoredToPriority()` + snackbar `"무시된 알림 N건을 PRIORITY 로 복구했어요"` (확인 다이얼로그 없음 — 비파괴).
    - `모두 지우기` → `AlertDialog` ("무시된 알림 N건을 모두 지울까요? / 되돌릴 수 없어요...") → 확인 시 `repository.deleteAllIgnored()` + snackbar `"무시된 알림 N건을 모두 지웠어요"`.
 9. multi-select bulk action: `IgnoredArchiveActionBar` 의 `모두 지우기` → 동일 패턴 `AlertDialog` ("선택한 알림 N건을 지울까요?") → 확인 시 `repository.deleteIgnoredByIds(selected)` + snackbar `"선택한 알림 N건을 지웠어요"`. 성공 후 multi-select 자동 종료.
 
@@ -62,7 +62,7 @@ last-verified: 2026-04-27
 
 ## Code pointers
 
-- `ui/screens/ignored/IgnoredArchiveScreen` — 화면 본체 (empty state + 리스트 + 헤더 bulk + multi-select + per-row 복구)
+- `ui/screens/ignored/IgnoredArchiveScreen` — 화면 본체 (empty state + 리스트 + 헤더 bulk + multi-select + per-row 복구). 헤더 bulk row 와 per-row item 은 각각 `IgnoredArchiveHeaderBulkActions` / `IgnoredArchiveRow` 로 추출돼 `IgnoredArchiveScreenAffordanceTest` 가 가드한다.
 - `ui/screens/ignored/IgnoredArchiveMultiSelectState` — pure-state holder (long-press 진입 / toggle / clear, mirror of `PriorityScreenMultiSelectState`)
 - `ui/screens/ignored/IgnoredArchiveActionBar` — 멀티셀렉트 활성 시 헤더 카드 아래 inline 마운트되는 sticky bar (count + 모두 지우기 + 취소)
 - `data/local/NotificationRepository#observeIgnoredArchive` — IGNORE row 만 추출, 최신순 정렬
@@ -81,6 +81,7 @@ last-verified: 2026-04-27
 - `NotificationRepositoryTest` — `observeIgnoredArchive` 가 IGNORE 만 반환하고 기본 뷰 (`observePriority/Digest/Silent`, `toHiddenGroups`) 는 IGNORE 를 제외하는지
 - `NotificationRepositoryIgnoredBulkTest` — `restoreAllIgnoredToPriority` / `deleteAllIgnored` / `deleteIgnoredByIds` 의 status-scope, dedup-append, empty-set, mixed-status guard 8 케이스 (plan `2026-04-27-ignored-archive-bulk-restore-and-clear` Tasks 1+6)
 - `IgnoredArchiveMultiSelectStateTest` — long-press 진입 / toggle 가산·감산 / 빈 set 자동 비활성 / cancel·clear 의 7 케이스
+- `IgnoredArchiveScreenAffordanceTest` — 헤더 OutlinedButton 두 라벨 한 줄 렌더 + per-row TextButton 이 카드와 같은 wrapper 안 + multi-select 활성 시 per-row 버튼 사라짐 회귀 가드 (plan `2026-04-27-ignored-archive-bulk-affordance-polish.md`)
 - `SuppressionInsightsBuilderTest` / `InsightDrillDownSummaryBuilderTest` — `ignoredCount` 가 DIGEST/SILENT 와 분리 집계되는지
 
 ## Verification recipe
@@ -104,9 +105,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 
 ## Known gaps
 
-- **(2026-04-27 ui-ux sweep)** 헤더 SmartSurfaceCard 의 두 OutlinedButton (`모두 PRIORITY 로 복구` / `모두 지우기`) 이 `Modifier.weight(1f)` 로 화면 폭을 절반씩 점유하지만 첫 버튼 라벨 (`모두 PRIORITY 로 복구`, 한글 + 영문 mix) 이 좁은 폭을 넘어 `복구` 가 두 번째 줄로 wrap 된다 — 시각적으로 버튼 한쪽 라벨만 깨져 보이고 affordance 위계가 손상됨. 위반: `.claude/rules/ui-improvement.md` "affordance clarity" + "row hierarchy". 후보 fix: 두 버튼을 세로 stack (Column) 으로 전환하거나, 라벨을 `PRIORITY 모두 복구` / `모두 PRIORITY` 같이 단축 (`PRIORITY` 영문 토큰을 상징적으로 유지) — product copy 판단 필요. Evidence: `/tmp/ui-ignored-archive.png` (3 IGNORE rows seeded via sqlite). → plan: `docs/plans/2026-04-27-ignored-archive-bulk-affordance-polish.md`
-- **(2026-04-27 ui-ux sweep)** per-row `PRIORITY 로 복구` TextButton 이 NotificationCard 외부 (Column wrapper 안, 카드 보더 밖) 우측에 떠 있어 어떤 카드에 연결된 액션인지 시각적 anchor 가 약함. 카드와 버튼 사이 8.dp gap + 카드 우측 끝 정렬만 의존. 후보 fix: 카드 안쪽 trailing slot 으로 흡수하거나, 카드 보더 안쪽으로 들여쓰기. 위반: `.claude/rules/ui-improvement.md` "row hierarchy" + "card treatment". MODERATE. → plan: `docs/plans/2026-04-27-ignored-archive-bulk-affordance-polish.md`
-- 화면 단독 Compose UI 테스트 부재 (repository + multi-select state + settings 단위 테스트로만 커버).
+- 화면 단독 Compose UI 테스트 부재 (repository + multi-select state + settings + `IgnoredArchiveScreenAffordanceTest` 의 affordance 회귀 가드만 커버 — 전체 화면 시나리오 wiring 은 여전히 host-JVM 테스트 부재).
 - (resolved 2026-04-27, plan `docs/plans/2026-04-27-ignored-archive-bulk-restore-and-clear.md`) 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk delete 미구현 — 복구는 헤더 `모두 PRIORITY 로 복구` / per-row `PRIORITY 로 복구`, 삭제는 헤더 `모두 지우기` / 멀티셀렉트 `모두 지우기` 로 가능. SILENT/DIGEST 등 PRIORITY 외 status 로 복구하려면 여전히 Detail 의 "분류 변경" 경로.
 - IGNORE row 의 retention 정책 미구현 — 물리 삭제 / 오래된 row 자동 정리는 후속. Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` out-of-scope.
 - Weekly insights 에서 IGNORE 카운트가 DIGEST / SILENT 와 별도 스트림으로 노출되는지 (Insights builder contract) 는 test-level 로만 검증되고, 화면 레이블이 실제로 "삭제 N건" 같은 copy 로 분리되어 보이는지는 아직 미검증 — Task 8 verification 에서 확인 필요.
@@ -125,3 +124,4 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - 2026-04-27: bulk action surface shipped — plan `docs/plans/2026-04-27-ignored-archive-bulk-restore-and-clear.md` Tasks 3-7. Added `IgnoredArchiveMultiSelectState` (long-press 진입 / toggle / 자동 비활성), `IgnoredArchiveActionBar` (count + 모두 지우기 + 취소), 헤더 OutlinedButton 두 개 (`모두 PRIORITY 로 복구` 즉시 / `모두 지우기` AlertDialog confirm), per-row `PRIORITY 로 복구` TextButton, `deleteIgnoredByIds(Set)` repository + DAO query (status='IGNORE' guard). Tasks 1+2 (`restoreAllIgnoredToPriority` / `deleteAllIgnored` repository ops) 는 이전 PR #432 에서 분리 ship. Observable steps / Out-of-scope / Code pointers / Tests / Known gaps 동기화. **Verification 부분 완료**: emulator-5554 에서 settings 토글 ON → 진입 → empty state ("무시된 알림이 없어요") + EmptyState branch SnackbarHost 마운트 회귀 없음 확인. 비-empty branch 의 헤더 버튼 / multi-select / per-row 복구 시각 확증은 IGNORE row seed 가 필요한데 디버그 inject hook 부재 + IGNORE Category 가 현재 DB 에 없어 본 sweep 에서 미수행. plan Risks #4 의 `combinedClickable` long-press emulator 한계와 함께 후속 verification PR 로 분리. `last-verified` 는 2026-04-26 유지 (recipe 의 비-empty 경로 미실행).
 - 2026-04-26: rotation re-verification (emulator-5554) — cold-start `am force-stop` 후 Settings 탭 진입, 스크롤하여 "무시된 알림 아카이브 표시" 카드 노출. 토글 OFF→ON 후 같은 카드에 "무시됨 아카이브 열기" OutlinedButton (bounds [391,574][690,623]) 1건 등장. 버튼 탭 → `IgnoredArchiveScreen` 마운트, eyebrow "아카이브" / title "무시됨" / subtitle "IGNORE 규칙이 매치된 알림은 여기에 쌓여요. 기본 뷰에는 나타나지 않아요." + EmptyState "무시된 알림이 없어요" + "IGNORE 액션 규칙을 만들면 여기에 쌓이기 시작해요." 로 Observable steps 5 (empty state) 정확히 일치 (현재 DB IGNORE row 0건). 뒤로가기 → 토글 OFF → 같은 카드에서 "무시됨 아카이브 열기" 사라짐 (Exit state). DRIFT 없음. `last-verified` 2026-04-24 → 2026-04-26.
 - 2026-04-27: post-#433 bulk-affordance end-to-end sweep (emulator-5554, build `lastUpdateTime=2026-04-27 11:56:47`). 직접 sqlite `INSERT` 로 IGNORE row 3건 seed → 화면 재진입 시 헤더 카드 "보관 중 3건" + helper "최신 순으로 정렬돼 있어요. 길게 누르면 여러 건을 한 번에 지울 수 있어요." + 두 OutlinedButton (`모두 PRIORITY 로 복구` / `모두 지우기`) + per-row `PRIORITY 로 복구` TextButton 노출 (Observable step 6). 헤더 `모두 지우기` 탭 → AlertDialog "무시된 알림 3건을 모두 지울까요? / 되돌릴 수 없어요. SmartNoti 내 기록만 지우는 거라 시스템 알림센터에는 영향이 없어요." + `취소` / `모두 지우기` (Observable step 8 dialog 텍스트 일치, 취소로 가드). 첫 카드 long-press → `IgnoredArchiveActionBar` 등장 ("1개 선택됨" / `모두 지우기` / `취소`), 헤더 두 OutlinedButton + per-row `PRIORITY 로 복구` 모두 숨김 처리됨 (Observable step 7). 두번째 카드 탭 → "2개 선택됨" 으로 가산 → ActionBar `모두 지우기` 탭 → AlertDialog "선택한 알림 2건을 지울까요? / 되돌릴 수 없어요. 선택한 IGNORE 알림만 SmartNoti 기록에서 사라져요." + `취소` / `지우기`. 확인 → snackbar `"선택한 알림 2건을 지웠어요"`, 카운트 3→1, multi-select 자동 종료, 헤더 두 버튼 복귀 (Observable step 9 일치). per-row `PRIORITY 로 복구` 탭 → snackbar `"이 알림을 PRIORITY 로 복구했어요"`, 리스트 비고 EmptyState 분기 전환 (Observable step 7). 추가 IGNORE row 2건 seed + 화면 재진입 → 헤더 `모두 PRIORITY 로 복구` 탭 → confirm dialog 없이 즉시 snackbar `"무시된 알림 2건을 PRIORITY 로 복구했어요"` (Observable step 8 의 비파괴 직접 실행 일치). 시드 row 정리 cleanup. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27.
+- 2026-04-27: 헤더 bulk 버튼 라벨 회귀 + per-row 복구 anchor 회복 — plan `docs/plans/2026-04-27-ignored-archive-bulk-affordance-polish.md` Tasks 1-3 (PR #474, `1f09c2d`). 헤더 `모두 PRIORITY 로 복구` → `PRIORITY 모두 복구` 로 단축해 두 OutlinedButton 모두 한 줄 렌더 (Risks Q1 Option A). per-row `PRIORITY 로 복구` TextButton 을 `NotificationCard` 와 함께 단일 `Card` (transparent container + outlineVariant 보더) 안쪽으로 wrap, 사이에 `HorizontalDivider` 추가해 카드와 액션이 같은 시각 보더 안에 anchor 됨 (Risks Q2 Option D). 행동 변경 없음 — multi-select 활성 시 per-row TextButton 숨김 분기 보존, NotificationCard 시그니처 무영향 (다른 화면 zero blast radius). Pinned by `IgnoredArchiveScreenAffordanceTest` (3 케이스: 헤더 단축 라벨 / per-row wrapper test tag 존재 / multi-select 활성 시 per-row 버튼 부재). `last-verified` 는 변경 없음 — 본 PR 은 시각 polish 만이고 verification recipe 전체 재실행은 별도 PR 로 분리 (per `.claude/rules/docs-sync.md`).
