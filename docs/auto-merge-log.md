@@ -427,3 +427,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T22:08:15Z | project-manager | #520 | plan-implementer closure for #503 (Tasks 5-7 ADB e2e + journey bumps + plan flip) | https://github.com/WooilKim/SmartNoti/actions/runs/25022002844 |
 | 2026-04-27T22:39:36Z | project-manager | #521 | Tasks 1-4 of #510 plan: AppIconResolver + ReplacementActionIcon + builder wiring | https://github.com/WooilKim/SmartNoti/actions/runs/25023178018 |
 | 2026-04-27T22:52:57Z | project-manager | #522 | #510 closure: Tasks 5-7 ADB e2e + 4 journey bumps + plan flip status:shipped | https://github.com/WooilKim/SmartNoti/actions/runs/25023632064 |
+| 2026-04-27T23:08:31Z | project-manager | #523 | plan-flip #479 issue-driven-release-loop status:shipped (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/25024258593 |
