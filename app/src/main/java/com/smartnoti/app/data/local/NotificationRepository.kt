@@ -20,7 +20,7 @@ import java.util.Date
 import java.util.Locale
 
 class NotificationRepository(
-    private val dao: NotificationDao,
+    internal val dao: NotificationDao,
 ) {
     fun observeAll(): Flow<List<NotificationUiModel>> = dao.observeAll().map { entities ->
         entities.map { it.toUiModel() }

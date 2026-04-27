@@ -25,7 +25,7 @@ last-updated: 2026-04-27
 
 ---
 
-## Task 1: Failing tests for AppLabelResolver fallback chain
+## Task 1: Failing tests for AppLabelResolver fallback chain [IN PROGRESS via PR #507]
 
 **Objective:** 회귀를 코드로 고정. 5단계 P1 gate 의 "tests-first" 칸.
 

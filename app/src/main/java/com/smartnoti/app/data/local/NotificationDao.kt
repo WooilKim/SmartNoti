@@ -67,4 +67,28 @@ interface NotificationDao {
 
     @Query("SELECT sourceEntryKey FROM notifications WHERE id = :id LIMIT 1")
     suspend fun sourceEntryKeyForId(id: String): String?
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+     * Task 4. DISTINCT packageNames whose persisted `appName` equals the
+     * packageName itself (the Issue #503 raw-fallback regression).
+     * `MigrateAppLabelRunner` consumes this list, re-runs each through
+     * [com.smartnoti.app.notification.AppLabelResolver], and batch-updates
+     * the rows whose new resolution differs.
+     */
+    @Query("SELECT DISTINCT packageName FROM notifications WHERE appName = packageName")
+    suspend fun selectPackagesNeedingLabelResolution(): List<String>
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+     * Task 4. Bulk-update every row of the given packageName whose
+     * `appName == packageName` to the freshly resolved label. The
+     * `appName = packageName` predicate inside the WHERE clause is the
+     * idempotent guard that prevents stomping a user-edited label even if
+     * the runner is re-invoked outside its flag gate.
+     */
+    @Query("UPDATE notifications SET appName = :label WHERE packageName = :packageName AND appName = packageName")
+    suspend fun updateAppLabel(packageName: String, label: String): Int
 }

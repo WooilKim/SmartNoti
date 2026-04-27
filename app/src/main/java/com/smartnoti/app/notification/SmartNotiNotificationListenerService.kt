@@ -1,5 +1,10 @@
 package com.smartnoti.app.notification
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.smartnoti.app.BuildConfig
@@ -50,6 +55,37 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     private val silentSummaryNotifier by lazy { SilentHiddenSummaryNotifier(applicationContext) }
     private var storeSyncJob: Job? = null
     private var silentSummaryJob: Job? = null
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+     * Tasks 2-3. Single shared resolver that owns the explicit fallback
+     * chain + per-package memoization. Built lazily so tests that don't
+     * touch the listener never instantiate it.
+     */
+    private val appLabelResolver by lazy {
+        AppLabelResolver(AndroidPackageLabelSource(applicationContext.packageManager))
+    }
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+     * Task 3. Invalidates the per-package label cache when an app is
+     * installed / replaced / removed so the next notification picks up the
+     * new label without paying a stale-cache cost. Receiver is registered
+     * in [onCreate] and unregistered in [onDestroy].
+     */
+    private val packageChangedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val packageName = intent?.data?.let(Uri::getSchemeSpecificPart)
+            if (packageName.isNullOrBlank()) {
+                appLabelResolver.clearAll()
+            } else {
+                appLabelResolver.invalidate(packageName)
+            }
+        }
+    }
+    private var packageChangedReceiverRegistered = false
     private val onboardingBootstrapCoordinator by lazy {
         OnboardingActiveNotificationBootstrapCoordinator.create(applicationContext)
     }
@@ -97,6 +133,27 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             ),
             deliveryProfilePolicy = DeliveryProfilePolicy(),
         )
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Plan
+        // `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
+        // Task 3: register a receiver for ACTION_PACKAGE_REPLACED /
+        // _ADDED / _REMOVED so the in-process app-label cache is
+        // invalidated when an app is installed, upgraded, or removed.
+        // The data scheme MUST be `package` so the system populates
+        // `intent.data` with the affected packageName.
+        if (!packageChangedReceiverRegistered) {
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_PACKAGE_REPLACED)
+                addAction(Intent.ACTION_PACKAGE_ADDED)
+                addAction(Intent.ACTION_PACKAGE_REMOVED)
+                addDataScheme("package")
+            }
+            applicationContext.registerReceiver(packageChangedReceiver, filter)
+            packageChangedReceiverRegistered = true
+        }
     }
 
     override fun onListenerConnected() {
@@ -235,7 +292,7 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
                 tracker = liveDuplicateCountTracker,
                 persistedDuplicateCount = repository::countRecentDuplicates,
             ),
-            appNameLookup = ::resolveApplicationLabel,
+            appNameLookup = appLabelResolver::resolve,
             contextLookup = settingsRepository::currentNotificationContext,
         )
         val pipelineInput = inputBuilder.build(sbn, settings)
@@ -302,14 +359,6 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         )
     }
 
-    private fun resolveApplicationLabel(packageName: String): String =
-        try {
-            val appInfo = packageManager.getApplicationInfo(packageName, 0)
-            packageManager.getApplicationLabel(appInfo).toString()
-        } catch (_: Exception) {
-            packageName
-        }
-
     /**
      * Production [SourceTrayActions] that bridges the pure pipeline back to
      * the listener-service-only `cancelNotification` (main dispatcher) and
@@ -367,6 +416,10 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     override fun onDestroy() {
         if (activeService === this) {
             activeService = null
+        }
+        if (packageChangedReceiverRegistered) {
+            runCatching { applicationContext.unregisterReceiver(packageChangedReceiver) }
+            packageChangedReceiverRegistered = false
         }
         storeSyncJob?.cancel()
         silentSummaryJob?.cancel()
