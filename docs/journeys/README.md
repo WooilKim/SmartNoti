@@ -138,6 +138,12 @@
 |---|---|---|
 | home-uncategorized-prompt | SKIP | DataStore `uncategorized_prompt_snooze_until_millis` = 1777274058159 (UTC 2026-04-27T07:14:18Z) vs device-now ≈ 2026-04-27T03:53Z → 약 3시간 20분 snooze 잔존으로 detector 가 `None` 반환, 카드 자체 부재. `pm clear` 는 destructive (forbidden without confirm). 대신 `:app:testDebugUnitTest --tests UncategorizedAppsDetectorTest --rerun-tasks` 12/12 GREEN 으로 #430 의 contract — APP-Rule (Category.ruleIds 로 참조될 때만) 이 coverage 합집합에 포함 + KEYWORD/PERSON/SCHEDULE/REPEAT_BUNDLE 및 orphan APP Rule 은 미포함 + case-insensitive — 재확인. 시각적 live PASS 는 snooze expire 후 또는 multi-app testbed 에서 다음 sweep. `last-verified` 미bump (2026-04-26 유지). |
 
+### 2026-04-27 (journey-tester — home-uncategorized-prompt post-#430 re-sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| home-uncategorized-prompt | SKIP | Re-attempt at UTC 05:54Z (caller noted snooze should be past — actual snooze epoch unchanged at 1777274058159 = 07:14:18Z, still ~1h20m forward). Live UI launch (`am start … MainActivity` + `uiautomator dump`) found no `분류 제안 / 새 앱 / 분류 만들기 / 나중에` strings as expected (snooze still active). Cross-checked datastore: APP rule `APP%3Acom.android.shell` exists in `smartnoti_rules.preferences_pb` AND is referenced by `cat-onboarding-important_priority.ruleIds` (encoded `…%2CAPP%253Acom.android.shell`) — meaning the new #430 detector path treats `com.android.shell` as covered (excluded from prompt) on this device. Contract re-checked: `:app:testDebugUnitTest --tests UncategorizedAppsDetectorTest --rerun-tasks` 12/12 GREEN (host JBR). Live visual confirmation of APP-Rule coverage filter still requires snooze expire (~07:14Z) or destructive `pm clear`. `last-verified` 미bump (2026-04-26 유지). |
+
 ### 2026-04-27 (journey-tester — silent-auto-hide post-#427 MessagingStyle gate sweep, emulator-5554)
 
 | Journey | Result | Notes |
