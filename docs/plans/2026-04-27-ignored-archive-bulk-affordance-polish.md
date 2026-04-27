@@ -31,7 +31,7 @@ status: planned
 
 ## Tasks
 
-### Task 1 — characterization test 추가 (failing-first)
+### Task 1 — characterization test 추가 (failing-first) [IN PROGRESS via PR #pending]
 
 - [ ] `IgnoredArchiveScreenAffordanceTest` (Compose UI test, `androidTest` 또는 `app/src/test` 의 `createComposeRule` 기반) 신설. 다음 3 케이스:
   1. 헤더 카드의 두 OutlinedButton (`모두 PRIORITY 로 복구` / `모두 지우기`) 이 모두 visible 하고, **각자 한 줄로 렌더된다** (Compose 의 `onAllNodes` + `assertTextEquals` 또는 layout 노드 height 비교로 가드). 라벨 단축 옵션을 채택하면 단축된 라벨이 사용된다.

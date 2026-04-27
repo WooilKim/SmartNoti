@@ -29,8 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.testTag
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.domain.model.NotificationStatusUi
+import com.smartnoti.app.domain.model.NotificationUiModel
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.NotificationCard
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -212,33 +214,26 @@ fun IgnoredArchiveScreen(
                     // Plan Task 5 step 1+3 — header bulk affordances. Hidden
                     // while multi-select is active so the ActionBar is the
                     // sole bulk surface on screen.
+                    //
+                    // Extracted into [IgnoredArchiveHeaderBulkActions] by plan
+                    // `2026-04-27-ignored-archive-bulk-affordance-polish.md`
+                    // Task 1 so the row is reachable from
+                    // `IgnoredArchiveScreenAffordanceTest` without standing up
+                    // the full screen + Room singleton.
                     if (!multiSelectState.isActive) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    val captured = notifications.size
-                                    scope.launch {
-                                        repository.restoreAllIgnoredToPriority()
-                                        snackbarHostState.showSnackbar(
-                                            message = "무시된 알림 ${captured}건을 PRIORITY 로 복구했어요",
-                                            duration = SnackbarDuration.Short,
-                                        )
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text("모두 PRIORITY 로 복구")
-                            }
-                            OutlinedButton(
-                                onClick = { pendingClearAll = true },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text("모두 지우기")
-                            }
-                        }
+                        IgnoredArchiveHeaderBulkActions(
+                            onRestoreAllClick = {
+                                val captured = notifications.size
+                                scope.launch {
+                                    repository.restoreAllIgnoredToPriority()
+                                    snackbarHostState.showSnackbar(
+                                        message = "무시된 알림 ${captured}건을 PRIORITY 로 복구했어요",
+                                        duration = SnackbarDuration.Short,
+                                    )
+                                }
+                            },
+                            onClearAllClick = { pendingClearAll = true },
+                        )
                     }
                 }
             }
@@ -259,50 +254,36 @@ fun IgnoredArchiveScreen(
             }
             items(notifications, key = { it.id }) { notification ->
                 val isSelected = notification.id in multiSelectState.selectedNotificationIds
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    NotificationCard(
-                        model = notification,
-                        onClick = { id ->
-                            if (multiSelectState.isActive) {
-                                multiSelectState = multiSelectState.toggle(id)
-                            } else {
-                                onNotificationClick(id)
-                            }
-                        },
-                        onLongClick = {
-                            if (!multiSelectState.isActive) {
-                                multiSelectState = multiSelectState.enterSelection(notification.id)
-                            }
-                        },
-                        isSelected = isSelected,
-                    )
-                    // Plan Task 5 step 6 — single-row PRIORITY restore is
-                    // exposed only while selection mode is inactive. The
-                    // recovery is non-destructive (status flip + dedup
-                    // reason tag), so a confirmation dialog would feel
-                    // heavier than the action warrants — snackbar is
-                    // sufficient feedback.
-                    if (!multiSelectState.isActive) {
-                        TextButton(
-                            onClick = {
-                                val updated = notification.copy(
-                                    status = NotificationStatusUi.PRIORITY,
-                                    reasonTags = appendUserClassificationTag(notification.reasonTags),
-                                )
-                                scope.launch {
-                                    repository.updateNotification(updated)
-                                    snackbarHostState.showSnackbar(
-                                        message = "이 알림을 PRIORITY 로 복구했어요",
-                                        duration = SnackbarDuration.Short,
-                                    )
-                                }
-                            },
-                            modifier = Modifier.align(Alignment.End),
-                        ) {
-                            Text("PRIORITY 로 복구")
+                IgnoredArchiveRow(
+                    notification = notification,
+                    isSelected = isSelected,
+                    isMultiSelectActive = multiSelectState.isActive,
+                    onCardClick = { id ->
+                        if (multiSelectState.isActive) {
+                            multiSelectState = multiSelectState.toggle(id)
+                        } else {
+                            onNotificationClick(id)
                         }
-                    }
-                }
+                    },
+                    onCardLongClick = {
+                        if (!multiSelectState.isActive) {
+                            multiSelectState = multiSelectState.enterSelection(notification.id)
+                        }
+                    },
+                    onRestoreClick = {
+                        val updated = notification.copy(
+                            status = NotificationStatusUi.PRIORITY,
+                            reasonTags = appendUserClassificationTag(notification.reasonTags),
+                        )
+                        scope.launch {
+                            repository.updateNotification(updated)
+                            snackbarHostState.showSnackbar(
+                                message = "이 알림을 PRIORITY 로 복구했어요",
+                                duration = SnackbarDuration.Short,
+                            )
+                        }
+                    },
+                )
             }
         }
         SnackbarHost(
@@ -313,6 +294,130 @@ fun IgnoredArchiveScreen(
                 .padding(16.dp),
         )
     }
+}
+
+/**
+ * Header bulk-action row extracted from [IgnoredArchiveScreen] by plan
+ * `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1. Pure props
+ * so `IgnoredArchiveScreenAffordanceTest` can render it without standing up
+ * the full screen + Room singleton. Tasks 2 will reshape the layout (Option A
+ * — shorten `모두 PRIORITY 로 복구` → `PRIORITY 모두 복구` so the label fits in
+ * the half-width slot without wrapping).
+ *
+ * Test tags allow the affordance test to assert that both buttons exist and
+ * that their labels match the post-fix copy.
+ */
+@Composable
+internal fun IgnoredArchiveHeaderBulkActions(
+    onRestoreAllClick: () -> Unit,
+    onClearAllClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(IgnoredArchiveAffordanceTags.HEADER_BULK_ROW),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedButton(
+            onClick = onRestoreAllClick,
+            modifier = Modifier
+                .weight(1f)
+                .testTag(IgnoredArchiveAffordanceTags.HEADER_RESTORE_ALL_BUTTON),
+        ) {
+            Text(IgnoredArchiveAffordanceCopy.HEADER_RESTORE_ALL_LABEL)
+        }
+        OutlinedButton(
+            onClick = onClearAllClick,
+            modifier = Modifier
+                .weight(1f)
+                .testTag(IgnoredArchiveAffordanceTags.HEADER_CLEAR_ALL_BUTTON),
+        ) {
+            Text(IgnoredArchiveAffordanceCopy.HEADER_CLEAR_ALL_LABEL)
+        }
+    }
+}
+
+/**
+ * Per-row item extracted from [IgnoredArchiveScreen] by plan
+ * `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1. Today the
+ * `PRIORITY 로 복구` TextButton sits in a `Column` next to [NotificationCard]
+ * — outside the card border. Task 3 will wrap card + button in a single
+ * shared border so the action visually anchors to its row. Test tags let the
+ * affordance test pin both shapes without binding to layout coordinates.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+internal fun IgnoredArchiveRow(
+    notification: NotificationUiModel,
+    isSelected: Boolean,
+    isMultiSelectActive: Boolean,
+    onCardClick: (String) -> Unit,
+    onCardLongClick: () -> Unit,
+    onRestoreClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.testTag(IgnoredArchiveAffordanceTags.ROW_ROOT),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        NotificationCard(
+            model = notification,
+            onClick = onCardClick,
+            onLongClick = onCardLongClick,
+            isSelected = isSelected,
+        )
+        // Plan Task 5 step 6 — single-row PRIORITY restore is exposed only
+        // while selection mode is inactive. The recovery is non-destructive
+        // (status flip + dedup reason tag), so a confirmation dialog would
+        // feel heavier than the action warrants — snackbar is sufficient
+        // feedback.
+        if (!isMultiSelectActive) {
+            TextButton(
+                onClick = onRestoreClick,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .testTag(IgnoredArchiveAffordanceTags.ROW_RESTORE_BUTTON),
+            ) {
+                Text(IgnoredArchiveAffordanceCopy.ROW_RESTORE_LABEL)
+            }
+        }
+    }
+}
+
+/**
+ * Test tags exposed for `IgnoredArchiveScreenAffordanceTest`. Kept in a
+ * separate object so the polish PR (Tasks 2/3) can move composables freely
+ * while the test keeps the same anchors.
+ */
+internal object IgnoredArchiveAffordanceTags {
+    const val HEADER_BULK_ROW = "ignored-archive-header-bulk-row"
+    const val HEADER_RESTORE_ALL_BUTTON = "ignored-archive-header-restore-all"
+    const val HEADER_CLEAR_ALL_BUTTON = "ignored-archive-header-clear-all"
+    const val ROW_ROOT = "ignored-archive-row-root"
+    const val ROW_RESTORE_BUTTON = "ignored-archive-row-restore-button"
+    const val ROW_CARD_AND_RESTORE_WRAPPER = "ignored-archive-row-card-and-restore-wrapper"
+}
+
+/**
+ * Centralized copy for the affordance composables. The header restore label is
+ * intentionally pinned to the **post-fix** Option A copy so the failing test
+ * (Task 1) initially observes a mismatch with the current source string — and
+ * Task 2 simply rewrites the constant to GREEN the test.
+ */
+internal object IgnoredArchiveAffordanceCopy {
+    const val HEADER_RESTORE_ALL_LABEL = "모두 PRIORITY 로 복구"
+    const val HEADER_CLEAR_ALL_LABEL = "모두 지우기"
+    const val ROW_RESTORE_LABEL = "PRIORITY 로 복구"
+
+    /**
+     * Plan Risks Q1 commits to Option A (label shortening). The affordance
+     * test asserts that the actual restore-all label matches this constant —
+     * Task 2 flips [HEADER_RESTORE_ALL_LABEL] to this value and the test goes
+     * GREEN. Stored as a separate constant (not yet wired into the composable)
+     * so the failing test in Task 1 has a precise expectation.
+     */
+    const val HEADER_RESTORE_ALL_LABEL_FIXED = "PRIORITY 모두 복구"
 }
 
 /**

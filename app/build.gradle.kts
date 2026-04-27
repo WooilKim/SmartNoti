@@ -56,6 +56,17 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Plan `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1 —
+    // host-JVM Compose UI tests via Robolectric need the merged Android
+    // resources + manifest on the test classpath so `createComposeRule` can
+    // resolve the placeholder `ComponentActivity` declared in
+    // `app/src/test/AndroidManifest.xml`.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -87,6 +98,13 @@ dependencies {
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("org.robolectric:robolectric:4.11.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    // Plan `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1 —
+    // host-JVM Compose UI tests via Robolectric. Lets
+    // `IgnoredArchiveScreenAffordanceTest` use `createComposeRule` against the
+    // affordance composables without requiring an emulator.
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
