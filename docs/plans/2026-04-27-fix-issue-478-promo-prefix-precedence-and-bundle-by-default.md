@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/notification-capture-classify.md
 fixes: 478
 supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, docs/plans/2026-04-27-fix-issue-478-promo-extended-content-fields.md
 ---
@@ -41,7 +43,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 
 ---
 
-## Task 1: Failing tests for both bugs (RED first) [IN PROGRESS via PR #489]
+## Task 1: Failing tests for both bugs (RED first) [SHIPPED via PR #489]
 
 **Objective:** Bug A 의 precedence 회귀와 Bug B 의 seeder/migration 동작을 distinct test 로 격리. 모든 test 는 RED 로 시작.
 
@@ -69,7 +71,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 4. `Category` 모델에 `userModifiedAction: Boolean = false` 필드 추가 (Room schema migration v9 → v10 — 새 column nullable=false default=0).
 5. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.notification.KoreanAdvertisingPrefixDetectorTest" --tests "com.smartnoti.app.notification.CategoryConflictResolverPromoPrecedenceTest" --tests "com.smartnoti.app.notification.PromoPrefixRoutingFixturesTest" --tests "com.smartnoti.app.ui.screens.onboarding.OnboardingQuickStartCategorySeederPromoActionTest" --tests "com.smartnoti.app.data.settings.SettingsRepositoryPromoActionMigrationTest" --tests "com.smartnoti.app.notification.NotificationDecisionPipelineCharacterizationTest"` 로 RED 확인. RED test 이름을 commit message + PR body 에 인용.
 
-## Task 2: Bug A fix — `(광고)` prefix detector + resolver precedence override
+## Task 2: Bug A fix — `(광고)` prefix detector + resolver precedence override [SHIPPED via PR #489]
 
 **Objective:** Task 1 의 KoreanAdvertisingPrefixDetectorTest / CategoryConflictResolverPromoPrecedenceTest / PromoPrefixRoutingFixturesTest 가 GREEN.
 
@@ -88,7 +90,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 4. Settings 노출은 일단 코드 default 만 — UI 노출은 out-of-scope (i18n 확장은 future plan).
 5. `(광고)` 가 본문이 아니라 title 에만 있는 케이스도 detector 가 본문 fallback 으로 title 을 검사 (title 에 prefix 박는 앱도 있음). PR #486 의 fixture 표를 보고 결정.
 
-## Task 3: Bug B2 fix — PROMO_QUIETING seeder action change + migration v3 [IN PROGRESS via PR #491]
+## Task 3: Bug B2 fix — PROMO_QUIETING seeder action change + migration v3 [SHIPPED via PR #491]
 
 **Objective:** Task 1 의 OnboardingQuickStartCategorySeederPromoActionTest / SettingsRepositoryPromoActionMigrationTest 가 GREEN. 신규 install 의 PROMO_QUIETING owning Category = DIGEST. 기존 install 도 (수동 변경 안 했으면) DIGEST 로 자동 bump.
 
@@ -109,7 +111,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 3. `applyPendingMigrations()` v3: flag 안 set → PROMO Category 들 (preset id 또는 marker 로 식별) 중 `userModifiedAction=false AND action=SILENT` 인 row 만 `action=DIGEST` 로 update + flag set.
 4. UI 진입점 audit — 모든 action mutator 경로에서 `userModifiedAction=true` 같이 set. `CategoryRepository.updateAction` 같은 단일 helper 로 묶을 수 있으면 더 좋음 (refactor scope 는 최소).
 
-## Task 4: Regression guards
+## Task 4: Regression guards [SHIPPED via PR #491]
 
 **Objective:** 기존 IMPORTANT classification 이 회귀 없이 유지.
 
@@ -126,7 +128,7 @@ supersedes: docs/plans/2026-04-27-fix-issue-478-promo-keyword-not-routing.md, do
 5. `./gradlew :app:testDebugUnitTest` 전체 GREEN.
 6. `./gradlew :app:assembleDebug` 빌드 통과.
 
-## Task 5: ADB e2e on real device `R3CY2058DLJ` (P0 — deferred 불가)
+## Task 5: ADB e2e on real device `R3CY2058DLJ` (P0 — deferred 불가) [SHIPPED via PR #494]
 
 **Objective:** 사용자 신고 시나리오를 실제 device 에서 실측 재현 + DiagnosticLogger 로 evidence 캡처.
 
@@ -177,7 +179,7 @@ grep -oE '광고[^"]*' /tmp/ui.xml
 
 전부 PASS 면 Task 6 진행. 어느 한 단계라도 expected 와 다르면 plan-implementer 가 멈추고 보고. PR body 에 DiagnosticLogger 라인 발췌 + DB row 결과 + dumpsys diff 첨부.
 
-## Task 6: Bump journey `last-verified` + Change log
+## Task 6: Bump journey `last-verified` + Change log [SHIPPED via PR #494]
 
 **Objective:** `notification-capture-classify` 와 `digest-suppression` 두 journey 의 contract 갱신을 audit 에 남김.
 
@@ -243,3 +245,9 @@ grep -oE '광고[^"]*' /tmp/ui.xml
 - [`docs/journeys/notification-capture-classify.md`](../journeys/notification-capture-classify.md) — 분류 cascade 의 Bug A 진입점. 이 plan 의 fix 후 `last-verified` 를 bump 한다.
 - [`docs/journeys/digest-suppression.md`](../journeys/digest-suppression.md) — DIGEST 분류 결과의 source tray cancel + auto-expansion. Bug B2 의 결과 surface. 이 plan 의 fix 후 `last-verified` 를 bump 한다.
 - 보조: [`docs/journeys/onboarding-bootstrap.md`](../journeys/onboarding-bootstrap.md) — PROMO_QUIETING preset 시드 경로.
+
+---
+
+## Change log
+
+- 2026-04-27: shipped — Bug A (PR #489 commit c6d9451) + Bug B2 (PR #491 commit 64b1382) + M1 migration. End-to-end verified on R3CY2058DLJ via PR #494 (notification-capture-classify last-verified 2026-04-28). Issue #478 closed.
