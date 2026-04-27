@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-27 (journey-tester — categories-management post-#485/#489/#491 sweep, emulator-5554 + R3CY2058DLJ)
+
+| Journey | Result | Notes |
+|---|---|---|
+| categories-management | PASS | Re-verified after today's three code merges that touched Categories surface (PR #485 DiagnosticLogger, PR #489 Bug A KCC `(광고)` precedence, **PR #491 Bug B2 PROMO_QUIETING SILENT→DIGEST + DataStore codec column 7 add + `MigratePromoCategoryActionRunner` wired in `MainActivity.onCreate`**). emulator-5554 APK `lastUpdateTime=2026-04-27 15:32:46` (post-#491 merge 15:31:43Z). BottomNav `분류` tap → list renders 4 rows (`중요 알림` 즉시 전달 / `프로모션 알림` Digest / `반복 알림` Digest / `BulkNewCat` Digest) with `규칙 N개` + `CategoryActionBadge` + inline `CategoryConditionChips` (text + content-desc). FAB clickable bounds `[642,1938][1038,2085]` above AppBottomBar (no inset clipping regression). Detail tap (`반복 알림` row) → `분류 상세` + `CategoryActionBadge=Digest` + `기본 정보` 카드 + `규칙 1개 · 순서 2` + `편집`/`삭제` + `소속 규칙` (REPEAT_BUNDLE · 3) + `최근 분류된 알림` preview 2건 (`Shell · Coupang · 오늘의 · 9시간 전`). 편집 → `분류 편집` 다이얼로그 with 4 sections + 미리보기 + 닫기/저장. 액션 dropdown tap → 4 values (`즉시 전달 (PRIORITY) / Digest / 조용히 정리 (SILENT) / 무시됨 (IGNORE)`) — Step 5 contract intact, no IGNORE/PRIORITY removed. Observable steps 1–5 all verified end-to-end. **Migration evidence**: R3CY2058DLJ (Galaxy S24, fresh APK install today) DataStore confirms PR #491 ran end-to-end — `smartnoti_settings.preferences_pb` contains key `promo_quieting_action_migration_v3_applied` and `smartnoti_categories.preferences_pb` PROMO row has 7 columns ending `|0` (`userModifiedAction=false`, action=DIGEST). emulator-5554 still on legacy 6-column PROMO row (action=DIGEST from prior user edit) and no v3 flag — runner appears not to flip the flag on this install for unknown reason (no `MainActivity` Log.e in logcat, `runCatching` is silent), but contract behavior (PROMO=DIGEST visible) is satisfied via the legacy edit so journey contract is unaffected. Migration runner persistence on existing-install emulators is **outside journey-tester scope** — flagged for the caller to route to plan-implementer if reproducible. DRIFT 없음 (journey contract). `last-verified` already 2026-04-27 (no bump). |
+
 ### 2026-04-27 (journey-tester — hidden-inbox rotation sweep post-SettingsRepository split, emulator-5554)
 
 | Journey | Result | Notes |
