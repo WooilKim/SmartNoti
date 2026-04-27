@@ -476,3 +476,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T18:34:13Z | #501 | human | APPROVE | User explicit instruction authorizes wrapper to merge SELF_MOD PR; PM had ESCALATEd at 18:12:25Z (own-loop topology recusal). User retains final merge authority per SELF_MOD carve-out. |
 | 2026-04-27T18:42:40Z | #502 | gap-planner | ESCALATE | SELF_MOD on .claude/agents/loop-retrospective.md (#499→#501→#502 chain); awaiting human |
 | 2026-04-27T18:58:42Z | #504 | gap-planner | APPROVE | docs-only plan for issue #503 appName fallback chain; CI green; merged 213f0a4 |
+| 2026-04-27T18:58:45Z | #505 | ui-ux-inspector | APPROVE | inbox-unified sweep + meta-plan (5 MODERATE); CI green; merged edf91a7 |
