@@ -2,7 +2,6 @@ package com.smartnoti.app.ui.screens.rules
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,28 +19,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -56,7 +44,6 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.categories.CategoriesRepository
 import com.smartnoti.app.data.local.NotificationRepository
@@ -78,7 +65,6 @@ import com.smartnoti.app.domain.usecase.UnassignedRulesPartitioner
 import com.smartnoti.app.ui.screens.categories.CategoryEditorScreen
 import com.smartnoti.app.ui.screens.categories.CategoryEditorTarget
 import com.smartnoti.app.ui.components.RuleRow
-import com.smartnoti.app.ui.components.RuleRowPresentation
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.components.SectionLabel
 import com.smartnoti.app.ui.components.SmartSurfaceCard
@@ -951,322 +937,6 @@ fun RulesScreen(
     }
 }
 
-/**
- * Compose slot that renders a single 미분류 row in either the "작업 필요" or
- * "보류" sub-section. Plan
- * `docs/plans/2026-04-26-rule-explicit-draft-flag.md` Task 5.
- *
- * Rendered as a [Column] (not a `Card`) so the existing [RuleRow] card +
- * accent-border highlight overlay continue to compose cleanly. When
- * [isParked] is true an extra small `TextButton` sits below the row offering
- * "작업으로 끌어올리기" so users can promote a parked rule back to the loud
- * "작업 필요" sub-bucket without having to walk through the post-save sheet
- * a second time.
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun UnassignedRuleRowSlot(
-    rule: RuleUiModel,
-    isParked: Boolean,
-    isHighlighted: Boolean,
-    onRowTap: () -> Unit,
-    onPromoteToActionNeeded: (() -> Unit)?,
-    onCheckedChange: (Boolean) -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    isSelected: Boolean = false,
-    onLongPress: () -> Unit = {},
-) {
-    val highlightColor by animateColorAsState(
-        targetValue = if (isHighlighted) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0f)
-        },
-        animationSpec = tween(durationMillis = 400),
-        label = "ruleHighlight",
-    )
-    // Plan `2026-04-26-rules-bulk-assign-unassigned.md` Task 5 step 3 —
-    // selected rows in multi-select mode draw an accent border so the
-    // user can see what is in their bulk action set. Drawn on the slot
-    // wrapper (not on RuleRow itself) so the existing `RuleRow` visual
-    // contract stays intact.
-    val selectionBorderColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0f)
-        },
-        animationSpec = tween(durationMillis = 200),
-        label = "ruleSelectionBorder",
-    )
-    Column(
-        modifier = Modifier
-            .let { mod ->
-                if (isHighlighted) {
-                    mod.border(
-                        width = 2.dp,
-                        color = highlightColor,
-                        shape = RoundedCornerShape(16.dp),
-                    )
-                } else if (isSelected) {
-                    mod.border(
-                        width = 2.dp,
-                        color = selectionBorderColor,
-                        shape = RoundedCornerShape(16.dp),
-                    )
-                } else {
-                    mod
-                }
-            }
-            .combinedClickable(
-                onClick = onRowTap,
-                onLongClick = onLongPress,
-            ),
-    ) {
-        RuleRow(
-            rule = rule,
-            action = RuleActionUi.SILENT,
-            onCheckedChange = onCheckedChange,
-            onMoveUpClick = onMoveUp,
-            onMoveDownClick = onMoveDown,
-            onEditClick = onEdit,
-            onDeleteClick = onDelete,
-            presentation = RuleRowPresentation.Unassigned(isParked = isParked),
-        )
-        if (isParked && onPromoteToActionNeeded != null) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onPromoteToActionNeeded) {
-                    Text("작업으로 끌어올리기")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryAssignSheetContent(
-    rule: RuleUiModel,
-    categories: List<Category>,
-    onCategorySelected: (String) -> Unit,
-    onParkRule: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Text(
-            text = "이 규칙을 어떤 분류에 추가하시겠어요?",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "“${rule.title.ifBlank { rule.matchValue }}” 규칙은 분류에 추가되기 전까지 어떤 알림도 분류하지 않아요.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (categories.isEmpty()) {
-            Text(
-                text = "아직 만들어진 분류가 없어요. 분류 탭에서 새 분류를 만든 뒤 다시 규칙을 추가해 보세요.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                categories.forEach { category ->
-                    CategoryAssignRow(
-                        category = category,
-                        onClick = { onCategorySelected(category.id) },
-                    )
-                }
-            }
-        }
-        // Plan `2026-04-26-rule-explicit-draft-flag.md` Task 4 — split the
-        // single "나중에 분류에 추가" CTA into two intent-aware buttons:
-        //   - "작업 목록에 두기" (default) leaves draft = true so the rule
-        //     surfaces in the loud "작업 필요" sub-bucket on RulesScreen.
-        //   - "분류 없이 보류" flips draft = false so the rule moves to the
-        //     quieter "보류" sub-bucket — explicit "intentionally
-        //     unassigned" intent.
-        // Both buttons dismiss the sheet; neither auto-reopens. Closing the
-        // sheet via outside-tap / system back keeps the rule's current
-        // draft state untouched (default branch via onDismiss).
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onParkRule) {
-                    Text("분류 없이 보류")
-                }
-                TextButton(onClick = onDismiss) {
-                    Text("작업 목록에 두기")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategoryAssignRow(
-    category: Category,
-    onClick: () -> Unit,
-) {
-    SmartSurfaceCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = category.name.ifBlank { "분류" },
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "규칙 ${category.ruleIds.size}개 · ${categoryActionLabel(category.action)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = "추가",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-internal fun categoryActionLabel(action: com.smartnoti.app.domain.model.CategoryAction): String = when (action) {
-    com.smartnoti.app.domain.model.CategoryAction.PRIORITY -> "즉시 전달"
-    com.smartnoti.app.domain.model.CategoryAction.DIGEST -> "Digest"
-    com.smartnoti.app.domain.model.CategoryAction.SILENT -> "조용히"
-    com.smartnoti.app.domain.model.CategoryAction.IGNORE -> "무시"
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun RepeatBundleThresholdEditor(
-    value: String,
-    presets: List<RepeatBundleThresholdPreset>,
-    onValueChange: (String) -> Unit,
-    onDecrease: () -> Unit,
-    onIncrease: () -> Unit,
-    onPresetClick: (RepeatBundleThresholdPreset) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel(
-            title = "반복 기준",
-            subtitle = "같은 알림이 몇 번 이상 반복되면 이 규칙을 적용할지 정해요.",
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onDecrease) {
-                Icon(Icons.Outlined.Remove, contentDescription = "반복 기준 낮추기")
-            }
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                label = { Text("반복 횟수") },
-                supportingText = { Text("예: 3회 이상 반복되면 적용") },
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onIncrease) {
-                Icon(Icons.Outlined.Add, contentDescription = "반복 기준 높이기")
-            }
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            presets.forEach { preset ->
-                FilterChip(
-                    selected = value == preset.value,
-                    onClick = { onPresetClick(preset) },
-                    label = { Text(preset.label) },
-                )
-            }
-        }
-        OutlinedButton(
-            onClick = { onPresetClick(presets[1]) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("추천 기준으로 되돌리기")
-        }
-    }
-}
-
-@Composable
-private fun RuleEditorAppSuggestionRow(
-    suggestion: RuleEditorAppSuggestion,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = suggestion.appName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = suggestion.supportingLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = if (selected) "선택됨" else "선택",
-                style = MaterialTheme.typography.labelMedium,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun <T> EnumSelectorRow(
@@ -1290,157 +960,7 @@ private fun <T> EnumSelectorRow(
     }
 }
 
-internal fun typeLabel(type: RuleTypeUi): String = when (type) {
-    RuleTypeUi.PERSON -> "사람"
-    RuleTypeUi.APP -> "앱"
-    RuleTypeUi.KEYWORD -> "키워드"
-    RuleTypeUi.SCHEDULE -> "시간"
-    RuleTypeUi.REPEAT_BUNDLE -> "반복"
-}
-
-internal fun matchLabelFor(type: RuleTypeUi): String = when (type) {
-    RuleTypeUi.PERSON -> "이름 또는 발신자"
-    RuleTypeUi.APP -> "패키지명"
-    RuleTypeUi.KEYWORD -> "키워드"
-    RuleTypeUi.SCHEDULE -> "시간 조건"
-    RuleTypeUi.REPEAT_BUNDLE -> "반복 기준"
-}
-
 // How long the border-flash lingers after a Detail-chip deep-link lands on a
 // rule. Kept short enough that the user's attention snaps to the row without
 // feeling obstructive.
 private const val HIGHLIGHT_FLASH_DURATION_MILLIS = 1800L
-
-@Composable
-private fun RuleOverrideEditorSection(
-    overrideEnabled: Boolean,
-    onOverrideEnabledChange: (Boolean) -> Unit,
-    candidates: List<RuleUiModel>,
-    selectedBaseId: String?,
-    onBaseSelected: (String?) -> Unit,
-    supersetWarningMessage: String?,
-) {
-    // Plan rules-ux-v2-inbox-restructure Phase C Task 4: "기존 규칙의 예외로
-    // 만들기" toggle + base-rule dropdown. The section renders as a section
-    // label + switch row, and only mounts the dropdown when the switch is on
-    // so the dialog doesn't feel crowded for plain-rule creation.
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel(
-            title = "예외 규칙",
-            subtitle = "다른 규칙이 먼저 적용되어도 이 규칙이 우선하도록 예외로 설정할 수 있어요.",
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "기존 규칙의 예외로 만들기",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Switch(
-                checked = overrideEnabled,
-                onCheckedChange = onOverrideEnabledChange,
-                enabled = candidates.isNotEmpty() || overrideEnabled,
-            )
-        }
-        if (overrideEnabled) {
-            if (candidates.isEmpty()) {
-                Text(
-                    text = "예외로 지정할 기준 규칙이 없어요. 먼저 기본 규칙을 만들어 보세요.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                RuleOverrideBaseDropdown(
-                    candidates = candidates,
-                    selectedBaseId = selectedBaseId,
-                    onBaseSelected = onBaseSelected,
-                )
-            }
-            if (supersetWarningMessage != null) {
-                Text(
-                    text = supersetWarningMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RuleOverrideBaseDropdown(
-    candidates: List<RuleUiModel>,
-    selectedBaseId: String?,
-    onBaseSelected: (String?) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedTitle = candidates.firstOrNull { it.id == selectedBaseId }?.title
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "어느 규칙의 예외인가요?",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        AssistChip(
-            onClick = { expanded = true },
-            label = {
-                Text(selectedTitle ?: "규칙 선택")
-            },
-            colors = AssistChipDefaults.assistChipColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            candidates.forEach { candidate ->
-                DropdownMenuItem(
-                    text = { Text(candidate.title) },
-                    onClick = {
-                        onBaseSelected(candidate.id)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-internal fun supersetWarningMessage(reason: RuleOverrideSupersetValidator.Reason): String = when (reason) {
-    RuleOverrideSupersetValidator.Reason.BASE_MISSING ->
-        "기준 규칙을 찾을 수 없어요. 삭제됐거나 아직 저장되지 않은 규칙일 수 있어요."
-    RuleOverrideSupersetValidator.Reason.TYPE_MISMATCH ->
-        "기준 규칙과 타입이 달라요. 같은 타입으로 맞추면 더 정확하게 동작해요."
-    RuleOverrideSupersetValidator.Reason.KEYWORD_NOT_SUPERSET ->
-        "기준 규칙의 키워드를 모두 포함해야 예외가 정상적으로 동작해요."
-    RuleOverrideSupersetValidator.Reason.VALUE_MISMATCH ->
-        "기준 규칙과 조건 값이 달라서 예외가 적용되지 않을 수 있어요."
-}
-
-internal fun ruleRowPresentationFor(
-    node: RuleListNode,
-    baseTitle: String?,
-): RuleRowPresentation {
-    val broken = node.brokenReason
-    if (broken != null) {
-        return RuleRowPresentation.BrokenOverride(
-            reasonMessage = when (broken) {
-                RuleOverrideBrokenReason.SelfReference ->
-                    "이 규칙은 자기 자신을 예외로 지정해 동작하지 않아요."
-                is RuleOverrideBrokenReason.BaseMissing ->
-                    "기준이 되는 규칙이 삭제돼 예외가 동작하지 않아요."
-                is RuleOverrideBrokenReason.BaseIsOverride ->
-                    "다른 예외의 예외로 지정돼 있어 동작하지 않아요."
-            },
-        )
-    }
-    return when (node.overrideState) {
-        RuleOverrideState.Base -> RuleRowPresentation.Base
-        is RuleOverrideState.Override -> RuleRowPresentation.Override(baseTitle = baseTitle)
-    }
-}
