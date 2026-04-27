@@ -30,7 +30,7 @@ superseded-by: docs/journeys/inbox-unified.md
 
 ---
 
-## Task 1: Add failing unit test for empty-state CTA contract
+## Task 1: Add failing unit test for empty-state CTA contract [shipped via PR #425]
 
 **Objective:** 카피 / label 단일 source-of-truth 계약을 RED-first 로 고정. Compose UI 테스트 인프라가 repo 에 없으므로 headless 계약 테스트로 대체 (precedent: `CategoriesEmptyStateContractTest`).
 
@@ -45,7 +45,7 @@ superseded-by: docs/journeys/inbox-unified.md
    - `assertEquals(...)` — subtitle 의 새 카피 (Task 2 에서 확정한 문구를 그대로 박는다; 한 줄, suppress opt-in 의미 + Settings 진입 유도). 가이드: 50자 이내, 명사형 마무리.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.digest.DigestEmptyStateContractTest"` → 컴파일 실패 (상수 부재) 로 RED.
 
-## Task 2: Add the constants object and rewire DigestScreen empty branch
+## Task 2: Add the constants object and rewire DigestScreen empty branch [shipped via PR #425]
 
 **Objective:** Task 1 의 테스트가 초록이 되게 + 실제 화면이 새 카피와 CTA 를 노출하게.
 
@@ -65,7 +65,7 @@ superseded-by: docs/journeys/inbox-unified.md
 5. `./gradlew :app:testDebugUnitTest` 전체 초록 확인.
 6. (선택) `DigestScreen` 안의 다른 empty-state-인접 카피 (`"반복되거나 덜 급한 알림을 여기에 모아둘게요"`) 가 normal state header subtitle 등 다른 위치에서 재사용되고 있다면 그쪽은 건드리지 않음 — empty 분기만 교체.
 
-## Task 3: ADB smoke + journey doc sync + ship
+## Task 3: ADB smoke + journey doc sync + ship [shipped via PR #425]
 
 **Objective:** 실제 디바이스에서 두 진입 경로 모두에서 새 카피 + CTA 가 보이고 탭 시 Settings 로 이동하는지 확인 + 두 journey 문서를 갱신 + PR 마감.
 
