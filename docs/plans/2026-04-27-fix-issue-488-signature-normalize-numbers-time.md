@@ -35,7 +35,7 @@ Two notification-classification gaps from issue #488 are deliberately split:
 
 ---
 
-## Task 1: Failing tests for normalizer + duplicate-burst path (RED first)
+## Task 1: Failing tests for normalizer + duplicate-burst path (RED first) [IN PROGRESS via PR #492]
 
 **Objective:** Pin both the pure normalizer contract and the end-to-end duplicate-burst behavior in tests that **fail before the fix**.
 
