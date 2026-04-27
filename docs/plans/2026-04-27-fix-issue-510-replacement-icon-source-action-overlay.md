@@ -1,8 +1,12 @@
 ---
-status: planned
+status: in-progress
 fixes: 510
 last-updated: 2026-04-27
 ---
+
+> **Status (2026-04-27):** Tasks 1-4 shipped via PR #521 (RED tests then GREEN
+> implementation). Tasks 5-7 (ADB end-to-end on R3CY2058DLJ, journey doc updates,
+> closure PR) deferred to a follow-up bundle.
 
 # Fix issue #510 — replacement notification icons distinguish source app + action
 
@@ -27,7 +31,7 @@ last-updated: 2026-04-27
 
 ---
 
-## Task 1: Failing UI tests for replacement notifier icon sites
+## Task 1: Failing UI tests for replacement notifier icon sites [IN PROGRESS via PR #521]
 
 **Objective:** 회귀를 코드로 고정. 5단계 P1 gate 의 "tests-first" 칸. Asserts (a) `setLargeIcon(Bitmap)` 이 source packageName 으로 resolve 한 결과로 호출되고, (b) `setSmallIcon(Int)` 이 `ReplacementActionIcon` 의 drawableRes 로 호출되며, (c) source resolver 가 null 을 반환할 때 `setLargeIcon` 은 호출되지 않는다.
 

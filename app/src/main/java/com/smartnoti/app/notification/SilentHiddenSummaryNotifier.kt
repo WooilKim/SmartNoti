@@ -36,6 +36,12 @@ import com.smartnoti.app.onboarding.OnboardingPermissions
 class SilentHiddenSummaryNotifier(
     private val context: Context,
     private val timeoutPolicy: ReplacementNotificationTimeoutPolicy = ReplacementNotificationTimeoutPolicy(),
+    // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+    // Task 4: source-app launcher icon resolver. Default no-op resolver
+    // keeps legacy callers / existing tests compiling — see the same
+    // pattern documented on SmartNotiNotifier's constructor. The
+    // production listener service wiring always passes a real resolver.
+    private val appIconResolver: AppIconResolver = AppIconResolver(NoOpAppIconSource),
 ) {
     private val notificationManager by lazy { NotificationManagerCompat.from(context) }
 
@@ -49,8 +55,14 @@ class SilentHiddenSummaryNotifier(
         if (!OnboardingPermissions.isPostNotificationsGranted(context)) return
 
         val contentIntent = createContentIntent()
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: SILENT small icon (volume_off glyph) so the archived
+        // bell visually identifies the SILENT action. Large icon is
+        // intentionally omitted — this summary aggregates across every
+        // SILENT item in the inbox so no single source can fairly
+        // represent the row.
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setSmallIcon(ReplacementActionIcon.SILENT.drawableRes)
             .setContentTitle("보관 중인 조용한 알림 ${count}건")
             .setContentText("탭: 보관함 열기 · 스와이프: 확인으로 처리")
             .setStyle(
@@ -145,8 +157,13 @@ class SilentHiddenSummaryNotifier(
             else -> previewLines.first()
         }
         val contentIntent = createGroupContentIntent(rootDeepLink, key)
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: SILENT small icon for the per-group summary. Large icon
+        // is set ONLY when every child shares the same source package —
+        // mixed-source groups omit large to avoid picking an unfair
+        // "winner" representative (Product intent decision in the plan).
         val builder = NotificationCompat.Builder(context, SmartNotiNotifier.CHANNEL_SILENT_GROUP)
-            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setSmallIcon(ReplacementActionIcon.SILENT.drawableRes)
             .setContentTitle(title)
             .setContentText(contentText)
             .setStyle(inboxStyle)
@@ -165,6 +182,18 @@ class SilentHiddenSummaryNotifier(
         // children retract roughly in lock-step.
         timeoutPolicy.timeoutMillisFor(settings, NotificationDecision.SILENT)?.let {
             builder.setTimeoutAfter(it)
+        }
+
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: large icon for homogeneous groups only. When every
+        // child shares the same source packageName, the source is
+        // unambiguous and the large icon adds value; mixed-source groups
+        // omit it (Product intent — no fair single-source representative).
+        val previewPackages = preview.mapTo(HashSet()) { it.packageName }
+        if (previewPackages.size == 1) {
+            appIconResolver.resolve(previewPackages.single())?.let { bitmap ->
+                builder.setLargeIcon(bitmap)
+            }
         }
 
         notificationManager.notify(groupSummaryNotificationIdFor(key), builder.build())
@@ -205,8 +234,12 @@ class SilentHiddenSummaryNotifier(
         }
         val childText = entity.body.ifBlank { "조용히로 분류됨" }
         val contentIntent = createGroupContentIntent(ROUTE_HIDDEN, key)
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: SILENT small icon + source-app launcher large icon so
+        // the expanded child row visually identifies both the action and
+        // the source app at a glance.
         val builder = NotificationCompat.Builder(context, SmartNotiNotifier.CHANNEL_SILENT_GROUP)
-            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setSmallIcon(ReplacementActionIcon.SILENT.drawableRes)
             .setContentTitle(childTitle)
             .setContentText(childText)
             .setSubText("${entity.appName} · 조용히")
@@ -225,6 +258,12 @@ class SilentHiddenSummaryNotifier(
         timeoutPolicy.timeoutMillisFor(settings, NotificationDecision.SILENT)?.let {
             builder.setTimeoutAfter(it)
         }
+        // Plan `2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+        // Task 4: source-app launcher icon for the expanded child row.
+        // Resolver returns null for system services with no displayable
+        // launcher icon; in that case we omit setLargeIcon so the row is
+        // honest rather than mis-branded.
+        appIconResolver.resolve(entity.packageName)?.let { bitmap -> builder.setLargeIcon(bitmap) }
 
         notificationManager.notify(groupChildNotificationId(notificationId), builder.build())
     }

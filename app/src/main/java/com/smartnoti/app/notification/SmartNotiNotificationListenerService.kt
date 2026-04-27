@@ -51,8 +51,12 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
     private val duplicatePolicy = DuplicateNotificationPolicy(windowMillis = 10 * 60 * 1000L)
     private val liveDuplicateCountTracker = LiveDuplicateCountTracker()
     private val persistentNotificationPolicy = PersistentNotificationPolicy()
-    private val notifier by lazy { SmartNotiNotifier(applicationContext) }
-    private val silentSummaryNotifier by lazy { SilentHiddenSummaryNotifier(applicationContext) }
+    private val notifier by lazy {
+        SmartNotiNotifier(applicationContext, appIconResolver = appIconResolver)
+    }
+    private val silentSummaryNotifier by lazy {
+        SilentHiddenSummaryNotifier(applicationContext, appIconResolver = appIconResolver)
+    }
     private var storeSyncJob: Job? = null
     private var silentSummaryJob: Job? = null
 
@@ -69,6 +73,18 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
 
     /**
      * Plan
+     * `docs/plans/2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+     * Tasks 2-4. Sibling of [appLabelResolver] for the source-app
+     * launcher icon surface — single shared instance so both notifiers
+     * (SmartNotiNotifier + SilentHiddenSummaryNotifier) and the
+     * package-broadcast invalidation hook all see the same cache.
+     */
+    private val appIconResolver by lazy {
+        AppIconResolver(AndroidAppIconSource(applicationContext.packageManager))
+    }
+
+    /**
+     * Plan
      * `docs/plans/2026-04-27-fix-issue-503-app-label-resolver-fallback-chain.md`
      * Task 3. Invalidates the per-package label cache when an app is
      * installed / replaced / removed so the next notification picks up the
@@ -80,8 +96,15 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             val packageName = intent?.data?.let(Uri::getSchemeSpecificPart)
             if (packageName.isNullOrBlank()) {
                 appLabelResolver.clearAll()
+                // Plan
+                // `docs/plans/2026-04-27-fix-issue-510-replacement-icon-source-action-overlay.md`
+                // Task 4: invalidate the icon cache on the same package
+                // broadcasts so an app upgrade picks up its new launcher
+                // icon on the next replacement notification.
+                appIconResolver.clearAll()
             } else {
                 appLabelResolver.invalidate(packageName)
+                appIconResolver.invalidate(packageName)
             }
         }
     }
