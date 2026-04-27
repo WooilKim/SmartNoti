@@ -260,6 +260,12 @@ fun AppNavHost(
                             launchSingleTop = true
                         }
                     },
+                    // Plan `2026-04-27-inbox-unified-double-header-collapse`
+                    // Task 4: standalone deep-link entry (replacement
+                    // notification contentIntent) keeps the in-screen
+                    // ScreenHeader + summary card via the Standalone default,
+                    // so the user gets page context when arriving outside
+                    // the InboxScreen shell.
                 )
             }
             // Plan `docs/plans/2026-04-22-categories-split-rules-actions.md`
