@@ -89,7 +89,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 ## Known gaps
 
 - 화면 단독 Compose UI 테스트 부재 (repository + settings 단위 테스트로만 커버).
-- 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현 — 복구가 필요하면 Detail 로 가서 "분류 변경" → non-IGNORE action 을 가진 Category 에 할당해야 함 (2026-04-22 redesign 이후 단일 CTA 경로).
+- 아카이브 안에서 "이 row 되살리기" / "모두 삭제" / bulk 재분류 미구현 — 복구가 필요하면 Detail 로 가서 "분류 변경" → non-IGNORE action 을 가진 Category 에 할당해야 함 (2026-04-22 redesign 이후 단일 CTA 경로). → plan: `docs/plans/2026-04-27-ignored-archive-bulk-restore-and-clear.md`
 - IGNORE row 의 retention 정책 미구현 — 물리 삭제 / 오래된 row 자동 정리는 후속. Plan `docs/plans/2026-04-21-ignore-tier-fourth-decision.md` out-of-scope.
 - Weekly insights 에서 IGNORE 카운트가 DIGEST / SILENT 와 별도 스트림으로 노출되는지 (Insights builder contract) 는 test-level 로만 검증되고, 화면 레이블이 실제로 "삭제 N건" 같은 copy 로 분리되어 보이는지는 아직 미검증 — Task 8 verification 에서 확인 필요.
 - Preconditions / Trigger / Observable steps / Exit state / Code pointers 가 아직 "route 가 조건부로 등록됨" 을 전제로 기술되어 있으나, 2026-04-22 픽스 이후 route 는 상시 등록되고 토글은 Settings 버튼 가시성만 gate 함. 다음 verification 패스에서 문구 정비 필요 (별도 journey-tester PR).
