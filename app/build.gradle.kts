@@ -98,6 +98,13 @@ dependencies {
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("org.robolectric:robolectric:4.11.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
+    // Task 2 — `DiagnosticLoggerContractTest` parses log lines with
+    // `org.json.JSONObject`. The `android.jar` shipped with non-Robolectric
+    // unit tests stubs out `org.json` ("Method put in org.json.JSONObject
+    // not mocked"), so we add the real `org.json:json` artifact for the
+    // test classpath. Production stays on Android's native `org.json`.
+    testImplementation("org.json:json:20240303")
     // Plan `2026-04-27-ignored-archive-bulk-affordance-polish.md` Task 1 —
     // host-JVM Compose UI tests via Robolectric. Lets
     // `IgnoredArchiveScreenAffordanceTest` use `createComposeRule` against the

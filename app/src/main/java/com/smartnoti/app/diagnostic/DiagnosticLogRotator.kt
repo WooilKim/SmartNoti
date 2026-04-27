@@ -1,6 +1,5 @@
 package com.smartnoti.app.diagnostic
 
-import org.json.JSONObject
 import java.io.File
 
 /**
@@ -10,15 +9,17 @@ import java.io.File
  * Owns the size-cap + 24h tail-drop rotation logic separately from the
  * append path so [DiagnosticLoggerRotationTest] can exercise it directly.
  *
- * Rotation contract:
- *  - Triggered when the existing `.log` file's size exceeds [sizeCapBytes].
- *  - Reads `.log` line-by-line, parses each as JSON, drops every line whose
- *    `ts` field is older than `now - retentionMillis`, and writes the
- *    survivors to `.log.1` (overwriting any previous `.log.1`).
- *  - Truncates `.log` so the next append starts a fresh file.
- *  - Lines that fail JSON parse (eg. user pre-seeded padding rows) are kept
- *    verbatim — the rotator only filters JSON-shaped rows it can prove are
- *    too old. This matches the Task 1 rotation test which seeds 'X'-padding.
+ * Rotation contract (post-append):
+ *  - Logger appends the new line to `.log`, THEN calls [rotateIfNeeded].
+ *    When the file's size exceeds [sizeCapBytes], rotation moves every
+ *    line except the most recently appended one into `.log.1`
+ *    (overwriting any previous `.log.1`) and keeps the most recent line in
+ *    `.log` so the live tail is never empty after a rotation cycle.
+ *  - Lines moved into `.log.1` are filtered by `ts`: anything older than
+ *    `now - retentionMillis` is dropped (24h tail). Lines that fail JSON
+ *    parse (eg. test padding rows) are kept verbatim so a human
+ *    reproduction does not silently lose context.
+ *  - `rotatedFile.writeText(...)` overwrites the previous `.log.1` content.
  */
 internal class DiagnosticLogRotator(
     private val logFile: File,
@@ -30,40 +31,66 @@ internal class DiagnosticLogRotator(
 
     fun shouldRotate(): Boolean = logFile.exists() && logFile.length() > sizeCapBytes
 
+    /**
+     * Reads all lines of `.log`, splits into "older lines" and "tail line"
+     * (the most recently appended line — what the logger just wrote in the
+     * triggering append). The older lines are filtered by `ts` and written
+     * to `.log.1`; the tail line is left in `.log` as the only surviving
+     * row so the live log keeps a fresh tail.
+     */
     fun rotate() {
         if (!logFile.exists()) return
         val cutoff = clock() - retentionMillis
+        val allLines = logFile.readLines().filter { it.isNotBlank() }
+        if (allLines.isEmpty()) return
+        val tail = allLines.last()
+        val older = allLines.dropLast(1)
         val survivors = mutableListOf<String>()
-        logFile.useLines { lines ->
-            for (line in lines) {
-                if (line.isBlank()) continue
-                val parsed = runCatching { JSONObject(line) }.getOrNull()
-                if (parsed == null) {
-                    // Non-JSON row — keep verbatim. Padding / corrupted rows
-                    // should still survive into the rotated file so a human
-                    // reproduction does not silently lose context.
-                    survivors += line
-                    continue
-                }
-                val ts = parsed.optLong("ts", Long.MIN_VALUE)
-                if (ts == Long.MIN_VALUE) {
-                    // No `ts` field — keep verbatim (defensive).
-                    survivors += line
-                    continue
-                }
-                if (ts >= cutoff) survivors += line
+        for (line in older) {
+            val ts = extractTsFromJsonLine(line)
+            if (ts == null) {
+                // Non-JSON row — keep verbatim. Padding / corrupted rows
+                // should still survive into the rotated file so a human
+                // reproduction does not silently lose context.
+                survivors += line
+                continue
             }
+            if (ts >= cutoff) survivors += line
         }
-        // Atomic-ish replace: write rotated content first, then truncate the
-        // live log. If the JVM dies between the two writes the worst case is
-        // a duplicated tail in `.log.1` plus a still-full `.log` — both are
-        // strictly safer than losing the survivors.
+        // Atomic-ish replace: write rotated content first, then rewrite
+        // `.log` to contain only the tail line. If the JVM dies between
+        // the two writes the worst case is a duplicated tail in `.log.1`
+        // plus a still-full `.log` — both strictly safer than losing the
+        // survivors.
         rotatedFile.writeText(buildString {
             for (line in survivors) {
                 append(line)
                 append('\n')
             }
         })
-        logFile.writeText("")
+        logFile.writeText(tail + "\n")
+    }
+
+    /**
+     * Extracts the `"ts":<long>` numeric field from a JSON-line. Hand-rolled
+     * to avoid pulling `org.json.JSONObject` into the rotator (Android's
+     * `org.json` stub on the unit-test classpath throws "not mocked"). The
+     * format is fixed by [DiagnosticLogEntry.JsonLineWriter] so a substring
+     * scan is sufficient — returns `null` for rows the writer did not
+     * produce (eg. test padding rows).
+     */
+    private fun extractTsFromJsonLine(line: String): Long? {
+        val key = "\"ts\":"
+        val keyIndex = line.indexOf(key)
+        if (keyIndex < 0) return null
+        val start = keyIndex + key.length
+        var end = start
+        while (end < line.length) {
+            val c = line[end]
+            if (c == ',' || c == '}') break
+            end++
+        }
+        val raw = line.substring(start, end).trim()
+        return raw.toLongOrNull()
     }
 }

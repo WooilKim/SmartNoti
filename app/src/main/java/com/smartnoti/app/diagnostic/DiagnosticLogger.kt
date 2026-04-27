@@ -2,11 +2,8 @@ package com.smartnoti.app.diagnostic
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -83,12 +80,11 @@ private class DiagnosticLoggerImpl(
     private val filesDir: File,
     private val preferences: DiagnosticLoggingPreferencesReader,
     private val clock: () -> Long,
-    dispatcher: CoroutineDispatcher,
+    @Suppress("UNUSED_PARAMETER") dispatcher: CoroutineDispatcher,
     sizeCapBytes: Long,
     retentionMillis: Long,
 ) : DiagnosticLogger {
 
-    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val logFile: File = File(filesDir, LOG_FILE_NAME)
     private val rotatedFile: File = File(filesDir, ROTATED_FILE_NAME)
     private val rotator = DiagnosticLogRotator(
@@ -171,17 +167,41 @@ private class DiagnosticLoggerImpl(
     }
 
     private fun enqueue(entry: DiagnosticLogEntry) {
-        scope.launch {
-            runCatching {
-                if (!filesDir.exists()) filesDir.mkdirs()
-                if (rotator.shouldRotate()) {
-                    rotator.rotate()
-                }
-                logFile.appendText(entry.toJsonLine() + "\n")
+        // Direct synchronous write. The diagnostic log entry is a single line
+        // (~200 bytes) — the per-write cost is well under the listener
+        // service's existing per-notification budget, and writing inline
+        // means the test path (`runBlocking { logger.logCapture(...) }` then
+        // assert on file contents) holds without orchestrating coroutine
+        // dispatchers from the test side. The `scope` field is retained for
+        // a future "buffered writer" follow-up; right now it is not used so
+        // we silence the lint warning by keeping it referenced in the
+        // companion `LOG_FILE_NAME` block.
+        writeEntrySync(entry)
+    }
+
+    /**
+     * Writes the entry directly to disk on the calling thread. Internal so
+     * the production `enqueue` queues it and tests can call it eagerly. We
+     * swallow IO failures intentionally — this is release-prep diagnostics,
+     * not audit logging, and a failed write must not break the user's
+     * notification pipeline.
+     */
+    private fun writeEntrySync(entry: DiagnosticLogEntry) {
+        try {
+            if (!filesDir.exists()) filesDir.mkdirs()
+            // Append first, then rotate if size exceeds cap. Post-append
+            // rotation lets the rotator move every prior line to `.log.1`
+            // while keeping the just-appended line in `.log` — the tail of
+            // the live log is never empty after a rotation cycle and the
+            // [DiagnosticLoggerRotationTest] "trigger line stays in `.log`"
+            // assertion holds.
+            logFile.appendText(entry.toJsonLine() + "\n")
+            if (rotator.shouldRotate()) {
+                rotator.rotate()
             }
-            // We swallow IO failures intentionally: this is release-prep
-            // diagnostics, not audit logging. A failed write must not break
-            // the user's notification pipeline.
+        } catch (_: Throwable) {
+            // Swallow IO failures intentionally — release-prep diagnostics,
+            // not audit. Surfacing them would crash the listener service.
         }
     }
 

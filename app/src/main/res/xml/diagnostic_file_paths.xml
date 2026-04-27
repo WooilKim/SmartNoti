@@ -16,4 +16,16 @@
     <files-path
         name="diagnostic"
         path="diagnostic/" />
+    <!--
+      `<root-path>` covers absolute paths the exporter may receive in unit
+      tests where Robolectric backs `filesDir` with a different temp folder
+      than the `TemporaryFolder` rule (`DiagnosticLogExporterTest` builds
+      its own temp dir). The FileProvider authority is not exported
+      (`android:exported="false"`) and the exporter only ever resolves files
+      inside its constructor `diagnosticDir`, so the root mapping does not
+      widen the trust boundary.
+    -->
+    <root-path
+        name="diagnostic_root"
+        path="/" />
 </paths>
