@@ -38,7 +38,7 @@ Logger 는 `DiagnosticLoggingPreferences` (DataStore-backed, 신규) 로 enabled
 
 ---
 
-## Task 1: Failing test suite — DiagnosticLogger contract + Settings UI + export integration [IN PROGRESS]
+## Task 1: Failing test suite — DiagnosticLogger contract + Settings UI + export integration [IN PROGRESS via PR #485]
 
 **Objective:** logger module 의 contract / Settings 토글 / export intent / 회전 / privacy hash 가 distinct test 로 격리. 모든 test RED 시작.
 
