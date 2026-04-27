@@ -474,3 +474,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T17:57:17Z | #500 | plan-implementer | APPROVE | Meta-plan audit findings (Tasks 1-2 of #499); 1 file docs-only; CI green; non-binding recommendation, user A/B/C gate preserved |
 | 2026-04-27T18:12:25Z | #501 | project-manager | ESCALATE | SELF_MOD recursion: archives coverage-guardian agent spec + edits agent-loop.md topology + tombstones /coverage-check. PM cannot impartially review own-loop topology changes. CI pending at verdict. Waiting human disposition. |
 | 2026-04-27T18:34:13Z | #501 | human | APPROVE | User explicit instruction authorizes wrapper to merge SELF_MOD PR; PM had ESCALATEd at 18:12:25Z (own-loop topology recusal). User retains final merge authority per SELF_MOD carve-out. |
+| 2026-04-27T18:42:40Z | #502 | gap-planner | ESCALATE | SELF_MOD on .claude/agents/loop-retrospective.md (#499→#501→#502 chain); awaiting human |
