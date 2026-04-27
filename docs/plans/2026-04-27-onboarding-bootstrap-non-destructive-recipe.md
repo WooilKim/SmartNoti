@@ -30,7 +30,7 @@ status: planned
 
 ---
 
-## Task 1: Failing unit/Robolectric test for rehearsal entry point
+## Task 1: Failing unit/Robolectric test for rehearsal entry point [IN PROGRESS via PR #422]
 
 **Objective:** rehearsal entry point 가 (a) `BuildConfig.DEBUG` 일 때만 의미 있는 일을 하고, (b) production bootstrap 1회성 flag 의 raised/consumed 상태와 무관하게 `ActiveStatusBarNotificationBootstrapper.bootstrap()` 을 정확히 한 번 호출한다는 계약을 단위 테스트로 고정.
 
@@ -47,7 +47,7 @@ status: planned
 3. 테스트는 구현 부재 상태에서 빨간불.
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.debug.DebugBootstrapRehearsalReceiverTest"` 로 실패 확인.
 
-## Task 2: Implement rehearsal entry point + receiver
+## Task 2: Implement rehearsal entry point + receiver [IN PROGRESS via PR #422]
 
 **Objective:** Task 1 테스트 초록. Production 코드 경로는 변경 0.
 

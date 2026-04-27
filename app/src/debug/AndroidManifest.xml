@@ -23,6 +23,29 @@
                 <action android:name="com.smartnoti.debug.INJECT_NOTIFICATION" />
             </intent-filter>
         </receiver>
+
+        <!--
+            DebugBootstrapRehearsalReceiver — debug APK only.
+
+            Accepts an `am broadcast` from the journey-tester
+            onboarding-bootstrap non-destructive sub-recipe and re-runs the
+            production bootstrap pipeline against the listener's currently
+            active notifications without consulting the one-shot pending
+            flag. Lets the recipe verify the bootstrap path on every
+            rotation tick without `pm clear` (which would also wipe the
+            NotificationListener permission grant).
+
+            This receiver lives under `app/src/debug/`, so it is never
+            merged into release APKs. Plan:
+            `docs/plans/2026-04-27-onboarding-bootstrap-non-destructive-recipe.md`.
+        -->
+        <receiver
+            android:name=".debug.DebugBootstrapRehearsalReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.smartnoti.debug.REHEARSE_BOOTSTRAP" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
