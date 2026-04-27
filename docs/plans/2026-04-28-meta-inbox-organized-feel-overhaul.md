@@ -1,9 +1,11 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
 type: meta
 kind: meta-plan
 related-rule: ../../.claude/rules/ui-improvement.md
 related-journey: ../journeys/inbox-unified.md
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 # Meta — 정리함이 "정돈된 느낌" 으로 보이도록 inbox 통합 탭 시각 정합 overhaul
@@ -38,7 +40,7 @@ related-journey: ../journeys/inbox-unified.md
 
 Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-scroll.png`, `/tmp/ui-emu-archived.png`, `/tmp/ui-emu-processed.png`, `/tmp/ui-emu-digest-fresh.png`.
 
-### F1 — Digest sub-tab: cards inside cards (highest impact) [IN PROGRESS via PR #514]
+### F1 — Digest sub-tab: cards inside cards (highest impact) [SHIPPED via PR #514]
 
 **Evidence:** `/tmp/ui-emu-inbox-digest.png` middle section — the Shell group card (outer rounded border) contains 3 preview "cards" (`Shell / 광고 / 30%` each with its own outlined surface, chips, timestamp). Outer card + inner cards + chip row create three nested rectangle layers in 600px of vertical space.
 
@@ -48,7 +50,7 @@ Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-
 
 **Proposed fix (small):** Replace each preview row inside `DigestGroupCard` with a flat **divider-separated row** — no inner card surface, no inner padding box, just `Title / body (1 line) / metadata` in `title-medium / body-small / label-small` typography with a 1dp `outlineVariant` divider between rows. Outer card border and bulk actions stay. Reason chips on preview rows can be reduced to a single dominant tag (or hidden — they already appear on the Detail screen).
 
-### F2 — Header chrome eats 30% of first screen [IN PROGRESS via PR fix/issue-506-f2-inbox-header-chrome]
+### F2 — Header chrome eats 30% of first screen [SHIPPED via PR #508]
 
 **Evidence:** `/tmp/ui-emu-digest-fresh.png` top — `정리함` eyebrow (40dp tall row) → `알림 정리함` title (48dp) → `Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요.` subtitle (52dp wrapped to 2 lines) → padding → `정렬: 최신순 ▼` row (right-aligned, 48dp) → padding → `InboxTabRow` (88dp). Total header zone ≈ 600 / 2400 px = **25% of the screen**, before any content.
 
@@ -58,7 +60,7 @@ Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-
 
 **Proposed fix (smallest):** Drop the subtitle line on the Inbox screen specifically (keep eyebrow + title). Move `정렬: <mode>` dropdown into the same row as the title (right-aligned next to it) instead of its own row below. Estimated header height drops from ~600px to ~280px. The eyebrow + title alone already establishes context.
 
-### F3 — Tab segments and group header chips share the same orange accent [IN PROGRESS via PR pending — fix/issue-506-f3-inbox-orange-accent-restraint]
+### F3 — Tab segments and group header chips share the same orange accent [SHIPPED via PR #509]
 
 **Evidence:** `/tmp/ui-emu-inbox-digest.png` — selected `Digest · 4건` segment uses primary blue tint (correct). But each group card header shows a **bright orange `3건` badge** (e.g. Shell group), and each preview row also shows an **orange `Digest` status chip**. On a single screen with 2 group cards and 4 previews, orange appears 6 times. Per `.claude/rules/ui-improvement.md`: *"Use accent color sparingly for selection, status, and primary actions"*.
 
@@ -68,7 +70,7 @@ Captured screenshots: `/tmp/ui-emu-inbox-digest.png`, `/tmp/ui-emu-inbox-digest-
 
 **Proposed fix (small):** Remove the per-row orange `Digest` status chip when the row appears inside the Digest sub-tab — the parent context (sub-tab name, group card header) already declares status. Keep the per-group count badge (`3건`) but downgrade it from orange-filled to a neutral outlined chip (`outlineVariant` border, `onSurfaceVariant` text). Result: orange appears once on the screen — the selected sub-tab segment.
 
-### F4 — Three different card visual languages on one screen [IN PROGRESS via PR fix/issue-506-f4-inbox-unified-card-language]
+### F4 — Three different card visual languages on one screen [SHIPPED via PR #515]
 
 **Evidence:** Within `/tmp/ui-emu-archived.png` alone:
 1. **Summary card** (`1개 앱에서 11건을 보관 중이에요.` + helper text + outlined `전체 숨긴 알림 모두 지우기` button) — large, navy-tinted, ~280px tall.
@@ -87,7 +89,7 @@ In `/tmp/ui-emu-inbox-digest.png` add a 4th: **preview row card** (inside group 
 
 Promote both to `ui/components/inbox/` and replace ad-hoc `Card { ... }` calls. Same primitives reused on Hidden too.
 
-### F5 — Summary card on 보관 중 / 처리됨 says the same thing twice [IN PROGRESS via PR fix/issue-506-f5-inbox-summary-count-dedup]
+### F5 — Summary card on 보관 중 / 처리됨 says the same thing twice [SHIPPED via PR #516]
 
 **Evidence:** `/tmp/ui-emu-archived.png` — the tab segment already shows `보관 중 · 11건`. The summary card directly below repeats: `1개 앱에서 11건을 보관 중이에요.` Then the group card row below repeats: `Shell 숨긴 알림 11건` + `11건` chip. The number `11` appears **four times** in the top half of the screen.
 
@@ -155,3 +157,4 @@ Any fix the user does not pick gets logged in `inbox-unified.md` Known gaps with
 
 - 2026-04-28: Drafted by `ui-ux-inspector` after audit of emulator-5554 screenshots in response to user complaint "정리함이 정돈된 느낌이 전혀 없어". Five findings (F1–F5) sized for separate PRs. Awaiting user decision on cohort.
 - 2026-04-27: F5 IN PROGRESS via PR `fix/issue-506-f5-inbox-summary-count-dedup` — `HiddenNotificationsScreen` Embedded path drops the SmartSurfaceCard summary (count restatement + outlined clear-all) and renders a compact caption + clear-all TextButton instead. Standalone deep-link path keeps the full card. Pure helper `HiddenSummaryCardSpec` + 7-case contract test. Journey `inbox-unified.md` Code pointers / Tests / Known gaps / Change log updated.
+- 2026-04-27: shipped — All 5 F-findings (F1+F2+F3+F4+F5) cohort completed end-to-end. F2 PR #508, F3 PR #509, F1 PR #514, F4 PR #515 (squash dfe7ce8), F5 PR #516 (squash 055f91f). User feedback "정리함이 정돈된 느낌이 전혀 없어" addressed via 5 sequential UI restraint operations: header chrome collapse + orange accent restraint + cards-inside-cards de-nest + card language unification + count de-duplication. inbox-unified journey doc reflects the shipped end-state.
