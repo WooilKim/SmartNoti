@@ -421,3 +421,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T21:10:41Z | project-manager | #514 | F1 preview rows no outlined surface (issue #506) | https://github.com/WooilKim/SmartNoti/actions/runs/25019038351 |
 | 2026-04-27T21:26:44Z | project-manager | #515 | F4 inbox card language unification (meta-plan 2026-04-28 inbox overhaul) | https://github.com/WooilKim/SmartNoti/actions/runs/25020276667 |
 | 2026-04-27T21:48:02Z | project-manager | #516 | F5 collapse 3x count repetition on hidden tabs | https://github.com/WooilKim/SmartNoti/actions/runs/25020606969 |
+| 2026-04-27T21:48:19Z | project-manager | #517 | #511 Tasks 6-7 closure (ADB e2e + journey bumps + plan flip status:shipped) | https://github.com/WooilKim/SmartNoti/actions/runs/25021195948 |
