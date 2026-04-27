@@ -23,7 +23,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-26 |
-| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-26 |
+| [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-27 |
 | [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
 
 ### Source notification routing (시스템 tray 조작)
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — duplicate-suppression sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| duplicate-suppression | PASS | Posted 3 identical `cmd notification post -S bigtext -t "Shopping" "Repeat$i" "한정 특가"` via `com.android.shell` (1s spacing, distinct tags Repeat1/2/3 → distinct sourceEntryKey, same title+body → same `contentSignature`). Home pill 갱신: `Digest 3` + 인사이트 `반복 알림 · 1건`. 정리함 탭 → Shell 묶음 미리보기에 `Shopping / 한정 / Digest / 반복 알림` 라벨 — `LiveDuplicateCountTracker` distinct-key 증가 + `NotificationClassifier` `duplicateCountInWindow >= duplicateThreshold(3)` → DIGEST 경로 + [digest-suppression](digest-suppression.md) 묶음 합류 모두 관측. Observable steps 1–7 + Exit state 일치. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — home-uncategorized-prompt post-#430 APP-Rule wiring sweep, emulator-5554)
 
