@@ -24,7 +24,7 @@
 |---|---|---|---|
 | [notification-capture-classify](notification-capture-classify.md) | 알림 캡처 및 분류 | shipped | 2026-04-27 |
 | [duplicate-suppression](duplicate-suppression.md) | 중복 알림 감지 및 DIGEST 강등 | shipped | 2026-04-27 |
-| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-24 |
+| [quiet-hours](quiet-hours.md) | 조용한 시간 | shipped | 2026-04-27 |
 
 ### Source notification routing (시스템 tray 조작)
 | ID | Title | Status | Last verified |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — quiet-hours rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| quiet-hours | PASS | emulator-5554 KST 14:01 (default `[23,7)` 밖). Settings → 운영 상태 → Quiet Hours row 의 시작 picker dropdown 으로 23 → 14 변경 → 요약 즉시 `14:00 ~ 07:00` (overnight rendering) → 23 으로 복원. `quietHoursEnabled` ON, "조용한 시간 대상 앱" sub-row "2개" + 카피 일치. Live DB `SELECT ... WHERE reasonTags LIKE '%조용한 시간%'` → 최근 row `com.coupang.mobile\|SILENT\|2026-04-27 03:22:06\|발신자 있음\|조용한 시간\|쇼핑 앱` + 4건 `com.smartnoti.debug.tester\|SILENT\|2026-04-27 00:01:04\|발신자 있음\|조용한 시간` — `buildReasonTags` 가 `quietHours=true` 컨텍스트에서 tag 부착하는 경로 라이브 확인 (Observable steps 1-3). 본 세션 broadcast 는 emulator APK (lastUpdateTime 11:56) 가 PR #342 (cd9bd84) 머지 이전 빌드라 `--es package_name` extra 를 무시 → logcat `pkg=` (empty) + `packageName=com.smartnoti.debug.tester` 저장. 소스 (`DebugInjectNotificationReceiver.kt:102/147-148`) 는 doc Verification recipe section 4 와 일치하므로 doc DRIFT 아님 (env-only stale APK). Positive E2E (DIGEST + Detail explainer "지금이 조용한 시간(…)이라 자동으로 모아뒀어요.") 는 2026-04-26 fresh-APK sweep 에서 캡처됨 — 본 sweep 은 source-truth + live classifier evidence 로 동등 검증. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — persistent-notification-protection policy sweep, host JVM)
 
