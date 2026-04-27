@@ -6,6 +6,9 @@ import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Failing tests for plan
@@ -54,6 +57,8 @@ import org.junit.Test
  * production [android.content.pm.PackageManager]-backed adapter without
  * coupling test fakery to Android's abstract-class surface area.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class AppIconResolverTest {
 
     @Test
