@@ -87,7 +87,7 @@ In `/tmp/ui-emu-inbox-digest.png` add a 4th: **preview row card** (inside group 
 
 Promote both to `ui/components/inbox/` and replace ad-hoc `Card { ... }` calls. Same primitives reused on Hidden too.
 
-### F5 — Summary card on 보관 중 / 처리됨 says the same thing twice
+### F5 — Summary card on 보관 중 / 처리됨 says the same thing twice [IN PROGRESS via PR fix/issue-506-f5-inbox-summary-count-dedup]
 
 **Evidence:** `/tmp/ui-emu-archived.png` — the tab segment already shows `보관 중 · 11건`. The summary card directly below repeats: `1개 앱에서 11건을 보관 중이에요.` Then the group card row below repeats: `Shell 숨긴 알림 11건` + `11건` chip. The number `11` appears **four times** in the top half of the screen.
 
@@ -154,3 +154,4 @@ Any fix the user does not pick gets logged in `inbox-unified.md` Known gaps with
 ## Change log
 
 - 2026-04-28: Drafted by `ui-ux-inspector` after audit of emulator-5554 screenshots in response to user complaint "정리함이 정돈된 느낌이 전혀 없어". Five findings (F1–F5) sized for separate PRs. Awaiting user decision on cohort.
+- 2026-04-27: F5 IN PROGRESS via PR `fix/issue-506-f5-inbox-summary-count-dedup` — `HiddenNotificationsScreen` Embedded path drops the SmartSurfaceCard summary (count restatement + outlined clear-all) and renders a compact caption + clear-all TextButton instead. Standalone deep-link path keeps the full card. Pure helper `HiddenSummaryCardSpec` + 7-case contract test. Journey `inbox-unified.md` Code pointers / Tests / Known gaps / Change log updated.
