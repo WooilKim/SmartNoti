@@ -31,7 +31,7 @@
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-27 |
 | [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-27 |
-| [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
+| [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-27 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-27 |
 
 ### Inboxes & UI
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — protected-source-notifications rotation sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| protected-source-notifications | PASS | Recipe A: `cmd notification post -S media -t Player MediaTest` → `category=transport` 세팅 확인; 게시 2초 후 `dumpsys notification --noredact` 에 `MediaTest` row 여전히 존재 (key `0|com.android.shell|2020|MediaTest|2000`, `mSoundNotificationKey` 동일) — SmartNoti 리스너가 cancel 하지 않음, protected routing 적용 입증. Recipes B (YouTube Music) / C (FLAG_FOREGROUND_SERVICE injection) SKIP per recipe note (real-app / 미지원). DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — rules-management 4-path sweep, emulator-5554)
 
