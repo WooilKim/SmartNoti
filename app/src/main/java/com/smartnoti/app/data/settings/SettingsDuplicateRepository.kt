@@ -2,6 +2,7 @@ package com.smartnoti.app.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 
@@ -42,8 +43,25 @@ internal class SettingsDuplicateRepository(
         }
     }
 
+    /**
+     * Plan `2026-04-27-fix-issue-488-signature-normalize-numbers-time.md`
+     * Task 4. Persists the opt-in normalizer toggle. Default OFF semantics
+     * are achieved by the absence of the key in DataStore (the
+     * `SettingsRepository.observeSettings` mapper falls back to the
+     * `SmartNotiSettings.normalizeNumericTokensInSignature = false` data-class
+     * default), so no migration is required.
+     */
+    suspend fun setNormalizeNumericTokens(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.NORMALIZE_NUMERIC_TOKENS] = enabled
+        }
+    }
+
     internal object Keys {
         val DIGEST_THRESHOLD = intPreferencesKey("duplicate_digest_threshold")
         val WINDOW_MINUTES = intPreferencesKey("duplicate_window_minutes")
+        // Plan `2026-04-27-fix-issue-488-signature-normalize-numbers-time.md`
+        // Task 4. Boolean DataStore key — default OFF lives in the data class.
+        val NORMALIZE_NUMERIC_TOKENS = booleanPreferencesKey("duplicate_normalize_numeric_tokens")
     }
 }

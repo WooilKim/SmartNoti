@@ -55,10 +55,24 @@ internal class NotificationDuplicateContextBuilder(
         val policy = DuplicateNotificationPolicy(
             windowMillis = settings.duplicateWindowMinutes * 60_000L,
         )
-        val contentSignature = policy.contentSignature(
-            title = title,
-            body = body,
-        ) + if (isPersistent) "|persistent:$packageName:$notificationId" else ""
+        // Plan `2026-04-27-fix-issue-488-signature-normalize-numbers-time.md`
+        // Task 3. The normalizer runs AFTER `policy.contentSignature` (which
+        // lower-cases + collapses whitespace) and BEFORE the persistent suffix
+        // concat — the suffix already encodes per-notification identity, so we
+        // must not collapse digit/time tokens inside it. Toggle is per-call
+        // because `settings` flows in fresh on each `build` invocation, so a
+        // Settings-screen flip reaches the next notification immediately.
+        val normalizer = ContentSignatureNormalizer(
+            enabled = settings.normalizeNumericTokensInSignature,
+        )
+        val baseSignature = normalizer.normalize(
+            policy.contentSignature(
+                title = title,
+                body = body,
+            )
+        )
+        val contentSignature = baseSignature +
+            if (isPersistent) "|persistent:$packageName:$notificationId" else ""
         val duplicateWindowStart = policy.windowStart(postTimeMillis)
         val duplicateCount = tracker.recordAndCount(
             packageName = packageName,
