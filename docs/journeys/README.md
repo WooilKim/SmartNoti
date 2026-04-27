@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-27 (journey-tester — inbox-unified post-#418 InboxSortDropdown wiring sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | PASS | PR #418 (Tasks 3-5) merged 00:15 UTC; installed APK (09:05 KST build) was stale, re-ran `:app:assembleDebug --rerun-tasks` + `adb install -r` 후 verify. Recipe seed (Coupang 4 + Promo 2) → `정리함` 진입 시 헤더 직하 신규 row `정렬: 최신순` + chevron (content-desc `정렬 모드 선택`) 노출 (Observable step 3 신규 계약). Dropdown tap → `최신순 / 중요도순 / 앱별 묶기` 3 옵션 — `앱별 묶기` 선택 시 라벨 즉시 갱신 + Digest 그룹이 `Coupang → 일반 → Shell` 알파벳 asc 로 재정렬, `보관 중` (Shell 17건 / Notifier 1건) 과 `처리됨` (Coupang 6건 우선) 도 동일 sort 적용 — Embedded Hidden 측 `sortMode` prop 전파 확인 (Observable steps 4–5). Detail 진입 → `KEYCODE_BACK` → Digest 탭 + `정렬: 앱별 묶기` 영속 (Settings round-trip OK, Observable step 9). DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
+
 ### 2026-04-26 (plan-implementer — `quiet-hours-shopping-packages-user-extensible` Tasks 1-9 ship + E2E ADB sweep, emulator-5554)
 
 | Journey | Result | Notes |
