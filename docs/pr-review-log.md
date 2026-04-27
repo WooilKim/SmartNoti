@@ -487,3 +487,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T20:22:05Z | #513 | plan-implementer | DEFER | Task 1 of #511 plan; CI red by-design (failing tests + compile-RED stubs); awaiting human disposition on tests-first staging |
 | 2026-04-27T20:40:46Z | #513 | plan-implementer | APPROVE+merged | Tasks 1-5 of #511 P0 cancel-source-on-replacement Option C; CI green; tests-first; Tasks 6-7 deferred to follow-up |
 | 2026-04-27T20:57:47Z | #514 | plan-implementer | DEFER | CI pending (Unit tests + debug APK in_progress); F1 inbox cards-inside-cards |
+| 2026-04-27T21:11:17Z | #514 | plan-implementer | APPROVE+merged | F1 preview rows no outlined surface (#506); CI green |
