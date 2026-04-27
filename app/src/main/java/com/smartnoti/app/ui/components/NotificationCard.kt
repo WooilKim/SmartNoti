@@ -53,6 +53,16 @@ fun NotificationCard(
     onClick: (String) -> Unit,
     onLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
+    /**
+     * Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+     * finding F3 (orange accent restraint): when this card is rendered inside
+     * a [DigestGroupCard] preview row, the per-row [StatusBadge] is
+     * suppressed because the parent context (sub-tab + group header) already
+     * declares status. Default `true` keeps the chip on for every standalone
+     * call site (Home recent feed, IgnoredArchive, Detail-related list,
+     * PriorityScreen) so cross-status feeds stay scannable.
+     */
+    showStatusBadge: Boolean = true,
 ) {
     val (containerColor, baseBorderColor) = when (model.status) {
         NotificationStatusUi.PRIORITY -> PriorityContainer.copy(alpha = 0.42f) to PriorityOnContainer.copy(alpha = 0.35f)
@@ -123,8 +133,39 @@ fun NotificationCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            StatusBadge(model.status)
+            if (notificationCardStatusBadgeVisible(
+                    status = model.status,
+                    showStatusBadge = showStatusBadge,
+                )
+            ) {
+                StatusBadge(model.status)
+            }
             ReasonChipRow(model.reasonTags)
         }
     }
+}
+
+/**
+ * Pure visibility decision for the per-row [StatusBadge] inside
+ * [NotificationCard].
+ *
+ * Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md` finding
+ * **F3** (orange accent restraint on inbox-unified). Extracted so the contract
+ * "default on, callers opt out for nested-context rows" is unit-pinned by
+ * [NotificationCardStatusBadgeVisibilityTest] without spinning up a Compose
+ * runtime — mirrors the codebase pattern used by [digestGroupCardPreviewState].
+ *
+ * Today the only opt-out call site is [DigestGroupCard]'s preview rows, but
+ * the helper is `status`-aware so a future caller (e.g. a hidden-group inline
+ * preview) can extend the rule status-by-status without breaking the
+ * standalone defaults.
+ */
+internal fun notificationCardStatusBadgeVisible(
+    @Suppress("UNUSED_PARAMETER") status: NotificationStatusUi,
+    showStatusBadge: Boolean,
+): Boolean {
+    // `status` is intentionally part of the signature so a future per-status
+    // carve-out (e.g. always show PRIORITY chip even when caller opts out) is
+    // a one-line change without a call-site refactor.
+    return showStatusBadge
 }
