@@ -39,7 +39,7 @@
 |---|---|---|---|
 | [home-overview](home-overview.md) | 홈 개요 (요약 + 인사이트) | shipped | 2026-04-27 |
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-26 |
-| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-24 |
+| [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-27 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-21 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — priority-inbox debug-inject sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| priority-inbox | PASS | `am broadcast -n com.smartnoti.app/.debug.DebugInjectNotificationReceiver --es title PriDbg88000 --es body PriorityDebugSeed --es force_status PRIORITY` → DB `PriDbg88000\|PRIORITY\|디버그 주입`. Home → passthrough card "검토 대기 22 / SmartNoti 가 건드리지 않은 알림 22건 / 검토하기". `검토하기` tap → PriorityScreen eyebrow "검토" + title "SmartNoti 가 건드리지 않은 알림" + subtitle + SmartSurfaceCard "검토 대기 22건" + 카드별 "이 판단을 바꿀까요?" + `→ Digest / → 조용히 / → 규칙 만들기` + reasonTags `디버그 주입`. BottomNav 4탭 (홈/정리함/분류/설정), Priority 탭 부재. Observable steps 1–5 + 7 + Exit state 일치, DRIFT 없음. Step 6/6a actuation 은 long-press 한계로 visual-mount 검증만 (Known gap 유지). `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-27 (journey-tester — notification-detail post-#377/#378/#379 inline-CTA sweep, emulator-5554)
 
