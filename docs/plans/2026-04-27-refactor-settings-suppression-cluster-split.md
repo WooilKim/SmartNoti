@@ -1,8 +1,25 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
 ---
 
 # Settings 화면의 suppression 클러스터 sub-section split Plan
+
+## Change log
+
+- 2026-04-27 — Task 1 (28 characterization tests) shipped via PR #471.
+  Tasks 2-4 shipped: extracted `SettingsSuppressionInsightSection.kt`,
+  `SettingsSuppressionManagementSection.kt`,
+  `SettingsAppSelectionSection.kt`,
+  `SettingsNotificationAccessSection.kt`, plus
+  `SettingsSectionScaffold.kt` for the three reusable scaffold
+  composables (Task 3 fallback to clear the ≤ 400 line root target).
+  Root `SettingsScreen.kt` 1118 → 307 lines. Behavior unchanged —
+  `SettingsScreenCharacterizationTest` GREEN (28 tests) before/after
+  every extraction; full `:app:testDebugUnitTest` and
+  `:app:assembleDebug` GREEN at completion. Journey `quiet-hours.md`
+  Known-gap bullet flipped from "(partially resolved)" to
+  "(resolved)" with both plan links.
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. Pure refactor — behavior must not change. Pin with characterization tests before moving any composable.
 
