@@ -37,7 +37,7 @@ status: planned
 
 ---
 
-## Task 1: Pin behavior with characterization tests
+## Task 1: Pin behavior with characterization tests [IN PROGRESS via PR #471]
 
 **Objective:** Refactor 전에 잔여 suppression 클러스터의 가시 contract 를 테스트로 고정. 직전 plan 의 `SettingsScreenCharacterizationTest` 가 quiet hours / duplicate / delivery / operational entry 만 cover — suppression insight / management / app picker / notification access 카드는 미커버. 테스트 없이 750-line 영역을 조각내면 회귀를 잡을 방법이 없다.
 
