@@ -381,3 +381,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T01:18:27Z | #424 | gap-planner | DEFER | CI pending (unit tests + debug APK); docs-only scope OK, will re-check next sweep |
 | 2026-04-27T01:22:33Z | #424 | gap-planner | APPROVE | docs-only plan + journey gap link; CI green; merged 3eabc31 |
 | 2026-04-27T01:33:36Z | #425 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) — re-evaluate next sweep |
+| 2026-04-27T01:38:18Z | #425 | plan-implementer | APPROVE+MERGE | digest empty-state suppress opt-in CTA; CI green; CLEAN+MERGEABLE |
