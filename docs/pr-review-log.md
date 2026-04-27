@@ -464,3 +464,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-27T15:07:15Z | #489 | plan-implementer | APPROVE | Bug A (KCC (광고) prefix precedence) Task 1+2 of issue #478 plan; tests-first 3/3 fixtures RED→GREEN; CI green; body edit Closes→Refs to keep #478 open for Bug B2 follow-up |
 | 2026-04-27T15:15:41Z | #490 | gap-planner | APPROVE+merge | docs-only plan for #488 Bug 2 signature normalize; CI green; Bug 1 split flagged as Open Question |
 | 2026-04-27T15:31:51Z | #491 | plan-implementer | APPROVE+merged | Task 3 of #478 — Bug B2 PROMO default DIGEST + DataStore codec column-add migration; tests-first; CI green; no risk-signal carve-out triggered |
+| 2026-04-27T15:58:43Z | #492 | plan-implementer | APPROVE | Tasks 1-4 of issue #488 plan; CI green; tests-first honored (22 cases / 5 classes); Tasks 5-6 deferred per plan |
