@@ -1,6 +1,7 @@
 package com.smartnoti.app.data.settings
 
 import com.smartnoti.app.domain.model.AlertLevel
+import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.LockScreenVisibilityMode
 import com.smartnoti.app.domain.model.VibrationMode
 
@@ -85,6 +86,13 @@ data class SmartNotiSettings(
     // `ReplacementNotificationTimeoutPolicy` guards against `<= 0`
     // defensively even though the picker never offers it.
     val replacementAutoDismissMinutes: Int = 30,
+    // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
+    // User-selected sort mode for the unified inbox sub-tabs (Digest /
+    // 보관 중 / 처리됨). Stored as `InboxSortMode.name` so adding modes is a
+    // backward-compatible append. Default is `RECENT.name` which mirrors the
+    // pre-existing behavior; existing installs see no change until the user
+    // picks a different mode via the InboxSortDropdown.
+    val inboxSortMode: String = InboxSortMode.RECENT.name,
 ) {
     companion object {
         // Single source of truth for the quiet-hours-eligible default set.

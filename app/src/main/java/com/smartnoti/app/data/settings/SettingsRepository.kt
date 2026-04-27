@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.NotificationContext
 import com.smartnoti.app.domain.usecase.QuietHoursPolicy
 import kotlinx.coroutines.flow.Flow
@@ -54,6 +55,7 @@ class SettingsRepository private constructor(
                     ?: defaults.replacementAutoDismissEnabled,
                 replacementAutoDismissMinutes = prefs[REPLACEMENT_AUTO_DISMISS_MINUTES]
                     ?: defaults.replacementAutoDismissMinutes,
+                inboxSortMode = prefs[INBOX_SORT_MODE] ?: defaults.inboxSortMode,
             )
         }
     }
@@ -186,6 +188,19 @@ class SettingsRepository private constructor(
         }
     }
 
+    /**
+     * Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
+     *
+     * Persists the user-selected inbox sort mode. Stored as the enum's `name`
+     * so adding new modes is a backward-compatible append (existing stored
+     * values still round-trip via [InboxSortMode.valueOf]).
+     */
+    suspend fun setInboxSortMode(mode: InboxSortMode) {
+        context.dataStore.edit { prefs ->
+            prefs[INBOX_SORT_MODE] = mode.name
+        }
+    }
+
     suspend fun setSuppressSourceForDigestAndSilent(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT] = enabled
@@ -231,6 +246,13 @@ class SettingsRepository private constructor(
                 prefs[REPLACEMENT_AUTO_DISMISS_ENABLED] = defaults.replacementAutoDismissEnabled
                 prefs[REPLACEMENT_AUTO_DISMISS_MINUTES] = defaults.replacementAutoDismissMinutes
                 prefs[REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED] = true
+            }
+            // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
+            // Materialize the inbox sort mode default so on-disk state matches
+            // what `observeSettings()` reports on the first read. Skipped if
+            // the user has already chosen a mode (key already present).
+            if (prefs[INBOX_SORT_MODE] == null) {
+                prefs[INBOX_SORT_MODE] = InboxSortMode.RECENT.name
             }
         }
     }
@@ -661,6 +683,12 @@ class SettingsRepository private constructor(
         // user-driven changes.
         private val REPLACEMENT_AUTO_DISMISS_MIGRATION_V2_APPLIED =
             booleanPreferencesKey("replacement_auto_dismiss_migration_v2_applied")
+        // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 2.
+        // User-selected inbox sort mode. Stored as `InboxSortMode.name`.
+        // Default is materialized on first `applyPendingMigrations()` so the
+        // on-disk state is stable for downstream observers.
+        private val INBOX_SORT_MODE =
+            stringPreferencesKey("inbox_sort_mode")
 
         @Volatile private var instance: SettingsRepository? = null
 

@@ -38,7 +38,7 @@ status: planned
 
 ---
 
-## Task 1: Add `InboxSortMode` enum + `InboxSortPlanner` + failing tests
+## Task 1: Add `InboxSortMode` enum + `InboxSortPlanner` + failing tests [IN PROGRESS via PR #416]
 
 **Objective:** 두 정렬 메서드의 계약을 JUnit 으로 고정.
 
@@ -70,7 +70,7 @@ status: planned
    - `IMPORTANCE` 단일 status: 모든 그룹 DIGEST → RECENT 와 동일 결과
 5. `./gradlew :app:testDebugUnitTest --tests "*.InboxSortPlannerTest"` → GREEN.
 
-## Task 2: Add `inboxSortMode` to settings model + DataStore migration
+## Task 2: Add `inboxSortMode` to settings model + DataStore migration [IN PROGRESS via PR #416]
 
 **Objective:** 사용자 선택을 영속화.
 
