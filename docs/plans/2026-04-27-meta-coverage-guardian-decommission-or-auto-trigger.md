@@ -115,7 +115,7 @@ superseded-by: ../../.claude/rules/agent-loop.md
 
 ---
 
-## Task 5: If B chosen — implementation PR (separate, not this PR) [SHIPPED-AS-NOOP via PR #PLACEHOLDER — Option A was chosen, Option B implementation never happened; this task is closed by the finalization PR that flips the plan to status:shipped]
+## Task 5: If B chosen — implementation PR (separate, not this PR) [SHIPPED-AS-NOOP via PR #502 — Option A was chosen, Option B implementation never happened; this task is closed by the finalization PR that flips the plan to status:shipped]
 
 **Objective:** Auto-trigger coverage-guardian whenever an implementer-origin PR with prod-code changes is in the open queue.
 
@@ -132,7 +132,7 @@ superseded-by: ../../.claude/rules/agent-loop.md
 
 ---
 
-## Task 6: If C chosen — implementation PR (separate, scope follows user's wording) [SHIPPED-AS-NOOP via PR #PLACEHOLDER — Option A was chosen, Option C path never executed; this task is closed by the finalization PR that flips the plan to status:shipped]
+## Task 6: If C chosen — implementation PR (separate, scope follows user's wording) [SHIPPED-AS-NOOP via PR #502 — Option A was chosen, Option C path never executed; this task is closed by the finalization PR that flips the plan to status:shipped]
 
 **Objective:** Implement the user's third path. The implementer plan-implementer agent receives the user's one-line wording from Task 3 as the scope and produces a follow-up plan accordingly.
 
@@ -212,4 +212,4 @@ The user retains the call. This recommendation is non-binding and the implemente
 - **2026-04-27** — Plan opened (PR #499) with Option A/B/C decision-first framing and Tasks 1+2 audit findings.
 - **2026-04-27** — Tasks 1+2 audit landed inline (PR #500 added the "Audit findings" section).
 - **2026-04-27T18:33:29Z** — Option A chosen by user ("A로 가자"); implementation landed via PR #501 (squash-merged as `1c4b7ef` per user instruction "#501 머지해줘"). Files moved/edited under PR #501: `git mv .claude/agents/coverage-guardian.md .claude/agents-archive/coverage-guardian.md`, `.claude/rules/agent-loop.md` (eleven-agent table → ten-agent table; coverage-guardian row replaced with archive note), `.claude/commands/coverage-check.md` (deprecated banner), `docs/coverage-log.md` (archived header). Audit chain: plan #499 → audit #500 → implementation #501.
-- **2026-04-27** — Plan flipped to `status: shipped` + `superseded-by: .claude/rules/agent-loop.md` via PR #PLACEHOLDER (this finalization PR). Task 5 (Option B) and Task 6 (Option C) marked SHIPPED-AS-NOOP since Option A was the chosen path. `.claude/agents/loop-retrospective.md` updated to annotate that coverage-guardian is excluded from per-agent dead-air tracking (archived agent → "no activity" signal is meaningless). User explicitly authorized this finalization PR. PM review will ESCALATE per `kind: meta-plan` carve-out + SELF_MOD edit on `loop-retrospective.md`; user must merge.
+- **2026-04-27** — Plan flipped to `status: shipped` + `superseded-by: .claude/rules/agent-loop.md` via PR #502 (this finalization PR). Task 5 (Option B) and Task 6 (Option C) marked SHIPPED-AS-NOOP since Option A was the chosen path. `.claude/agents/loop-retrospective.md` updated to annotate that coverage-guardian is excluded from per-agent dead-air tracking (archived agent → "no activity" signal is meaningless). User explicitly authorized this finalization PR. PM review will ESCALATE per `kind: meta-plan` carve-out + SELF_MOD edit on `loop-retrospective.md`; user must merge.
