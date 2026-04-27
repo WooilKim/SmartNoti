@@ -41,7 +41,7 @@
 | [home-uncategorized-prompt](home-uncategorized-prompt.md) | 새 앱 분류 유도 카드 | shipped | 2026-04-27 |
 | [priority-inbox](priority-inbox.md) | 중요 알림 인박스 (검토 대기) | shipped | 2026-04-27 |
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
-| [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-26 |
+| [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-27 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-27 |
 | [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-27 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-27 |
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — digest-inbox rotation sweep post-#491 PROMO→DIGEST, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-inbox | PASS | UTC 16:43Z. Deprecated journey, oldest by `last-verified` (2026-04-26). emulator-5554 APK `lastUpdateTime=2026-04-27 15:32:46` (post-#491 merge 15:31:43Z; #492 + #485 both default-OFF). Cold-start `am force-stop` → BottomNav `정리함` (407,2274). All Observable steps 1–5 + Exit state pass: `DigestScreen` (Embedded mode) renders `Shell · 3건` + `SmartNoti Test Notifier · 1건` DIGEST groups via `observeDigestGroupsFiltered` + `toDigestGroups` packageName grouping; `DigestGroupCard` shows appName + `3건` count badge + `Shell 관련 알림 3건` summary + `최근 묶음 미리보기` + 3× NotificationCard preview; preview row tap → `알림 상세` + `왜 이렇게 처리됐나요?` + `전달 모드 · Digest 묶음 전달` (Routes.Detail.create). **Bulk actions無회귀**: `모두 중요로 변경` + `모두 지우기` 두 OutlinedButton 행 노출 (2026-04-26 ship 그대로). **Sort dropdown無회귀**: `정렬: 최신순` chevron tap → `최신순` / `중요도순` / `앱별 묶기` 3옵션. **PR #491 PROMO 회귀 없음**: PROMO-tagged DB rows (`광고|30%`, `오늘만 특가 안내`) `status=DIGEST` 로 저장되어 DIGEST 그룹에 정상 흡수, `Digest` chip + `프로모션 알림` reason chip 표시. DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27. |
 
 ### 2026-04-28 (journey-tester — notification-capture-classify post-#485/#489/#491/#492 sweep, R3CY2058DLJ)
 
