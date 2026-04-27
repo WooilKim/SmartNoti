@@ -30,7 +30,7 @@
 | ID | Title | Status | Last verified |
 |---|---|---|---|
 | [silent-auto-hide](silent-auto-hide.md) | 조용히 분류된 알림 자동 숨김 | shipped | 2026-04-24 |
-| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-26 |
+| [digest-suppression](digest-suppression.md) | 디제스트 자동 묶음 및 원본 교체 | shipped | 2026-04-27 |
 | [protected-source-notifications](protected-source-notifications.md) | 미디어/통화/포그라운드 서비스 보호 | shipped | 2026-04-24 |
 | [persistent-notification-protection](persistent-notification-protection.md) | 지속 알림 키워드 기반 보호 | shipped | 2026-04-26 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-27 (journey-tester — digest-suppression post-#417 timeout sweep, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| digest-suppression | PASS | testnotifier `PROMO_DIGEST` 카드 tap (301,1062) → `dumpsys notification --noredact` 에서 `com.smartnoti.testnotifier` 의 "오늘만 특가 안내" payload 가 active list 에서 사라지고 동일 title 이 `com.smartnoti.app` 의 `smartnoti_replacement_digest_default_light_private_noheadsup` 채널에 새 entry (importance=3, flags=0x18 AutoCancel + ONLY_ALERT_ONCE) 로 게시됨. dumpsys 의 `timeout=1970-01-01 00:30:00` epoch-relative 표기로 PR #417 의 신규 30분 auto-dismiss (`setTimeoutAfter`, default ON) 가 트레이 entry 에 실제 부착된 상태 확인 — Observable step 5 의 `ReplacementNotificationTimeoutPolicy.timeoutMillisFor(settings, DIGEST)` 분기와 일치. subText `SmartNoti Test Notifier • Digest`, BigTextStyle body, contentIntent → `MainActivity` 모두 일치. Observable steps 1–5 + Exit state 일치, DRIFT 없음. `last-verified` 2026-04-26 → 2026-04-27 (frontmatter + index 동시 갱신). |
 
 ### 2026-04-27 (journey-tester — categories-management rotation sweep, emulator-5554)
 
