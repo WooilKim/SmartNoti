@@ -3,7 +3,7 @@ package com.smartnoti.app.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,8 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.smartnoti.app.domain.model.DigestGroupUiModel
 import com.smartnoti.app.ui.theme.BorderSubtle
-import com.smartnoti.app.ui.theme.DigestContainer
-import com.smartnoti.app.ui.theme.DigestOnContainer
 
 /**
  * Maximum number of preview rows rendered inside a Digest group card before
@@ -99,18 +97,29 @@ fun DigestGroupCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // Plan
+                    // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+                    // finding F3: demote the count badge from a filled orange
+                    // pill to a neutral outlined chip so the orange accent is
+                    // reserved for selection / status signals (selected sub-tab
+                    // indicator + the per-row [StatusBadge] on screens that
+                    // actually need it). Style decisions live in the pure
+                    // helper [digestGroupHeaderBadgeStyle] so a unit test can
+                    // pin the contract without a Compose runtime.
+                    val badgeStyle = digestGroupHeaderBadgeStyle()
                     Box(
                         modifier = Modifier
-                            .background(
-                                DigestContainer,
-                                RoundedCornerShape(999.dp),
+                            .border(
+                                width = 1.dp,
+                                color = BorderSubtle,
+                                shape = RoundedCornerShape(999.dp),
                             )
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            "${model.count}건",
+                            badgeStyle.formatCountLabel(model.count),
                             style = MaterialTheme.typography.labelMedium,
-                            color = DigestOnContainer,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (collapsible) {
@@ -137,7 +146,21 @@ fun DigestGroupCard(
                         subtitle = "탭하면 원본 알림 상세를 확인할 수 있어요",
                     )
                     model.items.take(previewState.visibleCount).forEach { item ->
-                        NotificationCard(model = item, onClick = onNotificationClick)
+                        // Plan
+                        // `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md`
+                        // finding F3: hide the per-row orange `Digest` /
+                        // `조용히 정리` StatusBadge inside group preview rows.
+                        // The parent context (sub-tab + group card header)
+                        // already declares status — repeating it on every
+                        // preview row creates accent noise that competes with
+                        // the actual content. Standalone NotificationCard
+                        // call sites (Home, IgnoredArchive, Detail, Priority)
+                        // keep the badge on by default.
+                        NotificationCard(
+                            model = item,
+                            onClick = onNotificationClick,
+                            showStatusBadge = false,
+                        )
                     }
                     previewState.ctaCopy?.let { copy ->
                         TextButton(onClick = { showAll = !showAll }) {
@@ -190,3 +213,31 @@ internal fun digestGroupCardPreviewState(
         )
     }
 }
+
+/**
+ * Pure-style descriptor for the [DigestGroupCard] header `${count}건` badge.
+ *
+ * Plan `docs/plans/2026-04-28-meta-inbox-organized-feel-overhaul.md` finding
+ * **F3** (orange accent restraint on inbox-unified): the count badge moved
+ * from a filled orange pill (`DigestContainer` / `DigestOnContainer`) to a
+ * neutral outlined chip so the orange accent is reserved for selection /
+ * status signals only — per `.claude/rules/ui-improvement.md` *"Use accent
+ * color sparingly for selection, status, and primary actions"*.
+ *
+ * Extracted as a pure helper so the visual demotion contract is unit-pinned —
+ * any future PR that re-introduces a filled-accent treatment trips
+ * [DigestGroupHeaderBadgeStyleTest]. Mirrors the codebase pattern used by
+ * [digestGroupCardPreviewState] and `RuleRowDescriptionBuilder`.
+ */
+internal data class DigestGroupHeaderBadgeStyle(
+    val isFilledAccent: Boolean,
+    val useOutlineBorder: Boolean,
+) {
+    fun formatCountLabel(count: Int): String = "${count}건"
+}
+
+internal fun digestGroupHeaderBadgeStyle(): DigestGroupHeaderBadgeStyle =
+    DigestGroupHeaderBadgeStyle(
+        isFilledAccent = false,
+        useOutlineBorder = true,
+    )
