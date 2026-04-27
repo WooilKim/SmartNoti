@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -31,12 +33,14 @@ import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.data.local.toHiddenGroups
+import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.SilentMode
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenScreenMode
 import com.smartnoti.app.ui.theme.BorderSubtle
+import kotlinx.coroutines.launch
 
 /**
  * 정리함 (Inbox) screen — plan
@@ -63,10 +67,21 @@ fun InboxScreen(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val repository = remember(context) { NotificationRepository.getInstance(context) }
     val settingsRepository = remember(context) { SettingsRepository.getInstance(context) }
     val settings by settingsRepository.observeSettings()
         .collectAsStateWithLifecycle(initialValue = SmartNotiSettings())
+    // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3.
+    // Resolve the persisted sort mode once per recomposition. Falls back to
+    // RECENT if the on-disk value drifts to an unknown enum name (defense
+    // against a future enum rename — the migration in `applyPendingMigrations`
+    // and the `setInboxSortMode` setter both write valid `name` only, so this
+    // branch is unreachable today).
+    val sortMode = remember(settings.inboxSortMode) {
+        runCatching { InboxSortMode.valueOf(settings.inboxSortMode) }
+            .getOrDefault(InboxSortMode.RECENT)
+    }
     val filteredFlow = remember(repository, settings.hidePersistentNotifications) {
         repository.observeAllFiltered(settings.hidePersistentNotifications)
     }
@@ -111,6 +126,24 @@ fun InboxScreen(
                 title = "알림 정리함",
                 subtitle = "Digest 묶음과 숨긴 알림을 한 화면에서 훑어볼 수 있어요.",
             )
+            // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3.
+            // Sort mode dropdown sits between the header and the sub-tab row
+            // so a single selection applies across all three sub-tabs. The
+            // setter is fire-and-forget on the `rememberCoroutineScope`; the
+            // observed `settings` flow re-emits with the new value and the
+            // resolved `sortMode` recomposes downstream consumers.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+            ) {
+                InboxSortDropdown(
+                    currentMode = sortMode,
+                    onSelect = { mode ->
+                        scope.launch { settingsRepository.setInboxSortMode(mode) }
+                    },
+                )
+            }
             InboxTabRow(
                 selected = selectedTab,
                 digestCount = digestCount,
@@ -129,12 +162,17 @@ fun InboxScreen(
             // outer Inbox tab is the single source of truth. Embed the Hidden
             // screen so it skips its own ScreenHeader + ARCHIVED/PROCESSED
             // segment row and renders only the body matching the outer pick.
+            //
+            // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3:
+            // forward the resolved [sortMode] into the embed so the inner
+            // group-list helper applies the same mode for the user.
             InboxTab.Archived,
             InboxTab.Processed -> HiddenNotificationsScreen(
                 contentPadding = innerPadding,
                 onNotificationClick = onNotificationClick,
                 onBack = onBack,
                 mode = InboxToHiddenScreenModeMapper.mapToMode(selectedTab),
+                sortMode = sortMode,
             )
         }
     }

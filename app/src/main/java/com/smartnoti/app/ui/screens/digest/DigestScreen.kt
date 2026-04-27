@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.domain.model.DigestGroupUiModel
+import com.smartnoti.app.domain.model.InboxSortMode
+import com.smartnoti.app.domain.usecase.InboxSortPlanner
 import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.ScreenHeader
@@ -41,7 +43,22 @@ fun DigestScreen(
     val groupsFlow = remember(repository, settings.hidePersistentNotifications) {
         repository.observeDigestGroupsFiltered(settings.hidePersistentNotifications)
     }
-    val groups by groupsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val rawGroups by groupsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3.
+    // DigestScreen is reused both as the InboxScreen "Digest" sub-tab body and
+    // as the legacy `Routes.Digest` deep-link target (replacement notification
+    // contentIntent). In both cases the persisted `inboxSortMode` should
+    // determine group ordering — the planner is a pure helper so this is
+    // cheap. Failing the enum lookup falls back to RECENT (mirrors
+    // `InboxScreen` resolution).
+    val sortMode = remember(settings.inboxSortMode) {
+        runCatching { InboxSortMode.valueOf(settings.inboxSortMode) }
+            .getOrDefault(InboxSortMode.RECENT)
+    }
+    val sortPlanner = remember { InboxSortPlanner() }
+    val groups = remember(rawGroups, sortMode) {
+        sortPlanner.sortGroups(rawGroups, sortMode)
+    }
 
     if (groups.isEmpty()) {
         LazyColumn(

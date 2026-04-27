@@ -45,7 +45,9 @@ import com.smartnoti.app.data.local.toHiddenGroups
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.DigestGroupUiModel
+import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.SilentMode
+import com.smartnoti.app.domain.usecase.InboxSortPlanner
 import com.smartnoti.app.domain.usecase.SilentGroupKey
 import com.smartnoti.app.ui.components.DigestGroupCard
 import com.smartnoti.app.ui.components.EmptyState
@@ -85,6 +87,12 @@ fun HiddenNotificationsScreen(
     onNotificationClick: (String) -> Unit,
     onBack: () -> Unit,
     mode: HiddenScreenMode = HiddenScreenMode.Standalone(),
+    // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3:
+    // Forwarded by `InboxScreen` (Embedded host) so the unified inbox sort mode
+    // applies to ARCHIVED / PROCESSED group ordering. Standalone deep-link
+    // entries (`Routes.Hidden`) keep the historical RECENT default; routing
+    // them through the same settings flow is a follow-up plan.
+    sortMode: InboxSortMode = InboxSortMode.RECENT,
 ) {
     val initialFilter = (mode as? HiddenScreenMode.Standalone)?.initialFilter
     val context = LocalContext.current
@@ -98,16 +106,25 @@ fun HiddenNotificationsScreen(
     }
     val filteredNotifications by filteredFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val archivedGroups = remember(filteredNotifications) {
-        filteredNotifications.toHiddenGroups(
-            hidePersistentNotifications = false,
-            silentModeFilter = SilentMode.ARCHIVED,
+    // Plan `2026-04-27-inbox-sort-by-priority-or-app.md` Task 3.
+    // Single planner instance per recomposition — pure helper, no state.
+    val sortPlanner = remember { InboxSortPlanner() }
+    val archivedGroups = remember(filteredNotifications, sortMode) {
+        sortPlanner.sortGroups(
+            filteredNotifications.toHiddenGroups(
+                hidePersistentNotifications = false,
+                silentModeFilter = SilentMode.ARCHIVED,
+            ),
+            sortMode,
         )
     }
-    val processedGroups = remember(filteredNotifications) {
-        filteredNotifications.toHiddenGroups(
-            hidePersistentNotifications = false,
-            silentModeFilter = SilentMode.PROCESSED,
+    val processedGroups = remember(filteredNotifications, sortMode) {
+        sortPlanner.sortGroups(
+            filteredNotifications.toHiddenGroups(
+                hidePersistentNotifications = false,
+                silentModeFilter = SilentMode.PROCESSED,
+            ),
+            sortMode,
         )
     }
     val archivedCount = remember(archivedGroups) { archivedGroups.sumOf { it.count } }
