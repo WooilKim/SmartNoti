@@ -216,8 +216,21 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
         val extras = sbn.notification.extras
         val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString().orEmpty()
         val body = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
-        val sender = extras.getCharSequence(android.app.Notification.EXTRA_CONVERSATION_TITLE)?.toString()
-            ?: extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString()
+        // Plan `2026-04-27-silent-sender-messagingstyle-gate.md` Task 2:
+        // gate the EXTRA_TITLE → sender fallback behind a MessagingStyle hint
+        // so non-messaging apps (shopping / news / promo) no longer leak
+        // product names into NotificationEntity.sender. The grouping policy's
+        // App-fallback then takes over for those rows.
+        @Suppress("DEPRECATION")
+        val messages = extras.getParcelableArray(android.app.Notification.EXTRA_MESSAGES)
+        val sender = MessagingStyleSenderResolver.resolve(
+            MessagingStyleSenderInput(
+                conversationTitle = extras.getCharSequence(android.app.Notification.EXTRA_CONVERSATION_TITLE)?.toString(),
+                title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString(),
+                template = extras.getString(android.app.Notification.EXTRA_TEMPLATE),
+                hasMessages = (messages?.isNotEmpty() == true),
+            )
+        )
 
         val appName = try {
             val appInfo = packageManager.getApplicationInfo(sbn.packageName, 0)
