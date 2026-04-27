@@ -371,3 +371,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T07:24:07Z | project-manager | #455 | refactor(rules) characterization tests before split | https://github.com/WooilKim/SmartNoti/actions/runs/24981803047 |
 | 2026-04-27T07:39:23Z | project-manager | #456 | refactor(rules): split RulesScreen.kt into per-section sub-files | https://github.com/WooilKim/SmartNoti/actions/runs/24982395564 |
 | 2026-04-27T07:51:25Z | project-manager | #457 | settings characterization tests + plan | https://github.com/WooilKim/SmartNoti/actions/runs/24982839549 |
+| 2026-04-27T08:05:14Z | project-manager | #458 | Settings split Tasks 2-4: extract 4 sub-files, 2244→1118 lines, plan→shipped | https://github.com/WooilKim/SmartNoti/actions/runs/24983480318 |
