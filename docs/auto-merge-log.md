@@ -388,3 +388,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T11:06:09Z | project-manager | #472 | settings suppression/app-selection/access cluster split (Tasks 2-4) | https://github.com/WooilKim/SmartNoti/actions/runs/24991289968 |
 | 2026-04-27T11:18:50Z | project-manager | #473 | gap-planner: ignored-archive bulk affordance polish plan (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/24991801326 |
 | 2026-04-27T11:50:19Z | project-manager | #474 | ignored-archive bulk affordance polish Task 1 (extraction + failing-first tests) | https://github.com/WooilKim/SmartNoti/actions/runs/24993090792 |
+| 2026-04-27T12:01:50Z | project-manager | #475 | gap-planner docs plan SettingsRepository façade split | https://github.com/WooilKim/SmartNoti/actions/runs/24993613232 |
