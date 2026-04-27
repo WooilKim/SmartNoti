@@ -405,3 +405,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T16:26:06Z | journey-tester | #494 | notification-capture-classify | https://github.com/WooilKim/SmartNoti/actions/runs/25006758286/job/73231535142 |
 | 2026-04-27T16:34:59Z | project-manager | #495 | docs-only plan-flip status:shipped for 2026-04-27 #478 promo-prefix plan | https://github.com/WooilKim/SmartNoti/actions/runs/25007179190 |
 | 2026-04-27T16:49:52Z | journey-tester | #496 | digest-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/25007882075 |
+| 2026-04-27T17:10:09Z | journey-tester | #497 | hidden-inbox | https://github.com/WooilKim/SmartNoti/actions/runs/25008784356 |
