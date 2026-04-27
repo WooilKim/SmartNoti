@@ -62,6 +62,9 @@ interface NotificationDao {
     @Query("DELETE FROM notifications WHERE status = 'IGNORE'")
     suspend fun deleteAllIgnored(): Int
 
+    @Query("DELETE FROM notifications WHERE status = 'IGNORE' AND id IN (:ids)")
+    suspend fun deleteIgnoredByIds(ids: Collection<String>): Int
+
     @Query("SELECT sourceEntryKey FROM notifications WHERE id = :id LIMIT 1")
     suspend fun sourceEntryKeyForId(id: String): String?
 }
