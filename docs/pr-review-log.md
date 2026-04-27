@@ -371,3 +371,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-26T23:53:48Z | #416 | plan-implementer | DEFER | mergeStateStatus DIRTY/CONFLICTING; CI green but rebase required |
 | 2026-04-27T00:00:27Z | #416 | plan-implementer | APPROVE+MERGE | inbox-sort Tasks 1+2; CI green; CLEAN; comment-verdict binding (single-account) |
 | 2026-04-27T00:10:26Z | #418 | plan-implementer | DEFER | CI pending (Unit tests + debug APK) |
+| 2026-04-27T00:15:16Z | #418 | plan-implementer | APPROVE+merge | InboxSortDropdown wiring (Tasks 3-5) merged 5a844d8 |
