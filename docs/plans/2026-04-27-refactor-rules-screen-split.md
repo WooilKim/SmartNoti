@@ -27,7 +27,7 @@ status: planned
 
 ---
 
-## Task 1: Pin behavior with characterization tests
+## Task 1: Pin behavior with characterization tests [IN PROGRESS via PR #455]
 
 **Objective:** Refactor 전에 RulesScreen 의 sub-bucket 분리 ("작업 필요" / "보류"), multi-select ActionBar, override editor sheet, category assign sheet 의 가시 affordance 를 테스트로 고정.
 
