@@ -223,6 +223,40 @@ class NotificationRepository(
         return dao.deleteDigestByPackage(packageName)
     }
 
+    /**
+     * Plan `docs/plans/2026-04-27-ignored-archive-bulk-restore-and-clear.md` Task 2.
+     *
+     * Bulk-restore every IGNORE row to PRIORITY and dedup-append the
+     * `사용자 분류` reason tag — mirrors [restoreDigestToPriorityByPackage]
+     * but scoped to status=IGNORE across all packages (the IgnoredArchive
+     * screen renders a single plain list, not per-package groups).
+     *
+     * Returns the number of rows updated (zero if the archive is empty).
+     */
+    suspend fun restoreAllIgnoredToPriority(): Int {
+        val candidates = dao.observeAll().first()
+            .filter { it.status == NotificationStatusUi.IGNORE.name }
+        candidates.forEach { entity ->
+            dao.upsert(
+                entity.copy(
+                    status = NotificationStatusUi.PRIORITY.name,
+                    reasonTags = appendUserClassificationReasonTag(entity.reasonTags),
+                )
+            )
+        }
+        return candidates.size
+    }
+
+    /**
+     * Plan `docs/plans/2026-04-27-ignored-archive-bulk-restore-and-clear.md` Task 2.
+     *
+     * Hard-delete every IGNORE row. Mirrors [deleteAllSilent]. Returns the
+     * number of rows deleted.
+     */
+    suspend fun deleteAllIgnored(): Int {
+        return dao.deleteAllIgnored()
+    }
+
     private fun appendUserReasonTag(existing: String): String {
         val tag = "사용자 복구"
         if (existing.isBlank()) return tag
