@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-27
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 # 정리함 통합 탭 — DigestScreen 임베드 시 ScreenHeader 중복 제거
