@@ -1,8 +1,10 @@
 ---
-status: planned
+status: shipped
 fixes: 511
 priority: P0
 last-updated: 2026-04-27
+shipped: 2026-04-27
+superseded-by: docs/journeys/silent-auto-hide.md
 ---
 
 # Fix #511 — Cancel source notification whenever SmartNoti posts a replacement
@@ -31,7 +33,7 @@ last-updated: 2026-04-27
 
 ---
 
-## Task 1: Failing test — Railway fixture asserts source cancellation [IN PROGRESS via PR #513]
+## Task 1: Failing test — Railway fixture asserts source cancellation [SHIPPED via PR #513]
 
 **Objective:** Issue body 의 정확한 fixture (SILENT 분류 + Quiet Hours + `sourceSuppressionState = NOT_CONFIGURED` + replacement posted) 가 들어왔을 때 `cancelNotification(sourceKey)` 가 호출되는지 RED 상태로 고정.
 
@@ -108,7 +110,7 @@ last-updated: 2026-04-27
 3. Listener 가 active 가 아니면 runner 는 flag 만 set 하지 않고 다음 launch 에서 재시도 (best-effort).
 4. **Risks 절 참고**: Railway row 의 `replacementNotificationIssued = 0` 은 Task 3 에서 fix 되므로, migration 은 Task 3 fix 적용 후 신규 게시되는 알림에 대해서만 유효. 이미 게시된 cohort 는 기존 `replacement` notification 의 `tag/id` 를 트레이에서 역추출해야 함 (active notifications 스캔 기반). 단순히 DB column 의존하면 Railway 같은 케이스는 못 잡음.
 
-## Task 6: ADB e2e on R3CY2058DLJ
+## Task 6: ADB e2e on R3CY2058DLJ [SHIPPED via PR #517]
 
 **Objective:** 실제 디바이스에서 issue body 의 시나리오 재현 → 본 PR 의 fix 가 트레이에서 실제로 작동.
 
@@ -129,7 +131,7 @@ adb -s R3CY2058DLJ shell dumpsys notification --noredact | grep -iE "Railway|sma
 
 결과 (스크린샷 + dumpsys grep 출력) 를 PR body 에 첨부.
 
-## Task 7: Journey doc updates
+## Task 7: Journey doc updates [SHIPPED via PR #517]
 
 **Files:**
 - `docs/journeys/silent-auto-hide.md` — Observable steps 에 "replacement post 시 source 도 동기 cancel" 명시, Known gaps 의 "Quiet Hours SILENT 잔존 원본" 항목을 Change log 로 이동, Code pointers 에 `SourceCancellationService` 추가, `last-verified` 는 Task 6 ADB sweep 날짜로 bump.
@@ -181,3 +183,10 @@ adb -s R3CY2058DLJ shell dumpsys notification --noredact | grep -iE "Railway|sma
 - `docs/journeys/digest-suppression.md` — "replacement post → source cancel" 단일 invariant 를 모든 replacement 분기로 통일
 
 연결 issue: https://github.com/WooilKim/SmartNoti/issues/511
+
+---
+
+## Change log
+
+- 2026-04-27: Tasks 1-5 shipped via PR #513 (commit `5db1208`) — `SourceCancellationGateway` port + listener-backed impl, cancel-after-post invariant in `SourceNotificationRoutingPolicy.route(...)` (every SILENT/DIGEST classification now returns `cancelSourceNotification = true AND notifyReplacementNotification = true` regardless of suppress-list membership or `SilentMode`; PRIORITY pass-through unchanged), `MigrateOrphanedSourceCancellationRunner` recovers existing cohort gated by DataStore flag `migrate_orphaned_source_cancellation_v1_applied`, `ActiveSourceNotificationInspector` for listener-bound gating. Full unit suite GREEN (1181 tests). Tasks 6-7 deferred to follow-up.
+- 2026-04-27: Tasks 6-7 shipped via PR #517 — ADB e2e captured live on R3CY2058DLJ (lastUpdateTime 2026-04-28 05:43, post-#513). `cmd notification post` from shell → `SmartNotiNotificationListenerService.onNotificationPosted` → cancel + replacement sequence observed in logcat (source `pkg=com.android.shell|2020|Iss511E2EPath_*` REMOVED with `reason: 10` REASON_LISTENER_CANCEL within 25ms of post, `com.smartnoti.app: notify(..., channel=smartnoti_replacement_silent_min_off_secret_noheadsup)` posted within next millisecond, followed by `smartnoti_silent_summary` + `smartnoti_silent_group_app:com.android.shell` group summary). Active tray confirms source absent. DataStore preferences_pb confirms `migrate_orphaned_source_cancellation_v1_applied` key set (one-shot migration ran on cold start). 23 rows in DB carry `replacementNotificationIssued=1` post-fix (vs. 0 in the pre-fix Railway cohort). Plan flips to `status: shipped` + `superseded-by: docs/journeys/silent-auto-hide.md`. Journey docs `silent-auto-hide.md` / `quiet-hours.md` / `digest-suppression.md` bumped with same-PR Change log entries citing #511 fix + commit `5db1208`. Issue #511 closed.
