@@ -410,3 +410,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T17:36:36Z | project-manager | #499 | meta-plan: coverage-guardian decommission-or-auto-trigger | https://github.com/WooilKim/SmartNoti/actions/runs/25009840531/job/73242382695 |
 | 2026-04-27T17:57:07Z | project-manager | #500 | meta-plan audit findings appended (coverage-guardian decommission evidence, Tasks 1-2) | https://github.com/WooilKim/SmartNoti/actions/runs/25010759770/job/73245593103 |
 | 2026-04-27T18:34:10Z | human | #501 | meta-plan: coverage-guardian decommission Option A (Tasks 3-4); SELF_MOD merged on user instruction ("#501 머지해줘") | https://github.com/WooilKim/SmartNoti/actions/runs/25011600254/job/73248504980 |
+| 2026-04-27T18:58:09Z | project-manager | #504 | gap-planner plan for issue #503 appName fallback chain | https://github.com/WooilKim/SmartNoti/actions/runs/25013226149 |
