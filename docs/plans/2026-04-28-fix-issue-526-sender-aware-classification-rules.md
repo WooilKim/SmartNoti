@@ -95,7 +95,7 @@ last-updated: 2026-04-28
 6. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.NotificationClassifierSenderRuleTest"` GREEN.
 7. `./gradlew :app:testDebugUnitTest` 전체 — 기존 classifier / category resolver / rule editor 테스트가 enum 추가로 깨지지 않는지 확인. 깨지는 곳은 `when` 의 exhaustive branch 미스가 대부분 — 각 site 에 SENDER 의 자연 default 추가.
 
-## Task 3: `RuleDraftFactory` SENDER support — failing test + impl confirmation
+## Task 3: `RuleDraftFactory` SENDER support — failing test + impl confirmation [IN PROGRESS via PR pending]
 
 **Objective:** `RuleDraftFactory.create(type = SENDER, matchValue = "김동대(Special Recon)")` 가 정상 동작하는지 명시적 가드. 현재 `normalizeMatchValue` 의 `else -> trimmed` 분기로 자연 통과되지만, 회귀 방지로 explicit fixture.
 
@@ -110,7 +110,7 @@ last-updated: 2026-04-28
 2. `RuleDraftFactory` 자체 변경은 (자연 통과로) 불필요 — 테스트가 GREEN 이면 그대로 둠.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.RuleDraftFactoryTest"` GREEN.
 
-## Task 4: `SenderRuleSuggestionCard` Composable + spec contract test
+## Task 4: `SenderRuleSuggestionCard` Composable + spec contract test [IN PROGRESS via PR pending]
 
 **Objective:** Card 의 시각 / 카피 / 노출 조건 / PII heuristic 을 single source of truth (`SenderRuleSuggestionCardSpec`) 로 응축 + headless contract test.
 
