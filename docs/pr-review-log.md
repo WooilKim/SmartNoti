@@ -507,3 +507,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-28T00:07:45Z | #527 | gap-planner | APPROVE | docs/plans for #524 tray orphan cleanup; merged b6d92a4 |
 | 2026-04-28T00:07:47Z | #528 | gap-planner | DEFER | CI pending |
 | 2026-04-28T00:16:50Z | #528 | gap-planner | APPROVE | docs-only plan for #525; CI green; merged |
+| 2026-04-28T00:17:01Z | #529 | gap-planner | DEFER | CI in progress at sweep time |
