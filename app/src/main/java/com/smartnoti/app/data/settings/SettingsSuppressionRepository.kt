@@ -231,6 +231,22 @@ internal class SettingsSuppressionRepository(
         }
     }
 
+    /**
+     * Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+     * Task 5. Persists the user's decision for surfacing the
+     * `SenderRuleSuggestionCard` on the notification Detail screen. Default
+     * ON semantics live in `SmartNotiSettings.senderSuggestionEnabled = true`
+     * — the absence of this key resolves to that default exactly the way
+     * `NORMALIZE_NUMERIC_TOKENS` does, so no migration is required. The
+     * setter is a single boolean write because the toggle has no sibling
+     * state to keep in sync.
+     */
+    suspend fun setSenderSuggestionEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SENDER_SUGGESTION_ENABLED] = enabled
+        }
+    }
+
     internal object Keys {
         val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT =
             booleanPreferencesKey("suppress_source_for_digest_and_silent")
@@ -265,6 +281,13 @@ internal class SettingsSuppressionRepository(
         // for the format. DataStore Preferences cannot hold a Map natively.
         val SUGGESTED_SUPPRESSION_SNOOZE_UNTIL =
             stringPreferencesKey("suggested_suppression_snooze_until")
+        // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+        // Task 5. Master toggle for the SenderRuleSuggestionCard. Default ON
+        // lives in the data class — absence of this key resolves to `true`.
+        // The `_v1` suffix is reserved for future schema bumps if the toggle
+        // gains additional state we want to migrate (e.g. per-app overrides).
+        val SENDER_SUGGESTION_ENABLED =
+            booleanPreferencesKey("sender_suggestion_enabled_v1")
     }
 
     companion object {

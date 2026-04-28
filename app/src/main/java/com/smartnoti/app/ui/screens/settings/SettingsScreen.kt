@@ -386,6 +386,19 @@ fun SettingsScreen(
                 onOpenIgnoredArchive = onOpenIgnoredArchive,
             )
         }
+        item {
+            // Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+            // Task 5 — master toggle for the SenderRuleSuggestionCard. Slotted
+            // adjacent to the IgnoredArchive card because both are
+            // user-discoverable Detail-screen surface controls and pair
+            // visually as "what optional cards do you want to see".
+            SenderSuggestionSettingsCard(
+                senderSuggestionEnabled = settings.senderSuggestionEnabled,
+                onSenderSuggestionEnabledChange = { enabled ->
+                    scope.launch { repository.setSenderSuggestionEnabled(enabled) }
+                },
+            )
+        }
         if (onOpenAdvancedRules != null) {
             item {
                 AdvancedRulesEntryCard(onClick = onOpenAdvancedRules)

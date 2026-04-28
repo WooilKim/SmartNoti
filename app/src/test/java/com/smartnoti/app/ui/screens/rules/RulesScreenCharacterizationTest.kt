@@ -143,6 +143,9 @@ class RulesScreenCharacterizationTest {
         assertEquals("키워드", typeLabel(RuleTypeUi.KEYWORD))
         assertEquals("시간", typeLabel(RuleTypeUi.SCHEDULE))
         assertEquals("반복", typeLabel(RuleTypeUi.REPEAT_BUNDLE))
+        // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+        // Task 6 — pin SENDER label so the dropdown render stays stable.
+        assertEquals("발신자", typeLabel(RuleTypeUi.SENDER))
     }
 
     // ---------- matchLabelFor --------------------------------------------
@@ -156,6 +159,10 @@ class RulesScreenCharacterizationTest {
         assertEquals("키워드", matchLabelFor(RuleTypeUi.KEYWORD))
         assertEquals("시간 조건", matchLabelFor(RuleTypeUi.SCHEDULE))
         assertEquals("반복 기준", matchLabelFor(RuleTypeUi.REPEAT_BUNDLE))
+        // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+        // Task 6 — pin SENDER match-value label so the dropdown / editor
+        // sync stays consistent (label drives the OutlinedTextField label).
+        assertEquals("발신자 이름", matchLabelFor(RuleTypeUi.SENDER))
     }
 
     // ---------- categoryActionLabel --------------------------------------

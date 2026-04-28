@@ -128,6 +128,16 @@ data class SmartNotiSettings(
     // `pkg=until|pkg2=until` payload by [SettingsSuppressionRepository] —
     // DataStore Preferences does not support a native Map<String, Long>.
     val suggestedSuppressionSnoozeUntil: Map<String, Long> = emptyMap(),
+    // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 5. Master toggle for the `SenderRuleSuggestionCard` surfaced on the
+    // notification Detail screen (Task 7 wires the consumer). Default `true`
+    // because the plan's "learning acceleration" intent only fires when fresh
+    // installs see the card from day one. Power users that find the card
+    // intrusive can flip this OFF in Settings → 발신자 분류 제안. Default `true`
+    // matches the SmartNotiSettings constructor fall-back so no migration is
+    // required — the absence of the DataStore key naturally resolves to the
+    // data-class default just like NORMALIZE_NUMERIC_TOKENS does.
+    val senderSuggestionEnabled: Boolean = true,
 ) {
     companion object {
         // Single source of truth for the quiet-hours-eligible default set.
