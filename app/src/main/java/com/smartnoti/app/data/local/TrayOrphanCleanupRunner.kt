@@ -106,6 +106,55 @@ class TrayOrphanCleanupRunner(
     }
 
     /**
+     * Scoped variant of [cleanup] used by the v1 정리함 high-volume
+     * suggestion accept path: only source orphans whose packageName is in
+     * [targetPackages] are cancelled. Other packages' orphans are
+     * preserved — the user's "stop bundling this app" intent is honoured
+     * exactly, even if earlier accepts left orphans from unrelated apps in
+     * the tray.
+     *
+     * Algorithm is identical to the unscoped overload (same identification,
+     * same PERSISTENT_PROTECTED skip, same NotBound short-circuit, same
+     * result shape) with one extra prefilter: candidates are reduced to
+     * `entry.packageName in targetPackages` before the protection
+     * partition. An empty [targetPackages] is a deliberate noop — callers
+     * passing an empty intent get zero cancels, not a fallback to unscoped
+     * cleanup. Settings → "트레이 정리" (#524) continues to call the
+     * unscoped [cleanup] for whole-tray sweeps.
+     */
+    suspend fun cleanup(targetPackages: Set<String>): CleanupResult {
+        if (!inspector.isListenerBound()) {
+            return CleanupResult(
+                cancelledCount = 0,
+                skippedProtectedCount = 0,
+                notBound = true,
+            )
+        }
+
+        val entries = inspector.listActive()
+        val candidates = identifyCandidates(entries)
+            .filter { entry -> entry.packageName in targetPackages }
+        val (cancellable, protectedEntries) = candidates.partition { entry ->
+            (entry.flags and PROTECTED_FLAGS) == 0
+        }
+
+        protectedEntries.forEach { entry ->
+            Log.w(
+                TAG,
+                "tray-cleanup skip protected pkg=${entry.packageName} key=${entry.key} flags=0x${Integer.toHexString(entry.flags)}",
+            )
+        }
+
+        cancellable.forEach { entry -> gateway.cancel(entry.key) }
+
+        return CleanupResult(
+            cancelledCount = cancellable.size,
+            skippedProtectedCount = protectedEntries.size,
+            notBound = false,
+        )
+    }
+
+    /**
      * Steps 1-3 of the identification algorithm: extract the SmartNoti
      * orphan-source packageName set from `silent_group_app:` group keys,
      * then return every non-SmartNoti entry whose packageName is in that
