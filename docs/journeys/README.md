@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-28 (journey-tester — notification-capture-classify post-#536 doc-drift sweep, no emulator)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-capture-classify | ⚠️ DRIFT | UTC 02:58Z. Re-verified after PR #536 (commit `bf00af0`, `fix(#526) Tasks 1-2 — RuleTypeUi.SENDER enum + classifier branch + CategoryConflictResolver ladder reorder + 6 collateral exhaustive-when edits`) merged into main today. Code-side: `RuleUiModel.kt:41-63` adds `RuleTypeUi.SENDER` as the 6th enum case (appended to preserve ordinals); `NotificationClassifier.kt:189-190` matches `input.title.contains(matchValue, ignoreCase = true) && matchValue.isNotBlank()`; `CategoryConflictResolver.kt:108-126` reorders the rule-type ladder to `APP(6) > SENDER(5) > KEYWORD(4) > PERSON(3) > SCHEDULE(2) > REPEAT_BUNDLE(1)`. Doc-side: this journey's Observable Step 8 line 38 still lists `(PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE)` and Step 8.2 line 43 still lists `(APP > KEYWORD > PERSON > SCHEDULE > REPEAT_BUNDLE)` — both stale. Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md` Task 9 (journey docs sync — `notification-capture-classify` + `rules-management` + `notification-detail`) is still `status: planned` and unstarted — `SenderRuleSuggestionCard.kt`, Settings toggle, RuleEditor SENDER option, ADB e2e (Tasks 4-8) are also pending. Drift recorded as Known gap on the journey; no `last-verified` bump (no recipe re-run on hardware). Sister candidate journeys (`rules-management` line 37, `categories-management`, `notification-detail`) currently carry no user-visible #536 surface yet (RuleEditor option and Detail card not shipped) — they will need their own sync when Tasks 4-8 land. Suggested next step: route to plan-implementer to land plan-526 Tasks 4-9 as a follow-up so the four journeys own the SENDER contract end-to-end. |
+
 ### 2026-04-28 (journey-tester — inbox-unified post-#532 doc-drift sweep, no emulator)
 
 | Journey | Result | Notes |
