@@ -9,6 +9,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.smartnoti.app.BuildConfig
 import com.smartnoti.app.data.categories.CategoriesRepository
+import com.smartnoti.app.data.local.ActiveTrayEntry
 import com.smartnoti.app.data.local.NotificationEntity
 import com.smartnoti.app.data.local.NotificationRepository
 import com.smartnoti.app.data.local.toEntity
@@ -596,6 +597,39 @@ class SmartNotiNotificationListenerService : NotificationListenerService() {
             val service = activeService ?: return null
             val actives = runCatching { service.activeNotifications }.getOrNull() ?: return emptySet()
             return actives.mapTo(HashSet(actives.size)) { it.key }
+        }
+
+        /**
+         * Richer sibling of [activeSourceKeysSnapshotIfConnected] that
+         * preserves `(packageName, groupKey, flags)` for each entry — used
+         * by [com.smartnoti.app.data.local.ListenerActiveTrayInspector]
+         * (plan
+         * `docs/plans/2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md`
+         * Task 2) so the user-triggered
+         * [com.smartnoti.app.data.local.TrayOrphanCleanupRunner] can:
+         *
+         *   - derive the source packageName set from
+         *     `smartnoti_silent_group_app:<pkg>` group keys, and
+         *   - skip PERSISTENT_PROTECTED entries (FOREGROUND_SERVICE /
+         *     NO_CLEAR / ONGOING_EVENT) without falsely cancelling music /
+         *     call / nav / foreground-service notifications.
+         *
+         * `null` (listener not bound) is intentionally distinguished from
+         * an empty list (listener bound but tray empty) so the runner can
+         * surface the "알림 권한 활성 후 다시 시도해 주세요" hint instead
+         * of a misleading "0건 정리됨" toast.
+         */
+        fun activeTrayEntriesSnapshotIfConnected(): List<ActiveTrayEntry>? {
+            val service = activeService ?: return null
+            val actives = runCatching { service.activeNotifications }.getOrNull() ?: return emptyList()
+            return actives.map { sbn ->
+                ActiveTrayEntry(
+                    key = sbn.key,
+                    packageName = sbn.packageName,
+                    groupKey = runCatching { sbn.groupKey }.getOrNull(),
+                    flags = sbn.notification.flags,
+                )
+            }
         }
     }
 }
