@@ -36,7 +36,7 @@ last-updated: 2026-04-27
 
 ---
 
-## Task 1: Failing test — `HighVolumeAppDetectorTest`
+## Task 1: Failing test — `HighVolumeAppDetectorTest` [IN PROGRESS via PR #532]
 
 **Objective:** Issue body 의 정확한 fixture (네이버 24 / 카카오톡 20 / 쿠팡이츠 11 / 마이제네시스 11 / 삼성헬스 10 / 삼성캘린더 10 / 그 외 5건 이하) 가 들어왔을 때 detector 가 6개 후보를 avg-per-day desc 로 반환하고, 이미 `suppressedSourceApps` 멤버인 앱 / `suggestedSuppressionDismissed` 멤버인 앱 / `suppressedSourceAppsExcluded` 멤버인 앱 / 5건 이하 (threshold 미달) 앱을 제외하는지 RED 상태로 고정.
 
