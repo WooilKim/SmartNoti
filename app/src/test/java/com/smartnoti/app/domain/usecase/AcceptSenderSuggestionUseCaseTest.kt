@@ -44,21 +44,21 @@ class AcceptSenderSuggestionUseCaseTest {
         val outcome = useCase.accept(
             title = "김동대(Special Recon)",
             categories = listOf(
-                category("important_priority", CategoryAction.PRIORITY, order = 5),
+                category(AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID, CategoryAction.PRIORITY, order = 5),
                 category("other_priority", CategoryAction.PRIORITY, order = 0),
             ),
         )
 
         assertTrue(outcome is AcceptSenderSuggestionUseCase.Outcome.Attached)
         assertEquals(
-            "important_priority",
+            AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID,
             (outcome as AcceptSenderSuggestionUseCase.Outcome.Attached).categoryId,
         )
         assertEquals(1, ports.upsertedRules.size)
         assertEquals(RuleTypeUi.SENDER, ports.upsertedRules.single().type)
         assertEquals("김동대(Special Recon)", ports.upsertedRules.single().matchValue)
         assertEquals(
-            "important_priority" to ports.upsertedRules.single().id,
+            AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID to ports.upsertedRules.single().id,
             ports.appendedRuleIds.single(),
         )
     }
@@ -112,7 +112,7 @@ class AcceptSenderSuggestionUseCaseTest {
         useCase.accept(
             title = "  김동대(Special Recon)  ",
             categories = listOf(
-                category("important_priority", CategoryAction.PRIORITY, order = 0),
+                category(AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID, CategoryAction.PRIORITY, order = 0),
             ),
         )
 
@@ -127,7 +127,7 @@ class AcceptSenderSuggestionUseCaseTest {
         val outcome = useCase.accept(
             title = "   ",
             categories = listOf(
-                category("important_priority", CategoryAction.PRIORITY, order = 0),
+                category(AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID, CategoryAction.PRIORITY, order = 0),
             ),
         )
 
@@ -144,13 +144,13 @@ class AcceptSenderSuggestionUseCaseTest {
         useCase.accept(
             title = "김동대(Special Recon)",
             categories = listOf(
-                category("important_priority", CategoryAction.PRIORITY, order = 0),
+                category(AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID, CategoryAction.PRIORITY, order = 0),
             ),
         )
         useCase.accept(
             title = "김동대(Special Recon)",
             categories = listOf(
-                category("important_priority", CategoryAction.PRIORITY, order = 0),
+                category(AcceptSenderSuggestionUseCase.IMPORTANT_PRIORITY_ID, CategoryAction.PRIORITY, order = 0),
             ),
         )
 

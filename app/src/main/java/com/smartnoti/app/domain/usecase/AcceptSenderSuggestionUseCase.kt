@@ -13,8 +13,9 @@ import com.smartnoti.app.domain.model.RuleUiModel
  * button on the notification Detail screen.
  *
  * Resolution ladder for the destination Category:
- *   1. Category whose id literally equals `important_priority` (the seeded
- *      default's stable id).
+ *   1. Category whose id literally equals `cat-onboarding-important_priority`
+ *      (the seeded onboarding "중요 알림" Category — see
+ *      `OnboardingQuickStartCategoryApplier`).
  *   2. First Category by ascending [Category.order] whose `action` is
  *      [CategoryAction.PRIORITY].
  *   3. Otherwise — return [Outcome.NoPriorityCategory] without writing.
@@ -76,13 +77,15 @@ class AcceptSenderSuggestionUseCase(
     }
 
     /**
-     * Pick the destination PRIORITY Category. `important_priority` wins by
-     * id even if its `order` is later — the seeded default carries product
-     * intent. Otherwise the earliest PRIORITY Category by `order` wins so
-     * the user's manual reordering is respected.
+     * Pick the destination PRIORITY Category. The seeded
+     * `cat-onboarding-important_priority` wins by id even if its `order` is
+     * later — the seeded default carries product intent. Otherwise the
+     * earliest PRIORITY Category by `order` wins so the user's manual
+     * reordering is respected. Falls back to `null` (→ NoPriorityCategory)
+     * only when no PRIORITY Category exists at all.
      */
     private fun resolvePriorityCategory(categories: List<Category>): Category? {
-        val pinned = categories.firstOrNull { it.id == IMPORTANT_PRIORITY_ID }
+        val pinned = categories.firstOrNull { it.id == IMPORTANT_PRIORITY_ID && it.action == CategoryAction.PRIORITY }
         if (pinned != null) return pinned
         return categories
             .filter { it.action == CategoryAction.PRIORITY }
@@ -91,10 +94,12 @@ class AcceptSenderSuggestionUseCase(
 
     companion object {
         /**
-         * Stable id of the seeded "중요" Category. Mirrored from the
-         * Categories migration default; kept here as a string constant so
-         * tests don't need to import the migration module.
+         * Stable id of the seeded "중요 알림" onboarding Category. Mirrored
+         * from `OnboardingQuickStartCategoryApplier` — kept here as a string
+         * constant so tests don't need to import the onboarding module. If
+         * the user deleted the seeded Category (or it was never seeded), the
+         * fallback branch picks the first PRIORITY Category by `order`.
          */
-        const val IMPORTANT_PRIORITY_ID: String = "important_priority"
+        const val IMPORTANT_PRIORITY_ID: String = "cat-onboarding-important_priority"
     }
 }
