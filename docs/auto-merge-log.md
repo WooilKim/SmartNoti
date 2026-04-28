@@ -440,3 +440,4 @@ If a self-merged row caused a regression:
 | 2026-04-28T03:04:41Z | journey-tester | #538 | notification-capture-classify | https://github.com/WooilKim/SmartNoti/actions/runs/25031513040 |
 | 2026-04-28T03:06:01Z | project-manager | #537 | plan-524 closure: Settings tray-cleanup wiring (Task 4) + journey sync (Task 6) + plan flip status:shipped (Task 7); Task 5 ADB deferred as Known gap | https://github.com/WooilKim/SmartNoti/actions/runs/25031298334 |
 | 2026-04-28T03:20:01Z | project-manager | #539 | docs(plans): Change log append for #524 (plan-implementer fixup) | https://github.com/WooilKim/SmartNoti/actions/runs/25031809960 |
+| 2026-04-28T03:23:50Z | project-manager | #540 | plan-526 Tasks 3-4: SENDER RuleDraftFactory fixtures + SenderRuleSuggestionCard(Spec) + 8-case spec test | https://github.com/WooilKim/SmartNoti/actions/runs/25032021992 |
