@@ -16,6 +16,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,18 +30,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.smartnoti.app.data.local.HighVolumeAppCandidate
+import com.smartnoti.app.data.local.HighVolumeAppDetector
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.local.TrayOrphanCleanupRunner
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.data.local.toHiddenGroups
 import com.smartnoti.app.domain.model.InboxSortMode
 import com.smartnoti.app.domain.model.SilentMode
+import com.smartnoti.app.notification.AndroidAppIconSource
+import com.smartnoti.app.notification.AppIconResolver
 import com.smartnoti.app.ui.screens.digest.DigestScreen
 import com.smartnoti.app.ui.screens.digest.DigestScreenMode
 import com.smartnoti.app.ui.screens.hidden.HiddenNotificationsScreen
 import com.smartnoti.app.ui.screens.hidden.HiddenScreenMode
 import com.smartnoti.app.ui.theme.BorderSubtle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 정리함 (Inbox) screen — plan
@@ -111,6 +119,55 @@ fun InboxScreen(
 
     var selectedTab by rememberSaveable { mutableStateOf(InboxTab.Digest) }
 
+    // Plan `docs/plans/2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+    // Task 7. High-volume-app suggestion state. Card lives ABOVE the
+    // DigestScreen body (Column nesting outside the LazyColumn) so it does not
+    // re-arrange items on dismiss — the LazyColumn's scroll position is
+    // preserved naturally because the Column does not own a LazyListState.
+    //
+    // The detector + cleanup runner are constructed once per composition and
+    // memoized against the singletons they wrap. AppIconResolver is built on
+    // demand (PackageManager pulled from LocalContext) and lasts the lifetime
+    // of the InboxScreen — bounded LRU prevents bitmap pile-up.
+    val detector = remember(repository) { repository.highVolumeAppDetector() }
+    val cleanupRunner = remember(context) { TrayOrphanCleanupRunner.create(context) }
+    val iconResolver = remember(context) {
+        AppIconResolver(AndroidAppIconSource(context.applicationContext.packageManager))
+    }
+    var suggestion by remember { mutableStateOf<HighVolumeAppCandidate?>(null) }
+    var suggestionIcon by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    // Re-detect on settings change (suppress / dismiss / snooze sets all gate
+    // detector input) and on tab change (only render on Digest sub-tab — the
+    // detector still runs to keep the surface consistent across tab toggles).
+    LaunchedEffect(
+        detector,
+        settings.suppressedSourceApps,
+        settings.suppressedSourceAppsExcluded,
+        settings.suggestedSuppressionDismissed,
+        settings.suggestedSuppressionSnoozeUntil,
+    ) {
+        val nowMillis = System.currentTimeMillis()
+        // Filter out snoozed entries whose expiry is still in the future. The
+        // detector returns ranked candidates; we pick the first one not under
+        // active snooze.
+        val candidates = withContext(Dispatchers.IO) {
+            detector.detect(
+                avgPerDayThreshold = 10,
+                windowDays = 7,
+                currentSuppressedSourceApps = settings.suppressedSourceApps,
+                currentSuggestedSuppressionDismissed = settings.suggestedSuppressionDismissed,
+                currentSuppressedSourceAppsExcluded = settings.suppressedSourceAppsExcluded,
+            )
+        }
+        val activeSnoozes = settings.suggestedSuppressionSnoozeUntil
+        val pick = candidates.firstOrNull { c ->
+            (activeSnoozes[c.packageName] ?: 0L) <= nowMillis
+        }
+        suggestion = pick
+        suggestionIcon = pick?.let { withContext(Dispatchers.IO) { iconResolver.resolve(it.packageName) } }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -170,6 +227,56 @@ fun InboxScreen(
                 processedCount = processedCount,
                 onSelected = { selectedTab = it },
             )
+            // Plan `docs/plans/2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+            // Task 7. Inline suggestion card sits BELOW the tab row + ABOVE the
+            // DigestScreen body so the user sees it on top of the Digest sub-tab
+            // (the only sub-tab that owns explicit-action affordances). Other
+            // tabs do not show the card — the user's intent on archived /
+            // processed tabs is to triage, not to bundle.
+            val activeSuggestion = suggestion
+            if (selectedTab == InboxTab.Digest && activeSuggestion != null) {
+                InboxSuggestionCard(
+                    candidate = activeSuggestion,
+                    sourceIcon = suggestionIcon,
+                    onAccept = {
+                        scope.launch {
+                            InboxSuggestionAcceptHandler.accept(
+                                candidate = activeSuggestion,
+                                callbacks = InboxScreenSuggestionCallbacks(
+                                    settingsRepository = settingsRepository,
+                                    cleanupRunner = cleanupRunner,
+                                    currentSuppressedSourceApps = settings.suppressedSourceApps,
+                                    onClear = {
+                                        suggestion = null
+                                        suggestionIcon = null
+                                    },
+                                ),
+                            )
+                        }
+                    },
+                    onSnooze = {
+                        scope.launch {
+                            settingsRepository.setSuggestedSuppressionSnoozeUntil(
+                                packageName = activeSuggestion.packageName,
+                                untilMillis = System.currentTimeMillis() +
+                                    InboxSuggestionCardSpec.SNOOZE_DURATION_MILLIS,
+                            )
+                            suggestion = null
+                            suggestionIcon = null
+                        }
+                    },
+                    onDismiss = {
+                        scope.launch {
+                            settingsRepository.setSuggestedSuppressionDismissed(
+                                packageName = activeSuggestion.packageName,
+                                dismissed = true,
+                            )
+                            suggestion = null
+                            suggestionIcon = null
+                        }
+                    },
+                )
+            }
         }
         val innerPadding = PaddingValues(0.dp)
         when (selectedTab) {
@@ -298,5 +405,63 @@ private fun InboxTabSegment(
                 color = labelColor,
             )
         }
+    }
+}
+
+/**
+ * Plan `docs/plans/2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+ * Task 7. Production binding of [InboxSuggestionAcceptCallbacks] consumed by
+ * [InboxSuggestionAcceptHandler] when the user taps `[예, 묶을게요]`.
+ *
+ *  - [addToSuppressedSourceApps] does an additive set write — reads the most
+ *    recent settings snapshot once at construction (passed through
+ *    [currentSuppressedSourceApps]) so we do NOT lose entries already
+ *    present. The settings flow then re-emits and the next composition's
+ *    LaunchedEffect re-detects.
+ *  - [cleanupTrayOrphans] forwards to the legacy `cleanup()` runner today
+ *    (the scoped overload is still pending #524 follow-up plan Task 4).
+ *    NotBound surfaces verbatim; Cancelled returns the unscoped count which
+ *    is good enough for v1 — the next iteration adds the scoped overload.
+ *  - The two remaining callbacks ([markSuggestionPermanentlyDismissed],
+ *    [snoozeSuggestionUntil]) are wired but the accept handler does not call
+ *    them; InboxScreen invokes the matching SettingsRepository setter
+ *    directly from the `onSnooze` / `onDismiss` button callbacks.
+ */
+private class InboxScreenSuggestionCallbacks(
+    private val settingsRepository: SettingsRepository,
+    private val cleanupRunner: TrayOrphanCleanupRunner,
+    private val currentSuppressedSourceApps: Set<String>,
+    private val onClear: () -> Unit,
+) : InboxSuggestionAcceptCallbacks {
+    override suspend fun addToSuppressedSourceApps(packageName: String) {
+        if (packageName in currentSuppressedSourceApps) return
+        settingsRepository.setSuppressedSourceApps(currentSuppressedSourceApps + packageName)
+    }
+
+    override suspend fun cleanupTrayOrphans(targetPackages: Set<String>): InboxSuggestionCleanupOutcome {
+        // v1: the scoped overload of `TrayOrphanCleanupRunner.cleanup(Set)` is
+        // a follow-up plan task. Until then we trigger the unscoped cleanup —
+        // it walks the tray once and cancels every orphan, which is still
+        // strictly more useful than doing nothing. Worst case it cancels
+        // orphans for OTHER packages that the user already accepted in a
+        // previous tap; that is the desirable end state anyway.
+        val result = withContext(Dispatchers.IO) { cleanupRunner.cleanup() }
+        return if (result.notBound) {
+            InboxSuggestionCleanupOutcome.NotBound
+        } else {
+            InboxSuggestionCleanupOutcome.Cancelled(cancelledCount = result.cancelledCount)
+        }
+    }
+
+    override suspend fun dismissCard() {
+        onClear()
+    }
+
+    override suspend fun markSuggestionPermanentlyDismissed(packageName: String) {
+        settingsRepository.setSuggestedSuppressionDismissed(packageName, dismissed = true)
+    }
+
+    override suspend fun snoozeSuggestionUntil(packageName: String, untilMillis: Long) {
+        settingsRepository.setSuggestedSuppressionSnoozeUntil(packageName, untilMillis)
     }
 }

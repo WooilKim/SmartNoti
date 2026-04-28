@@ -120,4 +120,60 @@ interface NotificationDao {
         """
     )
     suspend fun selectOrphanedSourceCancellationKeys(): List<String>
+
+    /**
+     * Plan
+     * `docs/plans/2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+     * Task 2. Project (packageName, appName, COUNT(*)) for every package
+     * whose 7-day rolling row total meets [threshold] (= avgPerDay × windowDays
+     * passed by [HighVolumeAppDetector]).
+     *
+     * PRIORITY-only packages are excluded by the inner subquery: a package
+     * whose every in-window row has `status = 'PRIORITY'` is the user's
+     * declared "wanted" signal and must never surface as a noise suggestion.
+     * Mixed-status packages (PRIORITY + DIGEST + SILENT) are intentionally
+     * INCLUDED in the count — every row is a user-perceived noise event.
+     * The plan's Open Question §6 calls this v1 decision out for refinement.
+     *
+     * `appName` chosen via `MAX(appName)`: identical packageNames always
+     * carry identical appName labels (the app capture side enforces this
+     * via [AppLabelResolver]) so any aggregate works; `MAX` is the cheapest
+     * one Room recognizes on a TEXT column.
+     *
+     * Sort: `COUNT(*) DESC` so the noisiest package surfaces first, with
+     * `packageName ASC` as the tiebreak so two equal-count packages have a
+     * deterministic order (the test pins this).
+     */
+    @Query(
+        """
+        SELECT packageName,
+               MAX(appName) AS appName,
+               COUNT(*) AS count
+        FROM notifications
+        WHERE postedAtMillis >= :sinceMillis
+        GROUP BY packageName
+        HAVING COUNT(*) >= :threshold
+           AND SUM(CASE WHEN status = 'PRIORITY' THEN 0 ELSE 1 END) > 0
+        ORDER BY COUNT(*) DESC, packageName ASC
+        """
+    )
+    suspend fun countHighVolumeAppsSince(
+        sinceMillis: Long,
+        threshold: Int,
+    ): List<HighVolumeAppRow>
 }
+
+/**
+ * Plan
+ * `docs/plans/2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+ * Task 2. Internal projection POJO for [NotificationDao.countHighVolumeAppsSince]
+ * — Room maps the SQL columns by name. Lifted to top-level (instead of
+ * `internal`) so Room's annotation processor finds it without companion-class
+ * juggling; consumers should use [HighVolumeAppCandidate] which wraps this row
+ * and adds `avgPerDay`.
+ */
+data class HighVolumeAppRow(
+    val packageName: String,
+    val appName: String,
+    val count: Int,
+)

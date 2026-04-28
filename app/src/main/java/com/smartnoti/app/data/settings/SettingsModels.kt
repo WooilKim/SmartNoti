@@ -106,6 +106,20 @@ data class SmartNotiSettings(
     // pre-existing behavior; existing installs see no change until the user
     // picks a different mode via the InboxSortDropdown.
     val inboxSortMode: String = InboxSortMode.RECENT.name,
+    // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+    // Task 5. Sticky-permanent dismiss set: packageNames the user has tapped
+    // `[무시]` on in a previous `InboxSuggestionCard`. `HighVolumeAppDetector`
+    // never proposes these again. Default `emptySet()` so existing users see
+    // identical behavior on upgrade.
+    val suggestedSuppressionDismissed: Set<String> = emptySet(),
+    // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+    // Task 5. 24h-snooze map: packageName -> wall-clock millis the snooze
+    // expires at. `HighVolumeAppSuggestionPolicy` skips the candidate when
+    // `value > nowMillis`. Default `emptyMap()` so existing users see no
+    // suggestion behavior change. Persisted as a string-encoded
+    // `pkg=until|pkg2=until` payload by [SettingsSuppressionRepository] —
+    // DataStore Preferences does not support a native Map<String, Long>.
+    val suggestedSuppressionSnoozeUntil: Map<String, Long> = emptyMap(),
 ) {
     companion object {
         // Single source of truth for the quiet-hours-eligible default set.

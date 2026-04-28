@@ -22,6 +22,21 @@ import java.util.Locale
 class NotificationRepository(
     internal val dao: NotificationDao,
 ) {
+    /**
+     * Plan
+     * `docs/plans/2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+     * Task 7. Provide a [HighVolumeAppDetector] backed by this repository's
+     * [dao] so InboxScreen does not need direct DAO access (the field is
+     * `internal` and InboxScreen lives in a different package).
+     *
+     * Returns a fresh detector each call — the detector is stateless modulo
+     * the [clock] override, which production passes as `System::currentTimeMillis`.
+     * Cheap to construct so callers may do this on every recomposition.
+     */
+    fun highVolumeAppDetector(): HighVolumeAppDetector {
+        return HighVolumeAppDetector(dao = dao)
+    }
+
     fun observeAll(): Flow<List<NotificationUiModel>> = dao.observeAll().map { entities ->
         entities.map { it.toUiModel() }
     }
