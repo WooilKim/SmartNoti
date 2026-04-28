@@ -33,7 +33,7 @@ last-updated: 2026-04-27
 
 ---
 
-## Task 1: Failing test — `TrayOrphanCleanupRunnerTest`
+## Task 1: Failing test — `TrayOrphanCleanupRunnerTest` `[IN PROGRESS via PR #530]`
 
 **Objective:** Issue body 의 정확한 fixture (active source 5 + SmartNoti silent_group 5, 1개는 PERSISTENT_PROTECTED) 가 들어왔을 때 source 4개에 대해 `SourceCancellationGateway.cancel(sourceKey)` 가 호출되고 PERSISTENT_PROTECTED 1개는 skip 되는지 RED 상태로 고정.
 
@@ -55,7 +55,7 @@ last-updated: 2026-04-27
 6. Fixture D (`preview_does_not_cancel`): runner.preview() 는 동일 식별 로직을 돌리지만 gateway 호출 0회. `PreviewResult(candidateCount, candidatePackageNames)` 반환.
 7. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.local.TrayOrphanCleanupRunnerTest"` 로 RED 확인.
 
-## Task 2: Implement `TrayOrphanCleanupRunner` + ports
+## Task 2: Implement `TrayOrphanCleanupRunner` + ports `[IN PROGRESS via PR #530]`
 
 **Objective:** Task 1 의 4 개 fixture 를 GREEN. 단일 활성 알림 pass 로 식별 + cancel.
 
@@ -82,7 +82,7 @@ last-updated: 2026-04-27
 5. `companion object { fun create(context: Context): TrayOrphanCleanupRunner }` — production wiring with `ListenerActiveTrayInspector` + `ListenerSourceCancellationGateway`.
 6. Task 1 GREEN 확인. 전체 unit suite (`./gradlew :app:testDebugUnitTest`) 회귀 없음.
 
-## Task 3: `SettingsTrayCleanupSection` Composable + preview state
+## Task 3: `SettingsTrayCleanupSection` Composable + preview state `[IN PROGRESS via PR #530]`
 
 **Objective:** Settings 화면에 새 카드 — preview count + 미리보기 토글 + 버튼 + confirm dialog. 다른 카드와 동일한 visual rhythm.
 
