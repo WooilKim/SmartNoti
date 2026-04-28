@@ -64,6 +64,8 @@ class SettingsRepository private constructor(
                 hidePersistentSourceNotifications = prefs[SettingsSuppressionRepository.Keys.HIDE_PERSISTENT_SOURCE_NOTIFICATIONS] ?: defaults.hidePersistentSourceNotifications,
                 protectCriticalPersistentNotifications = prefs[SettingsSuppressionRepository.Keys.PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS] ?: defaults.protectCriticalPersistentNotifications,
                 showIgnoredArchive = prefs[SettingsSuppressionRepository.Keys.SHOW_IGNORED_ARCHIVE] ?: defaults.showIgnoredArchive,
+                trayCleanupSkipConfirm = prefs[SettingsSuppressionRepository.Keys.TRAY_CLEANUP_SKIP_CONFIRM_V1]
+                    ?: defaults.trayCleanupSkipConfirm,
                 duplicateDigestThreshold = prefs[SettingsDuplicateRepository.Keys.DIGEST_THRESHOLD] ?: defaults.duplicateDigestThreshold,
                 duplicateWindowMinutes = prefs[SettingsDuplicateRepository.Keys.WINDOW_MINUTES] ?: defaults.duplicateWindowMinutes,
                 normalizeNumericTokensInSignature = prefs[SettingsDuplicateRepository.Keys.NORMALIZE_NUMERIC_TOKENS]
@@ -144,6 +146,12 @@ class SettingsRepository private constructor(
     suspend fun setProtectCriticalPersistentNotifications(enabled: Boolean) =
         suppression.setProtectCriticalPersistentNotifications(enabled)
     suspend fun setShowIgnoredArchive(enabled: Boolean) = suppression.setShowIgnoredArchive(enabled)
+    // Plan `2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md` Task 4.
+    // Façade delegate for the Settings → 트레이 정리 confirm-dialog
+    // "다시 묻지 않기" preference. Read via the existing aggregated
+    // [observeSettings] flow (no separate observer needed).
+    suspend fun setTrayCleanupSkipConfirm(skip: Boolean) =
+        suppression.setTrayCleanupSkipConfirm(skip)
     suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) =
         suppression.toggleSuppressedSourceApp(packageName, enabled)
     // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`

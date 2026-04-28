@@ -18,7 +18,10 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 
 import android.content.Intent
+import com.smartnoti.app.data.local.ListenerActiveTrayInspector
+import com.smartnoti.app.data.local.ListenerSourceCancellationGateway
 import com.smartnoti.app.data.local.NotificationRepository
+import com.smartnoti.app.data.local.TrayOrphanCleanupRunner
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.diagnostic.DiagnosticLogExporter
@@ -27,7 +30,11 @@ import com.smartnoti.app.diagnostic.DiagnosticLoggingPreferences
 import com.smartnoti.app.domain.usecase.SuppressionBreakdownChartModelBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightDrillDownTargetsBuilder
 import com.smartnoti.app.domain.usecase.SuppressionInsightsBuilder
+import com.smartnoti.app.notification.AndroidPackageLabelSource
+import com.smartnoti.app.notification.AppLabelResolver
 import com.smartnoti.app.onboarding.OnboardingPermissions
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
 import com.smartnoti.app.ui.components.ScreenHeader
 import com.smartnoti.app.ui.notificationaccess.notificationAccessLifecycleObserver
 import com.smartnoti.app.ui.notificationaccess.openNotificationAccessSettings
@@ -55,6 +62,35 @@ fun SettingsScreen(
     val context = LocalContext.current
     val repository = remember(context) { SettingsRepository.getInstance(context) }
     val notificationRepository = remember(context) { NotificationRepository.getInstance(context) }
+    // Plan `docs/plans/2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md`
+    // Task 4 — wire `SettingsTrayCleanupSection` into the screen. The runner
+    // and the resolver are both stable per `applicationContext`; remembering
+    // them here keeps the LaunchedEffect / cleanup callback identities
+    // referentially stable across recompositions.
+    val trayCleanupInspector = remember { ListenerActiveTrayInspector() }
+    val trayCleanupRunner = remember(trayCleanupInspector) {
+        TrayOrphanCleanupRunner(
+            inspector = trayCleanupInspector,
+            gateway = ListenerSourceCancellationGateway(),
+        )
+    }
+    val appLabelResolver = remember(context) {
+        AppLabelResolver(AndroidPackageLabelSource(context.applicationContext.packageManager))
+    }
+    var trayCleanupPreview by remember {
+        mutableStateOf<TrayOrphanCleanupRunner.PreviewResult?>(null)
+    }
+    var trayCleanupListenerBound by remember { mutableStateOf(false) }
+    // Bumped from the cleanup callback to re-trigger the preview LaunchedEffect
+    // so the user sees the "0건" state immediately after a successful pass.
+    var trayCleanupPreviewRefreshKey by remember { mutableStateOf(0) }
+    LaunchedEffect(trayCleanupPreviewRefreshKey) {
+        // Snapshot the inspector's bound state first so the summary builder
+        // can render the "권한 활성 후 다시 시도" hint even when the preview
+        // would otherwise look like a 0-candidate clean state.
+        trayCleanupListenerBound = trayCleanupInspector.isListenerBound()
+        trayCleanupPreview = trayCleanupRunner.preview()
+    }
     // Plan `docs/plans/2026-04-27-fix-issue-480-diagnostic-log-file-export.md`
     // Task 3 — diagnostic logging preferences + export wiring. Both
     // singletons resolved via `remember(context)` so they survive recomposition
@@ -310,6 +346,38 @@ fun SettingsScreen(
             )
         }
         item {
+            // Plan `docs/plans/2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md`
+            // Task 4 — one-tap cleanup of pre-#511 source orphans. Slotted
+            // directly under the Suppression card so users finding the
+            // suppression toggle also discover the cleanup affordance for
+            // alerts that were posted before #511's forward-only fix landed.
+            SettingsTrayCleanupSection(
+                preview = trayCleanupPreview,
+                isListenerBound = trayCleanupListenerBound,
+                appLabelLookup = appLabelResolver::resolve,
+                skipConfirm = settings.trayCleanupSkipConfirm,
+                onSkipConfirmChange = { skip ->
+                    scope.launch { repository.setTrayCleanupSkipConfirm(skip) }
+                },
+                onCleanupConfirmed = {
+                    scope.launch {
+                        val result = trayCleanupRunner.cleanup()
+                        // Toast must be shown on the main thread per the
+                        // platform contract; jump out of the IO scope for the
+                        // user-visible side effect.
+                        val message = trayCleanupToastMessage(result)
+                        scope.launch(Dispatchers.Main) {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                        // Re-trigger the preview LaunchedEffect so the user
+                        // immediately sees "0건" (or the residual count if a
+                        // race re-posted a notification mid-cleanup).
+                        trayCleanupPreviewRefreshKey += 1
+                    }
+                },
+            )
+        }
+        item {
             IgnoredArchiveSettingsCard(
                 showIgnoredArchive = settings.showIgnoredArchive,
                 onShowIgnoredArchiveChange = { enabled ->
@@ -358,3 +426,24 @@ fun SettingsScreen(
     }
 }
 
+/**
+ * Plan `docs/plans/2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md`
+ * Task 4 — toast copy for the post-cleanup result. Branches mirror the
+ * three [TrayOrphanCleanupRunner.CleanupResult] cases the runner can
+ * surface; each line is intentionally short for `Toast.LENGTH_SHORT`.
+ *
+ * Defined as a free function (not a Composable) so the cleanup callback
+ * can call it from a coroutine without recompose churn.
+ */
+internal fun trayCleanupToastMessage(result: TrayOrphanCleanupRunner.CleanupResult): String {
+    return when {
+        result.notBound -> "알림 권한이 활성일 때만 트레이 정리가 가능해요"
+        result.cancelledCount == 0 && result.skippedProtectedCount == 0 ->
+            "정리할 원본 알림이 없었어요"
+        result.cancelledCount == 0 ->
+            "보호된 알림 ${result.skippedProtectedCount}건만 남아있어 그대로 두었어요"
+        result.skippedProtectedCount > 0 ->
+            "원본 알림 ${result.cancelledCount}건 정리됨 (보호 알림 ${result.skippedProtectedCount}건 유지)"
+        else -> "원본 알림 ${result.cancelledCount}건 정리됨"
+    }
+}

@@ -112,6 +112,14 @@ data class SmartNotiSettings(
     // never proposes these again. Default `emptySet()` so existing users see
     // identical behavior on upgrade.
     val suggestedSuppressionDismissed: Set<String> = emptySet(),
+    // Plan `2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md` Task 4.
+    // Persisted "다시 묻지 않기" flag for the Settings → 트레이 정리 confirm
+    // dialog. Default `false` so first-time users always see the confirm
+    // dialog (R1 default — 100+ source-app cancels are non-trivially
+    // reversible). Power users that flip the dialog checkbox once skip
+    // confirmation thereafter; the checkbox is the only surface that writes
+    // this key (no standalone Settings row).
+    val trayCleanupSkipConfirm: Boolean = false,
     // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
     // Task 5. 24h-snooze map: packageName -> wall-clock millis the snooze
     // expires at. `HighVolumeAppSuggestionPolicy` skips the candidate when
