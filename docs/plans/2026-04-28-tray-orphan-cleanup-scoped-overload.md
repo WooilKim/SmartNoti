@@ -1,5 +1,7 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-28
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task. Tests-first; the failing scoped-overload test (Task 1) must land before the production code (Task 2).
@@ -19,7 +21,7 @@ status: planned
 - 기존 `cleanup()` overload 는 deprecate 하지 않는다 — `data/local/TrayOrphanCleanupRunner.kt` 의 production wiring (#524) 이 그대로 의존.
 - 본 변경은 **사용자 관측 동작 변경** (accept 후 다른 앱 orphan 이 보존됨) → `docs/journeys/inbox-unified.md` 의 Known gap "scoped cleanup overload pending" 을 Change log + Code pointers 갱신으로 닫는다.
 
-## Task 1: Add failing test for scoped overload [IN PROGRESS via PR #546]
+## Task 1: Add failing test for scoped overload [SHIPPED via PR #546 commit f9b7326]
 
 **Objective:** scoped overload 의 정밀도 계약 (target 만 cancel, 그 외 보존) 을 단일 fixture 로 고정. 본 task 가 RED 인 상태로 commit 해서 implementer 의 다음 step 이 GREEN 으로 만드는 motion 을 가시화.
 
@@ -46,7 +48,7 @@ status: planned
    - Assert: `cancelledCount == 0`, `skippedProtectedCount == 0`, `notBound == true`. `gateway.cancelled.isEmpty()` (호출조차 시도 안 됨 — short-circuit).
 6. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.local.TrayOrphanCleanupRunnerTest"` 실행해 4개 신규 case 가 **컴파일 에러로 RED** 인지 확인 (overload 가 아직 없으니 unresolved reference). RED 메시지를 Task 1 commit body 에 첨부.
 
-## Task 2: Add scoped `cleanup(targetPackages)` overload [IN PROGRESS via PR #546]
+## Task 2: Add scoped `cleanup(targetPackages)` overload [SHIPPED via PR #546 commit f9b7326]
 
 **Objective:** Task 1 의 4 case 가 GREEN.
 
@@ -92,7 +94,7 @@ status: planned
 2. KDoc: 짧게 한 단락 — "v1 정리함 suggestion accept 의 [예] 분기에서 호출되는 scoped variant. 사용자가 의지를 밝힌 packageName 만 cleanup. 빈 set 은 noop." 기존 class-level KDoc 의 알고리즘 설명을 다시 적지 말고 unscoped overload 와의 관계만 명시.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.local.TrayOrphanCleanupRunnerTest"` GREEN — 4 신규 case + 기존 case 모두 통과.
 
-## Task 3: Wire `InboxScreen` to call scoped overload
+## Task 3: Wire `InboxScreen` to call scoped overload [SHIPPED 2026-04-28]
 
 **Objective:** suggestion accept 경로가 실제로 scoped overload 를 사용. Production wiring 한 줄 + 주변 주석 정리.
 
@@ -115,7 +117,7 @@ status: planned
 2. `InboxScreenSuggestionCallbacks` class-level KDoc (line 411-429) 의 `[cleanupTrayOrphans]` 단락도 동일하게 갱신: "the scoped overload is still pending #524 follow-up plan Task 4" 문구 제거 후 "scoped overload — single-packageName precision" 으로 교체.
 3. Build smoke: `./gradlew :app:assembleDebug` 통과 (UI wiring 변경이라 컴파일만 확인; UI 테스트는 본 plan 범위 밖).
 
-## Task 4: Verify accept handler integration test still GREEN + extend if needed
+## Task 4: Verify accept handler integration test still GREEN + extend if needed [SHIPPED 2026-04-28 — InboxSuggestionAcceptIntegrationTest 4 case GREEN, 추가 case 불필요 (RecordingCallbacks 가 이미 cleanupTargets: List<Set<String>> 로 record)]
 
 **Objective:** `InboxSuggestionAcceptIntegrationTest` 의 `accept_runs_suppress_and_cleanup_in_documented_order` 가 새 wiring 에서도 통과. callbacks fake 를 인터페이스 그대로 호출하므로 변경 불필요한 게 정상 — 확인 단계 포함.
 
@@ -127,7 +129,7 @@ status: planned
 2. (옵션) 추가 case `accept_passes_only_target_packageName_to_cleanup`: fake 가 `cleanupTrayOrphans` 호출 시 받은 set 을 record, accept 후 `recordedSet == setOf(candidate.packageName)` 검증. 이미 동등한 verification 이 있으면 skip — 신규 추가는 noise.
 3. 전체 inbox 테스트 스위트 GREEN 확인: `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.inbox.*"`.
 
-## Task 5: Update journey doc + flip plan status
+## Task 5: Update journey doc + flip plan status [SHIPPED 2026-04-28]
 
 **Objective:** `docs/journeys/inbox-unified.md` Known gap "High-volume suggestion card v1: scoped cleanup overload pending" 을 닫고 Change log + Code pointers 동기화. 본 plan frontmatter 를 `status: shipped` + `superseded-by:` 로 flip.
 
