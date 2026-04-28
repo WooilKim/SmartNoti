@@ -1,8 +1,13 @@
 ---
-status: planned
+status: shipped
 fixes: 526
 priority: P1
 last-updated: 2026-04-28
+shipped: 2026-04-28
+superseded-by:
+  - ../journeys/notification-capture-classify.md
+  - ../journeys/rules-management.md
+  - ../journeys/notification-detail.md
 ---
 
 # Fix #526 — Sender-aware classification rules (특정 발신자 always PRIORITY)
