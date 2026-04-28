@@ -431,3 +431,4 @@ If a self-merged row caused a regression:
 | 2026-04-28T00:07:23Z | project-manager | #527 | docs(plans): tray orphan cleanup button (#524) | https://github.com/WooilKim/SmartNoti/actions/runs/25025982617 |
 | 2026-04-28T00:16:34Z | project-manager | #528 | gap-planner plan for #525 high-volume app suggest-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/25026265205/job/73297932089 |
 | 2026-04-28T01:21:27Z | project-manager | #529 | plan for #526 sender-aware classification rules | https://github.com/WooilKim/SmartNoti/actions/runs/25026542248 |
+| 2026-04-28T01:21:48Z | project-manager | #530 | #524 Tasks 1-3 — TrayOrphanCleanupRunner + ActiveTrayInspector + SettingsTrayCleanupSection | https://github.com/WooilKim/SmartNoti/actions/runs/25026966359 |
