@@ -162,6 +162,23 @@ internal class SettingsSuppressionRepository(
     }
 
     /**
+     * Plan `2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md` Task 4.
+     *
+     * Persist the user's "다시 묻지 않기" decision from the tray-cleanup
+     * confirm dialog. Default `false` so first-time users always get the
+     * confirm dialog (matches the plan Open Question R1 default — 100+
+     * cancels are non-trivially reversible). Power users that flip the
+     * checkbox once skip every subsequent confirm; the checkbox is the
+     * ONLY surface that writes this key (no separate Settings row), so an
+     * accidental flip is a one-tap recovery (untick on the next dialog).
+     */
+    suspend fun setTrayCleanupSkipConfirm(skip: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.TRAY_CLEANUP_SKIP_CONFIRM_V1] = skip
+        }
+    }
+
+    /**
      * Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
      * Task 5. Atomic per-package toggle for the sticky-permanent dismiss
      * set behind the `[무시]` button on [InboxSuggestionCard].
@@ -231,6 +248,13 @@ internal class SettingsSuppressionRepository(
         val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS =
             booleanPreferencesKey("protect_critical_persistent_notifications")
         val SHOW_IGNORED_ARCHIVE = booleanPreferencesKey("show_ignored_archive")
+        // Plan `2026-04-28-fix-issue-524-tray-orphan-cleanup-button.md` Task 4.
+        // Persisted "다시 묻지 않기" flag for the Settings → 트레이 정리 confirm
+        // dialog. Default `false`. The `_v1` suffix is reserved for a future
+        // schema bump if the dialog gains additional state we want to migrate
+        // (e.g. per-package skip lists).
+        val TRAY_CLEANUP_SKIP_CONFIRM_V1 =
+            booleanPreferencesKey("tray_cleanup_skip_confirm_v1")
         // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
         // Task 5. Sticky-permanent dismiss set keyed by packageName.
         val SUGGESTED_SUPPRESSION_DISMISSED =
