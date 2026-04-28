@@ -1,0 +1,32 @@
+# Build outputs
+**/build/
+**/.gradle/
+**/.idea/
+*.iml
+
+# Local APK + ADB outputs
+app/build/outputs/
+**/captures/
+
+# Generated lockfiles / wrapper jar
+gradle/wrapper/gradle-wrapper.jar
+**/*.lockfile
+
+# Worktrees + scratch
+.claude/worktrees/
+**/.DS_Store
+
+# Large data dumps
+/tmp/
+
+# Coverage / reports
+**/coverage/
+**/reports/
+
+# Vendored / generated
+node_modules/
+
+# Local env (do not surface to context)
+.env
+.env.local
+.env.*.local
