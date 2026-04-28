@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-28 (journey-tester — inbox-unified post-#532 doc-drift sweep, no emulator)
+
+| Journey | Result | Notes |
+|---|---|---|
+| inbox-unified | ⚠️ DRIFT | UTC 02:08Z. Re-verified after PR #532 (commit `1b8927c`, `fix(#525) Tasks 1-7 — HighVolumeAppDetector + InboxSuggestionCard + handler + Settings flow`) merged today. Code-side: `InboxScreen.kt` lines 33-34 import `HighVolumeAppCandidate` + `HighVolumeAppDetector`, lines 137-275 wire host-level `suggestion` state + render `InboxSuggestionCard` as the LazyColumn first item with three callbacks routing to `setSuppressedSourceApps` + `TrayOrphanCleanupRunner.cleanup(setOf(pkg))` + `setSuggestedSuppressionSnoozeUntil` + `setSuggestedSuppressionDismissed`. Doc-side: this journey's Observable steps / Code pointers / Tests do NOT mention the suggestion card; plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md` Task 8 (journey docs sync) is not done — plan still `status: planned`. Drift recorded as Known gap on the journey; no `last-verified` bump (recipe not re-run on hardware). ADB e2e (Task 9 of the plan) needs an R3CY2058DLJ-class fixture seed and is out of scope for this drift sweep — SKIP. Suggested next step: route to gap-planner / plan-implementer to land Task 8 + Task 9 as a follow-up so the journey owns the suggestion-card contract. |
+
 ### 2026-04-28 (ui-ux sweep, emulator-5554)
 
 | Journey | Result | Notes |
