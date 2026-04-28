@@ -435,3 +435,4 @@ If a self-merged row caused a regression:
 | 2026-04-28T01:22:27Z | project-manager | #531 | annotate #524 plan Tasks 1-3 IN PROGRESS via PR #530 | https://github.com/WooilKim/SmartNoti/actions/runs/25026988686 |
 | 2026-04-28T02:01:14Z | project-manager | #532 | plan-implementer Tasks 1-7 of fix-issue-525-high-volume-app-suggest-suppression — HighVolumeAppDetector + InboxSuggestionCard + accept handler + Settings flow | https://github.com/WooilKim/SmartNoti/actions/runs/25029307755 |
 | 2026-04-28T02:14:48Z | journey-tester | #534 | inbox-unified | https://github.com/WooilKim/SmartNoti/actions/runs/25030120303 |
+| 2026-04-28T02:38:04Z | project-manager | #535 | docs(#525) Tasks 8-9 — journey docs sync (3 journeys) + plan-525 status:shipped flip | https://github.com/WooilKim/SmartNoti/actions/runs/25030587584 |
