@@ -429,3 +429,4 @@ If a self-merged row caused a regression:
 | 2026-04-27T22:52:57Z | project-manager | #522 | #510 closure: Tasks 5-7 ADB e2e + 4 journey bumps + plan flip status:shipped | https://github.com/WooilKim/SmartNoti/actions/runs/25023632064 |
 | 2026-04-27T23:08:31Z | project-manager | #523 | plan-flip #479 issue-driven-release-loop status:shipped (docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/25024258593 |
 | 2026-04-28T00:07:23Z | project-manager | #527 | docs(plans): tray orphan cleanup button (#524) | https://github.com/WooilKim/SmartNoti/actions/runs/25025982617 |
+| 2026-04-28T00:16:34Z | project-manager | #528 | gap-planner plan for #525 high-volume app suggest-suppression | https://github.com/WooilKim/SmartNoti/actions/runs/25026265205/job/73297932089 |
