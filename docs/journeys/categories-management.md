@@ -125,6 +125,7 @@ adb shell am start -n com.smartnoti.app/.MainActivity
 - Category 자동 추천 (ML / 휴리스틱) 미구현 — 사용자가 수동 생성만 가능.
 - Recipe 는 아직 ADB 로 end-to-end 검증되지 않음 (`last-verified` 비어 있음). 첫 journey-tester sweep 에서 스크린샷 + uiautomator dump 로 고정.
 - (resolved 2026-04-25, plan `docs/plans/2026-04-25-category-chip-app-label-lookup.md`) `CategoryConditionChips` 의 APP 토큰은 현재 `Rule.matchValue` (raw `com.kakao.talk` 같은 packageName) 를 그대로 노출 — `appLabelLookup` 주입으로 사용자 친화 라벨로 바꾸는 후속 plan 필요 (plan `2026-04-24-categories-condition-chips.md` open question). → 후속 plan: `docs/plans/2026-04-25-category-chip-app-label-lookup.md` (chip surface 한 곳만 적용; 카드 metadata line / Detail "연결된 앱 · ${packageName}" 은 동일 lookup 으로 후속 PR 가능).
+- **정리함 진입 후 후속 발견 경로** — Issue #525 (PR #532) 가 정리함 Digest 서브탭에 `InboxSuggestionCard` 를 노출하면서 사용자가 `[예, 묶을게요]` 를 탭하면 해당 packageName 이 `SmartNotiSettings.suppressedSourceApps` 에 추가된다. Settings 의 "숨길 앱 선택" 리스트에서 그 packageName 이 selected 로 보이는지 (cross-cut 검증) 는 본 journey 가 아닌 → [digest-suppression](digest-suppression.md) Code pointers + `SettingsSuppressedAppPresentationBuilder` 의 effective `isSelected` 룰이 소유. Categories CRUD 자체는 영향 없음 — suggestion card 는 Inbox 에만 노출되고 Categories 화면을 우회한다.
 
 ## Change log
 
