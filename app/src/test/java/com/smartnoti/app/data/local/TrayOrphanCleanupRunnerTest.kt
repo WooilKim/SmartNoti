@@ -1,11 +1,12 @@
 package com.smartnoti.app.data.local
 
-import android.app.Notification
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Failing tests for plan
@@ -41,7 +42,12 @@ import org.junit.Test
  * The fake [SourceCancellationGateway] is reused from
  * [MigrateOrphanedSourceCancellationRunnerTest] (Issue #511) — same port,
  * different driver — so the cancel call shape is end-to-end identical.
+ *
+ * Run via Robolectric so [android.util.Log.w] (used by the runner for the
+ * PERSISTENT_PROTECTED skip diagnostic) resolves to a real logger instead
+ * of the JVM `Stub!` that throws "Method w in android.util.Log not mocked".
  */
+@RunWith(RobolectricTestRunner::class)
 class TrayOrphanCleanupRunnerTest {
 
     @Test
@@ -50,7 +56,11 @@ class TrayOrphanCleanupRunnerTest {
         // (always preserved) + 5 source orphan entries from those same packages.
         // The 5th source (Spotify) carries `FLAG_NO_CLEAR | FLAG_ONGOING_EVENT`
         // so the runner must classify it as PERSISTENT_PROTECTED and skip it.
-        val protectedFlags = Notification.FLAG_NO_CLEAR or Notification.FLAG_ONGOING_EVENT
+        // Flag values are inlined as literals (mirrors `Notification.FLAG_*`)
+        // because the Android `Notification` class is a `Stub!` at unit-test
+        // time — same trick `ProtectedSourceNotificationDetector` uses for
+        // its category strings.
+        val protectedFlags = NOTIFICATION_FLAG_NO_CLEAR or NOTIFICATION_FLAG_ONGOING_EVENT
 
         val entries = buildList {
             // 5 SmartNoti silent_group entries — these MUST be preserved
@@ -160,7 +170,7 @@ class TrayOrphanCleanupRunnerTest {
             sourceEntry("com.coupang.eats", flags = 0),
             // PERSISTENT_PROTECTED — should NOT show in preview candidates
             // because the user cannot actually clean it up.
-            sourceEntry("com.spotify.music", flags = Notification.FLAG_FOREGROUND_SERVICE),
+            sourceEntry("com.spotify.music", flags = NOTIFICATION_FLAG_FOREGROUND_SERVICE),
         )
 
         val inspector = FakeActiveTrayInspector(listenerBound = true, entries = entries)
@@ -207,6 +217,13 @@ class TrayOrphanCleanupRunnerTest {
     private companion object {
         const val SMARTNOTI_PKG = "com.smartnoti.app"
         const val SILENT_GROUP_PREFIX = "smartnoti_silent_group_app:"
+
+        // android.app.Notification flag literals — duplicated here so the
+        // unit test runs without the Android framework. Values must match
+        // the platform constants the runner reads via Notification.FLAG_*.
+        const val NOTIFICATION_FLAG_FOREGROUND_SERVICE = 0x00000040
+        const val NOTIFICATION_FLAG_NO_CLEAR = 0x00000020
+        const val NOTIFICATION_FLAG_ONGOING_EVENT = 0x00000002
     }
 }
 
