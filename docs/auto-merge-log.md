@@ -443,3 +443,4 @@ If a self-merged row caused a regression:
 | 2026-04-28T03:23:50Z | project-manager | #540 | plan-526 Tasks 3-4: SENDER RuleDraftFactory fixtures + SenderRuleSuggestionCard(Spec) + 8-case spec test | https://github.com/WooilKim/SmartNoti/actions/runs/25032021992 |
 | 2026-04-28T03:41:21Z | project-manager | #541 | plan-implementer Tasks 5-6 (#526 sender-aware rules: settings toggle + RuleEditor SENDER option) | https://github.com/WooilKim/SmartNoti/actions/runs/25032517402/job/73317118626 |
 | 2026-04-28T03:51:25Z | journey-tester | #542 | rules-management | https://github.com/WooilKim/SmartNoti/actions/runs/25032785731 |
+| 2026-04-28T04:17:15Z | project-manager | #543 | plan-526 closure (Tasks 7-9 NotificationDetailScreen wiring + e2e PASS + journey/plan sync) | https://github.com/WooilKim/SmartNoti/actions/runs/25033426574 |
