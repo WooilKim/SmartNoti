@@ -103,4 +103,45 @@ class RuleDraftFactoryTest {
 
         assertEquals(null, draft.overrideOf)
     }
+
+    /**
+     * Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+     * Task 3: explicit fixtures pin the SENDER rule's draft shape — title-substring
+     * matcher with no match-value normalization beyond `trim()`. The factory's
+     * `else -> trimmed` branch already covers SENDER, so these tests guard the
+     * happy-path contract from regression rather than driving new code.
+     */
+    @Test
+    fun sender_rule_trims_match_value() {
+        val draft = factory.create(
+            title = "Teams 1:1 DM",
+            matchValue = "  김동대(Special Recon)  ",
+            type = RuleTypeUi.SENDER,
+        )
+
+        assertEquals("김동대(Special Recon)", draft.matchValue)
+    }
+
+    @Test
+    fun sender_rule_id_is_deterministic_from_match_value() {
+        val draft = factory.create(
+            title = "Teams 1:1 DM",
+            matchValue = "김동대(Special Recon)",
+            type = RuleTypeUi.SENDER,
+        )
+
+        assertEquals("sender:김동대(Special Recon)", draft.id)
+        assertEquals(RuleTypeUi.SENDER, draft.type)
+    }
+
+    @Test
+    fun sender_rule_enabled_by_default() {
+        val draft = factory.create(
+            title = "Teams 1:1 DM",
+            matchValue = "김동대",
+            type = RuleTypeUi.SENDER,
+        )
+
+        assertEquals(true, draft.enabled)
+    }
 }
