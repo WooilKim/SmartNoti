@@ -19,7 +19,7 @@ status: planned
 - 기존 `cleanup()` overload 는 deprecate 하지 않는다 — `data/local/TrayOrphanCleanupRunner.kt` 의 production wiring (#524) 이 그대로 의존.
 - 본 변경은 **사용자 관측 동작 변경** (accept 후 다른 앱 orphan 이 보존됨) → `docs/journeys/inbox-unified.md` 의 Known gap "scoped cleanup overload pending" 을 Change log + Code pointers 갱신으로 닫는다.
 
-## Task 1: Add failing test for scoped overload
+## Task 1: Add failing test for scoped overload [IN PROGRESS via PR #546]
 
 **Objective:** scoped overload 의 정밀도 계약 (target 만 cancel, 그 외 보존) 을 단일 fixture 로 고정. 본 task 가 RED 인 상태로 commit 해서 implementer 의 다음 step 이 GREEN 으로 만드는 motion 을 가시화.
 
@@ -46,7 +46,7 @@ status: planned
    - Assert: `cancelledCount == 0`, `skippedProtectedCount == 0`, `notBound == true`. `gateway.cancelled.isEmpty()` (호출조차 시도 안 됨 — short-circuit).
 6. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.data.local.TrayOrphanCleanupRunnerTest"` 실행해 4개 신규 case 가 **컴파일 에러로 RED** 인지 확인 (overload 가 아직 없으니 unresolved reference). RED 메시지를 Task 1 commit body 에 첨부.
 
-## Task 2: Add scoped `cleanup(targetPackages)` overload
+## Task 2: Add scoped `cleanup(targetPackages)` overload [IN PROGRESS via PR #546]
 
 **Objective:** Task 1 의 4 case 가 GREEN.
 
