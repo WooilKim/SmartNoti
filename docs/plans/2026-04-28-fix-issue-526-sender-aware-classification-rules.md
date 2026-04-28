@@ -54,7 +54,7 @@ last-updated: 2026-04-28
 
 ---
 
-## Task 1: Failing test — `NotificationClassifierSenderRuleTest` [IN PROGRESS]
+## Task 1: Failing test — `NotificationClassifierSenderRuleTest` [IN PROGRESS via PR #536]
 
 **Objective:** Issue body 의 정확한 fixture (`title="김동대(Special Recon)"` + SENDER rule `matchValue="김동대"` linked to PRIORITY Category) 로 classify 호출 시 `NotificationDecision.PRIORITY` 가 나오는지 RED 상태로 고정. PERSON 룰과 다른 매치 contract (substring vs exact + title vs sender) 도 함께 가드.
 
@@ -71,7 +71,7 @@ last-updated: 2026-04-28
 2. Helper: `buildClassifier(rules, categories)` — 기존 classifier 단위테스트 패턴 (예: `NotificationClassifierKeywordRuleTest`) 와 일관. ClassificationInput 빌더는 `ClassificationInputFixtures` 가 있으면 재사용, 없으면 inline.
 3. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.domain.usecase.NotificationClassifierSenderRuleTest"` 로 RED 확인.
 
-## Task 2: Add `RuleTypeUi.SENDER` enum case + classifier branch [IN PROGRESS]
+## Task 2: Add `RuleTypeUi.SENDER` enum case + classifier branch [IN PROGRESS via PR #536]
 
 **Objective:** Task 1 의 5 fixture 를 GREEN.
 
