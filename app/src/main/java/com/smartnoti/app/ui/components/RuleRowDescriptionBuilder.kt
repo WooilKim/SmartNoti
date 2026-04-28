@@ -43,6 +43,16 @@ class RuleRowDescriptionBuilder {
                 secondaryText = "발신자 기준",
                 emphasisLabel = emphasisLabel,
             )
+            // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+            // Task 2 — natural-default description. SENDER differs from PERSON
+            // in the matcher (substring on title vs exact on sender) but the
+            // user-facing summary is intentionally similar so existing rule
+            // rows render coherently. Task 6 may refine the copy.
+            RuleTypeUi.SENDER -> RuleRowDescription(
+                primaryText = "'${rule.matchValue}' 발신자는 ${action.toActionPhrase()}",
+                secondaryText = "발신자 이름 기준",
+                emphasisLabel = emphasisLabel,
+            )
         }
     }
 

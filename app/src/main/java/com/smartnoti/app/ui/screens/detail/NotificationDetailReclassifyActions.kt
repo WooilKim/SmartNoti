@@ -283,6 +283,13 @@ private fun ruleMatches(
                 .filter { it.isNotBlank() }
                 .any { content.contains(it, ignoreCase = true) }
         }
+        // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+        // Task 2. Mirror the classifier's SENDER branch so the "분류 변경"
+        // sheet's dynamic-opposite default action recognises a SENDER rule
+        // as the owning matcher (not just the legacy four).
+        RuleTypeUi.SENDER ->
+            rule.matchValue.isNotBlank() &&
+                notification.title.contains(rule.matchValue, ignoreCase = true)
         RuleTypeUi.SCHEDULE,
         RuleTypeUi.REPEAT_BUNDLE -> false
     }

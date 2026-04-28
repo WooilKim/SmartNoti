@@ -728,6 +728,13 @@ class NotificationDetailScreenCharacterizationTest {
                     .filter { it.isNotBlank() }
                     .any { content.contains(it, ignoreCase = true) }
             }
+            // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+            // Task 2: SENDER mirror — title substring + ignoreCase, blank
+            // matchValue rejected. Kept in lock-step with the production
+            // `NotificationDetailReclassifyActions.ruleMatches` SENDER branch.
+            RuleTypeUi.SENDER ->
+                rule.matchValue.isNotBlank() &&
+                    notification.title.contains(rule.matchValue, ignoreCase = true)
             RuleTypeUi.SCHEDULE,
             RuleTypeUi.REPEAT_BUNDLE -> false
         }

@@ -381,6 +381,10 @@ private fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.KEYWORD -> "키워드"
     RuleTypeUi.SCHEDULE -> "시간"
     RuleTypeUi.REPEAT_BUNDLE -> "반복"
+    // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 2 — natural-default chip label. Task 6 owns the editor / dropdown
+    // copy, this stays in sync as the row chip.
+    RuleTypeUi.SENDER -> "발신자"
 }
 
 private fun actionLabel(action: RuleActionUi): String = when (action) {

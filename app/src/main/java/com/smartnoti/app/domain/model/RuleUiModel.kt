@@ -44,6 +44,22 @@ enum class RuleTypeUi {
     KEYWORD,
     SCHEDULE,
     REPEAT_BUNDLE,
+
+    /**
+     * Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+     * (issue #526). Substring + ignoreCase match against
+     * [com.smartnoti.app.domain.model.ClassificationInput.title]. Distinct
+     * from [PERSON] which compares the notification's `sender` metadata
+     * exactly: messenger 1:1 DMs (Teams / Slack / KakaoTalk) leave `sender`
+     * empty / set it to the app and put the actual person's name in the
+     * title (e.g. `"김동대(Special Recon)"`), so PERSON cannot reach them.
+     * SENDER closes that gap and powers the Detail-screen one-tap CTA that
+     * promotes "이 발신자" to PRIORITY without entering Settings.
+     *
+     * Appended at the end of the enum so existing rows that round-trip
+     * through [RuleTypeUi.values] / `.entries` keep their relative order.
+     */
+    SENDER,
 }
 
 /**

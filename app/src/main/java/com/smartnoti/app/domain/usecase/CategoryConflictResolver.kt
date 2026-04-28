@@ -105,11 +105,20 @@ class CategoryConflictResolver {
     }
 
     /**
-     * Rule-type rank on the ladder APP > KEYWORD > PERSON > SCHEDULE >
-     * REPEAT_BUNDLE. Higher == more specific.
+     * Rule-type rank on the ladder APP > SENDER > KEYWORD > PERSON >
+     * SCHEDULE > REPEAT_BUNDLE. Higher == more specific.
+     *
+     * Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+     * Task 2 inserts SENDER between APP and KEYWORD: a SENDER rule looks
+     * only at the title (a deliberate "this person" intent), while a
+     * KEYWORD rule scans title + body and is therefore broader / more
+     * incidental. The user's act of saving a sender rule expresses a
+     * clearer routing intent than a keyword that may merely appear
+     * inside an unrelated message body.
      */
     private fun ruleTypeRank(type: RuleTypeUi): Int = when (type) {
-        RuleTypeUi.APP -> 5
+        RuleTypeUi.APP -> 6
+        RuleTypeUi.SENDER -> 5
         RuleTypeUi.KEYWORD -> 4
         RuleTypeUi.PERSON -> 3
         RuleTypeUi.SCHEDULE -> 2

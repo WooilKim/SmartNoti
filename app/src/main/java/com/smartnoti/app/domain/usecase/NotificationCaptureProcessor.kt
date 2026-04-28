@@ -156,6 +156,12 @@ class NotificationCaptureProcessor(
                     .map { it.trim() }
                     .filter { it.isNotBlank() }
                     .any { keyword -> content.contains(keyword, ignoreCase = true) }
+                // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+                // Task 2: SENDER mirrors the classifier branch — title
+                // substring, ignoreCase, blank-matchValue guard. Surfaced
+                // here so reason-tag building can attribute SENDER hits.
+                RuleTypeUi.SENDER -> rule.matchValue.isNotBlank() &&
+                    input.title.contains(rule.matchValue, ignoreCase = true)
                 RuleTypeUi.SCHEDULE,
                 RuleTypeUi.REPEAT_BUNDLE -> false
             }
