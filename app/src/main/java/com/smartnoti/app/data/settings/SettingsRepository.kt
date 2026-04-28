@@ -74,6 +74,11 @@ class SettingsRepository private constructor(
                 replacementAutoDismissMinutes = prefs[SettingsDeliveryProfileRepository.Keys.REPLACEMENT_AUTO_DISMISS_MINUTES]
                     ?: defaults.replacementAutoDismissMinutes,
                 inboxSortMode = prefs[SettingsDeliveryProfileRepository.Keys.INBOX_SORT_MODE] ?: defaults.inboxSortMode,
+                suggestedSuppressionDismissed = prefs[SettingsSuppressionRepository.Keys.SUGGESTED_SUPPRESSION_DISMISSED]
+                    ?: defaults.suggestedSuppressionDismissed,
+                suggestedSuppressionSnoozeUntil = SettingsSuppressionRepository.decodeSnoozeMap(
+                    prefs[SettingsSuppressionRepository.Keys.SUGGESTED_SUPPRESSION_SNOOZE_UNTIL],
+                ),
             )
         }
     }
@@ -141,6 +146,13 @@ class SettingsRepository private constructor(
     suspend fun setShowIgnoredArchive(enabled: Boolean) = suppression.setShowIgnoredArchive(enabled)
     suspend fun toggleSuppressedSourceApp(packageName: String, enabled: Boolean) =
         suppression.toggleSuppressedSourceApp(packageName, enabled)
+    // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+    // Task 5. New façade methods for the InboxSuggestionCard sticky-dismiss /
+    // 24h-snooze writes. Both delegate 1-line to the suppression sibling.
+    suspend fun setSuggestedSuppressionDismissed(packageName: String, dismissed: Boolean) =
+        suppression.setSuggestedSuppressionDismissed(packageName, dismissed)
+    suspend fun setSuggestedSuppressionSnoozeUntil(packageName: String, untilMillis: Long?) =
+        suppression.setSuggestedSuppressionSnoozeUntil(packageName, untilMillis)
 
     // Onboarding sibling delegates
     fun observeOnboardingCompleted(): Flow<Boolean> = onboarding.observeOnboardingCompleted()

@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 /**
@@ -160,6 +161,59 @@ internal class SettingsSuppressionRepository(
         }
     }
 
+    /**
+     * Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+     * Task 5. Atomic per-package toggle for the sticky-permanent dismiss
+     * set behind the `[무시]` button on [InboxSuggestionCard].
+     *
+     *  - `dismissed = true` adds [packageName] to the set so
+     *    [HighVolumeAppDetector] never proposes it again.
+     *  - `dismissed = false` removes it (recovery path; v1 has no UI for
+     *    this but the API exists for completeness + tests).
+     *
+     * Idempotent: repeated `true` calls converge on the same final state
+     * (the test pins this).
+     */
+    suspend fun setSuggestedSuppressionDismissed(packageName: String, dismissed: Boolean) {
+        dataStore.edit { prefs ->
+            val current = (prefs[Keys.SUGGESTED_SUPPRESSION_DISMISSED] ?: emptySet()).toMutableSet()
+            if (dismissed) {
+                current.add(packageName)
+            } else {
+                current.remove(packageName)
+            }
+            prefs[Keys.SUGGESTED_SUPPRESSION_DISMISSED] = current
+        }
+    }
+
+    /**
+     * Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+     * Task 5. Atomic per-package edit for the 24h-snooze map behind the
+     * `[나중에]` button on [InboxSuggestionCard].
+     *
+     *  - `untilMillis != null` writes / overwrites the entry with that
+     *    expiry timestamp.
+     *  - `untilMillis == null` removes the entry (clear path).
+     *
+     * Persistence format: a single `stringPreferencesKey` storing a
+     * pipe-delimited `pkg=until|pkg=until` payload. DataStore Preferences
+     * does not support a native `Map<String, Long>` and proto DataStore is
+     * out of scope (plan §Risks). Empty-map writes the empty string. The
+     * encode / decode helpers are private to this class.
+     */
+    suspend fun setSuggestedSuppressionSnoozeUntil(packageName: String, untilMillis: Long?) {
+        dataStore.edit { prefs ->
+            val current = decodeSnoozeMap(prefs[Keys.SUGGESTED_SUPPRESSION_SNOOZE_UNTIL])
+                .toMutableMap()
+            if (untilMillis == null) {
+                current.remove(packageName)
+            } else {
+                current[packageName] = untilMillis
+            }
+            prefs[Keys.SUGGESTED_SUPPRESSION_SNOOZE_UNTIL] = encodeSnoozeMap(current)
+        }
+    }
+
     internal object Keys {
         val SUPPRESS_SOURCE_FOR_DIGEST_AND_SILENT =
             booleanPreferencesKey("suppress_source_for_digest_and_silent")
@@ -177,5 +231,49 @@ internal class SettingsSuppressionRepository(
         val PROTECT_CRITICAL_PERSISTENT_NOTIFICATIONS =
             booleanPreferencesKey("protect_critical_persistent_notifications")
         val SHOW_IGNORED_ARCHIVE = booleanPreferencesKey("show_ignored_archive")
+        // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+        // Task 5. Sticky-permanent dismiss set keyed by packageName.
+        val SUGGESTED_SUPPRESSION_DISMISSED =
+            stringSetPreferencesKey("suggested_suppression_dismissed")
+        // Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+        // Task 5. 24h-snooze map persisted as a `pkg=until|pkg2=until2` string
+        // payload. See the encode / decode helpers in [SettingsSuppressionRepository]
+        // for the format. DataStore Preferences cannot hold a Map natively.
+        val SUGGESTED_SUPPRESSION_SNOOZE_UNTIL =
+            stringPreferencesKey("suggested_suppression_snooze_until")
+    }
+
+    companion object {
+        /**
+         * Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+         * Task 5. Decode the `pkg=until|pkg2=until2` payload into a map.
+         * Tolerant of empty / null / malformed input — drops bad entries
+         * silently rather than throwing so an upgrade from a future format
+         * cannot brick the inbox.
+         */
+        internal fun decodeSnoozeMap(raw: String?): Map<String, Long> {
+            if (raw.isNullOrEmpty()) return emptyMap()
+            val out = LinkedHashMap<String, Long>()
+            raw.split('|').forEach { entry ->
+                if (entry.isBlank()) return@forEach
+                val eq = entry.indexOf('=')
+                if (eq <= 0 || eq == entry.lastIndex) return@forEach
+                val pkg = entry.substring(0, eq)
+                val untilStr = entry.substring(eq + 1)
+                val until = untilStr.toLongOrNull() ?: return@forEach
+                out[pkg] = until
+            }
+            return out
+        }
+
+        /**
+         * Plan `2026-04-28-fix-issue-525-high-volume-app-suggest-suppression.md`
+         * Task 5. Inverse of [decodeSnoozeMap]. Empty map → empty string so
+         * the DataStore read-side never sees `null` after a write.
+         */
+        internal fun encodeSnoozeMap(map: Map<String, Long>): String {
+            if (map.isEmpty()) return ""
+            return map.entries.joinToString(separator = "|") { (pkg, until) -> "$pkg=$until" }
+        }
     }
 }
