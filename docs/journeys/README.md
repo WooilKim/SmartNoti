@@ -66,6 +66,12 @@
 ## Verification log
 
 
+### 2026-04-28 (journey-tester — rules-management post-#541 doc-drift sweep, no emulator)
+
+| Journey | Result | Notes |
+|---|---|---|
+| rules-management | ⚠️ DRIFT | UTC 03:45Z. Re-verified after PR #541 (commit `60ee856`, plan-526 Tasks 5-6 — `senderSuggestionEnabled` Settings toggle + RuleEditor SENDER selectable). Code-side: `RuleUiModel.kt:62` adds `RuleTypeUi.SENDER` (6th enum value, appended to preserve ordinals); `RuleEditorTypeSection.kt:137-144` introduces hoisted `internal val RuleEditorTypeDropdownOptions: List<RuleTypeUi>` constant containing all 6 values + Korean labels (`SENDER → "발신자"` / match label `"발신자 이름"` at lines 156, 167); `RulesScreen.kt:655-661` now reads from this single source of truth (replacing pre-Task-6 hard-coded 5-type list). New Settings card `SenderSuggestionSettingsCard` in `SettingsOperationalSection.kt:97-118` (default ON via `SmartNotiSettings.senderSuggestionEnabled = true`, `SettingsModels.kt:140`) gates the Detail-screen one-tap promote-to-PRIORITY card path that the SENDER rule type powers. Doc-side: this journey's Observable Step 6 still enumerates 5 RuleTypeUi values (PERSON / APP / KEYWORD / SCHEDULE / REPEAT_BUNDLE) and Code pointers list no Settings entry for the new toggle. Drift recorded as Known gaps bullet on the journey; no `last-verified` bump (no ADB e2e of new dropdown row + Settings card this sweep). Plan-526 Task 9 (journey docs sync — `notification-capture-classify` + `rules-management` + `notification-detail`) is still `status: planned`. Suggested next step: route to plan-implementer to land plan-526 Tasks 7-9 (ADB e2e + journey sync) so the three journeys own the SENDER contract end-to-end. |
+
 ### 2026-04-28 (journey-tester — notification-capture-classify post-#536 doc-drift sweep, no emulator)
 
 | Journey | Result | Notes |
