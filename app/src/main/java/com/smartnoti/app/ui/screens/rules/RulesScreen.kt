@@ -651,14 +651,14 @@ fun RulesScreen(
                         }
                     }
                     SectionLabel(title = "규칙 타입")
+                    // Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+                    // Task 6 — option list lives in
+                    // `RuleEditorTypeDropdownOptions` (single source of truth)
+                    // so a unit test can pin the exact ordering without
+                    // spinning Compose. SENDER is the 6th entry; ordering
+                    // preserves muscle memory for the original five.
                     EnumSelectorRow(
-                        options = listOf(
-                            RuleTypeUi.PERSON,
-                            RuleTypeUi.APP,
-                            RuleTypeUi.KEYWORD,
-                            RuleTypeUi.SCHEDULE,
-                            RuleTypeUi.REPEAT_BUNDLE,
-                        ),
+                        options = RuleEditorTypeDropdownOptions,
                         selected = draftType,
                         label = { typeLabel(it) },
                         onSelect = {

@@ -81,6 +81,8 @@ class SettingsRepository private constructor(
                 suggestedSuppressionSnoozeUntil = SettingsSuppressionRepository.decodeSnoozeMap(
                     prefs[SettingsSuppressionRepository.Keys.SUGGESTED_SUPPRESSION_SNOOZE_UNTIL],
                 ),
+                senderSuggestionEnabled = prefs[SettingsSuppressionRepository.Keys.SENDER_SUGGESTION_ENABLED]
+                    ?: defaults.senderSuggestionEnabled,
             )
         }
     }
@@ -161,6 +163,11 @@ class SettingsRepository private constructor(
         suppression.setSuggestedSuppressionDismissed(packageName, dismissed)
     suspend fun setSuggestedSuppressionSnoozeUntil(packageName: String, untilMillis: Long?) =
         suppression.setSuggestedSuppressionSnoozeUntil(packageName, untilMillis)
+    // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 5. Façade delegate for the master toggle that gates the
+    // SenderRuleSuggestionCard on the notification Detail screen.
+    suspend fun setSenderSuggestionEnabled(enabled: Boolean) =
+        suppression.setSenderSuggestionEnabled(enabled)
 
     // Onboarding sibling delegates
     fun observeOnboardingCompleted(): Flow<Boolean> = onboarding.observeOnboardingCompleted()

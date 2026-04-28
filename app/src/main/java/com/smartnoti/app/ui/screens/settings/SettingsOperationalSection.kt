@@ -82,6 +82,41 @@ internal fun IgnoredArchiveSettingsCard(
     }
 }
 
+/**
+ * Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+ * Task 5 — Settings card for the master toggle that gates the
+ * `SenderRuleSuggestionCard` surfaced on the notification Detail screen.
+ * Default ON matches the plan's "learning acceleration" intent — fresh
+ * installs see the card immediately so the cohort can convert noisy
+ * SILENT messenger DMs to PRIORITY in one tap. Power users that find the
+ * card intrusive can flip this OFF here. The toggle does not alter the
+ * classifier or the rule storage — disabling only hides the suggestion
+ * card; existing SENDER rules continue to match.
+ */
+@Composable
+internal fun SenderSuggestionSettingsCard(
+    senderSuggestionEnabled: Boolean,
+    onSenderSuggestionEnabledChange: (Boolean) -> Unit,
+) {
+    SmartSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+        SettingsCardHeader(
+            eyebrow = "발신자",
+            title = "발신자 분류 제안",
+            subtitle = "알림 상세 화면에서 같은 발신자의 알림을 항상 [중요]로 분류할지 제안받아요.",
+        )
+        SettingsToggleRow(
+            title = "발신자 분류 제안",
+            checked = senderSuggestionEnabled,
+            onCheckedChange = onSenderSuggestionEnabledChange,
+            subtitle = if (senderSuggestionEnabled) {
+                "알림 상세 화면에서 발신자별 중요 분류를 제안받아요. 기존 규칙은 영향을 받지 않아요."
+            } else {
+                "켜면 알림 상세 화면에 발신자 기반의 한 번에 중요 분류 제안 카드가 나타나요."
+            },
+        )
+    }
+}
+
 @Composable
 internal fun OperationalSummaryCard(
     summary: SettingsOperationalSummary,

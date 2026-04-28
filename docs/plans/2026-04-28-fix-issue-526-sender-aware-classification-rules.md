@@ -148,7 +148,7 @@ last-updated: 2026-04-28
    - `labels_are_distinct_and_nonempty`
 4. `./gradlew :app:testDebugUnitTest --tests "com.smartnoti.app.ui.screens.detail.SenderRuleSuggestionCardSpecTest"` GREEN.
 
-## Task 5: Settings toggle — `senderSuggestionEnabled`
+## Task 5: Settings toggle — `senderSuggestionEnabled` [IN PROGRESS via PR pending]
 
 **Objective:** "발신자 분류 제안 활성화" 토글을 SmartNotiSettings 에 추가, default ON. SettingsScreen 의 적절한 섹션에 토글 표시.
 
@@ -164,7 +164,7 @@ last-updated: 2026-04-28
 3. Settings 화면에 토글 1 줄. supporting text 는 위 카피 그대로.
 4. Test 2 case GREEN.
 
-## Task 6: RuleEditor SENDER option + label updates
+## Task 6: RuleEditor SENDER option + label updates [IN PROGRESS via PR pending]
 
 **Objective:** Settings → 룰 관리 → 신규 룰 의 type dropdown 에 "발신자" (SENDER) 옵션이 노출되고, 선택 시 matchValue label 이 "발신자 이름" 으로 바뀌는지 가드.
 

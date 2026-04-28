@@ -125,6 +125,24 @@ internal fun RuleEditorAppSuggestionRow(
     }
 }
 
+/**
+ * Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+ * Task 6 — single source of truth for the rule-editor type dropdown's
+ * option order. Hoisted out of the `EnumSelectorRow` call site in
+ * `RulesScreen` so a unit test can pin the exact list (including SENDER
+ * append at index 5) without spinning Compose. Keep ordering stable —
+ * legacy users built muscle memory around the first five entries; new
+ * types append at the tail.
+ */
+internal val RuleEditorTypeDropdownOptions: List<RuleTypeUi> = listOf(
+    RuleTypeUi.PERSON,
+    RuleTypeUi.APP,
+    RuleTypeUi.KEYWORD,
+    RuleTypeUi.SCHEDULE,
+    RuleTypeUi.REPEAT_BUNDLE,
+    RuleTypeUi.SENDER,
+)
+
 internal fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.PERSON -> "사람"
     RuleTypeUi.APP -> "앱"
