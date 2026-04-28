@@ -195,6 +195,166 @@ class TrayOrphanCleanupRunnerTest {
         )
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Scoped `cleanup(targetPackages)` overload — plan
+    // `docs/plans/2026-04-28-tray-orphan-cleanup-scoped-overload.md` Task 1.
+    //
+    // Pins the precision contract for the v1 정리함 high-volume suggestion
+    // accept path: when the user taps `[예, 묶을게요]`, only the source
+    // orphans for the packageName they just suppressed are cancelled. Other
+    // packages' orphans (from earlier accepts or unrelated sources) are
+    // preserved. The unscoped `cleanup()` overload remains the entry point
+    // for Settings → "트레이 정리" (#524) — same runner, different surface.
+    //
+    // Open question resolved by the plan: `cleanup(emptySet())` is a noop
+    // (caller's empty intent is honoured), not a fallback to unscoped
+    // cleanup. The third test below pins that semantic.
+    // ─────────────────────────────────────────────────────────────────────
+
+    @Test
+    fun scoped_cleanup_only_cancels_target_packages_and_preserves_others() = runBlocking {
+        // 5 source orphans + 5 SmartNoti silent_group entries (one per
+        // package, so each source qualifies as a candidate). Caller passes
+        // a singleton set targeting only Naver — the other 4 source orphans
+        // must remain in the tray untouched.
+        val entries = buildList {
+            add(smartNotiGroupEntry("com.nhn.android.search"))
+            add(smartNotiGroupEntry("com.kakao.talk"))
+            add(smartNotiGroupEntry("com.coupang.eats"))
+            add(smartNotiGroupEntry("com.genesis.mygenesis"))
+            add(smartNotiGroupEntry("com.samsung.android.shealth"))
+
+            add(sourceEntry("com.nhn.android.search", flags = 0))
+            add(sourceEntry("com.kakao.talk", flags = 0))
+            add(sourceEntry("com.coupang.eats", flags = 0))
+            add(sourceEntry("com.genesis.mygenesis", flags = 0))
+            add(sourceEntry("com.samsung.android.shealth", flags = 0))
+        }
+
+        val inspector = FakeActiveTrayInspector(listenerBound = true, entries = entries)
+        val gateway = RecordingSourceCancellationGateway()
+        val runner = TrayOrphanCleanupRunner(inspector = inspector, gateway = gateway)
+
+        val result = runner.cleanup(setOf("com.nhn.android.search"))
+
+        assertFalse("listener bound must NOT yield notBound", result.notBound)
+        assertEquals(
+            "Only the targeted Naver source orphan must be cancelled",
+            1,
+            result.cancelledCount,
+        )
+        assertEquals(
+            "No PERSISTENT_PROTECTED entries in this fixture",
+            0,
+            result.skippedProtectedCount,
+        )
+        assertEquals(
+            "Gateway must receive exactly the Naver source key",
+            listOf(sourceKey("com.nhn.android.search")),
+            gateway.cancelledKeys,
+        )
+    }
+
+    @Test
+    fun scoped_cleanup_with_empty_target_set_is_noop() = runBlocking {
+        // Same fixture as the precision test — but the caller passes an
+        // empty set. The plan's open-question resolution: empty set means
+        // noop (the caller's intent is empty), not fallback to unscoped.
+        val entries = buildList {
+            add(smartNotiGroupEntry("com.nhn.android.search"))
+            add(smartNotiGroupEntry("com.kakao.talk"))
+            add(smartNotiGroupEntry("com.coupang.eats"))
+            add(smartNotiGroupEntry("com.genesis.mygenesis"))
+            add(smartNotiGroupEntry("com.samsung.android.shealth"))
+
+            add(sourceEntry("com.nhn.android.search", flags = 0))
+            add(sourceEntry("com.kakao.talk", flags = 0))
+            add(sourceEntry("com.coupang.eats", flags = 0))
+            add(sourceEntry("com.genesis.mygenesis", flags = 0))
+            add(sourceEntry("com.samsung.android.shealth", flags = 0))
+        }
+
+        val inspector = FakeActiveTrayInspector(listenerBound = true, entries = entries)
+        val gateway = RecordingSourceCancellationGateway()
+        val runner = TrayOrphanCleanupRunner(inspector = inspector, gateway = gateway)
+
+        val result = runner.cleanup(emptySet())
+
+        assertFalse(result.notBound)
+        assertEquals(
+            "Empty target set must yield zero cancels (noop, not unscoped fallback)",
+            0,
+            result.cancelledCount,
+        )
+        assertEquals(0, result.skippedProtectedCount)
+        assertTrue(
+            "Empty target set must invoke no gateway calls",
+            gateway.cancelledKeys.isEmpty(),
+        )
+    }
+
+    @Test
+    fun scoped_cleanup_still_skips_protected_target_entries() = runBlocking {
+        // Two source orphans for the SAME targeted packageName: one
+        // unprotected, one PERSISTENT_PROTECTED (FLAG_FOREGROUND_SERVICE).
+        // The protected entry must be reported as skippedProtectedCount and
+        // never handed to the gateway, even though its packageName is in
+        // the target set.
+        val entries = listOf(
+            smartNotiGroupEntry("com.nhn.android.search"),
+            sourceEntry("com.nhn.android.search", flags = 0),
+            ActiveTrayEntry(
+                key = "0|com.nhn.android.search|9999|sourceTag2|10001",
+                packageName = "com.nhn.android.search",
+                groupKey = null,
+                flags = NOTIFICATION_FLAG_FOREGROUND_SERVICE,
+            ),
+        )
+
+        val inspector = FakeActiveTrayInspector(listenerBound = true, entries = entries)
+        val gateway = RecordingSourceCancellationGateway()
+        val runner = TrayOrphanCleanupRunner(inspector = inspector, gateway = gateway)
+
+        val result = runner.cleanup(setOf("com.nhn.android.search"))
+
+        assertFalse(result.notBound)
+        assertEquals(
+            "The unprotected Naver source orphan must be cancelled",
+            1,
+            result.cancelledCount,
+        )
+        assertEquals(
+            "The FLAG_FOREGROUND_SERVICE entry must be reported as protected-skip",
+            1,
+            result.skippedProtectedCount,
+        )
+        assertEquals(
+            "Gateway must receive only the unprotected source key",
+            listOf(sourceKey("com.nhn.android.search")),
+            gateway.cancelledKeys,
+        )
+    }
+
+    @Test
+    fun scoped_cleanup_short_circuits_when_listener_not_bound() = runBlocking {
+        // Listener not bound: scoped overload mirrors the unscoped path —
+        // notBound = true, zero cancels, zero gateway calls. The runner
+        // never even reads the target set in this branch.
+        val inspector = FakeActiveTrayInspector(listenerBound = false, entries = emptyList())
+        val gateway = RecordingSourceCancellationGateway()
+        val runner = TrayOrphanCleanupRunner(inspector = inspector, gateway = gateway)
+
+        val result = runner.cleanup(setOf("com.nhn.android.search"))
+
+        assertTrue("listener not bound → notBound must be true", result.notBound)
+        assertEquals(0, result.cancelledCount)
+        assertEquals(0, result.skippedProtectedCount)
+        assertTrue(
+            "notBound must invoke no gateway calls",
+            gateway.cancelledKeys.isEmpty(),
+        )
+    }
+
     private fun smartNotiGroupEntry(sourcePkg: String): ActiveTrayEntry =
         ActiveTrayEntry(
             key = "0|$SMARTNOTI_PKG|${sourcePkg.hashCode()}|smartnoti|10000",
