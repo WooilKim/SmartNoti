@@ -31,7 +31,9 @@ import com.smartnoti.app.data.rules.RulesRepository
 import com.smartnoti.app.data.settings.SettingsRepository
 import com.smartnoti.app.data.settings.SmartNotiSettings
 import com.smartnoti.app.domain.model.Category
+import com.smartnoti.app.domain.model.RuleTypeUi
 import com.smartnoti.app.domain.model.RuleUiModel
+import com.smartnoti.app.domain.usecase.AcceptSenderSuggestionUseCase
 import com.smartnoti.app.domain.usecase.ApplyCategoryActionToNotificationUseCase
 import com.smartnoti.app.domain.usecase.AssignNotificationToCategoryUseCase
 import com.smartnoti.app.domain.usecase.CategoryActionToNotificationStatusMapper
@@ -44,6 +46,8 @@ import com.smartnoti.app.domain.usecase.QuietHoursExplainerBuilder
 import com.smartnoti.app.domain.usecase.shouldShowDetailCard
 import com.smartnoti.app.ui.components.EmptyState
 import com.smartnoti.app.ui.components.StatusBadge
+import kotlinx.coroutines.launch
+import androidx.compose.material3.SnackbarDuration
 
 @Composable
 fun NotificationDetailScreen(
@@ -99,6 +103,33 @@ fun NotificationDetailScreen(
             },
         )
     }
+    // Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 7. Use case wired against the same two repositories as
+    // [assignUseCase] — separate Ports interface so the SenderRule path can
+    // be unit-tested in isolation without dragging in the AssignNotification
+    // contract. Both writes (rule upsert + category attach) happen inside
+    // [AcceptSenderSuggestionUseCase.accept] sequentially.
+    val acceptSenderSuggestionUseCase = remember(rulesRepository, categoriesRepository) {
+        AcceptSenderSuggestionUseCase(
+            ports = object : AcceptSenderSuggestionUseCase.Ports {
+                override suspend fun upsertRule(rule: RuleUiModel) {
+                    rulesRepository.upsertRule(rule)
+                }
+                override suspend fun appendRuleIdToCategory(
+                    categoryId: String,
+                    ruleId: String,
+                ) {
+                    categoriesRepository.appendRuleIdToCategory(categoryId, ruleId)
+                }
+            },
+        )
+    }
+    // Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 7. Per-Detail-entry dismissable state — when the user taps
+    // [SenderRuleSuggestionCardSpec.LABEL_DISMISS] the card is hidden for the
+    // remainder of this Detail mount. v1 keeps it in-memory only; per-title
+    // sticky-dismiss is an explicit v2 carve-out (Plan §Risks).
+    var senderSuggestionDismissedThisEntry by remember { mutableStateOf(false) }
     // Plan `docs/plans/2026-04-26-detail-reclassify-this-row-now.md` Tasks 4–5:
     // after the Path A (existing Category) or Path B (newly-created Category)
     // write completes, also rewrite the currently-displayed row's
@@ -153,6 +184,34 @@ fun NotificationDetailScreen(
                 replacementNotificationIssued = it.replacementNotificationIssued,
             )
         }
+    }
+    // Plan `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 7. Pre-compute the existing-SENDER-rule check outside the spec so
+    // [SenderRuleSuggestionCardSpec.shouldShow] stays pure. Re-evaluates
+    // whenever the rules Flow re-emits (e.g. after the user taps accept and
+    // the rule lands in storage). Title comparison is the same `contains` +
+    // `ignoreCase` contract the classifier uses, so the suggestion suppresses
+    // exactly when classification would already route via SENDER.
+    val hasExistingSenderRuleForTitle = remember(rules, notification?.title) {
+        val title = notification?.title.orEmpty()
+        if (title.isBlank()) false else rules.any { rule ->
+            rule.type == RuleTypeUi.SENDER &&
+                rule.matchValue.isNotBlank() &&
+                title.contains(rule.matchValue, ignoreCase = true)
+        }
+    }
+    val showSenderSuggestion = remember(
+        notification?.title,
+        hasExistingSenderRuleForTitle,
+        settings.senderSuggestionEnabled,
+        senderSuggestionDismissedThisEntry,
+    ) {
+        !senderSuggestionDismissedThisEntry &&
+            SenderRuleSuggestionCardSpec.shouldShow(
+                title = notification?.title.orEmpty(),
+                hasExistingSenderRule = hasExistingSenderRuleForTitle,
+                settingToggleOn = settings.senderSuggestionEnabled,
+            )
     }
 
     if (notification == null) {
@@ -236,6 +295,58 @@ fun NotificationDetailScreen(
                 repository = repository,
                 scope = scope,
             )
+        }
+        // Plan
+        // `docs/plans/2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+        // Task 7. SENDER one-tap suggestion sits directly above the
+        // "분류 변경" CTA so the user can either (a) elevate this exact
+        // sender with one tap (Accept) or (b) fall through to the general
+        // reclassify sheet (existing CTA below). Visibility is gated by
+        // [showSenderSuggestion] — `item { }` is only emitted when all five
+        // [SenderRuleSuggestionCardSpec.shouldShow] guards pass and the
+        // user has not already tapped dismiss this Detail mount.
+        if (showSenderSuggestion) {
+            item(key = "sender-suggestion-${notification.id}") {
+                SenderRuleSuggestionCard(
+                    title = notification.title,
+                    onAccept = {
+                        // Capture the categories snapshot at tap time so a
+                        // concurrent edit cannot race the destination
+                        // resolution (mirrors the Path A snapshot pattern in
+                        // [NotificationDetailReclassifyHost.onAssignToExisting]).
+                        val snapshot = categories
+                        scope.launch {
+                            val outcome = acceptSenderSuggestionUseCase.accept(
+                                title = notification.title,
+                                categories = snapshot,
+                            )
+                            val message = when (outcome) {
+                                is AcceptSenderSuggestionUseCase.Outcome.Attached ->
+                                    "같은 발신자의 다음 알림부터 중요로 분류돼요"
+                                AcceptSenderSuggestionUseCase.Outcome.NoPriorityCategory ->
+                                    "중요 분류가 없어 발신자 규칙을 만들 수 없어요. " +
+                                        "분류 변경에서 새 분류를 만들어 주세요."
+                                AcceptSenderSuggestionUseCase.Outcome.BlankTitle -> null
+                            }
+                            // Hide the card immediately — the next
+                            // recomposition would suppress it anyway via
+                            // `hasExistingSenderRuleForTitle`, but flipping
+                            // the dismiss flag avoids a one-frame flash if
+                            // the rules Flow has not re-emitted yet.
+                            senderSuggestionDismissedThisEntry = true
+                            if (message != null) {
+                                snackbarHostState.showSnackbar(
+                                    message = message,
+                                    duration = SnackbarDuration.Short,
+                                )
+                            }
+                        }
+                    },
+                    onDismiss = {
+                        senderSuggestionDismissedThisEntry = true
+                    },
+                )
+            }
         }
         item {
             NotificationDetailReclassifyCta(onOpenAssignSheet = { showAssignSheet = true })
