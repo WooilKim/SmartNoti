@@ -210,3 +210,9 @@ adb -s R3CY2058DLJ shell dumpsys notification --noredact | grep -c "smartnoti_si
 
 연결 issue: https://github.com/WooilKim/SmartNoti/issues/524
 선행 plan: [`docs/plans/2026-04-28-fix-issue-511-cancel-source-on-replacement.md`](2026-04-28-fix-issue-511-cancel-source-on-replacement.md) (#511 forward fix; 본 plan 이 그 효과를 사용자에게 즉시 노출)
+
+---
+
+## Change log
+
+- 2026-04-28: shipped — Tasks 1-3 via PR #530, Tasks 4+6 via PR #537 (squash 0b19100). Task 5 ADB e2e on R3CY2058DLJ-class device deferred — recipe preserved in §Task 5, follow-up tracked as Known gap on silent-auto-hide.md.
