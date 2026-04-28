@@ -43,7 +43,7 @@
 | [inbox-unified](inbox-unified.md) | 정리함 통합 탭 (Digest + 보관/처리) | shipped | 2026-04-26 |
 | [digest-inbox](digest-inbox.md) | 정리함 인박스 (legacy) | deprecated → inbox-unified | 2026-04-27 |
 | [hidden-inbox](hidden-inbox.md) | 숨긴 알림 인박스 (legacy) | deprecated → inbox-unified | 2026-04-27 |
-| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-27 |
+| [notification-detail](notification-detail.md) | 알림 상세 및 피드백 액션 | shipped | 2026-04-28 |
 | [ignored-archive](ignored-archive.md) | 무시됨 아카이브 (opt-in IGNORE 뷰) | shipped | 2026-04-27 |
 | [insight-drilldown](insight-drilldown.md) | 인사이트 드릴다운 | shipped | 2026-04-27 |
 
@@ -65,6 +65,12 @@
 
 ## Verification log
 
+
+### 2026-04-28 (journey-tester — notification-detail post-#543 SenderRuleSuggestionCard verify, emulator-5554)
+
+| Journey | Result | Notes |
+|---|---|---|
+| notification-detail | PASS | UTC ~13:30Z. Re-verified after PR #543 (commit `72b1e18`, plan-526 Tasks 7-9 — `NotificationDetailScreen` wires `SenderRuleSuggestionCard` via observed flow + `AcceptSenderSuggestionUseCase`). emulator-5554 APK `lastUpdateTime=2026-04-28 13:01:40`. Recipe: `cmd notification post -S bigtext -t 'DetailTest_0428' FbTest1_0428 '분류 변경 테스트'` → 검토 대기 row 탭 → Detail 마운트. Observable steps 1–6 PASS. New SenderRuleSuggestionCard renders above the reclassify CTA (bounds [42,1620][1038,1989] vs CTA [42,2031][1038,2127]) with body=`이 발신자를 항상 [중요]로 분류할까요?\n"DetailTest_0428"` and two buttons `[예, 중요로]` / `[무시]`. `[예, 중요로]` tap → snackbar `같은 발신자의 다음 알림부터 중요로 분류돼요` + DataStore inspect: `smartnoti_rules` gains `sender:DetailTest_0428|...|SENDER|true|DetailTest_0428|...` + `cat-onboarding-important_priority` ruleIds appended with `sender:DetailTest_0428` (AcceptSenderSuggestionUseCase Outcome.Saved destination ladder verified). Follow-up `cmd notification post -t 'DetailTest_0428' FbTest2_0428 '후속 알림 테스트'` → auto-classified as `즉시 전달` with `사용자 규칙` reasonTag. DRIFT 없음. `last-verified` 2026-04-27 → 2026-04-28. |
 
 ### 2026-04-28 (journey-tester — rules-management post-#541 doc-drift sweep, no emulator)
 
