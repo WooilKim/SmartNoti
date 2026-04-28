@@ -108,7 +108,7 @@ superseded-by:
 4. Cleanup 실행 시 IO scope 에서 `runner.cleanup()`, 결과 토스트 ("N건 정리됨" / "정리할 알림이 없었어요" / "권한이 비활성이에요"). 토스트 후 LaunchedEffect 가 preview 를 갱신해 "0건" 으로 떨어지는 것을 사용자가 즉시 보게.
 5. 신규 settings 키 (`tray_cleanup_skip_confirm_v1`) 는 `SettingsRepository` 의 기존 prefix 패턴 따라 추가 — 기본 false, no migration needed (boolean default).
 
-## Task 4: Wire `SettingsTrayCleanupSection` into `SettingsScreen` `[IN PROGRESS via PR #N]`
+## Task 4: Wire `SettingsTrayCleanupSection` into `SettingsScreen` `[IN PROGRESS via PR #537]`
 
 **Objective:** Settings 화면의 `SuppressionManagementCard` 직후 새 `item { SettingsTrayCleanupSection(...) }` 삽입.
 
@@ -122,7 +122,7 @@ superseded-by:
 3. `onCleanupClick = { coroutineScope.launch { val result = runner.cleanup(); toast(result); state = runner.preview() } }`.
 4. Confirm-skip preference 는 `repository.observeTrayCleanupSkipConfirm()` collectAsState 로 binding.
 
-## Task 5: ADB e2e on R3CY2058DLJ `[DEFERRED via PR #N — device not connected; recipe preserved below; follow-up tracked as Known gap on silent-auto-hide.md]`
+## Task 5: ADB e2e on R3CY2058DLJ `[DEFERRED via PR #537 — device not connected; recipe preserved below; follow-up tracked as Known gap on silent-auto-hide.md]`
 
 **Objective:** 실제 디바이스에서 100+ source orphan → cleanup → 0 (PERSISTENT_PROTECTED 제외) 확인.
 
@@ -153,7 +153,7 @@ adb -s R3CY2058DLJ shell dumpsys notification --noredact | grep -c "smartnoti_si
 
 결과 (before/after diff + 카운트) 를 PR body 에 첨부. PERSISTENT_PROTECTED 로 skip 된 패키지는 정확히 logcat 에 한 줄씩 (`TrayOrphanCleanupRunner` warn 로그) 남기도록 Task 2 에서 logging 추가 — 분석 용이.
 
-## Task 6: Journey doc updates `[IN PROGRESS via PR #N]`
+## Task 6: Journey doc updates `[IN PROGRESS via PR #537]`
 
 **Files:**
 - `docs/journeys/silent-auto-hide.md` — Known gaps 에서 "100+ pre-#511 cohort 가 트레이에 잔존" 항목 (있다면) 을 Change log 로 이동, Code pointers 에 `TrayOrphanCleanupRunner` 추가, `last-verified` 는 Task 5 ADB sweep 날짜 (`date -u +%Y-%m-%d`) 로 bump.
@@ -161,7 +161,7 @@ adb -s R3CY2058DLJ shell dumpsys notification --noredact | grep -c "smartnoti_si
 - `docs/journeys/protected-source-notifications.md` — Change log 에 "트레이 정리 경로도 PERSISTENT_PROTECTED 계약을 따름" 명시 + `last-verified` bump.
 - 본 plan frontmatter `status: shipped` + `superseded-by:` 는 implementer 가 PR merge 시점에 갱신.
 
-## Task 7: Self-review + PR `[IN PROGRESS via PR #N]`
+## Task 7: Self-review + PR `[IN PROGRESS via PR #537]`
 
 - 모든 unit test GREEN (`./gradlew :app:testDebugUnitTest`).
 - ADB Task 5 결과 (before/after grep count + 토스트 스크린샷 or 캡처) PR body 에 첨부.
