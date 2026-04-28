@@ -508,3 +508,4 @@ The project-manager only reviews agent-origin PRs (branch patterns documented in
 | 2026-04-28T00:07:47Z | #528 | gap-planner | DEFER | CI pending |
 | 2026-04-28T00:16:50Z | #528 | gap-planner | APPROVE | docs-only plan for #525; CI green; merged |
 | 2026-04-28T00:17:01Z | #529 | gap-planner | DEFER | CI in progress at sweep time |
+| 2026-04-28T01:22:41Z | #529 | gap-planner | APPROVE+merge | docs/plans only — plan for #526 sender-aware classification rules; CI green |
