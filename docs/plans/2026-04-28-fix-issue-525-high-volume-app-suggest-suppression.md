@@ -1,8 +1,10 @@
 ---
-status: planned
+status: shipped
+shipped: 2026-04-28
 fixes: 525
 priority: P1
-last-updated: 2026-04-27
+last-updated: 2026-04-28
+superseded-by: docs/journeys/inbox-unified.md
 ---
 
 # Fix #525 — 고빈도 앱 자동 묶음 처리 제안 (Inbox suggestion card)
@@ -248,6 +250,8 @@ adb -s R3CY2058DLJ shell cat /sdcard/ui.xml | grep -iE "카카오톡"
 ```
 
 Plan frontmatter 를 `status: shipped` + `superseded-by:` 로 flip. inbox-unified / digest-suppression journey 의 `last-verified` 는 재검증 시점에 별도 PR 로 갱신.
+
+**Status (2026-04-28): plan flipped to `status: shipped`.** Tasks 1-7 shipped via PR #532 (commit `1b8927c`); Task 8 (journey docs sync) shipped via this PR. **Task 4 (scoped `cleanup(targetPackages)` overload of `TrayOrphanCleanupRunner`)** is **NOT** shipped — `InboxScreenSuggestionCallbacks.cleanupTrayOrphans` calls the unscoped `cleanup()` as a v1 fallback (documented in code as `Task 4 pending`). The user's intent ("stop bundling this app") still commits via the suppress-list write so the next-emission `#511` forward-only fix takes effect; the tray sweep is just broader than the plan envisaged. Tracking as a Known gap on `docs/journeys/inbox-unified.md`. **Task 9 (ADB e2e on R3CY2058DLJ)** is **NOT** executed in this PR — the loop emulator (emulator-5554) does not naturally carry an R3CY2058DLJ-class tray fixture (네이버 24 / 카카오톡 20 / 쿠팡이츠 11 / 마이제네시스 11 / 삼성헬스 10 / 삼성캘린더 10), and fabricating ADB output would violate `.claude/rules/clock-discipline.md` analogue for verification artefacts. The recipe above is preserved verbatim for whoever next has access to a real heavy-tray device; tracking as a second Known gap on `docs/journeys/inbox-unified.md`. Contract regression vectors are guarded by 26 new JVM unit cases (`HighVolumeAppDetectorTest` 6 + `InboxSuggestionCardSpecTest` 5 + `InboxSuggestionAcceptIntegrationTest` 4 + `SettingsRepositorySuggestedSuppressionTest` 11).
 
 ---
 
