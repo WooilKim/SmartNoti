@@ -418,10 +418,14 @@ private fun InboxTabSegment(
  *    [currentSuppressedSourceApps]) so we do NOT lose entries already
  *    present. The settings flow then re-emits and the next composition's
  *    LaunchedEffect re-detects.
- *  - [cleanupTrayOrphans] forwards to the legacy `cleanup()` runner today
- *    (the scoped overload is still pending #524 follow-up plan Task 4).
- *    NotBound surfaces verbatim; Cancelled returns the unscoped count which
- *    is good enough for v1 — the next iteration adds the scoped overload.
+ *  - [cleanupTrayOrphans] forwards to the scoped
+ *    `TrayOrphanCleanupRunner.cleanup(targetPackages)` overload — single-
+ *    packageName precision. The accept handler always passes a singleton
+ *    set of the candidate's packageName, so the user's "stop bundling
+ *    this app" intent is honoured exactly; orphans of other packages are
+ *    preserved. Settings → "트레이 정리" remains the separate surface for
+ *    whole-tray cleanup. NotBound surfaces verbatim; Cancelled returns
+ *    the scoped count.
  *  - The two remaining callbacks ([markSuggestionPermanentlyDismissed],
  *    [snoozeSuggestionUntil]) are wired but the accept handler does not call
  *    them; InboxScreen invokes the matching SettingsRepository setter
@@ -439,13 +443,13 @@ private class InboxScreenSuggestionCallbacks(
     }
 
     override suspend fun cleanupTrayOrphans(targetPackages: Set<String>): InboxSuggestionCleanupOutcome {
-        // v1: the scoped overload of `TrayOrphanCleanupRunner.cleanup(Set)` is
-        // a follow-up plan task. Until then we trigger the unscoped cleanup —
-        // it walks the tray once and cancels every orphan, which is still
-        // strictly more useful than doing nothing. Worst case it cancels
-        // orphans for OTHER packages that the user already accepted in a
-        // previous tap; that is the desirable end state anyway.
-        val result = withContext(Dispatchers.IO) { cleanupRunner.cleanup() }
+        // Scoped overload — only cancels orphans whose packageName is in
+        // [targetPackages]. The accept handler always passes a singleton set
+        // of the candidate's packageName, so the user's intent ("stop bundling
+        // this app") is honored exactly. Other packages' orphans are
+        // preserved; the unscoped Settings → "트레이 정리" card is the
+        // separate surface for whole-tray cleanup.
+        val result = withContext(Dispatchers.IO) { cleanupRunner.cleanup(targetPackages) }
         return if (result.notBound) {
             InboxSuggestionCleanupOutcome.NotBound
         } else {
