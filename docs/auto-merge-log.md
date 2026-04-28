@@ -445,3 +445,4 @@ If a self-merged row caused a regression:
 | 2026-04-28T03:51:25Z | journey-tester | #542 | rules-management | https://github.com/WooilKim/SmartNoti/actions/runs/25032785731 |
 | 2026-04-28T04:17:15Z | project-manager | #543 | plan-526 closure (Tasks 7-9 NotificationDetailScreen wiring + e2e PASS + journey/plan sync) | https://github.com/WooilKim/SmartNoti/actions/runs/25033426574 |
 | 2026-04-28T04:27:23Z | project-manager | #544 | journey-tester notification-detail verification sweep (last-verified 2026-04-27 → 2026-04-28, docs-only) | https://github.com/WooilKim/SmartNoti/actions/runs/25033770147 |
+| 2026-04-28T04:39:06Z | project-manager | #545 | gap-planner plan: scoped TrayOrphanCleanupRunner.cleanup(targetPackages) overload + inbox-unified gap pointer | https://github.com/WooilKim/SmartNoti/actions/runs/25034111732/job/73321929094 |
