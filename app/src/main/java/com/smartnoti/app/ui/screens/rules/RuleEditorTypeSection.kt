@@ -131,6 +131,11 @@ internal fun typeLabel(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.KEYWORD -> "키워드"
     RuleTypeUi.SCHEDULE -> "시간"
     RuleTypeUi.REPEAT_BUNDLE -> "반복"
+    // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 2 — natural-default copy. Task 6 owns RuleEditor wiring (dropdown
+    // option enablement + dedicated test); this constant ensures the editor
+    // already renders a sensible label when the dropdown iterates entries.
+    RuleTypeUi.SENDER -> "발신자"
 }
 
 internal fun matchLabelFor(type: RuleTypeUi): String = when (type) {
@@ -139,4 +144,7 @@ internal fun matchLabelFor(type: RuleTypeUi): String = when (type) {
     RuleTypeUi.KEYWORD -> "키워드"
     RuleTypeUi.SCHEDULE -> "시간 조건"
     RuleTypeUi.REPEAT_BUNDLE -> "반복 기준"
+    // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+    // Task 2 — natural-default match-value label.
+    RuleTypeUi.SENDER -> "발신자 이름"
 }

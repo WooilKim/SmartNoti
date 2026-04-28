@@ -63,6 +63,10 @@ object CategoryConditionChipFormatter {
             RuleTypeUi.KEYWORD -> "키워드"
             RuleTypeUi.SCHEDULE -> "시간"
             RuleTypeUi.REPEAT_BUNDLE -> return "반복묶음"
+            // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+            // Task 2 — natural-default chip label. Renders as `발신자=김동대(...)`
+            // alongside other condition tokens.
+            RuleTypeUi.SENDER -> "발신자"
         }
         if (value.isEmpty()) return labelKey
         // Plan `2026-04-25-category-chip-app-label-lookup.md` Task 2: only

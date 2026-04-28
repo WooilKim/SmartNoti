@@ -180,6 +180,14 @@ class NotificationClassifier(
                 rule.matchValue,
                 input.duplicateCountInWindow,
             )
+            // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+            // Task 2. Substring + ignoreCase against the notification title
+            // so messenger 1:1 DMs whose sender metadata is empty (Teams /
+            // Slack / KakaoTalk) can still be promoted via "이 발신자" rules.
+            // Blank matchValue is rejected so a freshly-saved draft rule
+            // cannot promote every notification.
+            RuleTypeUi.SENDER -> rule.matchValue.isNotBlank() &&
+                input.title.contains(rule.matchValue, ignoreCase = true)
         }
 
     private fun matchesSchedule(schedule: String, hourOfDay: Int): Boolean {

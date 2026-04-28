@@ -92,11 +92,23 @@ object RuleStorageCodec {
                 // quieter "보류" sub-bucket on RulesScreen.
                 val draft = normalizedParts.getOrNull(7)?.toBooleanStrictOrNull() ?: false
 
+                // Plan `2026-04-28-fix-issue-526-sender-aware-classification-rules.md`
+                // Task 2 (forward-compat): a row whose `type` cell holds an
+                // enum name unknown to this build (e.g. user wrote a SENDER
+                // rule and then downgraded to a pre-SENDER APK, or a future
+                // RuleType is removed) decodes to `null` so the row is
+                // dropped from the list rather than crashing the entire
+                // rules surface. The user re-upgrading recovers the row
+                // from storage.
+                val parsedType = runCatching {
+                    RuleTypeUi.valueOf(normalizedParts[3])
+                }.getOrNull() ?: return@mapNotNull null
+
                 RuleUiModel(
                     id = normalizedParts[0],
                     title = normalizedParts[1],
                     subtitle = normalizedParts[2],
-                    type = RuleTypeUi.valueOf(normalizedParts[3]),
+                    type = parsedType,
                     enabled = normalizedParts[4].toBoolean(),
                     matchValue = normalizedParts[5],
                     overrideOf = overrideOf,
